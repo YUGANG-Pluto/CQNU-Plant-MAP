@@ -2,6 +2,11 @@
 
 重庆师范大学校园植物分区管理系统（本地桌面版 / Electron 方案）。
 
+Copyright © YU GangZuo. All rights reserved.
+
+This repository is publicly visible for reference only.
+No open-source license is granted for reproduction, redistribution, modification, or derivative use.
+
 ## 1. 项目用途
 
 本项目用于校园植物调查与管理，核心目标包括：
@@ -128,7 +133,7 @@ information/
 └─ ...
 ```
 
-不建议将真实 `information/` 直接提交到 GitHub 仓库。推荐在仓库中仅保留脱敏后的示例数据。
+不建议将真实 `information/` 直接提交到 GitHub 仓库。
 
 ## 10. 版本管理建议
 
@@ -144,8 +149,3 @@ information/
 - `VERSION_POLICY.md`：版本迭代结构与分支策略
 - `CONTRIBUTING_PRIVATE.md`：私有仓库维护规范
 - `docs/ARCHIVE_PLAN.md`：历史源码包归档建议
-
-## 12. 版权信息
-
-- Publisher: CQNU
-- Author: YU GangZuo
