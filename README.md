@@ -1,8 +1,7 @@
 # CQNU Campus Plant Mapping System  
 # 重庆师范大学校园植物分区管理系统
 
-> Copyright © YU GangZuo. All rights reserved.  
-> Publisher: CQNU  
+> Copyright © YU GangZuo. All rights reserved.   
 > 本仓库公开可见，仅用于项目展示、学术交流与参考阅读。  
 > 未经版权所有者书面许可，不得复制、修改、再发布、商用或制作衍生作品。  
 >
