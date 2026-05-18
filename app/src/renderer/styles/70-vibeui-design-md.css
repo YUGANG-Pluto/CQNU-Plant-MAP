@@ -302,9 +302,16 @@
   line-height: 1.3;
 }
 
-#statsModal .chart-card > .subtle {
-  margin-top: -4px;
+#statsModal .stats-chart-head {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+#statsModal .stats-chart-caption {
+  margin: 0;
   font-size: 12px;
+  line-height: 1.45;
 }
 
 #statsModal .donut-card {
@@ -491,10 +498,6 @@
 
 .theme-motion-advanced-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.brand-advanced-panel {
-  grid-column: 1 / -1;
 }
 
 .chart-bar-depth {

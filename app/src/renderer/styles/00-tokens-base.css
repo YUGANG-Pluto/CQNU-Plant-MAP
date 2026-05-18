@@ -244,7 +244,6 @@ strong {
 }
 
 
-/* Brand logo */
 .app-brand {
   display: flex;
   align-items: center;
@@ -267,46 +266,3 @@ strong {
   background: transparent;
   filter: var(--brand-logo-filter, none) drop-shadow(var(--brand-logo-shadow));
 }
-
-.brand-preview-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-  padding: 14px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg);
-  background: var(--panel-bg-soft);
-}
-
-.brand-preview-mark {
-  width: 58px;
-  height: 58px;
-}
-
-.brand-settings-grid {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.8fr) minmax(320px, 1.2fr);
-  gap: 14px;
-  align-items: start;
-}
-
-.brand-controls-grid {
-  grid-template-columns: repeat(2, minmax(160px, 1fr));
-}
-
-:root.brand-style-original {
-  --brand-logo-color: hsl(356 72% 42%);
-}
-
-:root.brand-style-contrast .brand-logo-mark {
-  filter: var(--brand-logo-filter, none) drop-shadow(0 0 1px rgba(255, 255, 255, 0.55)) drop-shadow(var(--brand-logo-shadow));
-}
-
-
-:root.brand-display-full .app-brand__icon {
-  width: 48px;
-  height: 48px;
-}
-
-

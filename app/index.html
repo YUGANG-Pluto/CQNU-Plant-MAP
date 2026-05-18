@@ -7,14 +7,14 @@
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
-  <link rel="icon" href="./src/renderer/assets/brand/app-logo-mark.svg" />
+  <link rel="icon" href="./src/renderer/assets/brand/cqnu-logo.svg" />
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <div class="app-shell">
     <header class="app-topbar glass">
       <div class="app-brand-block app-brand">
-        <img class="app-brand__icon brand-logo-mark" src="./src/renderer/assets/brand/title-logo.png" alt="" aria-hidden="true" />
+        <img class="app-brand__icon brand-logo-mark" src="./src/renderer/assets/brand/cqnu-logo.svg" alt="" aria-hidden="true" />
         <div class="app-brand__text">
           <span class="app-kicker">CQNU · V9.0-1</span>
           <h1 data-i18n="appTitle">校园植物分区管理系统</h1>
@@ -640,6 +640,16 @@
           </div>
           </div>
           <div id="themeTokenColorGrid" class="theme-color-grid"></div>
+          <div class="theme-palette-panel">
+            <div class="theme-palette-group">
+              <span data-i18n="themeMorandiPreset">莫兰迪预设</span>
+              <div id="themeMorandiPresets" class="preset-grid"></div>
+            </div>
+            <div class="theme-palette-group">
+              <span data-i18n="themeMacaronPreset">马卡龙预设</span>
+              <div id="themeMacaronPresets" class="preset-grid"></div>
+            </div>
+          </div>
         </details>
       </section>
 
@@ -714,19 +724,6 @@
             </div>
           </details>
           <p class="subtle" data-i18n="themeGlassHint">玻璃效果只改变视觉质感，不改变地图、统计或文件读写逻辑。</p>
-        </section>
-
-        <section class="theme-section">
-          <div class="theme-section-head"><h3 data-i18n="themeQuickPalette">快速色板</h3></div>
-          <p class="subtle" data-i18n="themeQuickPaletteHint">色板会应用到当前选中的色位。</p>
-          <div class="theme-palette-group">
-            <span data-i18n="themeMorandiPreset">莫兰迪预设</span>
-            <div id="themeMorandiPresets" class="preset-grid"></div>
-          </div>
-          <div class="theme-palette-group">
-            <span data-i18n="themeMacaronPreset">马卡龙预设</span>
-            <div id="themeMacaronPresets" class="preset-grid"></div>
-          </div>
         </section>
       </div>
 
@@ -830,58 +827,6 @@
           </div>
             </div>
           </details>
-        </div>
-      </section>
-
-      <section class="theme-section brand-settings-section">
-        <div class="theme-section-head">
-          <h3 data-i18n="brandIconSettingsTitle">品牌图标设置</h3>
-          <button id="btnResetBrandIcon" class="btn btn-soft" data-i18n="brandIconReset">恢复默认图标</button>
-        </div>
-        <div class="brand-settings-grid">
-          <div class="brand-preview-card">
-            <img class="brand-logo-mark brand-preview-mark" src="./src/renderer/assets/brand/title-logo.png" alt="" aria-hidden="true" />
-            <div>
-              <strong data-i18n="appTitle">校园植物分区管理系统</strong>
-              <p class="subtle" data-i18n="brandIconPreviewHint">预览当前图标色彩与显示模式。</p>
-            </div>
-          </div>
-          <div class="theme-controls-grid brand-controls-grid">
-            <div class="field">
-              <label data-i18n="brandIconStyle">图标样式</label>
-              <select id="brandIconStyle" class="input" data-brand="style">
-                <option value="theme" data-i18n="brandIconStyleTheme">跟随主题</option>
-                <option value="original" data-i18n="brandIconStyleOriginal">原始红色</option>
-                <option value="monochrome" data-i18n="brandIconStyleMono">单色主题色</option>
-                <option value="contrast" data-i18n="brandIconStyleContrast">高对比模式</option>
-              </select>
-            </div>
-            <div class="field">
-              <label data-i18n="brandIconDisplay">显示模式</label>
-              <select id="brandIconDisplay" class="input" data-brand="display">
-                <option value="auto" data-i18n="brandIconDisplayAuto">自动</option>
-                <option value="mark" data-i18n="brandIconDisplayMark">简化标识</option>
-                <option value="full" data-i18n="brandIconDisplayFull">完整徽章</option>
-              </select>
-            </div>
-            <details class="theme-advanced-panel brand-advanced-panel">
-              <summary><span data-i18n="themeAdvancedBrandSummary">高级图标色彩</span></summary>
-              <div class="theme-controls-grid brand-controls-grid">
-            <div class="field">
-              <label><span data-i18n="brandIconHue">图标色相</span><strong id="brandIconHueValue">356</strong></label>
-              <input id="brandIconHue" data-brand="hue" type="range" min="0" max="360" step="1" />
-            </div>
-            <div class="field">
-              <label><span data-i18n="brandIconSaturation">图标饱和度</span><strong id="brandIconSaturationValue">72%</strong></label>
-              <input id="brandIconSaturation" data-brand="saturation" type="range" min="20" max="95" step="1" />
-            </div>
-            <div class="field">
-              <label><span data-i18n="brandIconLightness">图标明度</span><strong id="brandIconLightnessValue">42%</strong></label>
-              <input id="brandIconLightness" data-brand="lightness" type="range" min="28" max="72" step="1" />
-            </div>
-              </div>
-            </details>
-          </div>
         </div>
       </section>
 

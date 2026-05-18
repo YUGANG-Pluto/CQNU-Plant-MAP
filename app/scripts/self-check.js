@@ -760,14 +760,13 @@ function testThemeSettingsProgressiveDisclosure() {
   const themeSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/theme/index.js'), 'utf8');
   const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(match => match[1]);
   assert.strictEqual(ids.length, new Set(ids).size, 'HTML ids must stay unique after settings regrouping');
-  assert.ok((html.match(/class="theme-advanced-panel/g) || []).length >= 5);
+  assert.ok((html.match(/class="theme-advanced-panel/g) || []).length >= 4);
   [
     'themeColorTuningHint',
     'themeAdvancedColorSummary',
     'themeAdvancedTextureSummary',
     'themeAdvancedGlassSummary',
-    'themeAdvancedMotionSummary',
-    'themeAdvancedBrandSummary'
+    'themeAdvancedMotionSummary'
   ].forEach(key => assert.ok(html.includes(`data-i18n="${key}"`), `${key} must be wired in theme settings`));
   [
     'themeTokenTabs',
@@ -778,14 +777,19 @@ function testThemeSettingsProgressiveDisclosure() {
     'themeGlassApplyCharts',
     'motionSpeedMultiplier',
     'motionReduced',
-    'statusColorSuccess',
-    'brandIconHue'
+    'statusColorSuccess'
   ].forEach(id => assert.ok(html.includes(`id="${id}"`), `${id} must remain present`));
   [
     'themeAlpha',
     'themeGlassOpacity',
     'themeGlassBlur',
-    'themeContrast'
+    'themeContrast',
+    'brandIconStyle',
+    'brandIconDisplay',
+    'brandIconHue',
+    'brandIconSaturation',
+    'brandIconLightness',
+    'btnResetBrandIcon'
   ].forEach(id => {
     assert.ok(!html.includes(`id="${id}"`), `${id} should not remain as a visible UI control`);
     assert.ok(!elementsSource.includes(`'${id}'`), `${id} should not remain in the DOM registry`);
@@ -810,16 +814,37 @@ function testThemeSettingsProgressiveDisclosure() {
       'themeTextureHint',
       'themeAdvancedTextureSummary',
       'themeAdvancedGlassSummary',
-      'themeAdvancedMotionSummary',
-      'themeAdvancedBrandSummary'
+      'themeAdvancedMotionSummary'
     ].forEach(key => assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`));
   });
 }
 
+function testBrandLogoResource() {
+  const html = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf8');
+  const themeSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/theme/index.js'), 'utf8');
+  const brandDir = path.join(process.cwd(), 'src/renderer/assets/brand');
+  const logoPath = path.join(brandDir, 'cqnu-logo.svg');
+  assert.ok(fs.existsSync(logoPath), 'faithful CQNU SVG logo must exist');
+  assert.ok(html.includes('./src/renderer/assets/brand/cqnu-logo.svg'), 'runtime HTML must use the faithful CQNU SVG logo');
+  [
+    'app-logo-full.svg',
+    'app-logo-mark.svg',
+    'source-logo.png',
+    'title-logo.png'
+  ].forEach(name => {
+    assert.ok(!fs.existsSync(path.join(brandDir, name)), `legacy brand asset ${name} must be removed`);
+    assert.ok(!html.includes(name), `HTML must not reference legacy brand asset ${name}`);
+  });
+  assert.ok(!html.includes('brand-logo-full-symbol'), 'HTML must not retain the simplified inline logo symbol');
+  assert.ok(themeSource.includes('normalizeBrandIconSettings'), 'brand settings normalization must stay for old settings.json compatibility');
+}
+
 function testStatisticsChartVisualContract() {
+  const statsSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/index.js'), 'utf8');
   const chartSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/charts.js'), 'utf8');
   const visualCss = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/60-refined-workbench.css'), 'utf8');
   const vibeCss = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/70-vibeui-design-md.css'), 'utf8');
+  assert.ok(statsSource.includes('function renderChartCard'), 'statistics cards should use a shared chart-card renderer');
   assert.ok(chartSource.includes('chart-bar-depth'));
   assert.ok(chartSource.includes('chart-empty-state'));
   assert.ok(chartSource.includes('donutSvgFromCounts(entries, palette, settings, donut = true, chartKey = \'donut\')'));
@@ -833,6 +858,8 @@ function testStatisticsChartVisualContract() {
   [
     '#statsModal .stats-control-card',
     '#statsModal .chart-card h3',
+    '#statsModal .stats-chart-head',
+    '#statsModal .stats-chart-caption',
     '.chart-scroll-area::-webkit-scrollbar',
     '.legend-item strong',
     '.chart-empty-state',
@@ -864,6 +891,7 @@ async function main() {
   testCssStructureGuards();
   testLegacyThemeCssRemoved();
   testThemeSettingsProgressiveDisclosure();
+  testBrandLogoResource();
   testStatisticsChartVisualContract();
   testReducedInnerHtmlSurface();
   await testExportWritesAtomicallyAndValidatesContent();

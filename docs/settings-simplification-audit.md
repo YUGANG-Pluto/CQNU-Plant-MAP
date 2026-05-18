@@ -333,3 +333,20 @@ Completed:
 - Added self-check coverage to ensure progress detail controls remain reachable but do not return to the primary settings surface.
 
 No persisted field, package dependency, IPC route, data migration, or visual default was changed.
+
+## 2026-05-18 Brand and statistics cleanup
+
+Completed:
+
+- Replaced runtime brand usage with `src/renderer/assets/brand/cqnu-logo.svg`, traced from the original `title-logo.png` so the visible CQNU badge style is preserved.
+- Removed the previous simplified SVG logo assets and PNG logo assets from the runtime brand folder:
+  - `app-logo-full.svg`
+  - `app-logo-mark.svg`
+  - `source-logo.png`
+  - `title-logo.png`
+- Removed the visible brand icon color/display controls because they could conflict with the requirement that the original logo appearance stay unchanged.
+- Kept `uiTheme.brand` normalization in code so old `settings.json` files remain readable; the fields are now compatibility-only and do not create a visible settings surface.
+- Moved quick color palettes into Advanced color and kept chart palette tuning as the intended expert use case.
+- Added a shared statistics chart-card renderer for title/caption structure and fixed custom-stat metric selects so they render the current selected metric directly.
+
+No persisted field was deleted, and no IPC route, data migration, package dependency, basemap behavior, or statistical calculation was changed.

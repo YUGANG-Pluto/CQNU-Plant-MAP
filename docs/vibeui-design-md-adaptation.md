@@ -71,3 +71,10 @@ This note records the style-only adaptation applied after reviewing VibeUI and s
 
 - Add Playwright or Electron screenshot checks once dependencies are available.
 - Consider chart-type-specific labels or tooltips after the statistical drawing contract is stable.
+
+## Brand and chart structure cleanup
+
+- The app now uses a single faithful SVG badge traced from the original CQNU PNG logo. The earlier simplified logo SVGs were removed because they did not match the original badge.
+- The visible brand color/display controls were removed to avoid hidden visual drift from the required original logo appearance. Old `uiTheme.brand` fields remain normalized for compatibility only.
+- Statistics modal chart cards now share one renderer for title, caption, and body structure. This keeps future chart polish focused in one place instead of repeating card markup in every tab.
+- Custom statistics metric selectors now render their selected values directly, reducing after-render correction logic.

@@ -343,55 +343,8 @@ function normalizeBrandIconSettings(value) {
   return next;
 }
 
-function getThemeBrandIconSettings() {
-  const theme = getCurrentTheme();
-  theme.brand = normalizeBrandIconSettings(theme.brand);
-  return theme.brand;
-}
-
-function getBrandLogoColor(theme, brand) {
-  if (brand.style === 'original') {
-    return hslToHex(DEFAULT_BRAND_ICON.hue, DEFAULT_BRAND_ICON.saturation, DEFAULT_BRAND_ICON.lightness);
-  }
-
-  if (brand.style === 'monochrome') {
-    return theme.tokens.primary;
-  }
-
-  if (brand.style === 'contrast') {
-    return getReadableTextColor(theme.tokens.panelBg);
-  }
-
-  return hslToHex(brand.hue, brand.saturation, brand.lightness);
-}
-
-function setThemeBrandIconSetting(name, value) {
-  const theme = getCurrentTheme();
-  const brand = normalizeBrandIconSettings(theme.brand);
-
-  if (name === 'style') {
-    brand.style = BRAND_ICON_STYLES.includes(value) ? value : DEFAULT_BRAND_ICON.style;
-  } else if (name === 'display') {
-    brand.display = BRAND_ICON_DISPLAYS.includes(value) ? value : DEFAULT_BRAND_ICON.display;
-  } else if (BRAND_ICON_RANGES[name]) {
-    const [min, max] = BRAND_ICON_RANGES[name];
-    brand[name] = clamp(value, min, max);
-  } else {
-    return;
-  }
-
-  theme.brand = normalizeBrandIconSettings(brand);
-  theme.colorMode = 'custom';
-  applyThemeVariables();
-  syncBrandIconControls();
-}
-
-function resetThemeBrandIconSettings() {
-  const theme = getCurrentTheme();
-  theme.brand = cloneDefaultBrandIcon();
-  theme.colorMode = 'custom';
-  applyThemeVariables();
-  syncBrandIconControls();
+function getBrandLogoColor() {
+  return hslToHex(DEFAULT_BRAND_ICON.hue, DEFAULT_BRAND_ICON.saturation, DEFAULT_BRAND_ICON.lightness);
 }
 
 function normalizeProgressSettings(value = {}) {
@@ -626,8 +579,8 @@ function applyThemeVariables() {
   style.setProperty('--brand-logo-hue', String(brand.hue));
   style.setProperty('--brand-logo-saturation', `${brand.saturation}%`);
   style.setProperty('--brand-logo-lightness', `${brand.lightness}%`);
-  style.setProperty('--brand-logo-color', getBrandLogoColor(theme, brand));
-  style.setProperty('--brand-logo-shadow', `0 8px 18px ${hexToRgba(getBrandLogoColor(theme, brand), 24)}`);
+  style.setProperty('--brand-logo-color', getBrandLogoColor());
+  style.setProperty('--brand-logo-shadow', `0 8px 18px ${hexToRgba(getBrandLogoColor(), 24)}`);
   const progress = normalizeProgressSettings(theme.progress);
   const motion = normalizeMotionSettings(theme.motion);
   const statusColors = normalizeStatusColors(theme.statusColors, tokens);
@@ -831,31 +784,6 @@ function syncGlassControls() {
 }
 
 
-function syncBrandIconControls() {
-  const brand = getThemeBrandIconSettings();
-
-  if (ui.brandIconStyle) ui.brandIconStyle.value = brand.style;
-  if (ui.brandIconDisplay) ui.brandIconDisplay.value = brand.display;
-
-  const entries = [
-    ['brandIconHue', brand.hue, '', 'brandIconHueValue'],
-    ['brandIconSaturation', brand.saturation, '%', 'brandIconSaturationValue'],
-    ['brandIconLightness', brand.lightness, '%', 'brandIconLightnessValue']
-  ];
-
-  entries.forEach(([inputId, value, suffix, labelId]) => {
-    if (ui[inputId]) ui[inputId].value = value;
-    updateEffectLabel(labelId, value, suffix);
-  });
-}
-
-function updateBrandIconSettingFromControl(control) {
-  const field = control?.dataset?.brand;
-  if (!field) return;
-  setThemeBrandIconSetting(field, control.value);
-}
-
-
 function syncProgressControls() {
   const progress = normalizeProgressSettings(getCurrentTheme().progress);
   if (ui.progressHeight) ui.progressHeight.value = String(progress.height);
@@ -944,7 +872,6 @@ function syncThemeControls() {
 
   syncEffectControls();
   syncGlassControls();
-  syncBrandIconControls();
   syncProgressControls();
   syncMotionControls();
   syncStatusColorControls();
@@ -1081,15 +1008,6 @@ function bindThemePanelEvents() {
     control.addEventListener(eventName, event => updateGlassSettingFromControl(event.currentTarget));
   });
   ui.btnResetGlassSettings?.addEventListener('click', resetThemeGlassSettings);
-
-  document.querySelectorAll('[data-brand]').forEach(control => {
-    if (control.dataset.brandBound === '1') return;
-    control.dataset.brandBound = '1';
-    const eventName = control.tagName === 'SELECT' ? 'change' : 'input';
-    control.addEventListener(eventName, event => updateBrandIconSettingFromControl(event.currentTarget));
-  });
-
-  ui.btnResetBrandIcon?.addEventListener('click', resetThemeBrandIconSettings);
 
   document.querySelectorAll('[data-progress]').forEach(control => {
     if (control.dataset.progressBound === '1') return;

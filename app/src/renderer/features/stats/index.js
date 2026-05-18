@@ -40,9 +40,9 @@ function renderStatControls(customOnly=false){
   ensureThemeSettings();
   const cfg = state.settings.statsCustom;
   const categoryOptions = ['zone','growth','source','phenology'].map(k=>`<option value="${k}" ${cfg.category===k?'selected':''}>${escapeHtml(categoryLabel(k))}</option>`).join('');
-  const metricOptions = ['count','pointCount','speciesCount','percentage'].map(k=>`<option value="${k}">${escapeHtml(metricLabel(k))}</option>`).join('');
+  const metricOptions = selected => ['count','pointCount','speciesCount','percentage'].map(k=>`<option value="${k}" ${selected===k?'selected':''}>${escapeHtml(metricLabel(k))}</option>`).join('');
   const typeOptions = [['combo',t('statsChartCombo')],['bar',t('statsChartBar')],['line',t('statsChartLine')],['pie',t('statsChartPie')],['donut',t('statsChartDonut')]].map(([v,l])=>`<option value="${v}" ${cfg.chartType===v?'selected':''}>${escapeHtml(l)}</option>`).join('');
-  return `<div class="stats-control-card ${customOnly?'stats-control-card-wide':''}"><div class="field"><label>${escapeHtml(t('statsCategory'))}</label><select id="statsCategorySelect" class="input">${categoryOptions}</select></div><div class="field"><label>${escapeHtml(t('statsBarMetric'))}</label><select id="statsBarMetricSelect" class="input">${metricOptions}</select></div><div class="field"><label>${escapeHtml(t('statsLineMetric'))}</label><select id="statsLineMetricSelect" class="input">${metricOptions}</select></div><div class="field"><label>${escapeHtml(t('statsChartType'))}</label><select id="statsChartTypeSelect" class="input">${typeOptions}</select></div></div>`;
+  return `<div class="stats-control-card ${customOnly?'stats-control-card-wide':''}"><div class="field"><label>${escapeHtml(t('statsCategory'))}</label><select id="statsCategorySelect" class="input">${categoryOptions}</select></div><div class="field"><label>${escapeHtml(t('statsBarMetric'))}</label><select id="statsBarMetricSelect" class="input">${metricOptions(cfg.barMetric)}</select></div><div class="field"><label>${escapeHtml(t('statsLineMetric'))}</label><select id="statsLineMetricSelect" class="input">${metricOptions(cfg.lineMetric)}</select></div><div class="field"><label>${escapeHtml(t('statsChartType'))}</label><select id="statsChartTypeSelect" class="input">${typeOptions}</select></div></div>`;
 }
 function resolveMetricsForCategory(category){
   return category==='zone' ? ['speciesCount','pointCount','percentage'] : ['count','percentage'];
@@ -56,21 +56,27 @@ function bindStatsAfterRender() {
   bindStatsControlEvents();
 }
 
+function renderChartCard(title, body, options = {}) {
+  const className = ['chart-card', options.className].filter(Boolean).join(' ');
+  const caption = options.caption ? `<p class="stats-chart-caption subtle">${escapeHtml(options.caption)}</p>` : '';
+  return `<div class="${className}"><div class="stats-chart-head"><h3>${escapeHtml(title)}</h3>${caption}</div>${body}</div>`;
+}
+
 function renderCustomChart(){
   ensureThemeSettings();
   const cfg=state.settings.statsCustom;
   const rows=statsCategoryRows(cfg.category);
   const entries=rows.map(r=>[r.label, Number(r[cfg.barMetric]||0)]);
-  if(cfg.chartType==='combo') return `${renderStatControls(true)}<div class="subtle">${escapeHtml(t('statsComboHint'))}</div><div class="chart-card">${renderComboChart(rows, cfg.barMetric, cfg.lineMetric, 'customStats')}</div>`;
-  if(cfg.chartType==='bar') return `${renderStatControls(true)}<div class="chart-card">${renderBarList(rows.map(r=>({label:r.label,value:r[cfg.barMetric]})), 'value', item=>item.label, 'customStats')}</div>`;
-  if(cfg.chartType==='line') return `${renderStatControls(true)}<div class="chart-card">${renderComboChart(rows, cfg.lineMetric, cfg.lineMetric, 'customStats')}</div>`;
-  return `${renderStatControls(true)}<div class="chart-card donut-card">${renderPieLike(entries, cfg.chartType==='donut', 'customStats')}</div>`;
+  const title = `${categoryLabel(cfg.category)} - ${t('statsCustomChart')}`;
+  if(cfg.chartType==='combo') return `${renderStatControls(true)}${renderChartCard(title, renderComboChart(rows, cfg.barMetric, cfg.lineMetric, 'customStats'), { caption: t('statsComboHint') })}`;
+  if(cfg.chartType==='bar') return `${renderStatControls(true)}${renderChartCard(title, renderBarList(rows.map(r=>({label:r.label,value:r[cfg.barMetric]})), 'value', item=>item.label, 'customStats'), { caption: t('statsCaptionMetricCompare') })}`;
+  if(cfg.chartType==='line') return `${renderStatControls(true)}${renderChartCard(title, renderComboChart(rows, cfg.lineMetric, cfg.lineMetric, 'customStats'), { caption: t('statsCaptionTrendCompare') })}`;
+  return `${renderStatControls(true)}${renderChartCard(title, renderPieLike(entries, cfg.chartType==='donut', 'customStats'), { className: 'donut-card', caption: t('statsCaptionDistribution') })}`;
 }
 function renderStatsModal(){
   if(!ui.statsModalBody) return;
   ensureThemeSettings();
   const { zoneRank, sourceCounts, growthCounts, phenologyCounts, weekAdded, monthAdded } = computeStats();
-  const palette = chartPalette(8);
   const topZones = zoneRank.slice(0, 8);
   document.querySelectorAll('.stats-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === state.statsTab));
   if(state.statsTab === 'overview'){
@@ -86,14 +92,14 @@ function renderStatsModal(){
       </div>
       ${renderStatControls(false)}
       <div class="stats-two-col">
-        <div class="chart-card"><h3>${escapeHtml(categoryLabel(state.settings.statsCustom.category || 'zone'))}</h3><p class="subtle">${escapeHtml(t('statsOverviewHint'))}</p>${renderComboChart(rows, state.settings.statsCustom.barMetric, state.settings.statsCustom.lineMetric, 'overviewCombo')}</div>
-        <div class="chart-card donut-card"><h3>${escapeHtml(metricLabel(state.settings.statsCustom.barMetric))}</h3>${renderPieLike(overviewEntries, true, 'overviewDonut')}</div>
+        ${renderChartCard(categoryLabel(state.settings.statsCustom.category || 'zone'), renderComboChart(rows, state.settings.statsCustom.barMetric, state.settings.statsCustom.lineMetric, 'overviewCombo'), { caption: t('statsOverviewHint') })}
+        ${renderChartCard(metricLabel(state.settings.statsCustom.barMetric), renderPieLike(overviewEntries, true, 'overviewDonut'), { className: 'donut-card', caption: t('statsCaptionDistribution') })}
       </div>`;
       bindStatsAfterRender();
     return;
   }
   if(state.statsTab === 'zone'){
-    ui.statsModalBody.innerHTML = `<div class="stats-two-col"><div class="chart-card"><h3>${escapeHtml(t('statsSectionZoneRank'))}</h3>${renderComboChart(topZones.map(item=>({label:zoneDisplayName(item.zone), speciesCount:item.speciesCount, pointCount:item.pointCount, percentage: state.points.length?Number((item.pointCount/state.points.length*100).toFixed(1)):0})), 'speciesCount', 'pointCount', 'zoneRankCombo')}</div><div class="chart-card donut-card"><h3>${escapeHtml(t('statsSectionZoneRank'))}</h3>${renderPieLike(topZones.slice(0,5).map(item=>[zoneDisplayName(item.zone), item.speciesCount]), true, 'zoneRankDonut')}</div></div>`;
+    ui.statsModalBody.innerHTML = `<div class="stats-two-col">${renderChartCard(t('statsSectionZoneRank'), renderComboChart(topZones.map(item=>({label:zoneDisplayName(item.zone), speciesCount:item.speciesCount, pointCount:item.pointCount, percentage: state.points.length?Number((item.pointCount/state.points.length*100).toFixed(1)):0})), 'speciesCount', 'pointCount', 'zoneRankCombo'), { caption: t('statsCaptionMetricCompare') })}${renderChartCard(t('statsSectionZoneRank'), renderPieLike(topZones.slice(0,5).map(item=>[zoneDisplayName(item.zone), item.speciesCount]), true, 'zoneRankDonut'), { className: 'donut-card', caption: t('statsCaptionDistribution') })}</div>`;
     bindStatsAfterRender();
     return;
   }
@@ -103,15 +109,15 @@ function renderStatsModal(){
     const phenologyEntries = phenologyCounts.length?phenologyCounts:[[t('resultsEmpty'),0]];
     ui.statsModalBody.innerHTML = `
       <div class="stats-three-col">
-        <div class="chart-card donut-card"><h3>${escapeHtml(t('statsSectionSource'))}</h3>${renderPieLike(sourceEntries, true, 'sourceDonut')}</div>
-        <div class="chart-card donut-card"><h3>${escapeHtml(t('statsSectionGrowth'))}</h3>${renderPieLike(growthEntries, true, 'growthDonut')}</div>
-        <div class="chart-card donut-card"><h3>${escapeHtml(t('statsSectionPhenology'))}</h3>${renderPieLike(phenologyEntries, true, 'phenologyDonut')}</div>
+        ${renderChartCard(t('statsSectionSource'), renderPieLike(sourceEntries, true, 'sourceDonut'), { className: 'donut-card', caption: t('statsCaptionDistribution') })}
+        ${renderChartCard(t('statsSectionGrowth'), renderPieLike(growthEntries, true, 'growthDonut'), { className: 'donut-card', caption: t('statsCaptionDistribution') })}
+        ${renderChartCard(t('statsSectionPhenology'), renderPieLike(phenologyEntries, true, 'phenologyDonut'), { className: 'donut-card', caption: t('statsCaptionDistribution') })}
       </div>`;
     bindStatsAfterRender();
     return;
   }
   if(state.statsTab === 'time'){
-    ui.statsModalBody.innerHTML = `<div class="stats-two-col"><div class="chart-card"><h3>${escapeHtml(t('statsSectionRecent'))}</h3>${renderComboChart([{label:t('statsWeek'), count:weekAdded, percentage: monthAdded?Number((weekAdded/(monthAdded||1)*100).toFixed(1)):0},{label:t('statsMonth'), count:monthAdded, percentage:100}], 'count', 'percentage', 'timeCombo')}</div><div class="chart-card donut-card"><h3>${escapeHtml(t('statsSectionSource'))}</h3>${renderPieLike((sourceCounts.length?sourceCounts:[[t('resultsEmpty'),0]]), false, 'timeSourcePie')}</div></div>`;
+    ui.statsModalBody.innerHTML = `<div class="stats-two-col">${renderChartCard(t('statsSectionRecent'), renderComboChart([{label:t('statsWeek'), count:weekAdded, percentage: monthAdded?Number((weekAdded/(monthAdded||1)*100).toFixed(1)):0},{label:t('statsMonth'), count:monthAdded, percentage:100}], 'count', 'percentage', 'timeCombo'), { caption: t('statsCaptionRecent') })}${renderChartCard(t('statsSectionSource'), renderPieLike((sourceCounts.length?sourceCounts:[[t('resultsEmpty'),0]]), false, 'timeSourcePie'), { className: 'donut-card', caption: t('statsCaptionDistribution') })}</div>`;
     bindStatsAfterRender();
     return;
   }

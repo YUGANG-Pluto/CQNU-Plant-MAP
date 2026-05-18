@@ -131,8 +131,7 @@
 }
 
 :root.theme-field-notebook .theme-controls-grid,
-:root.theme-field-notebook .theme-effects-grid,
-:root.theme-field-notebook .brand-controls-grid {
+:root.theme-field-notebook .theme-effects-grid {
   gap: 10px;
 }
 
