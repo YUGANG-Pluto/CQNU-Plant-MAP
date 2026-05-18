@@ -11,6 +11,7 @@
   --vibe-shadow-hover: 0 16px 38px rgba(31, 41, 55, 0.11);
   --vibe-enter-y: 10px;
   --vibe-chart-enter-y: 12px;
+  --vibe-chart-slice-stagger: 14ms;
   --vibe-focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
@@ -288,6 +289,11 @@
   padding: 14px;
   border: 1px solid var(--vibe-line);
   border-radius: var(--radius-md);
+}
+
+#statsModal .chart-card,
+#statsModal .stats-control-card {
+  transform: translateY(0);
 }
 
 #statsModal .chart-card h3 {
@@ -608,13 +614,9 @@
   animation: vibeChartTrace var(--motion-duration) var(--vibe-ease-soft) both;
 }
 
-.motion-mode-rich .donut-svg {
-  animation: vibeChartReveal var(--motion-duration) var(--vibe-ease-emphasized) both;
-}
-
 .motion-mode-rich .donut-slice {
   animation: vibeDonutSliceReveal var(--motion-duration) var(--vibe-ease-soft) both;
-  animation-delay: calc(var(--slice-index, 0) * var(--motion-stagger, 24ms));
+  animation-delay: calc(var(--slice-index, 0) * var(--vibe-chart-slice-stagger));
 }
 
 .motion-mode-rich .legend-item {
@@ -683,6 +685,12 @@
   box-shadow: var(--vibe-shadow-hover);
 }
 
+.motion-hover #statsModal :where(.chart-card, .stats-control-card):hover {
+  transform: none;
+  border-color: var(--vibe-line-strong);
+  box-shadow: var(--vibe-shadow-hover);
+}
+
 .motion-hover :where(.theme-style-btn, .theme-layout-btn, .seg-btn):hover {
   transform: translateY(-1px);
   border-color: var(--vibe-line-strong);
@@ -702,7 +710,8 @@
 }
 
 .motion-hover .donut-slice:hover {
-  filter: drop-shadow(0 8px 12px color-mix(in srgb, var(--primary) 16%, transparent));
+  opacity: 0.86;
+  stroke: color-mix(in srgb, #ffffff 64%, var(--primary));
 }
 
 .motion-mode-rich .chart-card,

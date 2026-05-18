@@ -176,14 +176,19 @@
 
 .chart-bar-group,
 .chart-combo-category,
-.chart-line-point-group,
-.donut-slice {
+.chart-line-point-group {
   transition:
     transform var(--motion-duration-fast) var(--motion-ease),
     opacity var(--motion-duration-fast) var(--motion-ease),
     filter var(--motion-duration-fast) var(--motion-ease);
   transform-box: fill-box;
   transform-origin: center;
+}
+
+.donut-slice {
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-ease),
+    stroke var(--motion-duration-fast) var(--motion-ease);
 }
 
 .chart-bar-depth {
@@ -225,8 +230,8 @@
 }
 
 .donut-slice:hover {
-  opacity: 0.9;
-  transform: scale(1.018);
+  opacity: 0.88;
+  stroke: rgba(255, 255, 255, 0.48);
 }
 
 .donut-svg-pie .donut-center-plate {

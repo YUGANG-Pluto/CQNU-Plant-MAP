@@ -56,6 +56,17 @@ This note records the style-only adaptation applied after reviewing VibeUI and s
 - Improved SVG value label readability with a subtle text stroke while leaving the generated values and titles unchanged.
 - Mobile rules collapse the stats controls, card grid, and legends into one column to avoid cramped labels.
 
+## Theme and motion maintenance pass
+
+- Theme keep list stays at six active styles: `field-notebook`, `scientific-white`, `botanical-scientific`, `linear-minimal`, `deep-slate`, and `flow-data`.
+- Compatibility-only legacy styles remain in `LEGACY_UI_STYLE_MAP`; no old CSS selectors are reintroduced.
+- `field-notebook` remains the default because it is map-first, light, and readable for daily data entry.
+- `scientific-white` and `linear-minimal` are both retained, but with different roles: scientific grid discipline versus low-shadow long-session editing.
+- `deep-slate` and `flow-data` are retained as high-contrast / chart-forward options, but are treated as stronger visual personalities rather than defaults.
+- Statistics modal chart cards no longer lift on hover; they use border and shadow feedback so the chart stays stationary during inspection.
+- Donut and pie charts use one stage reveal plus slice fade, not nested SVG reveal plus slice reveal, to avoid over-animated chart entry.
+- Donut slice stagger is capped through `--vibe-chart-slice-stagger` so rich motion remains visible without becoming slow on category-heavy charts.
+
 ## Future cleanup candidates
 
 - Add Playwright or Electron screenshot checks once dependencies are available.

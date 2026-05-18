@@ -148,7 +148,9 @@
 }
 
 .donut-slice {
-  filter: drop-shadow(0 4px 7px rgba(31, 41, 55, 0.04));
+  stroke: rgba(255, 255, 255, 0.26);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
 }
 
 .donut-highlight {

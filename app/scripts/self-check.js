@@ -21,6 +21,16 @@ const {
   normalizeZoneRecord
 } = require('../src/renderer/data/normalize');
 
+function readWorkspaceDoc(fileName) {
+  const candidates = [
+    path.join(process.cwd(), 'docs', fileName),
+    path.join(process.cwd(), '..', 'docs', fileName)
+  ];
+  const found = candidates.find(candidate => fs.existsSync(candidate));
+  assert.ok(found, `${fileName} must exist in app/docs or repository docs`);
+  return fs.readFileSync(found, 'utf8');
+}
+
 const expectedCsvHeader = [
   '分区编号',
   '分区名称',
@@ -663,7 +673,7 @@ function testEngineeringSplitContract() {
 
 function testVibeUiDesignMdLayer() {
   const source = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/70-vibeui-design-md.css'), 'utf8');
-  const doc = fs.readFileSync(path.join(process.cwd(), 'docs/vibeui-design-md-adaptation.md'), 'utf8');
+  const doc = readWorkspaceDoc('vibeui-design-md-adaptation.md');
   assert.ok(source.includes('VibeUI design-md adaptation'));
   assert.ok(source.includes('--vibe-ease-standard'));
   assert.ok(source.includes('.motion-disabled .vibe-motion-surface'));
@@ -699,6 +709,9 @@ function testVibeMotionContract() {
     '.motion-mode-rich .progress-card.running .progress-status-icon',
     '.motion-disabled :where('
   ].forEach(selector => assert.ok(source.includes(selector), `${selector} must stay wired`));
+  assert.ok(source.includes('--vibe-chart-slice-stagger'), 'donut slice stagger must stay bounded');
+  assert.ok(source.includes('.motion-hover #statsModal :where(.chart-card, .stats-control-card):hover'), 'stats chart cards must not lift while reading charts');
+  assert.ok(!source.includes('.motion-mode-rich .donut-svg {\n  animation:'), 'donut svg should not animate on top of the stage and slices');
   assert.ok(chartSource.includes('--chart-index'));
   assert.ok(chartSource.includes('--slice-index'));
   assert.ok(chartSource.includes('--legend-index'));
@@ -782,6 +795,12 @@ function testThemeSettingsProgressiveDisclosure() {
     'glassBlur: clamp',
     'contrast: clamp'
   ].forEach(fragment => assert.ok(themeSource.includes(fragment), `${fragment} must stay normalized for compatibility`));
+  const motionAdvancedIndex = html.indexOf('themeAdvancedMotionSummary');
+  assert.ok(motionAdvancedIndex > -1, 'advanced motion section must remain present');
+  ['progressHeight', 'progressShowPercent', 'progressShowStage', 'progressGlass'].forEach(id => {
+    const idIndex = html.indexOf(`id="${id}"`);
+    assert.ok(idIndex > motionAdvancedIndex, `${id} should stay inside the advanced motion/progress section`);
+  });
 
   ['zh.js', 'en.js'].forEach(name => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/renderer/i18n', name), 'utf8');
@@ -803,11 +822,14 @@ function testStatisticsChartVisualContract() {
   const vibeCss = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/70-vibeui-design-md.css'), 'utf8');
   assert.ok(chartSource.includes('chart-bar-depth'));
   assert.ok(chartSource.includes('chart-empty-state'));
-  assert.ok(chartSource.includes('donutSvgFromCounts(entries, palette, settings, donut = true)'));
+  assert.ok(chartSource.includes('donutSvgFromCounts(entries, palette, settings, donut = true, chartKey = \'donut\')'));
+  assert.ok(chartSource.includes('arcSlicePath(center, innerRadius, outerRadius, startAngle, endAngle)'));
   assert.ok(chartSource.includes('donut-svg-pie'));
   assert.ok(visualCss.includes('.chart-bar-depth'));
   assert.ok(visualCss.includes('.donut-center-plate'));
   assert.ok(visualCss.includes('.motion-disabled .chart-bar-group'));
+  assert.ok(!visualCss.includes('transform: scale(1.018)'), 'donut hover must not move its own hit target');
+  assert.ok(!vibeCss.includes('.motion-hover .donut-slice:hover {\n  filter:'), 'donut hover must not use per-slice hover filters');
   [
     '#statsModal .stats-control-card',
     '#statsModal .chart-card h3',

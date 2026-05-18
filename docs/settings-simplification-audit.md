@@ -315,3 +315,21 @@ Completed:
 - Added self-check coverage so removed UI controls do not re-enter the visible settings surface while compatibility normalization remains.
 
 No persisted field, default preset, old project compatibility map, IPC route, package dependency, or basemap behavior was changed.
+
+## 2026-05-18 Option C hierarchy slimming
+
+Completed:
+
+- Kept the first-level visual feedback surface to three high-frequency choices:
+  - `progressMode`
+  - `motionMode`
+  - `motionReduced`
+- Moved these progress detail controls into the existing Advanced motion/progress/status section:
+  - `progressHeight`
+  - `progressShowPercent`
+  - `progressShowStage`
+  - `progressGlass`
+- Kept every control id and `data-progress` binding unchanged, so existing event handlers, persisted fields, defaults, and normalizers continue to work.
+- Added self-check coverage to ensure progress detail controls remain reachable but do not return to the primary settings surface.
+
+No persisted field, package dependency, IPC route, data migration, or visual default was changed.

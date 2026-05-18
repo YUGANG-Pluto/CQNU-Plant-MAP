@@ -186,6 +186,64 @@ function svgTitle(seriesName, categoryLabel, value) {
   return `<title>${escapeHtml(seriesName)} · ${escapeHtml(categoryLabel)}：${escapeHtml(value)}</title>`;
 }
 
+function sanitizeSvgId(value) {
+  return String(value || 'chart')
+    .replace(/[^a-zA-Z0-9_-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'chart';
+}
+
+function polarPoint(center, radius, angle) {
+  const rad = angle * Math.PI / 180;
+  return {
+    x: center + radius * Math.cos(rad),
+    y: center + radius * Math.sin(rad)
+  };
+}
+
+function formatPoint(point) {
+  return `${point.x.toFixed(2)},${point.y.toFixed(2)}`;
+}
+
+function fullRingPath(center, outerRadius, innerRadius) {
+  const topOuter = { x: center, y: center - outerRadius };
+  const bottomOuter = { x: center, y: center + outerRadius };
+  const topInner = { x: center, y: center - innerRadius };
+  const bottomInner = { x: center, y: center + innerRadius };
+  return [
+    `M ${formatPoint(topOuter)}`,
+    `A ${outerRadius.toFixed(2)} ${outerRadius.toFixed(2)} 0 1 1 ${formatPoint(bottomOuter)}`,
+    `A ${outerRadius.toFixed(2)} ${outerRadius.toFixed(2)} 0 1 1 ${formatPoint(topOuter)}`,
+    `M ${formatPoint(topInner)}`,
+    `A ${innerRadius.toFixed(2)} ${innerRadius.toFixed(2)} 0 1 0 ${formatPoint(bottomInner)}`,
+    `A ${innerRadius.toFixed(2)} ${innerRadius.toFixed(2)} 0 1 0 ${formatPoint(topInner)}`,
+    'Z'
+  ].join(' ');
+}
+
+function arcSlicePath(center, innerRadius, outerRadius, startAngle, endAngle) {
+  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+  const outerStart = polarPoint(center, outerRadius, startAngle);
+  const outerEnd = polarPoint(center, outerRadius, endAngle);
+  if (innerRadius <= 0) {
+    return [
+      `M ${center.toFixed(2)},${center.toFixed(2)}`,
+      `L ${formatPoint(outerStart)}`,
+      `A ${outerRadius.toFixed(2)} ${outerRadius.toFixed(2)} 0 ${largeArc} 1 ${formatPoint(outerEnd)}`,
+      'Z'
+    ].join(' ');
+  }
+  const innerStart = polarPoint(center, innerRadius, startAngle);
+  const innerEnd = polarPoint(center, innerRadius, endAngle);
+  return [
+    `M ${formatPoint(outerStart)}`,
+    `A ${outerRadius.toFixed(2)} ${outerRadius.toFixed(2)} 0 ${largeArc} 1 ${formatPoint(outerEnd)}`,
+    `L ${formatPoint(innerEnd)}`,
+    `A ${innerRadius.toFixed(2)} ${innerRadius.toFixed(2)} 0 ${largeArc} 0 ${formatPoint(innerStart)}`,
+    'Z'
+  ].join(' ');
+}
+
 function resolveComboLabelState(item, dimensions) {
   const barText = formatChartValue(item.barValue, 0);
   const lineText = item.barMetric === item.lineMetric ? barText : formatChartValue(item.lineValue, 1);
@@ -304,31 +362,39 @@ function renderComboChart(rows, barMetric = 'count', lineMetric = 'percentage', 
   return `${legend}${renderScrollableChart(svg, dimensions.width, dimensions.height, 'combo-chart-scroller', chartKey, dimensions.scale)}`;
 }
 
-function donutSvgFromCounts(entries, palette, settings, donut = true) {
+function donutSvgFromCounts(entries, palette, settings, donut = true, chartKey = 'donut') {
   const safeEntries = entries.length ? entries : [[t('resultsEmpty'), 0]];
   const total = safeEntries.reduce((sum, [, value]) => sum + value, 0) || 1;
   const size = Math.round(Math.min(280, Math.max(150, settings.height * 0.52 * settings.scale)));
   const center = size / 2;
   const radius = Math.max(42, Math.min(82, size * 0.31));
   const strokeWidth = donut ? Math.max(14, Math.min(28, radius * 0.36)) : radius * 2;
-  const circumference = 2 * Math.PI * radius;
+  const outerRadius = donut ? radius + strokeWidth / 2 : radius;
+  const innerRadius = donut ? Math.max(12, radius - strokeWidth / 2) : 0;
+  const idPrefix = `donut-${sanitizeSvgId(chartKey)}`;
   let offset = 0;
   const gradients = safeEntries.map(([, value], index) => {
     const color = palette[index % palette.length];
-    return `<radialGradient id="donutGrad${index}" cx="35%" cy="28%" r="72%"><stop offset="0%" stop-color="${withLightness(color, 12)}"></stop><stop offset="70%" stop-color="${color}"></stop><stop offset="100%" stop-color="${withLightness(color, -7)}"></stop></radialGradient>`;
+    return `<radialGradient id="${idPrefix}Grad${index}" cx="35%" cy="28%" r="72%"><stop offset="0%" stop-color="${withLightness(color, 12)}"></stop><stop offset="70%" stop-color="${color}"></stop><stop offset="100%" stop-color="${withLightness(color, -7)}"></stop></radialGradient>`;
   }).join('');
   const slices = safeEntries.map(([label, value], index) => {
     const fraction = value / total;
-    const dash = `${(fraction * circumference).toFixed(2)} ${(circumference - fraction * circumference).toFixed(2)}`;
     const percent = `${(fraction * 100).toFixed(1)}%`;
-    const circle = `<circle class="donut-slice" data-slice-index="${index}" style="--slice-index:${index};" cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="url(#donutGrad${index})" stroke-width="${strokeWidth}" stroke-dasharray="${dash}" stroke-dashoffset="${-offset.toFixed(2)}" transform="rotate(-90 ${center} ${center})" stroke-linecap="${donut ? 'round' : 'butt'}"><title>${escapeHtml(label)}：${escapeHtml(value)} / ${percent}</title></circle>`;
-    offset += fraction * circumference;
-    return circle;
+    const startAngle = offset * 360 - 90;
+    const endAngle = (offset + fraction) * 360 - 90;
+    const path = fraction >= 0.999 && donut
+      ? fullRingPath(center, outerRadius, innerRadius)
+      : arcSlicePath(center, innerRadius, outerRadius, startAngle, endAngle);
+    const slice = fraction >= 0.999 && !donut
+      ? `<circle class="donut-slice donut-slice-full" data-slice-index="${index}" style="--slice-index:${index};" cx="${center}" cy="${center}" r="${outerRadius.toFixed(2)}" fill="url(#${idPrefix}Grad${index})"><title>${escapeHtml(label)}：${escapeHtml(value)} / ${percent}</title></circle>`
+      : `<path class="donut-slice" data-slice-index="${index}" style="--slice-index:${index};" d="${path}" fill="url(#${idPrefix}Grad${index})" fill-rule="evenodd"><title>${escapeHtml(label)}：${escapeHtml(value)} / ${percent}</title></path>`;
+    offset += fraction;
+    return slice;
   }).join('');
   const labelSize = Math.max(11, settings.labelSize);
   const totalValue = safeEntries.reduce((sum, [, value]) => sum + value, 0);
-  const centerPlateRadius = donut ? Math.max(30, radius - strokeWidth * 0.55) : Math.max(30, radius * 0.44);
-  return `<svg viewBox="0 0 ${size} ${size}" class="donut-svg ${donut ? 'donut-svg-ring' : 'donut-svg-pie'}" style="width:${size}px;height:${size}px"><defs>${gradients}<filter id="donutSoftShadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="9" stdDeviation="5" flood-color="#1F2937" flood-opacity="0.13"></feDropShadow></filter></defs><circle class="donut-depth-ring" cx="${center}" cy="${(center + 6).toFixed(1)}" r="${radius}" fill="none" stroke="rgba(31,41,55,0.08)" stroke-width="${strokeWidth}"></circle><circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="var(--chart-grid)" stroke-width="${strokeWidth}"></circle><g filter="url(#donutSoftShadow)">${slices}</g><circle cx="${center}" cy="${center}" r="${centerPlateRadius.toFixed(1)}" class="donut-center-plate"></circle><circle cx="${(center - radius * 0.22).toFixed(1)}" cy="${(center - radius * 0.36).toFixed(1)}" r="${(radius * 0.36).toFixed(1)}" class="donut-highlight"></circle><text x="${center}" y="${(center - 3).toFixed(1)}" text-anchor="middle" class="donut-total" style="font-size:${labelSize + 8}px">${totalValue}</text><text x="${center}" y="${(center + labelSize + 10).toFixed(1)}" text-anchor="middle" class="donut-sub" style="font-size:${labelSize}px">${escapeHtml(t('recordCount'))}</text></svg>`;
+  const centerPlateRadius = donut ? Math.max(30, innerRadius * 0.92) : Math.max(30, radius * 0.44);
+  return `<svg viewBox="0 0 ${size} ${size}" class="donut-svg ${donut ? 'donut-svg-ring' : 'donut-svg-pie'}" style="width:${size}px;height:${size}px"><defs>${gradients}<filter id="${idPrefix}SoftShadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="9" stdDeviation="5" flood-color="#1F2937" flood-opacity="0.13"></feDropShadow></filter></defs><circle class="donut-depth-ring" cx="${center}" cy="${(center + 6).toFixed(1)}" r="${radius}" fill="none" stroke="rgba(31,41,55,0.08)" stroke-width="${strokeWidth}"></circle><circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="var(--chart-grid)" stroke-width="${strokeWidth}"></circle><g class="donut-slice-layer" filter="url(#${idPrefix}SoftShadow)">${slices}</g><circle cx="${center}" cy="${center}" r="${centerPlateRadius.toFixed(1)}" class="donut-center-plate"></circle><circle cx="${(center - radius * 0.22).toFixed(1)}" cy="${(center - radius * 0.36).toFixed(1)}" r="${(radius * 0.36).toFixed(1)}" class="donut-highlight"></circle><text x="${center}" y="${(center - 3).toFixed(1)}" text-anchor="middle" class="donut-total" style="font-size:${labelSize + 8}px">${totalValue}</text><text x="${center}" y="${(center + labelSize + 10).toFixed(1)}" text-anchor="middle" class="donut-sub" style="font-size:${labelSize}px">${escapeHtml(t('recordCount'))}</text></svg>`;
 }
 function renderMiniLegend(entries, palette) {
   return entries.map(([label, value], index) => `<div class="legend-item" style="--legend-index:${index};"><span class="legend-dot" style="background:${palette[index % palette.length]}"></span><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('');
@@ -338,7 +404,7 @@ function renderPieLike(entries, donut = false, chartKey = 'pie') {
   const safeEntries = entries.length ? entries : [[t('resultsEmpty'), 0]];
   const settings = getChartUiSettings(chartKey);
   const palette = chartPalette(safeEntries.length || 1);
-  const chart = donutSvgFromCounts(safeEntries, palette, settings, donut);
+  const chart = donutSvgFromCounts(safeEntries, palette, settings, donut, chartKey);
   const minHeight = Math.ceil(settings.height * settings.scale);
   return `<div class="pie-chart-stage" style="min-height:${minHeight}px">${chart}</div><div class="legend-grid" style="font-size:${settings.labelSize}px">${renderMiniLegend(safeEntries, palette)}</div>`;
 }
