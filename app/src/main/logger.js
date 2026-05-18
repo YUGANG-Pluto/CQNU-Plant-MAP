@@ -102,6 +102,7 @@ function rotateIfNeeded(filePath) {
 function cleanupOldLogs() {
   ensureLogDir();
   const cutoff = Date.now() - Math.max(1, config.retentionDays) * 24 * 60 * 60 * 1000;
+  let deleted = 0;
   fs.readdirSync(config.logDir, { withFileTypes: true })
     .filter(item => item.isFile() && /^app-\d{4}-\d{2}-\d{2}(?:-\d+)?\.log$/.test(item.name))
     .forEach(item => {
@@ -109,8 +110,92 @@ function cleanupOldLogs() {
       const stat = fs.statSync(fullPath);
       if ((stat.mtimeMs || 0) < cutoff) {
         fs.rmSync(fullPath, { force: true });
+        deleted += 1;
       }
     });
+  return {
+    deleted,
+    remaining: listLogFiles().length,
+    retentionDays: config.retentionDays
+  };
+}
+
+function listLogFiles() {
+  ensureLogDir();
+  return fs.readdirSync(config.logDir, { withFileTypes: true })
+    .filter(item => item.isFile() && /^app-\d{4}-\d{2}-\d{2}(?:-\d+)?\.log$/.test(item.name))
+    .map(item => {
+      const filePath = path.join(config.logDir, item.name);
+      const stat = fs.statSync(filePath);
+      return {
+        name: item.name,
+        path: filePath,
+        size: stat.size,
+        modifiedAt: new Date(stat.mtimeMs || Date.now()).toISOString()
+      };
+    })
+    .sort((a, b) => Date.parse(b.modifiedAt) - Date.parse(a.modifiedAt));
+}
+
+function parseLogLine(line, fileName) {
+  try {
+    return {
+      ...JSON.parse(line),
+      fileName
+    };
+  } catch (_error) {
+    return {
+      ts: '',
+      level: 'info',
+      scope: 'log:file',
+      message: line.slice(0, 800),
+      meta: {},
+      fileName
+    };
+  }
+}
+
+function readLogTail(filePath, maxBytes = 256 * 1024) {
+  const stat = fs.statSync(filePath);
+  const length = Math.min(stat.size, maxBytes);
+  const buffer = Buffer.alloc(length);
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    fs.readSync(fd, buffer, 0, length, Math.max(0, stat.size - length));
+  } finally {
+    fs.closeSync(fd);
+  }
+  return buffer.toString('utf8');
+}
+
+function normalizeLogLimit(value) {
+  const limit = Number(value);
+  return Number.isFinite(limit) ? Math.min(300, Math.max(10, limit)) : 80;
+}
+
+function listRecentLogs(payload = {}) {
+  const limit = normalizeLogLimit(payload.limit);
+  const files = listLogFiles();
+  const entries = [];
+
+  for (const file of files) {
+    if (entries.length >= limit) break;
+    const lines = readLogTail(file.path).split(/\r?\n/).filter(Boolean).reverse();
+    for (const line of lines) {
+      entries.push(parseLogLine(line, file.name));
+      if (entries.length >= limit) break;
+    }
+  }
+
+  return {
+    config: getLoggerConfig(),
+    files: files.map(file => ({
+      name: file.name,
+      size: file.size,
+      modifiedAt: file.modifiedAt
+    })),
+    entries
+  };
 }
 
 function configureLogger(options = {}) {
@@ -214,6 +299,7 @@ module.exports = {
   writeLog,
   logError,
   reportRendererLog,
+  listRecentLogs,
   cleanupOldLogs,
   getLoggerConfig
 };

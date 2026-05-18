@@ -1072,3 +1072,107 @@ input[type="range"] {
   white-space: pre-wrap;
 }
 
+/* 14. maintenance center */
+.maintenance-panel {
+  width: min(1080px, calc(100vw - 48px));
+}
+
+.maintenance-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 14px;
+}
+
+.maintenance-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--panel-bg-soft);
+}
+
+.maintenance-card:last-child {
+  grid-column: 1 / -1;
+}
+
+.maintenance-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.maintenance-card-head h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.maintenance-actions {
+  flex-wrap: wrap;
+}
+
+.maintenance-report,
+.maintenance-log-list {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.maintenance-issue,
+.maintenance-log-entry {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.maintenance-issue--error,
+.maintenance-log-entry--error {
+  border-color: color-mix(in srgb, var(--danger) 34%, var(--border-light));
+}
+
+.maintenance-issue--warn,
+.maintenance-log-entry--warn {
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--border-light));
+}
+
+.maintenance-badge-ok {
+  color: var(--success);
+}
+
+.maintenance-issue-title,
+.maintenance-log-entry-title {
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.maintenance-issue-meta,
+.maintenance-issue-detail,
+.maintenance-log-entry-message,
+.maintenance-log-entry-meta {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .maintenance-panel {
+    width: min(96vw, 720px);
+  }
+
+  .maintenance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

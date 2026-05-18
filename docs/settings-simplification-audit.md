@@ -350,3 +350,20 @@ Completed:
 - Added a shared statistics chart-card renderer for title/caption structure and fixed custom-stat metric selects so they render the current selected metric directly.
 
 No persisted field was deleted, and no IPC route, data migration, package dependency, basemap behavior, or statistical calculation was changed.
+
+## 2026-05-18 Maintenance foundation step 1
+
+Completed:
+
+- Added a single Maintenance Center entry instead of scattering three new tool panels across the main UI.
+- Added project health checks for missing IDs, duplicate visible codes, orphan points, invalid coordinates, missing names, missing phenology entries, duplicated image references, and missing image files.
+- Added conservative repair only for safe structural fixes:
+  - fill missing internal IDs,
+  - fill missing visible zone/point codes,
+  - normalize record shape through the existing normalizers,
+  - remove duplicate image references inside the same phenology entry.
+- Added log and diagnostic UI backed by main-process log listing, retention cleanup, and JSON diagnostic export.
+- Added settings safe mode plus UI settings import/export for language, `uiTheme`, and `statsCustom` only.
+- Added self-check coverage for the new IPC contract, guarded image-reference checks, maintenance UI wiring, and reduced `innerHTML` exposure.
+
+No record deletion, coordinate correction, orphan-point reassignment, basemap localization, dependency change, package build change, or persisted field migration was introduced.

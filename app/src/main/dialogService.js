@@ -5,7 +5,8 @@ const { ERROR_CODES } = require('./errorCodes');
 const {
   MAX_IMPORT_TEXT_BYTES,
   CSV_EXTENSIONS,
-  GEOJSON_EXTENSIONS
+  GEOJSON_EXTENSIONS,
+  JSON_EXTENSIONS
 } = require('./constants');
 const {
   normalizeProjectDir,
@@ -150,12 +151,42 @@ async function exportGeoJson(payload) {
   });
 }
 
+async function importJson(payload = {}) {
+  const result = await dialog.showOpenDialog({
+    title: payload.title || '导入 JSON',
+    properties: ['openFile'],
+    filters: [{ name: 'JSON', extensions: extensionList(JSON_EXTENSIONS) }]
+  });
+
+  if (result.canceled || !result.filePaths.length) {
+    return { canceled: true };
+  }
+
+  return {
+    canceled: false,
+    ...readSelectedTextFile(result.filePaths[0], 'json')
+  };
+}
+
+async function exportJson(payload) {
+  return exportTextByDialog({
+    title: payload.title || '导出 JSON',
+    defaultPath: payload.defaultPath || 'plant_settings.json',
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+    content: payload.content ?? '',
+    allowed: JSON_EXTENSIONS,
+    defaultExt: '.json'
+  });
+}
+
 module.exports = {
   chooseProjectDir,
   chooseMergeProjectDir,
   chooseBackupDir,
   importCsv,
   importGeoJson,
+  importJson,
   exportCsv,
-  exportGeoJson
+  exportGeoJson,
+  exportJson
 };

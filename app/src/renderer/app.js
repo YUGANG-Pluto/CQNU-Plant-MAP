@@ -814,6 +814,7 @@ function handleModalEscapeKey(event) {
   if (!ui.statsModal.classList.contains('hidden')) closeLayerModal(ui.statsModal);
   if (!ui.trashModal.classList.contains('hidden')) closeLayerModal(ui.trashModal);
   if (ui.themeModal && !ui.themeModal.classList.contains('hidden')) closeLayerModal(ui.themeModal);
+  if (ui.maintenanceModal && !ui.maintenanceModal.classList.contains('hidden')) closeLayerModal(ui.maintenanceModal);
   if (ui.workspaceUtilityDrawer && !ui.workspaceUtilityDrawer.classList.contains('hidden')) closeWorkspaceUtilityDrawer();
   if (ui.rightInspectorDrawer && !ui.rightInspectorDrawer.classList.contains('hidden')) closeRightInspectorDrawer();
   if (ui.basemapWorkspaceModal && !ui.basemapWorkspaceModal.classList.contains('hidden')) closeBasemapWorkspacePanel();
@@ -836,6 +837,7 @@ function bindEvents() {
   bindThemeEvents();
   bindMergeEvents();
   bindBackupEvents();
+  if (typeof bindMaintenanceEvents === 'function') bindMaintenanceEvents();
   bindDialogEvents();
   bindImagePreviewEvents();
   bindKeyboardEvents();

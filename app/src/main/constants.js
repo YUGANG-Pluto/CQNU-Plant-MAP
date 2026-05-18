@@ -10,6 +10,7 @@ const MAX_IMPORT_TEXT_BYTES = 20 * 1024 * 1024;
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp']);
 const CSV_EXTENSIONS = new Set(['.csv']);
 const GEOJSON_EXTENSIONS = new Set(['.geojson', '.json']);
+const JSON_EXTENSIONS = new Set(['.json']);
 
 function defaultSettings() {
   return {
@@ -97,5 +98,6 @@ module.exports = {
   IMAGE_EXTENSIONS,
   CSV_EXTENSIONS,
   GEOJSON_EXTENSIONS,
+  JSON_EXTENSIONS,
   defaultSettings
 };

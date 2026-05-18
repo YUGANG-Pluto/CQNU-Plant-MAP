@@ -5,6 +5,7 @@ const dialogs = require('./dialogService');
 const imageService = require('./imageService');
 const backupService = require('./backupService');
 const logger = require('./logger');
+const maintenanceService = require('./maintenanceService');
 
 function ok(data) {
   return { ok: true, data };
@@ -57,6 +58,8 @@ function registerIpc() {
   handle('project:exportCsv', dialogs.exportCsv);
   handle('project:importGeoJson', async () => dialogs.importGeoJson());
   handle('project:exportGeoJson', dialogs.exportGeoJson);
+  handle('settings:importJson', dialogs.importJson);
+  handle('settings:exportJson', dialogs.exportJson);
 
   handle('image:import', imageService.importImage);
   handle('image:delete', imageService.deleteImage);
@@ -71,6 +74,11 @@ function registerIpc() {
 
   handle('log:renderer', logger.reportRendererLog);
   handle('log:setLevel', payload => ({ level: logger.setLogLevel(payload.level) }));
+  handle('log:listRecent', logger.listRecentLogs);
+  handle('log:cleanup', () => logger.cleanupOldLogs());
+  handle('log:exportDiagnostics', dialogs.exportJson);
+
+  handle('maintenance:checkImageRefs', maintenanceService.checkImageRefs);
 }
 
 module.exports = {

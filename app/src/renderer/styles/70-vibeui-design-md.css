@@ -211,6 +211,7 @@
 .summary-box,
 .quick-actions-card,
 .merge-summary-box,
+.maintenance-card,
 .basemap-settings-section,
 .vibe-motion-surface {
   border-color: var(--vibe-line);

@@ -10,7 +10,8 @@ const {
   POINTS_FILE,
   IMAGE_EXTENSIONS,
   CSV_EXTENSIONS,
-  GEOJSON_EXTENSIONS
+  GEOJSON_EXTENSIONS,
+  JSON_EXTENSIONS
 } = require('./constants');
 
 const PROJECT_FILES = new Set([SETTINGS_FILE, ZONES_FILE, POINTS_FILE]);
@@ -199,6 +200,9 @@ function normalizeImportFile(filePath, kind) {
   const normalized = assertExistingFile(filePath, '导入文件');
   if (kind === 'csv') {
     return assertAllowedExtension(normalized, CSV_EXTENSIONS, 'CSV');
+  }
+  if (kind === 'json') {
+    return assertAllowedExtension(normalized, JSON_EXTENSIONS, 'JSON');
   }
   return assertAllowedExtension(normalized, GEOJSON_EXTENSIONS, 'GeoJSON');
 }

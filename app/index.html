@@ -63,6 +63,7 @@
           <button id="btnOpenTheme" class="btn morandi-btn morandi-sand" data-i18n="openThemeCenter">界面设置</button>
           <button id="btnOpenMerge" class="btn morandi-btn morandi-green" data-i18n="openMergeCenter">项目合并</button>
           <button id="btnBackupProject" class="btn morandi-btn morandi-purple" data-i18n="openBackupCenter">项目备份</button>
+          <button id="btnOpenMaintenance" class="btn morandi-btn morandi-sand" data-i18n="openMaintenanceCenter">维护中心</button>
           <button id="btnOpenWorkspaceDrawer" class="btn morandi-btn morandi-blue" data-i18n="openWorkspaceDrawer">工作面板</button>
         </div>
       </div>
@@ -901,6 +902,64 @@
     </div>
   </div>
 
+  <div id="maintenanceModal" class="layer-modal hidden">
+    <div class="layer-modal-backdrop"></div>
+    <div class="layer-modal-panel glass query-panel maintenance-panel">
+      <div class="layer-modal-header">
+        <div>
+          <h2 data-i18n="maintenanceCenterTitle">维护中心</h2>
+          <p class="subtle" data-i18n="maintenanceCenterSubtitle">集中处理项目体检、日志诊断与设置安全恢复，不自动修改业务数据。</p>
+        </div>
+        <button id="btnCloseMaintenanceModal" class="btn btn-soft layer-close">×</button>
+      </div>
+      <div class="maintenance-grid">
+        <section class="maintenance-card">
+          <div class="maintenance-card-head">
+            <div>
+              <h3 data-i18n="maintenanceHealthTitle">项目健康检查</h3>
+              <p id="maintenanceProjectPath" class="subtle path-box">—</p>
+            </div>
+            <span id="maintenanceHealthSummary" class="pill" data-i18n="maintenanceNotRun">未检查</span>
+          </div>
+          <div class="toolbar-inline maintenance-actions">
+            <button id="btnRunHealthCheck" class="btn btn-primary" data-i18n="maintenanceRunCheck">开始检查</button>
+            <button id="btnRunSafeRepair" class="btn btn-soft" data-i18n="maintenanceSafeRepair">保守修复</button>
+          </div>
+          <div id="maintenanceHealthReport" class="maintenance-report"></div>
+        </section>
+
+        <section class="maintenance-card">
+          <div class="maintenance-card-head">
+            <div>
+              <h3 data-i18n="maintenanceLogTitle">日志与诊断</h3>
+              <p id="maintenanceLogSummary" class="subtle">—</p>
+            </div>
+          </div>
+          <div class="toolbar-inline maintenance-actions">
+            <button id="btnRefreshLogs" class="btn btn-soft" data-i18n="maintenanceRefreshLogs">刷新日志</button>
+            <button id="btnCleanupLogs" class="btn btn-soft" data-i18n="maintenanceCleanupLogs">清理过期日志</button>
+            <button id="btnExportDiagnostics" class="btn btn-primary" data-i18n="maintenanceExportDiagnostics">导出诊断</button>
+          </div>
+          <div id="maintenanceLogList" class="maintenance-log-list"></div>
+        </section>
+
+        <section class="maintenance-card">
+          <div class="maintenance-card-head">
+            <div>
+              <h3 data-i18n="maintenanceSettingsTitle">设置安全模式</h3>
+              <p id="maintenanceSettingsSummary" class="subtle" data-i18n="maintenanceSettingsHint">仅处理界面主题、统计偏好和语言，不改分区、点位或图片。</p>
+            </div>
+          </div>
+          <div class="toolbar-inline maintenance-actions">
+            <button id="btnApplySafeMode" class="btn btn-danger-soft" data-i18n="maintenanceApplySafeMode">启用安全模式</button>
+            <button id="btnExportUiSettings" class="btn btn-soft" data-i18n="maintenanceExportSettings">导出设置</button>
+            <button id="btnImportUiSettings" class="btn btn-soft" data-i18n="maintenanceImportSettings">导入设置</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
   <div id="progressDock" class="progress-dock" aria-live="polite"></div>
 
   <div id="confirmModal" class="layer-modal hidden">
@@ -976,6 +1035,7 @@
   <script defer src="./src/renderer/features/progress/index.js"></script>
   <script defer src="./src/renderer/features/merge/index.js"></script>
   <script defer src="./src/renderer/features/project/index.js"></script>
+  <script defer src="./src/renderer/features/maintenance/index.js"></script>
   <script defer src="./src/renderer/app.js"></script>
 
 

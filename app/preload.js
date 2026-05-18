@@ -14,6 +14,10 @@ contextBridge.exposeInMainWorld('plantApp', {
     importGeoJson: () => invoke('project:importGeoJson'),
     exportGeoJson: payload => invoke('project:exportGeoJson', payload)
   },
+  settings: {
+    importJson: payload => invoke('settings:importJson', payload),
+    exportJson: payload => invoke('settings:exportJson', payload)
+  },
   image: {
     import: payload => invoke('image:import', payload),
     delete: payload => invoke('image:delete', payload)
@@ -27,7 +31,13 @@ contextBridge.exposeInMainWorld('plantApp', {
   },
   log: {
     report: payload => invoke('log:renderer', payload),
-    setLevel: payload => invoke('log:setLevel', payload)
+    setLevel: payload => invoke('log:setLevel', payload),
+    listRecent: payload => invoke('log:listRecent', payload),
+    cleanup: payload => invoke('log:cleanup', payload),
+    exportDiagnostics: payload => invoke('log:exportDiagnostics', payload)
+  },
+  maintenance: {
+    checkImageRefs: payload => invoke('maintenance:checkImageRefs', payload)
   },
   window: {
     toggleFullscreen: () => invoke('window:toggleFullscreen')

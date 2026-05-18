@@ -8,6 +8,7 @@ const pathGuard = require('../src/main/pathGuard');
 const projectStore = require('../src/main/projectStore');
 const fileWrite = require('../src/main/fileWrite');
 const logger = require('../src/main/logger');
+const maintenanceService = require('../src/main/maintenanceService');
 const { ERROR_CODES } = require('../src/main/errorCodes');
 const { unwrapIpc } = require('../src/renderer/utils/ipc');
 const { errorCode, errorMessage } = require('../src/renderer/utils/errorHandler');
@@ -552,6 +553,30 @@ async function testIpcDoesNotMaskFalsePayload() {
       const levelResponse = await handlers['log:setLevel']({ sender: {} }, { level: 'error' });
       assert.strictEqual(levelResponse.ok, true);
       assert.strictEqual(levelResponse.data.level, 'error');
+      [
+        'settings:importJson',
+        'settings:exportJson',
+        'log:listRecent',
+        'log:cleanup',
+        'log:exportDiagnostics',
+        'maintenance:checkImageRefs'
+      ].forEach(channel => assert.strictEqual(typeof handlers[channel], 'function', `${channel} must be registered`));
+      const recentResponse = await handlers['log:listRecent']({ sender: {} }, { limit: 10 });
+      assert.strictEqual(recentResponse.ok, true);
+      const cleanupResponse = await handlers['log:cleanup']({ sender: {} }, {});
+      assert.strictEqual(cleanupResponse.ok, true);
+      const { root, projectDir, imagesDir } = createWorkspace();
+      try {
+        fs.writeFileSync(path.join(imagesDir, 'safe.png'), 'image');
+        const imageResponse = await handlers['maintenance:checkImageRefs']({ sender: {} }, {
+          projectDir,
+          refs: ['information/images/safe.png']
+        });
+        assert.strictEqual(imageResponse.ok, true);
+        assert.strictEqual(imageResponse.data.items[0].exists, true);
+      } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+      }
     } finally {
       console.error = originalError;
     }
@@ -591,12 +616,45 @@ function testLoggerWritesAndCleansUp() {
     assert.ok(text.includes('renderer:test'));
     assert.ok(!text.includes('hidden'));
     assert.ok(!text.includes('secret'));
+    const recent = logger.listRecentLogs({ limit: 10 });
+    assert.ok(Array.isArray(recent.files));
+    assert.ok(recent.entries.some(entry => entry.scope === 'renderer:test'));
+    assert.strictEqual(recent.config.level, 'info');
 
     const oldLog = path.join(logDir, 'app-2000-01-01.log');
     fs.writeFileSync(oldLog, 'old');
     fs.utimesSync(oldLog, new Date('2000-01-01'), new Date('2000-01-01'));
-    logger.cleanupOldLogs();
+    const cleanup = logger.cleanupOldLogs();
+    assert.ok(cleanup.deleted >= 1);
     assert.ok(!fs.existsSync(oldLog));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function testMaintenanceServiceImageRefGuard() {
+  const { root, projectDir, imagesDir } = createWorkspace();
+  try {
+    fs.writeFileSync(path.join(imagesDir, 'safe.png'), 'image');
+    const result = maintenanceService.checkImageRefs({
+      projectDir,
+      refs: [
+        'information/images/safe.png',
+        'information/images/missing.png',
+        '../escape.png'
+      ]
+    });
+    assert.strictEqual(result.checked, 3);
+    assert.strictEqual(result.items.find(item => item.ref === 'information/images/safe.png').exists, true);
+    assert.strictEqual(result.items.find(item => item.ref === 'information/images/missing.png').exists, false);
+    assert.strictEqual(result.items.find(item => item.ref === '../escape.png').exists, false);
+    expectAppError(
+      () => maintenanceService.checkImageRefs({
+        projectDir,
+        refs: new Array(5001).fill('information/images/safe.png')
+      }),
+      ERROR_CODES.INVALID_PAYLOAD
+    );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -870,8 +928,72 @@ function testStatisticsChartVisualContract() {
 function testReducedInnerHtmlSurface() {
   const querySource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/query/index.js'), 'utf8');
   const recycleSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/recycleBin/index.js'), 'utf8');
+  const maintenanceSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/maintenance/index.js'), 'utf8');
   assert.ok(!querySource.includes('innerHTML'));
   assert.ok(!recycleSource.includes('innerHTML'));
+  assert.ok(!maintenanceSource.includes('innerHTML'));
+}
+
+function testMaintenanceCenterContract() {
+  const html = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf8');
+  const preloadSource = fs.readFileSync(path.join(process.cwd(), 'preload.js'), 'utf8');
+  const ipcSource = fs.readFileSync(path.join(process.cwd(), 'src/main/ipcRegister.js'), 'utf8');
+  const loggerSource = fs.readFileSync(path.join(process.cwd(), 'src/main/logger.js'), 'utf8');
+  const elementsSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/dom/elements.js'), 'utf8');
+  const appSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/app.js'), 'utf8');
+  const maintenanceSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/maintenance/index.js'), 'utf8');
+  const cssSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/10-core-components.css'), 'utf8');
+
+  [
+    'btnOpenMaintenance',
+    'maintenanceModal',
+    'btnRunHealthCheck',
+    'btnRunSafeRepair',
+    'btnExportDiagnostics',
+    'btnApplySafeMode',
+    'btnExportUiSettings',
+    'btnImportUiSettings'
+  ].forEach(id => {
+    assert.ok(html.includes(`id="${id}"`), `${id} must exist in maintenance UI`);
+    assert.ok(elementsSource.includes(`'${id}'`), `${id} must be registered`);
+  });
+  assert.ok(html.indexOf('./src/renderer/features/project/index.js') < html.indexOf('./src/renderer/features/maintenance/index.js'));
+  assert.ok(html.indexOf('./src/renderer/features/maintenance/index.js') < html.indexOf('./src/renderer/app.js'));
+  assert.ok(appSource.includes('bindMaintenanceEvents'));
+  [
+    "invoke('settings:importJson'",
+    "invoke('settings:exportJson'",
+    "invoke('log:listRecent'",
+    "invoke('log:cleanup'",
+    "invoke('log:exportDiagnostics'",
+    "invoke('maintenance:checkImageRefs'"
+  ].forEach(fragment => assert.ok(preloadSource.includes(fragment), `preload missing ${fragment}`));
+  [
+    "handle('settings:importJson'",
+    "handle('settings:exportJson'",
+    "handle('log:listRecent'",
+    "handle('log:cleanup'",
+    "handle('log:exportDiagnostics'",
+    "handle('maintenance:checkImageRefs'"
+  ].forEach(fragment => assert.ok(ipcSource.includes(fragment), `IPC missing ${fragment}`));
+  assert.ok(loggerSource.includes('function listRecentLogs'));
+  assert.ok(loggerSource.includes('function cleanupOldLogs'));
+  assert.ok(maintenanceSource.includes('MAINTENANCE_SETTINGS_SCHEMA'));
+  assert.ok(maintenanceSource.includes('createBackupZip(state.projectDir, \'\', \'maintenance\')'));
+  assert.ok(maintenanceSource.includes('maintenanceSafeRepairScope'));
+  assert.ok(!maintenanceSource.includes('deleteCurrent'));
+  assert.ok(!maintenanceSource.includes('state.points = state.points.filter'));
+  assert.ok(cssSource.includes('.maintenance-grid'));
+  ['zh.js', 'en.js'].forEach(name => {
+    const source = fs.readFileSync(path.join(process.cwd(), 'src/renderer/i18n', name), 'utf8');
+    [
+      'openMaintenanceCenter',
+      'maintenanceCenterTitle',
+      'maintenanceSafeRepair',
+      'maintenanceExportDiagnostics',
+      'maintenanceApplySafeMode'
+    ].forEach(key => assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`));
+  });
 }
 
 async function main() {
@@ -884,6 +1006,7 @@ async function main() {
   testProjectStoreRejectsInvalidSavePayloads();
   testAtomicTextWrite();
   testLoggerWritesAndCleansUp();
+  testMaintenanceServiceImageRefGuard();
   testHtmlErrorDialogWiring();
   testEngineeringSplitContract();
   testVibeUiDesignMdLayer();
@@ -894,6 +1017,7 @@ async function main() {
   testBrandLogoResource();
   testStatisticsChartVisualContract();
   testReducedInnerHtmlSurface();
+  testMaintenanceCenterContract();
   await testExportWritesAtomicallyAndValidatesContent();
   await testImageImportDoesNotOverwriteExistingArchive();
   await testBackupCreateCleanupAndCounts();

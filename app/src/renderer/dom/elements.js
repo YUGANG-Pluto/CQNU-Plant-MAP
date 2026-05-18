@@ -270,6 +270,25 @@ const elementGroups = {
     'btnRunManualBackup',
     'backupSummary'
   ],
+  maintenance: [
+    'btnOpenMaintenance',
+    'maintenanceModal',
+    'btnCloseMaintenanceModal',
+    'maintenanceProjectPath',
+    'maintenanceHealthSummary',
+    'maintenanceHealthReport',
+    'btnRunHealthCheck',
+    'btnRunSafeRepair',
+    'maintenanceLogSummary',
+    'maintenanceLogList',
+    'btnRefreshLogs',
+    'btnCleanupLogs',
+    'btnExportDiagnostics',
+    'maintenanceSettingsSummary',
+    'btnApplySafeMode',
+    'btnExportUiSettings',
+    'btnImportUiSettings'
+  ],
   modals: [
     'confirmModal',
     'confirmTitle',
