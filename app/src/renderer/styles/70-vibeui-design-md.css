@@ -1,0 +1,872 @@
+/* VibeUI design-md adaptation: final style grammar, no behavior selectors changed. */
+:root {
+  --vibe-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --vibe-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --vibe-ease-soft: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --vibe-line: color-mix(in srgb, var(--text-secondary) 18%, transparent);
+  --vibe-line-strong: color-mix(in srgb, var(--text-secondary) 28%, transparent);
+  --vibe-panel-tint: color-mix(in srgb, var(--primary) 5%, var(--panel-bg));
+  --vibe-panel-wash: color-mix(in srgb, var(--secondary) 6%, var(--panel-bg-soft));
+  --vibe-shadow-rest: 0 10px 28px rgba(31, 41, 55, 0.07);
+  --vibe-shadow-hover: 0 16px 38px rgba(31, 41, 55, 0.11);
+  --vibe-enter-y: 10px;
+  --vibe-chart-enter-y: 12px;
+  --vibe-focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+:root.theme-field-notebook {
+  --vibe-line: rgba(88, 100, 90, 0.18);
+  --vibe-line-strong: rgba(54, 95, 75, 0.28);
+  --vibe-panel-tint: #fffdf6;
+  --vibe-panel-wash: #f6f3e8;
+  --vibe-shadow-rest: 0 8px 22px rgba(54, 66, 52, 0.08);
+  --vibe-shadow-hover: 0 14px 30px rgba(54, 66, 52, 0.12);
+}
+
+:root.theme-scientific-white,
+:root.theme-linear-minimal {
+  --vibe-shadow-rest: none;
+  --vibe-shadow-hover: none;
+}
+
+:root.theme-deep-slate {
+  --vibe-line: rgba(118, 142, 178, 0.24);
+  --vibe-line-strong: rgba(85, 113, 154, 0.36);
+  --vibe-panel-tint: rgba(252, 253, 255, 0.94);
+  --vibe-panel-wash: rgba(244, 248, 252, 0.92);
+  --vibe-shadow-rest: 0 18px 48px rgba(8, 14, 26, 0.18);
+  --vibe-shadow-hover: 0 24px 62px rgba(8, 14, 26, 0.24);
+}
+
+:root.theme-flow-data {
+  --vibe-line: color-mix(in srgb, var(--chart-a) 18%, var(--border-light));
+  --vibe-line-strong: color-mix(in srgb, var(--chart-a) 34%, var(--border));
+  --vibe-panel-tint: color-mix(in srgb, var(--chart-a) 6%, #ffffff);
+  --vibe-panel-wash: color-mix(in srgb, var(--chart-c) 7%, #f8fbff);
+  --vibe-shadow-rest: 0 14px 36px rgba(60, 80, 160, 0.10);
+  --vibe-shadow-hover: 0 20px 52px rgba(60, 80, 160, 0.16);
+}
+
+:root.theme-scientific-white body {
+  background-image:
+    linear-gradient(90deg, rgba(82, 109, 134, 0.052) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(82, 109, 134, 0.052) 1px, transparent 1px),
+    linear-gradient(135deg, #fbfcfe 0%, #f4f7fa 100%);
+  background-size: 32px 32px, 32px 32px, auto;
+}
+
+:root.theme-botanical-scientific body {
+  background-image:
+    linear-gradient(90deg, rgba(79, 127, 104, 0.055) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(79, 127, 104, 0.04) 1px, transparent 1px),
+    linear-gradient(135deg, #f4f8f3 0%, #fbfcf8 48%, #eef6ef 100%);
+  background-size: 40px 40px, 40px 40px, auto;
+}
+
+:root.theme-linear-minimal body {
+  background-image:
+    linear-gradient(90deg, rgba(83, 109, 137, 0.06) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(83, 109, 137, 0.06) 1px, transparent 1px),
+    linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
+  background-size: 30px 30px, 30px 30px, auto;
+}
+
+:root.theme-flow-data body {
+  background-image:
+    linear-gradient(90deg, rgba(105, 98, 240, 0.055) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(50, 187, 214, 0.045) 1px, transparent 1px),
+    linear-gradient(135deg, #edf4fb 0%, #fbfdff 52%, #eef2ff 100%);
+  background-size: 36px 36px, 36px 36px, auto;
+}
+
+:root.theme-field-notebook .app-topbar,
+:root.theme-field-notebook .panel-left,
+:root.theme-field-notebook .panel-right,
+:root.theme-field-notebook .map-shell,
+:root.theme-field-notebook .map-workbar,
+:root.theme-field-notebook .card,
+:root.theme-field-notebook .theme-section,
+:root.theme-field-notebook .stats-control-card,
+:root.theme-field-notebook .chart-card {
+  background: linear-gradient(180deg, var(--vibe-panel-tint), var(--vibe-panel-wash));
+  border-color: var(--vibe-line);
+}
+
+:root.theme-field-notebook .card-title-row,
+:root.theme-field-notebook .panel-section-title,
+:root.theme-botanical-scientific .card-title-row,
+:root.theme-flow-data .card-title-row {
+  border-bottom: 1px solid var(--vibe-line);
+}
+
+:root.theme-field-notebook .quick-actions-card {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 12%, transparent), transparent 42%),
+    linear-gradient(180deg, #fffdf7, #f7f4ea);
+}
+
+:root.theme-scientific-white .app-topbar,
+:root.theme-scientific-white .panel-left,
+:root.theme-scientific-white .panel-right,
+:root.theme-scientific-white .map-shell,
+:root.theme-scientific-white .map-workbar,
+:root.theme-scientific-white .card,
+:root.theme-scientific-white .chart-card,
+:root.theme-scientific-white .theme-section,
+:root.theme-scientific-white .stats-control-card {
+  border-radius: 8px;
+  border-color: #d8e1ea;
+  box-shadow: none;
+}
+
+:root.theme-scientific-white .btn,
+:root.theme-scientific-white .input,
+:root.theme-scientific-white select,
+:root.theme-scientific-white textarea {
+  border-radius: 7px;
+}
+
+:root.theme-botanical-scientific .app-topbar,
+:root.theme-botanical-scientific .panel-left,
+:root.theme-botanical-scientific .panel-right,
+:root.theme-botanical-scientific .map-shell,
+:root.theme-botanical-scientific .theme-section {
+  border-color: rgba(79, 127, 104, 0.24);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(244, 249, 244, 0.90));
+}
+
+:root.theme-botanical-scientific .card,
+:root.theme-botanical-scientific .chart-card,
+:root.theme-botanical-scientific .stats-control-card {
+  border-left-color: color-mix(in srgb, var(--primary) 58%, var(--border));
+  box-shadow: 0 10px 24px rgba(45, 78, 58, 0.08);
+}
+
+:root.theme-linear-minimal .app-topbar,
+:root.theme-linear-minimal .panel-left,
+:root.theme-linear-minimal .panel-right,
+:root.theme-linear-minimal .map-shell,
+:root.theme-linear-minimal .map-workbar,
+:root.theme-linear-minimal .card,
+:root.theme-linear-minimal .chart-card,
+:root.theme-linear-minimal .theme-section,
+:root.theme-linear-minimal .stats-control-card {
+  border-color: #d6dee8;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+:root.theme-linear-minimal .btn,
+:root.theme-linear-minimal .theme-style-btn,
+:root.theme-linear-minimal .theme-layout-btn,
+:root.theme-linear-minimal .seg-btn {
+  border-color: #ccd6e2;
+  border-radius: 8px;
+}
+
+:root.theme-deep-slate .app-topbar,
+:root.theme-deep-slate .panel-left {
+  background: linear-gradient(180deg, rgba(21, 32, 50, 0.88), rgba(21, 32, 50, 0.76));
+  border-color: rgba(255, 255, 255, 0.20);
+}
+
+:root.theme-deep-slate .panel-right,
+:root.theme-deep-slate .map-shell,
+:root.theme-deep-slate .map-workbar,
+:root.theme-deep-slate .card,
+:root.theme-deep-slate .chart-card,
+:root.theme-deep-slate .theme-section,
+:root.theme-deep-slate .stats-control-card {
+  background: linear-gradient(180deg, var(--vibe-panel-tint), var(--vibe-panel-wash));
+  border-color: var(--vibe-line);
+  box-shadow: var(--vibe-shadow-rest);
+}
+
+:root.theme-flow-data .chart-card,
+:root.theme-flow-data .stats-control-card,
+:root.theme-flow-data .chart-legend-inline,
+:root.theme-flow-data .legend-grid {
+  background:
+    linear-gradient(180deg, var(--vibe-panel-tint), var(--vibe-panel-wash));
+  border-color: var(--vibe-line);
+}
+
+:root.theme-flow-data .chart-card {
+  box-shadow: var(--vibe-shadow-rest);
+}
+
+:root.theme-flow-data .chart-card h3,
+:root.theme-flow-data .stats-control-card h3 {
+  color: color-mix(in srgb, var(--chart-a) 68%, var(--text-main));
+}
+
+:root.theme-flow-data .chart-grid-line {
+  stroke: color-mix(in srgb, var(--chart-a) 12%, var(--chart-grid));
+}
+
+.chart-card,
+.stats-control-card,
+.theme-section,
+.summary-box,
+.quick-actions-card,
+.merge-summary-box,
+.basemap-settings-section,
+.vibe-motion-surface {
+  border-color: var(--vibe-line);
+}
+
+.chart-card,
+.stats-control-card {
+  box-shadow: var(--vibe-shadow-rest);
+}
+
+.chart-card h3,
+.stats-control-card h3,
+.card-title-row h2 {
+  letter-spacing: 0;
+}
+
+.chart-legend-inline,
+.legend-grid {
+  border-color: var(--vibe-line);
+}
+
+#statsModal .modal-scroll {
+  display: grid;
+  gap: 12px;
+}
+
+#statsModal .stats-summary-grid {
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+#statsModal .stat-chip {
+  min-height: 82px;
+  padding: 12px 14px;
+  border-color: var(--vibe-line);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 6%, transparent), transparent 46%),
+    linear-gradient(180deg, var(--panel-bg), var(--panel-bg-soft));
+}
+
+#statsModal .stat-chip strong {
+  font-size: 24px;
+  letter-spacing: 0;
+}
+
+#statsModal .stat-label {
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+#statsModal .stats-control-card {
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 0;
+  padding: 12px;
+  border: 1px solid var(--vibe-line);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--panel-bg) 86%, var(--panel-bg-soft));
+}
+
+#statsModal .stats-control-card .field {
+  min-width: 0;
+}
+
+#statsModal .stats-control-card label {
+  margin-bottom: 5px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#statsModal .chart-card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--vibe-line);
+  border-radius: var(--radius-md);
+}
+
+#statsModal .chart-card h3 {
+  color: var(--text-main);
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+#statsModal .chart-card > .subtle {
+  margin-top: -4px;
+  font-size: 12px;
+}
+
+#statsModal .donut-card {
+  display: grid;
+}
+
+.chart-scroll-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 24px;
+  margin: 0;
+  padding: 4px 9px;
+  border: 1px solid var(--vibe-line);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--panel-bg) 72%, transparent);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.chart-scroll-area {
+  border: 1px solid var(--vibe-line);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-bg) 92%, transparent), color-mix(in srgb, var(--panel-bg-soft) 92%, transparent));
+  scrollbar-color: color-mix(in srgb, var(--primary) 34%, var(--border)) transparent;
+  scrollbar-width: thin;
+}
+
+.chart-scroll-area::-webkit-scrollbar {
+  height: 8px;
+}
+
+.chart-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chart-scroll-area::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 28%, var(--border));
+}
+
+.chart-scroll-inner {
+  box-sizing: border-box;
+  padding: 3px 6px 0;
+}
+
+.chart-legend-inline,
+.legend-grid {
+  gap: 8px;
+  margin: 4px 0 6px;
+}
+
+.chart-legend-inline span,
+.legend-item {
+  min-width: 0;
+  border: 1px solid var(--vibe-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-bg) 78%, transparent);
+}
+
+.chart-legend-inline span {
+  padding: 5px 8px;
+}
+
+.legend-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  justify-content: stretch;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.legend-item span:nth-child(2) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legend-item strong {
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+.axis-tick-label,
+.axis-label {
+  fill: color-mix(in srgb, var(--text-secondary) 88%, transparent);
+}
+
+.chart-value,
+.chart-line-value {
+  fill: var(--text-main);
+  paint-order: stroke;
+  stroke: color-mix(in srgb, var(--panel-bg) 78%, transparent);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.donut-total {
+  font-weight: 850;
+}
+
+.chart-empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  padding: 22px;
+  border: 1px dashed var(--vibe-line-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--primary) 5%, transparent), transparent 48%),
+    color-mix(in srgb, var(--panel-bg-soft) 76%, transparent);
+  text-align: center;
+}
+
+.chart-empty-state span {
+  max-width: 22em;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.theme-primary-controls {
+  grid-template-columns: repeat(2, minmax(180px, 280px));
+}
+
+.theme-advanced-panel {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--vibe-line);
+}
+
+.theme-advanced-panel > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  list-style: none;
+  cursor: pointer;
+}
+
+.theme-advanced-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.theme-advanced-panel > summary::after {
+  content: "+";
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border: 1px solid var(--vibe-line);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--panel-bg) 82%, transparent);
+}
+
+.theme-advanced-panel[open] > summary {
+  color: var(--text-main);
+}
+
+.theme-advanced-panel[open] > summary::after {
+  content: "-";
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--vibe-line));
+}
+
+.theme-advanced-panel > .theme-token-tabs,
+.theme-advanced-panel > .theme-controls-grid,
+.theme-advanced-panel > .theme-color-grid,
+.theme-advanced-panel > .theme-glass-scopes {
+  margin-top: 10px;
+}
+
+.theme-motion-advanced-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.brand-advanced-panel {
+  grid-column: 1 / -1;
+}
+
+.chart-bar-depth {
+  fill: color-mix(in srgb, var(--text-main) 11%, transparent);
+}
+
+.chart-bar-highlight {
+  opacity: 0.72;
+}
+
+.donut-depth-ring {
+  stroke: color-mix(in srgb, var(--text-main) 9%, transparent);
+}
+
+.donut-center-plate {
+  stroke: color-mix(in srgb, var(--panel-bg) 70%, var(--vibe-line-strong));
+  stroke-width: 1;
+}
+
+.motion-theme :where(
+  .app-topbar,
+  .panel-left,
+  .panel-right,
+  .map-shell,
+  .map-workbar,
+  .card,
+  .chart-card,
+  .stats-control-card,
+  .theme-section,
+  .layer-modal-panel,
+  .legend-grid,
+  .chart-legend-inline
+) {
+  transition:
+    background var(--motion-duration) var(--vibe-ease-standard),
+    color var(--motion-duration-fast) var(--vibe-ease-soft),
+    border-color var(--motion-duration) var(--vibe-ease-standard),
+    box-shadow var(--motion-duration) var(--vibe-ease-standard);
+}
+
+.motion-layout :where(
+  .app-shell,
+  .panel-left,
+  .panel-right,
+  .map-shell,
+  .map-workbar,
+  .workspace-utility-panel,
+  .right-inspector-drawer-panel
+) {
+  transition:
+    grid-template-columns var(--motion-duration) var(--vibe-ease-standard),
+    width var(--motion-duration) var(--vibe-ease-standard),
+    transform var(--motion-duration) var(--vibe-ease-emphasized),
+    opacity var(--motion-duration-fast) var(--vibe-ease-soft),
+    box-shadow var(--motion-duration) var(--vibe-ease-standard);
+}
+
+.motion-theme :where(.input, select, textarea, .theme-style-btn, .theme-layout-btn, .seg-btn, .btn) {
+  transition:
+    background-color var(--motion-duration-fast) var(--vibe-ease-standard),
+    border-color var(--motion-duration-fast) var(--vibe-ease-standard),
+    color var(--motion-duration-fast) var(--vibe-ease-soft),
+    box-shadow var(--motion-duration-fast) var(--vibe-ease-standard),
+    transform var(--motion-duration-fast) var(--vibe-ease-emphasized);
+}
+
+.motion-theme :where(.input, select, textarea):focus {
+  box-shadow: var(--vibe-focus-ring);
+}
+
+.motion-modal .theme-advanced-panel[open] > :where(
+  .theme-token-tabs,
+  .theme-controls-grid,
+  .theme-color-grid,
+  .theme-glass-scopes
+) {
+  animation: vibeDetailReveal var(--motion-duration) var(--vibe-ease-emphasized);
+  transform-origin: top center;
+}
+
+.motion-mode-rich #statsModal:not(.hidden) .stats-summary-grid > .stat-chip,
+.motion-mode-rich #statsModal:not(.hidden) .stats-control-card,
+.motion-mode-rich #statsModal:not(.hidden) .chart-card {
+  animation: vibePanelEnter var(--motion-duration) var(--vibe-ease-emphasized) both;
+}
+
+.motion-mode-rich #statsModal:not(.hidden) .stats-summary-grid > .stat-chip:nth-child(2) { animation-delay: calc(var(--motion-stagger) * 1); }
+.motion-mode-rich #statsModal:not(.hidden) .stats-summary-grid > .stat-chip:nth-child(3) { animation-delay: calc(var(--motion-stagger) * 2); }
+.motion-mode-rich #statsModal:not(.hidden) .stats-summary-grid > .stat-chip:nth-child(4) { animation-delay: calc(var(--motion-stagger) * 3); }
+.motion-mode-rich #statsModal:not(.hidden) .stats-summary-grid > .stat-chip:nth-child(5) { animation-delay: calc(var(--motion-stagger) * 4); }
+.motion-mode-rich #statsModal:not(.hidden) .stats-control-card { animation-delay: calc(var(--motion-stagger) * 1); }
+.motion-mode-rich #statsModal:not(.hidden) .chart-card { animation-delay: calc(var(--motion-stagger) * 2); }
+
+.motion-mode-rich .chart-scroll-wrap,
+.motion-mode-rich .pie-chart-stage,
+.motion-mode-rich .chart-legend-inline,
+.motion-mode-rich .legend-grid {
+  animation: vibeChartReveal var(--motion-duration) var(--vibe-ease-emphasized) both;
+}
+
+.motion-mode-rich .chart-bar-group {
+  animation: vibeChartItemRise var(--motion-duration) var(--vibe-ease-emphasized) both;
+  animation-delay: calc(var(--chart-index, 0) * var(--motion-stagger, 24ms));
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+.motion-mode-rich .chart-combo-category .chart-line-point-group {
+  animation: vibeChartPointIn var(--motion-duration-fast) var(--vibe-ease-emphasized) both;
+  animation-delay: calc((var(--chart-index, 0) + 1) * var(--motion-stagger, 24ms));
+  transform-box: fill-box;
+  transform-origin: center center;
+}
+
+.motion-mode-rich .chart-line-area,
+.motion-mode-rich .chart-line-path {
+  animation: vibeChartTrace var(--motion-duration) var(--vibe-ease-soft) both;
+}
+
+.motion-mode-rich .donut-svg {
+  animation: vibeChartReveal var(--motion-duration) var(--vibe-ease-emphasized) both;
+}
+
+.motion-mode-rich .donut-slice {
+  animation: vibeDonutSliceReveal var(--motion-duration) var(--vibe-ease-soft) both;
+  animation-delay: calc(var(--slice-index, 0) * var(--motion-stagger, 24ms));
+}
+
+.motion-mode-rich .legend-item {
+  animation: vibeLegendIn var(--motion-duration-fast) var(--vibe-ease-emphasized) both;
+  animation-delay: calc(var(--legend-index, 0) * var(--motion-stagger, 24ms));
+}
+
+.motion-mode-rich .workspace-kpi,
+.motion-mode-rich .workspace-mini-chart,
+.motion-mode-rich .workspace-bar-row {
+  animation: vibePanelEnter var(--motion-duration) var(--vibe-ease-emphasized) both;
+}
+
+.motion-mode-rich .workspace-bar-row:nth-child(2) { animation-delay: calc(var(--motion-stagger) * 1); }
+.motion-mode-rich .workspace-bar-row:nth-child(3) { animation-delay: calc(var(--motion-stagger) * 2); }
+.motion-mode-rich .workspace-bar-row:nth-child(4) { animation-delay: calc(var(--motion-stagger) * 3); }
+.motion-mode-rich .workspace-bar-row:nth-child(5) { animation-delay: calc(var(--motion-stagger) * 4); }
+
+.motion-mode-rich .progress-card.running .progress-status-icon,
+.motion-mode-rich .status-pending .status-icon,
+.motion-mode-rich .status-unknown .status-icon {
+  animation: vibeStatusPulse 1.8s var(--vibe-ease-soft) infinite;
+}
+
+.motion-mode-rich :where(.seg-btn.active, .theme-style-btn.active, .theme-layout-btn.active, .theme-token-btn.active) {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--primary) 28%, transparent),
+    0 8px 20px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.motion-hover :where(
+  .btn,
+  .seg-btn,
+  .theme-style-btn,
+  .theme-layout-btn,
+  .toggle-switch,
+  .card,
+  .chart-card,
+  .stats-control-card,
+  .summary-box,
+  .quick-actions-card,
+  .list-item,
+  .basemap-settings-section,
+  .basemap-status-row,
+  .map-workbar-status span,
+  .vibe-motion-surface
+) {
+  transition:
+    transform var(--motion-duration-fast) var(--vibe-ease-emphasized),
+    box-shadow var(--motion-duration) var(--vibe-ease-standard),
+    background-color var(--motion-duration) var(--vibe-ease-standard),
+    border-color var(--motion-duration) var(--vibe-ease-standard),
+    opacity var(--motion-duration-fast) var(--vibe-ease-soft);
+}
+
+.motion-hover :where(
+  .card,
+  .chart-card,
+  .stats-control-card,
+  .summary-box,
+  .quick-actions-card,
+  .basemap-settings-section,
+  .vibe-motion-surface
+):hover {
+  transform: translateY(calc(-0.75 * var(--motion-hover-lift)));
+  box-shadow: var(--vibe-shadow-hover);
+}
+
+.motion-hover :where(.theme-style-btn, .theme-layout-btn, .seg-btn):hover {
+  transform: translateY(-1px);
+  border-color: var(--vibe-line-strong);
+}
+
+.motion-hover .btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.motion-hover :where(.btn-danger, .btn-danger-soft):hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--danger) 18%, transparent);
+}
+
+.motion-hover .chart-combo-category:hover .chart-hover-band {
+  fill: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.motion-hover .donut-slice:hover {
+  filter: drop-shadow(0 8px 12px color-mix(in srgb, var(--primary) 16%, transparent));
+}
+
+.motion-mode-rich .chart-card,
+.motion-mode-rich .stats-control-card,
+.motion-mode-rich .layer-modal-panel,
+.motion-mode-rich .confirm-panel {
+  transition-duration: var(--motion-duration);
+}
+
+.motion-disabled .vibe-motion-surface,
+.motion-disabled :where(
+  .chart-card,
+  .stats-control-card,
+  .theme-section,
+  .summary-box,
+  .quick-actions-card,
+  .basemap-settings-section,
+  .chart-bar-group,
+  .chart-combo-category,
+  .chart-line-point-group,
+  .donut-slice,
+  .legend-item,
+  .workspace-kpi,
+  .workspace-mini-chart,
+  .workspace-bar-row,
+  .progress-status-icon
+) {
+  transform: none !important;
+}
+
+@keyframes vibePanelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--vibe-enter-y)) scale(var(--motion-scale-enter));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes vibeDetailReveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vibeChartReveal {
+  from {
+    opacity: 0;
+    transform: translateY(var(--vibe-chart-enter-y));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vibeChartItemRise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--vibe-chart-enter-y)) scaleY(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes vibeChartPointIn {
+  from {
+    opacity: 0;
+    transform: scale(0.76);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes vibeChartTrace {
+  from {
+    opacity: 0;
+    filter: saturate(0.82);
+  }
+  to {
+    opacity: 1;
+    filter: saturate(1);
+  }
+}
+
+@keyframes vibeDonutSliceReveal {
+  from {
+    opacity: 0;
+    stroke-opacity: 0;
+  }
+  to {
+    opacity: 1;
+    stroke-opacity: 1;
+  }
+}
+
+@keyframes vibeLegendIn {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes vibeStatusPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 0%, transparent);
+    transform: scale(1);
+  }
+  45% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 18%, transparent);
+    transform: scale(1.04);
+  }
+}
+
+@media (max-width: 1040px) {
+  :root.theme-field-notebook .quick-actions-card {
+    background: linear-gradient(180deg, #fffdf7, #f7f4ea);
+  }
+
+  .motion-hover :where(.card, .chart-card, .stats-control-card, .summary-box, .quick-actions-card):hover {
+    transform: none;
+  }
+
+  .motion-mode-rich .chart-bar-group,
+  .motion-mode-rich .chart-combo-category .chart-line-point-group,
+  .motion-mode-rich .workspace-kpi,
+  .motion-mode-rich .workspace-mini-chart,
+  .motion-mode-rich .workspace-bar-row {
+    animation-delay: 0ms;
+  }
+
+  .theme-primary-controls,
+  .theme-motion-advanced-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #statsModal .stats-summary-grid,
+  #statsModal .stats-control-card,
+  #statsModal .stats-two-col,
+  #statsModal .stats-three-col,
+  .legend-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #statsModal .stat-chip {
+    min-height: 72px;
+  }
+
+  .chart-scroll-hint {
+    white-space: normal;
+  }
+}

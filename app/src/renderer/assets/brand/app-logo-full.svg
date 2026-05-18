@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="app-logo-full" viewBox="0 0 1024 1024" role="img" aria-label="Chongqing Normal University badge">
+  <defs>
+    <style>
+      .primary{fill:currentColor}.line{fill:none;stroke:currentColor;stroke-width:36;stroke-linecap:round}.negative{fill:#fff}
+    </style>
+  </defs>
+  <circle class="line" cx="512" cy="512" r="460"/>
+  <circle class="primary" cx="512" cy="506" r="292"/>
+  <g class="primary" opacity=".96">
+    <path d="M205 362c21-42 56-76 101-98l22 39c-38 18-66 46-83 81l-40-22Zm513-98c45 22 80 56 101 98l-40 22c-17-35-45-63-83-81l22-39ZM220 703c64 82 162 132 292 132s228-50 292-132l35 28c-72 92-181 148-327 148S257 823 185 731l35-28Z"/>
+    <path d="M180 506h56v38h-56v-38Zm608 0h56v38h-56v-38Z"/>
+  </g>
+  <g class="negative">
+    <path d="M300 695c88 8 150 28 212 90 62-62 124-82 212-90-78 30-134 67-212 138-78-71-134-108-212-138Z"/>
+    <path d="M281 640c92 13 161 36 231 94 70-58 139-81 231-94-88 30-154 62-231 129-77-67-143-99-231-129Z"/>
+    <path d="M390 392c46-91 109-151 188-196-21 93 18 145 91 192 69 45 96 107 67 183-34 88-130 135-220 95 77-24 119-77 108-146-8-53-44-85-98-124 9 88-22 157-108 220-56-58-50-136-28-224Z"/>
+    <path d="M501 310c-50 56-74 113-66 168 6 44 30 79 69 100-12-62-3-112 28-154-35-29-43-61-31-114Z" opacity=".95"/>
+  </g>
+</svg>

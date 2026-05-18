@@ -7,28 +7,44 @@
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+  <link rel="icon" href="./src/renderer/assets/brand/app-logo-mark.svg" />
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <div class="app-shell">
-    <aside class="panel panel-left glass">
-      <div class="panel-header">
-        <div>
+    <header class="app-topbar glass">
+      <div class="app-brand-block app-brand">
+        <img class="app-brand__icon brand-logo-mark" src="./src/renderer/assets/brand/title-logo.png" alt="" aria-hidden="true" />
+        <div class="app-brand__text">
+          <span class="app-kicker">CQNU · V9.0-1</span>
           <h1 data-i18n="appTitle">校园植物分区管理系统</h1>
           <p class="subtle" data-i18n="appSubtitle">分区绘制、点位管理、植物信息与图片归档</p>
         </div>
+      </div>
+      <div class="app-topbar-actions">
+        <div class="lang-toggle">
+          <button class="seg-btn active" data-lang="zh">中文</button>
+          <button class="seg-btn" data-lang="en">English</button>
+        </div>
         <button id="btnChooseDir" class="btn btn-primary" data-i18n="chooseProject">选择项目目录</button>
+        <button id="btnSave" class="btn btn-primary" data-i18n="saveProject">保存项目</button>
+      </div>
+    </header>
+
+    <aside class="panel panel-left glass">
+      <div class="panel-header panel-section-title">
+        <div>
+          <h2 data-i18n="mapWorkspaceTools">地图工作台</h2>
+          <p class="subtle" data-i18n="mapWorkspaceToolsHint">选择模式后在中央地图区完成分区和点位操作</p>
+        </div>
       </div>
 
-      <div class="toolbar-grid">
+      <div class="toolbar-grid map-tool-grid">
         <button id="btnModeBrowse" class="btn mode-btn active" data-i18n="modeBrowse">浏览 / 平移</button>
         <button id="btnModeDrawZone" class="btn mode-btn" data-i18n="modeDrawZone">绘制分区</button>
         <button id="btnModeAddPoint" class="btn mode-btn" data-i18n="modeAddPoint">添加点位</button>
-        <button id="btnConfirmPoint" class="btn btn-primary hidden" data-i18n="confirmCreatePoint">确认建立点位</button>
-        <button id="btnCancelPoint" class="btn btn-soft hidden" data-i18n="cancelCreatePoint">取消建立点位</button>
         <button id="btnDeleteZone" class="btn btn-danger-soft" data-i18n="deleteZone">删除当前分区</button>
         <button id="btnDeletePoint" class="btn btn-danger-soft" data-i18n="deletePoint">删除当前点位</button>
-        <button id="btnSave" class="btn btn-primary" data-i18n="saveProject">保存项目</button>
       </div>
 
       <div class="card quick-actions-card">
@@ -37,7 +53,7 @@
             <h2 data-i18n="workspaceTools">工作区工具</h2>
             <p class="subtle" data-i18n="workspaceToolsSubtitle">将统计、查询与回收管理集中到二级窗口</p>
           </div>
-          <span class="pill">3</span>
+          <span class="pill" data-i18n="workspaceCoreTools">核心</span>
         </div>
         <div class="toolbar-grid quick-grid">
           <button id="btnOpenStats" class="btn morandi-btn morandi-purple" data-i18n="openStatsCenter">统计中心</button>
@@ -47,9 +63,110 @@
           <button id="btnOpenTheme" class="btn morandi-btn morandi-sand" data-i18n="openThemeCenter">界面设置</button>
           <button id="btnOpenMerge" class="btn morandi-btn morandi-green" data-i18n="openMergeCenter">项目合并</button>
           <button id="btnBackupProject" class="btn morandi-btn morandi-purple" data-i18n="openBackupCenter">项目备份</button>
+          <button id="btnOpenWorkspaceDrawer" class="btn morandi-btn morandi-blue" data-i18n="openWorkspaceDrawer">工作面板</button>
         </div>
       </div>
 
+
+      <div class="workspace-drawer-hint subtle" data-i18n="workspaceDrawerHint">导出、项目路径、分区与点位列表已收纳到独立工作抽屉，避免默认布局堆叠。</div>
+
+    </aside>
+
+    <main class="map-shell">
+      <div class="map-workbar glass">
+        <div class="map-workbar-status">
+          <span><strong data-i18n="mode">模式</strong>：<b id="currentModeText">浏览 / 平移</b></span>
+          <span><strong data-i18n="selectedZone">当前分区</strong>：<b id="selectedZoneText">—</b></span>
+          <span><strong data-i18n="selectedPoint">当前点位</strong>：<b id="selectedPointText">—</b></span>
+        </div>
+        <div class="map-basemap-toolbar">
+          <label class="mini-field-label" data-i18n="currentBaseMap">当前底图</label>
+          <select id="baseMapSelect" class="input compact-select"></select>
+          <button id="btnToggleBasemapEditor" class="btn btn-soft" data-i18n="basemapSettingsPanel">底图设置</button>
+          <div id="basemapQuickSummary" class="basemap-quick-summary">WGS84 / z=— / ?</div>
+        </div>
+        <div class="basemap-state-strip" id="basemapStatusPanel"></div>
+        <div class="map-workbar-actions">
+          <button id="btnConfirmPoint" class="btn btn-primary hidden" data-i18n="confirmCreatePoint">确认建立点位</button>
+          <button id="btnCancelPoint" class="btn btn-soft hidden" data-i18n="cancelCreatePoint">取消建立点位</button>
+        </div>
+      </div>
+      <div class="map-canvas-wrap">
+        <div id="map"></div>
+        <div class="map-overlay glass status-bar">
+          <span data-i18n="mapStatusHint">地图工作区：工具状态、当前分区和当前点位显示在上方工具带。</span>
+        </div>
+      </div>
+    </main>
+
+    <aside id="rightInspectorPanel" class="panel panel-right glass" data-right-panel-mode="auto">
+      <div class="right-inspector-header">
+        <div class="right-inspector-heading">
+          <h2 data-i18n="rightInspectorTitle">对象检查器</h2>
+          <p id="rightPanelModeNote" class="subtle" data-i18n="rightInspectorStackSafe">当前内容可安全堆叠显示。</p>
+        </div>
+        <div id="rightModuleButtons" class="right-module-buttons" aria-label="右侧模块入口">
+          <button id="btnRightModuleZone" class="btn btn-soft right-module-btn" data-right-module-button="zone" data-i18n="zoneInfo">分区信息</button>
+          <button id="btnRightModulePoint" class="btn btn-soft right-module-btn" data-right-module-button="point" data-i18n="pointAndPlant">点位与植物信息</button>
+          <button id="btnRightModuleList" class="btn btn-soft right-module-btn" data-right-module-button="list" data-i18n="zoneSpecies">当前分区的植物</button>
+        </div>
+      </div>
+
+      <div id="rightModuleZoneCard" class="card right-inspector-module" data-right-module="zone">
+        <div class="card-title-row">
+          <h2 data-i18n="zoneInfo">分区信息</h2>
+          <span class="pill" id="zoneCount">0</span>
+        </div>
+        <div class="field"><label data-i18n="zoneId">分区编号</label><input id="zoneId" class="input" /></div>
+        <div class="field"><label data-i18n="zoneName">分区名称</label><input id="zoneName" class="input" /></div>
+        <div class="field"><label data-i18n="zoneDescription">分区描述</label><textarea id="zoneDescription" class="input textarea"></textarea></div>
+        <button id="btnApplyZone" class="btn btn-primary" data-i18n="applyZoneInfo">应用到当前分区</button>
+      </div>
+
+      <div id="rightModulePointCard" class="card species-summary-card right-inspector-module" data-right-module="point">
+        <div class="card-title-row">
+          <h2 data-i18n="pointAndPlant">点位与植物信息</h2>
+          <span class="pill" id="pointCount">0</span>
+        </div>
+        <div class="subtle" data-i18n="phenologyEditorHint">已将物种与物候录入整合到二级窗口中。请先选中点位，再打开录入中心。</div>
+        <div id="pointSummaryBox" class="summary-box">—</div>
+        <button id="btnOpenPointEditorInline" class="btn morandi-btn morandi-blue" data-i18n="openPhenologyCenter">物候录入中心</button>
+      </div>
+
+      <div id="rightModuleListCard" class="card right-inspector-module" data-right-module="list">
+        <div class="card-title-row">
+          <h2 data-i18n="zoneSpecies">当前分区的植物</h2>
+        </div>
+        <div id="zonePointList" class="list"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="rightInspectorDrawer" class="layer-modal right-inspector-drawer right-drawer-layer hidden" aria-hidden="true">
+    <div class="layer-modal-backdrop"></div>
+    <div class="right-inspector-drawer-panel right-context-drawer glass" role="dialog" aria-modal="true" aria-labelledby="rightDrawerTitle">
+      <div class="right-inspector-drawer-header">
+        <div>
+          <h2 id="rightDrawerTitle" data-i18n="rightInspectorDrawerTitle">右侧详情</h2>
+          <p id="rightDrawerSummary" class="subtle">—</p>
+        </div>
+        <button id="btnCloseRightDrawer" class="btn btn-soft layer-close">×</button>
+      </div>
+      <div id="rightDrawerBody" class="right-inspector-drawer-body"></div>
+    </div>
+  </div>
+
+  <div id="workspaceUtilityDrawer" class="layer-modal workspace-utility-drawer hidden" aria-hidden="true">
+    <div class="layer-modal-backdrop"></div>
+    <div class="workspace-utility-panel glass" role="dialog" aria-modal="true" aria-labelledby="workspaceUtilityTitle">
+      <div class="workspace-utility-header">
+        <div>
+          <h2 id="workspaceUtilityTitle" data-i18n="workspaceDrawerTitle">工作面板</h2>
+          <p class="subtle" data-i18n="workspaceDrawerSubtitle">导出、项目路径、列表与可选统计摘要集中在独立抽屉中，不参与默认布局堆叠。</p>
+        </div>
+        <button id="btnCloseWorkspaceDrawer" class="btn btn-soft layer-close">×</button>
+      </div>
+      <div class="workspace-utility-body">
       <div class="card">
         <div class="card-title-row">
           <h2 data-i18n="exportTitle">导出</h2>
@@ -66,10 +183,7 @@
       <div class="card">
         <div class="card-title-row">
           <h2 data-i18n="projectInfo">项目与界面</h2>
-          <div class="lang-toggle">
-            <button class="seg-btn active" data-lang="zh">中文</button>
-            <button class="seg-btn" data-lang="en">English</button>
-          </div>
+          <span class="pill">V9.0-1</span>
         </div>
         <div class="field">
           <label data-i18n="currentProject">当前项目目录</label>
@@ -91,44 +205,89 @@
         <div id="pointListPanel" class="list hidden"></div>
       </div>
 
-      <div class="card">
+      <div class="card workspace-stats-card workspace-drawer-only">
         <div class="card-title-row">
-          <h2 data-i18n="baseMapSettings">底图设置</h2>
-          <button id="btnToggleBasemapEditor" class="btn btn-soft" data-i18n="edit">编辑</button>
-        </div>
-
-        <div class="field">
-          <label data-i18n="currentBaseMap">当前底图</label>
-          <select id="baseMapSelect" class="input"></select>
-        </div>
-
-        <div id="basemapEditor" class="basemap-editor hidden">
-          <div class="field">
-            <label data-i18n="editTargetBaseMap">编辑目标底图</label>
-            <select id="bmEditTarget" class="input"></select>
+          <div>
+            <h2 data-i18n="workspaceStatsTitle">统计摘要</h2>
+            <p class="subtle" data-i18n="workspaceStatsSubtitle">工作区轻量概览，不替代完整统计中心。</p>
           </div>
-          <div class="field"><label data-i18n="baseMapNameZh">名称（中文）</label><input id="bmNameZh" class="input" /></div>
-          <div class="field"><label data-i18n="baseMapNameEn">Name (English)</label><input id="bmNameEn" class="input" /></div>
-          <div class="two-col">
+          <button id="btnOpenStatsFromSummary" class="btn btn-soft" data-i18n="openFullStats">完整统计</button>
+        </div>
+        <div id="workspaceStatsSummary" class="workspace-stats-summary"></div>
+      </div>
+
+
+      </div>
+    </div>
+  </div>
+
+  <div id="basemapWorkspaceModal" class="layer-modal hidden">
+    <div class="layer-modal-backdrop"></div>
+    <div class="layer-modal-panel glass basemap-workspace-panel">
+      <div class="layer-modal-header basemap-modal-header">
+        <div class="basemap-modal-title">
+          <h2 data-i18n="basemapWorkspaceTitle">底图设置</h2>
+          <p class="subtle" data-i18n="basemapWorkspaceSubtitle">底图源、状态检测、协议统一和坐标基准统一收纳在工作区二级面板。</p>
+        </div>
+        <div class="basemap-modal-summary" id="basemapModalSummary">WGS84 / z=— / ?</div>
+        <button id="btnCloseBasemapWorkspaceModal" class="btn btn-soft layer-close">×</button>
+      </div>
+
+      <div class="basemap-modal-tabs" id="basemapModalTabs" role="tablist" aria-label="Basemap workspace tabs">
+        <button class="seg-btn basemap-tab active" data-basemap-tab="source" data-i18n="basemapTabSource">主底图</button>
+        <button class="seg-btn basemap-tab" data-basemap-tab="overlay" data-i18n="basemapTabOverlay">标记与路网覆盖层</button>
+        <button class="seg-btn basemap-tab" data-basemap-tab="status" data-i18n="basemapTabStatus">状态检测</button>
+        <button class="seg-btn basemap-tab" data-basemap-tab="protocol" data-i18n="basemapTabProtocol">协议统一</button>
+        <button class="seg-btn basemap-tab" data-basemap-tab="coord" data-i18n="basemapTabCoord">坐标基准</button>
+        <button class="seg-btn basemap-tab" data-basemap-tab="correction" data-i18n="basemapTabCorrection">手动纠偏</button>
+        <button class="seg-btn basemap-tab" data-basemap-tab="report" data-i18n="basemapTabReport">检测报告</button>
+      </div>
+
+      <div id="basemapEditor" class="basemap-editor basemap-settings-panel">
+        <section class="basemap-settings-section basemap-tab-panel active" data-basemap-panel="source">
+          <div class="theme-section-head">
+            <h3 data-i18n="basemapSourceManage">底图源管理</h3>
+            <span class="pill" data-i18n="basemapManualEdit">手动编辑</span>
+          </div>
+          <div class="basemap-source-grid">
+            <div class="field">
+              <label data-i18n="editTargetBaseMap">编辑目标底图</label>
+              <select id="bmEditTarget" class="input"></select>
+            </div>
+            <div class="field"><label data-i18n="baseMapNameZh">名称（中文）</label><input id="bmNameZh" class="input" /></div>
+            <div class="field"><label data-i18n="baseMapNameEn">Name (English)</label><input id="bmNameEn" class="input" /></div>
             <div class="field">
               <label data-i18n="sourceType">类型</label>
               <select id="bmType" class="input">
                 <option value="xyz">XYZ</option>
+                <option value="wmts">WMTS</option>
                 <option value="wms">WMS</option>
               </select>
             </div>
             <div class="field">
-              <label data-i18n="maxZoom">最大缩放</label>
-              <input id="bmMaxZoom" class="input" type="number" min="1" max="24" value="19" />
+              <label data-i18n="basemapCoordSystem">坐标基准</label>
+              <select id="bmCoordSystem" class="input">
+                <option value="WGS84">WGS84</option>
+                <option value="GCJ02">GCJ02</option>
+                <option value="BD09">BD09</option>
+              </select>
             </div>
-          </div>
-          <div class="field"><label data-i18n="urlTemplate">URL / 模板</label><input id="bmUrl" class="input" /></div>
-          <div class="field"><label data-i18n="attribution">署名</label><input id="bmAttribution" class="input" /></div>
-          <div class="two-col">
+            <div class="field">
+              <label data-i18n="maxNativeZoom">原生最大层级</label>
+              <input id="bmMaxNativeZoom" class="input" type="number" min="1" max="24" value="18" />
+            </div>
+            <div class="field">
+              <label data-i18n="maxZoom">最大缩放</label>
+              <input id="bmMaxZoom" class="input" type="number" min="1" max="24" value="22" />
+            </div>
+            <div class="field"><label data-i18n="basemapProvider">服务商</label><input id="bmProvider" class="input" placeholder="OpenStreetMap / Amap / Custom" /></div>
+            <div class="field"><label data-i18n="tileSize">瓦片尺寸</label><input id="bmTileSize" class="input" type="number" min="128" max="512" value="256" /></div>
+            <div class="field"><label data-i18n="zoomOffset">缩放偏移</label><input id="bmZoomOffset" class="input" type="number" min="-2" max="2" value="0" /></div>
+            <div class="field"><label data-i18n="basemapCoordHint">内部数据标准</label><div class="path-box nowrap">WGS84</div></div>
+            <div class="field field-span-2"><label data-i18n="urlTemplate">URL / 模板</label><input id="bmUrl" class="input mono-input" /></div>
+            <div class="field field-span-2"><label data-i18n="attribution">署名</label><input id="bmAttribution" class="input" /></div>
             <div class="field"><label data-i18n="subdomains">子域名</label><input id="bmSubdomains" class="input" placeholder="abc" /></div>
             <div class="field"><label data-i18n="layers">图层名（WMS）</label><input id="bmLayers" class="input" /></div>
-          </div>
-          <div class="two-col">
             <div class="field"><label data-i18n="format">格式（WMS）</label><input id="bmFormat" class="input" placeholder="image/png" /></div>
             <div class="field">
               <label data-i18n="transparency">透明</label>
@@ -138,57 +297,140 @@
               </select>
             </div>
           </div>
-
-          <div class="toolbar-grid two-rows">
+          <div class="toolbar-inline basemap-source-actions">
             <button id="btnNewBaseMap" class="btn btn-soft" data-i18n="newBaseMap">新建底图</button>
             <button id="btnSaveBaseMap" class="btn btn-primary" data-i18n="saveBaseMap">保存底图</button>
             <button id="btnDeleteBaseMap" class="btn btn-danger-soft" data-i18n="deleteBaseMap">删除底图</button>
           </div>
-          <p class="help" data-i18n="baseMapHelp">支持 XYZ 与 WMS。WMTS 中如果提供 XYZ 风格地址，也可以按 XYZ 方式接入。</p>
-        </div>
-      </div>
-    </aside>
+        </section>
 
-    <main class="map-shell">
-      <div id="map"></div>
-      <div class="map-overlay glass status-bar">
-        <div><strong data-i18n="mode">模式</strong>：<span id="currentModeText">浏览 / 平移</span></div>
-        <div><strong data-i18n="selectedZone">当前分区</strong>：<span id="selectedZoneText">—</span></div>
-        <div><strong data-i18n="selectedPoint">当前点位</strong>：<span id="selectedPointText">—</span></div>
-      </div>
-    </main>
+        <section class="basemap-settings-section basemap-tab-panel" data-basemap-panel="overlay">
+          <div class="theme-section-head">
+            <h3 data-i18n="basemapOverlayManage">标记与路网覆盖层</h3>
+            <span class="pill" data-i18n="basemapOverlaySeparated">独立叠加层</span>
+          </div>
+          <div class="basemap-overlay-layout">
+            <div class="basemap-overlay-side">
+              <div class="field">
+                <label data-i18n="basemapOverlayTarget">覆盖层</label>
+                <select id="bmOverlayTarget" class="input"></select>
+              </div>
+              <div id="basemapOverlayStatusPanel" class="basemap-overlay-status-panel"></div>
+            </div>
+            <div class="basemap-overlay-form-grid">
+              <div class="field"><label data-i18n="basemapOverlayNameZh">名称（中文）</label><input id="bmOverlayNameZh" class="input" /></div>
+              <div class="field"><label data-i18n="basemapOverlayNameEn">Name (English)</label><input id="bmOverlayNameEn" class="input" /></div>
+              <div class="field">
+                <label data-i18n="enabled">启用</label>
+                <select id="bmOverlayEnabled" class="input">
+                  <option value="true" data-i18n="yes">是</option>
+                  <option value="false" data-i18n="no">否</option>
+                </select>
+              </div>
+              <div class="field">
+                <label data-i18n="sourceType">类型</label>
+                <select id="bmOverlayType" class="input">
+                  <option value="xyz">XYZ</option>
+                  <option value="wmts">WMTS</option>
+                  <option value="wms">WMS</option>
+                </select>
+              </div>
+              <div class="field"><label data-i18n="basemapProvider">服务商</label><input id="bmOverlayProvider" class="input" placeholder="Amap / Custom" /></div>
+              <div class="field">
+                <label data-i18n="basemapCoordSystem">坐标基准</label>
+                <select id="bmOverlayCoordSystem" class="input">
+                  <option value="WGS84">WGS84</option>
+                  <option value="GCJ02">GCJ02</option>
+                  <option value="BD09">BD09</option>
+                </select>
+              </div>
+              <div class="field"><label data-i18n="maxNativeZoom">原生最大层级</label><input id="bmOverlayMaxNativeZoom" class="input" type="number" min="0" max="24" value="18" /></div>
+              <div class="field"><label data-i18n="maxZoom">最大缩放</label><input id="bmOverlayMaxZoom" class="input" type="number" min="0" max="24" value="22" /></div>
+              <div class="field field-span-2"><label data-i18n="basemapOverlayUrl">覆盖层 API / URL 模板</label><input id="bmOverlayUrl" class="input mono-input" placeholder="https://.../{z}/{x}/{y}.png" /></div>
+              <div class="field"><label data-i18n="subdomains">子域名</label><input id="bmOverlaySubdomains" class="input" placeholder="1234 / abc" /></div>
+              <div class="field"><label data-i18n="basemapOverlayToken">Token / Key</label><input id="bmOverlayToken" class="input" type="password" autocomplete="off" placeholder="可选，支持 {token}/{key}" /></div>
+              <div class="field">
+                <label><span data-i18n="basemapOverlayOpacity">透明度</span><strong id="bmOverlayOpacityValue">100%</strong></label>
+                <input id="bmOverlayOpacity" type="range" min="0" max="1" step="0.05" value="1" />
+              </div>
+              <div class="field"><label data-i18n="basemapOverlayZIndex">渲染层级 zIndex</label><input id="bmOverlayZIndex" class="input" type="number" min="1" max="999" value="420" /></div>
+              <div class="field field-span-2"><label data-i18n="basemapOverlayAttach">绑定主底图 ID</label><input id="bmOverlayAttach" class="input mono-input" placeholder="amap-satellite，多个用英文逗号分隔" /></div>
+              <div class="field field-span-2"><label data-i18n="basemapOverlayNotes">备注</label><textarea id="bmOverlayNotes" class="input textarea compact-textarea"></textarea></div>
+            </div>
+          </div>
+          <div class="toolbar-inline basemap-source-actions">
+            <button id="btnNewOverlay" class="btn btn-soft" data-i18n="basemapOverlayNew">新建覆盖层</button>
+            <button id="btnTestOverlay" class="btn btn-soft" data-i18n="basemapOverlayTest">静态检测</button>
+            <button id="btnSaveOverlay" class="btn btn-primary" data-i18n="basemapOverlaySave">保存覆盖层</button>
+            <button id="btnResetBuiltinOverlays" class="btn btn-soft" data-i18n="basemapOverlayRestoreDefault">恢复默认覆盖层</button>
+          </div>
+          <p class="help" data-i18n="basemapOverlayHelp">覆盖层用于路网、道路名称、地名和 POI 注记，透明叠加在主底图上；也遵守 maxNativeZoom 后本地放大。</p>
+        </section>
 
-    <aside class="panel panel-right glass">
-      <div class="card">
-        <div class="card-title-row">
-          <h2 data-i18n="zoneInfo">分区信息</h2>
-          <span class="pill" id="zoneCount">0</span>
-        </div>
-        <div class="field"><label data-i18n="zoneId">分区编号</label><input id="zoneId" class="input" /></div>
-        <div class="field"><label data-i18n="zoneName">分区名称</label><input id="zoneName" class="input" /></div>
-        <div class="field"><label data-i18n="zoneDescription">分区描述</label><textarea id="zoneDescription" class="input textarea"></textarea></div>
-        <button id="btnApplyZone" class="btn btn-primary" data-i18n="applyZoneInfo">应用到当前分区</button>
+        <section class="basemap-settings-section basemap-tab-panel" data-basemap-panel="status">
+          <div class="theme-section-head">
+            <h3 data-i18n="basemapWorkStatus">底图工作状态</h3>
+            <span id="basemapStatusBadge" class="status-badge status-unknown">?</span>
+          </div>
+          <div id="basemapDetailPanel" class="basemap-detail-panel"></div>
+        </section>
+
+        <section class="basemap-settings-section basemap-tab-panel" data-basemap-panel="protocol">
+          <div class="theme-section-head"><h3 data-i18n="basemapTabProtocol">协议统一</h3></div>
+          <label class="switch-card basemap-auto-card">
+            <span>
+              <strong data-i18n="autoNormalizeBasemap">自动统一底图协议</strong>
+              <small data-i18n="autoNormalizeBasemapHint">新增或切换底图时自动补齐协议字段；不会批量修改旧坐标。</small>
+            </span>
+            <button id="autoNormalizeBasemapSwitch" class="toggle-switch" type="button" role="switch" aria-checked="true" data-switch="autoNormalizeBasemap">
+              <span class="toggle-switch-knob"></span>
+            </button>
+          </label>
+          <div class="basemap-protocol-grid">
+            <div class="info-tile"><strong>type</strong><span>XYZ / WMTS / WMS</span></div>
+            <div class="info-tile"><strong>coordSystem</strong><span>WGS84 / GCJ02 / BD09</span></div>
+            <div class="info-tile"><strong>maxNativeZoom / maxZoom</strong><span data-i18n="basemapProtocolZoomHint">拆分原生层级与客户端放大层级</span></div>
+            <div class="info-tile"><strong>transparent / isOverlay</strong><span data-i18n="basemapProtocolOverlayHint">规范叠加层与透明字段</span></div>
+            <div class="info-tile"><strong>subdomains</strong><span data-i18n="basemapProtocolSubdomainHint">规范子域名字段</span></div>
+            <div class="info-tile"><strong>URL</strong><span data-i18n="basemapProtocolUrlHint">检测 {x}/{y}/{z} 或 WMS 图层参数</span></div>
+          </div>
+          <p class="help" data-i18n="basemapManualApplyHint">关闭自动统一协议后，仅检测并显示建议；可通过“统一底图配置”手动应用。</p>
+        </section>
+
+        <section class="basemap-settings-section basemap-tab-panel" data-basemap-panel="coord">
+          <div class="theme-section-head"><h3 data-i18n="basemapTabCoord">坐标基准</h3></div>
+          <div class="coord-rule-grid">
+            <div class="info-tile"><strong data-i18n="basemapStatusCoord">坐标基准</strong><span id="basemapCoordRuleCurrent">—</span></div>
+            <div class="info-tile"><strong data-i18n="basemapStatusData">内部数据</strong><span>WGS84</span></div>
+            <div class="info-tile"><strong>GeoJSON / CSV</strong><span data-i18n="basemapCoordExportRule">导出坐标保持 [lng, lat] 与 WGS84 语义。</span></div>
+            <div class="info-tile"><strong>EXIF</strong><span data-i18n="basemapCoordExifRule">图片坐标按原有 EXIF 读取逻辑写入，不在此自动批量纠偏。</span></div>
+          </div>
+          <div class="hint-box" data-i18n="basemapCoordSafetyHint">底图显示转换与采点保存转换遵循既有 WGS84 内部存储原则；旧数据纠偏必须由用户确认。</div>
+        </section>
+
+        <section class="basemap-settings-section basemap-tab-panel" data-basemap-panel="correction">
+          <div class="theme-section-head"><h3 data-i18n="basemapCorrectionTools">手动纠偏工具</h3></div>
+          <div class="toolbar-grid two-rows basemap-standard-actions">
+            <button id="btnCorrectSelectionGcj" class="btn btn-soft" data-i18n="correctSelectionGcj">选中对象 GCJ02→WGS84</button>
+            <button id="btnCorrectSelectionBd" class="btn btn-soft" data-i18n="correctSelectionBd">选中对象 BD09→WGS84</button>
+            <button id="btnUndoCoordCorrection" class="btn btn-soft" data-i18n="undoCoordCorrection">撤销最近纠偏</button>
+          </div>
+          <p class="help" data-i18n="baseMapHelp">支持 XYZ、WMTS 与 WMS。空间数据内部统一按 WGS84 保存。</p>
+        </section>
+
+        <section class="basemap-settings-section basemap-tab-panel" data-basemap-panel="report">
+          <div class="theme-section-head"><h3 data-i18n="basemapReportTitle">检测报告</h3></div>
+          <div id="basemapReportPanel" class="basemap-report-panel"></div>
+        </section>
       </div>
 
-      <div class="card species-summary-card">
-        <div class="card-title-row">
-          <h2 data-i18n="pointAndPlant">点位与植物信息</h2>
-          <span class="pill" id="pointCount">0</span>
-        </div>
-        <div class="subtle" data-i18n="phenologyEditorHint">已将物种与物候录入整合到二级窗口中。请先选中点位，再打开录入中心。</div>
-        <div id="pointSummaryBox" class="summary-box">—</div>
-        <button id="btnOpenPointEditorInline" class="btn morandi-btn morandi-blue" data-i18n="openPhenologyCenter">物候录入中心</button>
+      <div class="basemap-modal-footer">
+        <button id="btnBasemapDetect" class="btn btn-soft" data-i18n="basemapDetect">底图状态检测</button>
+        <button id="btnBasemapStandardize" class="btn btn-soft" data-i18n="basemapStandardize">统一底图配置</button>
+        <button id="btnCloseBasemapWorkspaceFooter" class="btn btn-primary" data-i18n="closePanel">关闭</button>
       </div>
-
-      <div class="card">
-        <div class="card-title-row">
-          <h2 data-i18n="zoneSpecies">当前分区的植物</h2>
-        </div>
-        <div id="zonePointList" class="list"></div>
-      </div>
-    </aside>
+    </div>
   </div>
-
 
   <div id="pointEditorModal" class="layer-modal hidden">
     <div class="layer-modal-backdrop"></div>
@@ -267,12 +509,14 @@
         </div>
         <button id="btnCloseStatsModal" class="btn btn-soft layer-close">×</button>
       </div>
-      <div class="seg-tabs">
-        <button id="btnStatsTabOverview" class="seg-btn stats-tab active" data-tab="overview" data-i18n="statsTabOverview">概览</button>
-        <button id="btnStatsTabZone" class="seg-btn stats-tab" data-tab="zone" data-i18n="statsTabZone">分区统计</button>
-        <button id="btnStatsTabSpecies" class="seg-btn stats-tab" data-tab="species" data-i18n="statsTabSpecies">物种统计</button>
-        <button id="btnStatsTabTime" class="seg-btn stats-tab" data-tab="time" data-i18n="statsTabTime">时间统计</button>
-        <button id="btnStatsTabCustom" class="seg-btn stats-tab" data-tab="custom" data-i18n="statsTabCustom">自由统计</button>
+      <div class="stats-toolbar-row">
+        <div class="seg-tabs">
+          <button id="btnStatsTabOverview" class="seg-btn stats-tab active" data-tab="overview" data-i18n="statsTabOverview">概览</button>
+          <button id="btnStatsTabZone" class="seg-btn stats-tab" data-tab="zone" data-i18n="statsTabZone">分区统计</button>
+          <button id="btnStatsTabSpecies" class="seg-btn stats-tab" data-tab="species" data-i18n="statsTabSpecies">物种统计</button>
+          <button id="btnStatsTabTime" class="seg-btn stats-tab" data-tab="time" data-i18n="statsTabTime">时间统计</button>
+          <button id="btnStatsTabCustom" class="seg-btn stats-tab" data-tab="custom" data-i18n="statsTabCustom">自由统计</button>
+        </div>
       </div>
       <div id="statsModalBody" class="modal-scroll"></div>
     </div>
@@ -330,41 +574,318 @@
 
   <div id="themeModal" class="layer-modal hidden">
     <div class="layer-modal-backdrop"></div>
-    <div class="layer-modal-panel glass query-panel">
+    <div class="layer-modal-panel glass theme-panel">
       <div class="layer-modal-header">
         <div>
           <h2 data-i18n="themeCenterTitle">界面设置</h2>
-          <p class="subtle" data-i18n="themeCenterSubtitle">调整常用 UI 色位、饱和度和色相</p>
+          <p class="subtle" data-i18n="themeCenterSubtitle">选择界面风格，调整色彩、玻璃质感和统计图配色</p>
         </div>
         <button id="btnCloseThemeModal" class="btn btn-soft layer-close">×</button>
       </div>
-      <div class="seg-tabs theme-slot-tabs">
-        <button class="seg-btn theme-slot-btn active" data-slot="primary" data-i18n="themeSlotPrimary">主按钮</button>
-        <button class="seg-btn theme-slot-btn" data-slot="workspace" data-i18n="themeSlotWorkspace">工作区按钮</button>
-        <button class="seg-btn theme-slot-btn" data-slot="accent" data-i18n="themeSlotAccent">强调色</button>
-        <button class="seg-btn theme-slot-btn" data-slot="chartA" data-i18n="themeSlotChartA">图表主色</button>
-        <button class="seg-btn theme-slot-btn" data-slot="chartB" data-i18n="themeSlotChartB">图表辅色</button>
+
+      <div class="theme-layout-grid">
+        <section class="theme-section theme-preview-section">
+          <div class="theme-section-head">
+            <h3 data-i18n="themePreviewTitle">主题预览</h3>
+            <span class="pill" id="themeCurrentTokenLabel">主色</span>
+          </div>
+          <div id="themePreviewCard" class="theme-preview-card"></div>
+          <div class="theme-current-color">
+            <div id="themePreviewSwatch" class="theme-preview-swatch"></div>
+            <div>
+              <span class="subtle" data-i18n="themeCurrentColor">当前色位</span>
+              <strong id="themeCurrentTokenValue">#6C63FF</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="theme-section">
+          <div class="theme-section-head">
+            <h3 data-i18n="themePresetTitle">风格预设</h3>
+          </div>
+          <div id="themeStylePresets" class="theme-preset-grid"></div>
+        </section>
+
+        <section class="theme-section">
+          <div class="theme-section-head">
+            <h3 data-i18n="themeLayoutTitle">布局模式</h3>
+            <span class="pill" data-i18n="themeLayoutIndependent">独立于主题</span>
+          </div>
+          <p class="subtle" data-i18n="themeLayoutHint">布局只调整模块位置与工作区密度，不改变当前视觉主题。</p>
+          <div id="themeLayoutPresets" class="theme-layout-preset-grid"></div>
+        </section>
       </div>
-      <div class="theme-section">
-        <div class="theme-section-head"><h3 data-i18n="themeMorandiPreset">莫兰迪预设</h3></div>
-        <div id="themeMorandiPresets" class="preset-grid"></div>
-      </div>
-      <div class="theme-section">
-        <div class="theme-section-head"><h3 data-i18n="themeMacaronPreset">马卡龙预设</h3></div>
-        <div id="themeMacaronPresets" class="preset-grid"></div>
-      </div>
-      <div class="theme-controls-grid">
-        <div class="field">
-          <label data-i18n="themeHue">色相</label>
-          <input id="themeHue" type="range" min="0" max="360" step="1" />
+
+      <section class="theme-section">
+        <div class="theme-section-head">
+          <h3 data-i18n="themeColorTokens">色彩调试</h3>
+          <button id="btnGenerateChartPalette" class="btn btn-soft" data-i18n="themeGenerateChartPalette">生成图表色组</button>
         </div>
-        <div class="field">
-          <label data-i18n="themeSaturation">饱和度</label>
-          <input id="themeSaturation" type="range" min="0" max="100" step="1" />
-        </div>
+        <p class="subtle" data-i18n="themeColorTuningHint">常用情况下直接选择风格预设；需要精修图表或品牌色时展开高级色彩。</p>
+        <details class="theme-advanced-panel">
+          <summary><span data-i18n="themeAdvancedColorSummary">高级色彩与图表色</span></summary>
+          <div id="themeTokenTabs" class="theme-token-tabs"></div>
+          <div class="theme-controls-grid">
+          <div class="field">
+            <label data-i18n="themeHue">色相</label>
+            <input id="themeHue" type="range" min="0" max="360" step="1" />
+          </div>
+          <div class="field">
+            <label data-i18n="themeSaturation">饱和度</label>
+            <input id="themeSaturation" type="range" min="0" max="100" step="1" />
+          </div>
+          <div class="field">
+            <label data-i18n="themeLightness">亮度</label>
+            <input id="themeLightness" type="range" min="0" max="100" step="1" />
+          </div>
+          </div>
+          <div id="themeTokenColorGrid" class="theme-color-grid"></div>
+        </details>
+      </section>
+
+      <div class="theme-layout-grid">
+        <section class="theme-section">
+          <div class="theme-section-head"><h3 data-i18n="themeTextureTitle">质感参数</h3></div>
+          <p class="subtle" data-i18n="themeTextureHint">这些参数用于微调主题质感，普通使用不需要频繁修改。</p>
+          <details class="theme-advanced-panel">
+            <summary><span data-i18n="themeAdvancedTextureSummary">高级质感参数</span></summary>
+            <div class="theme-controls-grid theme-effects-grid">
+            <div class="field">
+              <label><span data-i18n="themeRadius">圆角</span><strong id="themeRadiusValue">24px</strong></label>
+              <input id="themeRadius" data-effect="radius" type="range" min="8" max="36" step="1" />
+            </div>
+            <div class="field">
+              <label><span data-i18n="themeShadowStrength">阴影强度</span><strong id="themeShadowStrengthValue">55</strong></label>
+              <input id="themeShadowStrength" data-effect="shadowStrength" type="range" min="0" max="100" step="1" />
+            </div>
+            </div>
+          </details>
+        </section>
+
+        <section class="theme-section theme-glass-section">
+          <div class="theme-section-head">
+            <h3 data-i18n="themeGlassSettingsTitle">玻璃效果设置</h3>
+            <button id="btnResetGlassSettings" class="btn btn-soft" data-i18n="themeGlassReset">恢复默认玻璃</button>
+          </div>
+          <div class="theme-controls-grid theme-glass-grid theme-primary-controls">
+            <div class="field">
+              <label data-i18n="themeGlassMode">玻璃模式</label>
+              <select id="themeGlassMode" data-glass="mode" class="input">
+                <option value="off" data-i18n="themeGlassModeOff">关闭</option>
+                <option value="light" data-i18n="themeGlassModeLight">轻量毛玻璃</option>
+                <option value="liquid" data-i18n="themeGlassModeLiquid">液态玻璃</option>
+              </select>
+            </div>
+          </div>
+          <details class="theme-advanced-panel">
+            <summary><span data-i18n="themeAdvancedGlassSummary">高级玻璃参数与应用范围</span></summary>
+            <div class="theme-controls-grid theme-glass-grid">
+            <div class="field">
+              <label><span data-i18n="themeGlassEffectOpacity">玻璃透明度</span><strong id="themeGlassEffectOpacityValue">62%</strong></label>
+              <input id="themeGlassEffectOpacity" data-glass="opacity" type="range" min="35" max="88" step="1" />
+            </div>
+            <div class="field">
+              <label><span data-i18n="themeGlassEffectBlur">玻璃模糊</span><strong id="themeGlassEffectBlurValue">16px</strong></label>
+              <input id="themeGlassEffectBlur" data-glass="blur" type="range" min="4" max="28" step="1" />
+            </div>
+            <div class="field">
+              <label><span data-i18n="themeGlassEffectSaturate">饱和增强</span><strong id="themeGlassEffectSaturateValue">140%</strong></label>
+              <input id="themeGlassEffectSaturate" data-glass="saturate" type="range" min="100" max="180" step="5" />
+            </div>
+            <div class="field">
+              <label><span data-i18n="themeGlassEffectHighlight">边框高光</span><strong id="themeGlassEffectHighlightValue">42</strong></label>
+              <input id="themeGlassEffectHighlight" data-glass="highlight" type="range" min="15" max="75" step="1" />
+            </div>
+            <div class="field">
+              <label><span data-i18n="themeGlassEffectShadow">玻璃阴影</span><strong id="themeGlassEffectShadowValue">16</strong></label>
+              <input id="themeGlassEffectShadow" data-glass="shadow" type="range" min="5" max="30" step="1" />
+            </div>
+            <div class="field">
+              <label><span data-i18n="themeGlassEffectBrightness">玻璃亮度</span><strong id="themeGlassEffectBrightnessValue">0</strong></label>
+              <input id="themeGlassEffectBrightness" data-glass="brightness" type="range" min="-12" max="16" step="1" />
+            </div>
+            </div>
+            <div class="theme-glass-scopes">
+            <label><input id="themeGlassApplyModules" data-glass="apply.modules" type="checkbox" /> <span data-i18n="themeGlassApplyModules">主模块卡片</span></label>
+            <label><input id="themeGlassApplyControls" data-glass="apply.controls" type="checkbox" /> <span data-i18n="themeGlassApplyControls">UI 控件</span></label>
+            <label><input id="themeGlassApplyMapBadges" data-glass="apply.mapBadges" type="checkbox" /> <span data-i18n="themeGlassApplyMapBadges">地图小标</span></label>
+            <label><input id="themeGlassApplyCharts" data-glass="apply.charts" type="checkbox" /> <span data-i18n="themeGlassApplyCharts">统计图表卡片</span></label>
+            <label><input id="themeGlassApplySettings" data-glass="apply.settings" type="checkbox" /> <span data-i18n="themeGlassApplySettings">设置中心</span></label>
+            </div>
+          </details>
+          <p class="subtle" data-i18n="themeGlassHint">玻璃效果只改变视觉质感，不改变地图、统计或文件读写逻辑。</p>
+        </section>
+
+        <section class="theme-section">
+          <div class="theme-section-head"><h3 data-i18n="themeQuickPalette">快速色板</h3></div>
+          <p class="subtle" data-i18n="themeQuickPaletteHint">色板会应用到当前选中的色位。</p>
+          <div class="theme-palette-group">
+            <span data-i18n="themeMorandiPreset">莫兰迪预设</span>
+            <div id="themeMorandiPresets" class="preset-grid"></div>
+          </div>
+          <div class="theme-palette-group">
+            <span data-i18n="themeMacaronPreset">马卡龙预设</span>
+            <div id="themeMacaronPresets" class="preset-grid"></div>
+          </div>
+        </section>
       </div>
-      <div class="toolbar-inline">
-        <div id="themePreviewSwatch" class="theme-preview-swatch"></div>
+
+      <section class="theme-section visual-feedback-section">
+        <div class="theme-section-head">
+          <h3 data-i18n="progressSettingsTitle">任务进度与动画</h3>
+        </div>
+        <div class="theme-controls-grid">
+          <div class="field">
+            <label data-i18n="progressHeight">进度条高度</label>
+            <select id="progressHeight" class="input" data-progress="height">
+              <option value="4">4px</option>
+              <option value="6">6px</option>
+              <option value="8">8px</option>
+              <option value="10">10px</option>
+              <option value="12">12px</option>
+            </select>
+          </div>
+          <div class="field">
+            <label data-i18n="progressMode">进度条模式</label>
+            <select id="progressMode" class="input" data-progress="mode">
+              <option value="compact" data-i18n="progressModeCompact">紧凑</option>
+              <option value="standard" data-i18n="progressModeStandard">标准</option>
+              <option value="display" data-i18n="progressModeDisplay">展示</option>
+            </select>
+          </div>
+          <label class="check-card"><input id="progressShowPercent" data-progress="showPercent" type="checkbox" /> <span data-i18n="progressShowPercent">显示百分比</span></label>
+          <label class="check-card"><input id="progressShowStage" data-progress="showStage" type="checkbox" /> <span data-i18n="progressShowStage">显示阶段说明</span></label>
+          <label class="check-card"><input id="progressGlass" data-progress="glass" type="checkbox" /> <span data-i18n="progressUseGlass">使用玻璃质感</span></label>
+          <div class="field">
+            <label data-i18n="motionMode">动画模式</label>
+            <select id="motionMode" class="input" data-motion="mode">
+              <option value="off" data-i18n="motionModeOff">关闭（0ms）</option>
+              <option value="minimal" data-i18n="motionModeMinimal">简约（100–140ms）</option>
+              <option value="standard" data-i18n="motionModeStandard">标准（160–220ms）</option>
+              <option value="rich" data-i18n="motionModeRich">表现型（240–360ms）</option>
+              <option value="custom" data-i18n="motionModeCustom">高级自定义</option>
+            </select>
+          </div>
+          <label class="check-card"><input id="motionReduced" data-motion="reduced" type="checkbox" /> <span data-i18n="motionReduced">减少动态效果</span></label>
+          <details class="theme-advanced-panel theme-motion-advanced-panel">
+            <summary><span data-i18n="themeAdvancedMotionSummary">高级动效、进度和状态颜色</span></summary>
+            <div class="theme-controls-grid theme-motion-advanced-grid">
+          <div class="field precise-range-field">
+            <label><span data-i18n="motionSpeedMultiplier">动画倍速</span><strong id="motionSpeedMultiplierValue">1.00x</strong></label>
+            <input id="motionSpeedMultiplier" data-motion="speedMultiplier" type="range" min="0.5" max="1.5" step="0.05" />
+          </div>
+          <div class="field precise-range-field">
+            <label><span data-i18n="motionFadeDuration">淡入时长</span><strong id="motionFadeDurationValue">180ms</strong></label>
+            <input id="motionFadeDuration" data-motion="fadeDuration" type="range" min="0" max="360" step="10" />
+          </div>
+          <div class="field precise-range-field">
+            <label><span data-i18n="motionTransitionDuration">过渡时长</span><strong id="motionTransitionDurationValue">200ms</strong></label>
+            <input id="motionTransitionDuration" data-motion="transitionDuration" type="range" min="0" max="420" step="10" />
+          </div>
+          <div class="field precise-range-field">
+            <label><span data-i18n="motionModalDuration">弹窗时长</span><strong id="motionModalDurationValue">220ms</strong></label>
+            <input id="motionModalDuration" data-motion="modalDuration" type="range" min="0" max="480" step="10" />
+          </div>
+          <div class="field precise-range-field">
+            <label><span data-i18n="motionStagger">分组间隔</span><strong id="motionStaggerValue">24ms</strong></label>
+            <input id="motionStagger" data-motion="stagger" type="range" min="0" max="120" step="4" />
+          </div>
+          <div class="field precise-range-field">
+            <label><span data-i18n="motionHoverLift">hover 上浮</span><strong id="motionHoverLiftValue">2px</strong></label>
+            <input id="motionHoverLift" data-motion="hoverLift" type="range" min="0" max="6" step="0.5" />
+          </div>
+          <div class="field precise-range-field">
+            <label><span data-i18n="motionScaleEnter">进入缩放</span><strong id="motionScaleEnterValue">0.985</strong></label>
+            <input id="motionScaleEnter" data-motion="scaleEnter" type="range" min="0.94" max="1" step="0.005" />
+          </div>
+          <div class="field precise-range-field">
+            <label><span data-i18n="motionScalePress">点击压缩</span><strong id="motionScalePressValue">0.975</strong></label>
+            <input id="motionScalePress" data-motion="scalePress" type="range" min="0.94" max="1" step="0.005" />
+          </div>
+          <div class="field">
+            <label data-i18n="motionEasing">缓动风格</label>
+            <select id="motionEasing" class="input" data-motion="easing">
+              <option value="standard" data-i18n="motionEasingStandard">标准 cubic-bezier</option>
+              <option value="emphasized" data-i18n="motionEasingEmphasized">强调 cubic-bezier</option>
+              <option value="spring" data-i18n="motionEasingSpring">轻微 spring</option>
+            </select>
+          </div>
+          <label class="check-card"><input id="motionHover" data-motion="hover" type="checkbox" /> <span data-i18n="motionHover">卡片 hover 动画</span></label>
+          <label class="check-card"><input id="motionModal" data-motion="modal" type="checkbox" /> <span data-i18n="motionModal">弹窗动画</span></label>
+          <label class="check-card"><input id="motionLayout" data-motion="layout" type="checkbox" /> <span data-i18n="motionLayout">布局切换动画</span></label>
+          <label class="check-card"><input id="motionTheme" data-motion="themeTransition" type="checkbox" /> <span data-i18n="motionThemeTransition">主题切换动画</span></label>
+          <div class="motion-spec-note" id="motionSpecNote"></div>
+
+          <div class="status-color-panel">
+            <div class="theme-section-head"><h3 data-i18n="statusColorSettings">状态颜色设置</h3></div>
+            <div class="status-color-grid">
+              <label><span data-i18n="statusColorSuccess">成功色</span><input id="statusColorSuccess" type="color" data-status-color="success" /></label>
+              <label><span data-i18n="statusColorDanger">错误色</span><input id="statusColorDanger" type="color" data-status-color="danger" /></label>
+              <label><span data-i18n="statusColorWarning">警告色</span><input id="statusColorWarning" type="color" data-status-color="warning" /></label>
+              <label><span data-i18n="statusColorUnknown">未知色</span><input id="statusColorUnknown" type="color" data-status-color="unknown" /></label>
+              <label><span data-i18n="statusColorEnabled">启用色</span><input id="statusColorEnabled" type="color" data-status-color="enabled" /></label>
+              <label><span data-i18n="statusColorDisabled">关闭色</span><input id="statusColorDisabled" type="color" data-status-color="disabled" /></label>
+            </div>
+            <button id="btnResetStatusColors" class="btn btn-soft" data-i18n="statusColorReset">恢复默认状态色</button>
+          </div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section class="theme-section brand-settings-section">
+        <div class="theme-section-head">
+          <h3 data-i18n="brandIconSettingsTitle">品牌图标设置</h3>
+          <button id="btnResetBrandIcon" class="btn btn-soft" data-i18n="brandIconReset">恢复默认图标</button>
+        </div>
+        <div class="brand-settings-grid">
+          <div class="brand-preview-card">
+            <img class="brand-logo-mark brand-preview-mark" src="./src/renderer/assets/brand/title-logo.png" alt="" aria-hidden="true" />
+            <div>
+              <strong data-i18n="appTitle">校园植物分区管理系统</strong>
+              <p class="subtle" data-i18n="brandIconPreviewHint">预览当前图标色彩与显示模式。</p>
+            </div>
+          </div>
+          <div class="theme-controls-grid brand-controls-grid">
+            <div class="field">
+              <label data-i18n="brandIconStyle">图标样式</label>
+              <select id="brandIconStyle" class="input" data-brand="style">
+                <option value="theme" data-i18n="brandIconStyleTheme">跟随主题</option>
+                <option value="original" data-i18n="brandIconStyleOriginal">原始红色</option>
+                <option value="monochrome" data-i18n="brandIconStyleMono">单色主题色</option>
+                <option value="contrast" data-i18n="brandIconStyleContrast">高对比模式</option>
+              </select>
+            </div>
+            <div class="field">
+              <label data-i18n="brandIconDisplay">显示模式</label>
+              <select id="brandIconDisplay" class="input" data-brand="display">
+                <option value="auto" data-i18n="brandIconDisplayAuto">自动</option>
+                <option value="mark" data-i18n="brandIconDisplayMark">简化标识</option>
+                <option value="full" data-i18n="brandIconDisplayFull">完整徽章</option>
+              </select>
+            </div>
+            <details class="theme-advanced-panel brand-advanced-panel">
+              <summary><span data-i18n="themeAdvancedBrandSummary">高级图标色彩</span></summary>
+              <div class="theme-controls-grid brand-controls-grid">
+            <div class="field">
+              <label><span data-i18n="brandIconHue">图标色相</span><strong id="brandIconHueValue">356</strong></label>
+              <input id="brandIconHue" data-brand="hue" type="range" min="0" max="360" step="1" />
+            </div>
+            <div class="field">
+              <label><span data-i18n="brandIconSaturation">图标饱和度</span><strong id="brandIconSaturationValue">72%</strong></label>
+              <input id="brandIconSaturation" data-brand="saturation" type="range" min="20" max="95" step="1" />
+            </div>
+            <div class="field">
+              <label><span data-i18n="brandIconLightness">图标明度</span><strong id="brandIconLightnessValue">42%</strong></label>
+              <input id="brandIconLightness" data-brand="lightness" type="range" min="28" max="72" step="1" />
+            </div>
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <div class="theme-action-bar">
         <button id="btnResetThemeSlot" class="btn btn-soft" data-i18n="themeResetSlot">重置当前色位</button>
         <button id="btnResetThemeAll" class="btn btn-soft" data-i18n="themeResetAll">恢复默认主题</button>
         <button id="btnSaveTheme" class="btn btn-primary" data-i18n="themeApply">应用主题</button>
@@ -435,6 +956,8 @@
     </div>
   </div>
 
+  <div id="progressDock" class="progress-dock" aria-live="polite"></div>
+
   <div id="confirmModal" class="layer-modal hidden">
     <div class="layer-modal-backdrop"></div>
     <div class="confirm-panel glass">
@@ -443,6 +966,18 @@
       <div class="toolbar-inline">
         <button id="btnConfirmCancel" class="btn btn-soft" data-i18n="cancelCreatePoint">取消</button>
         <button id="btnConfirmAccept" class="btn btn-danger-soft" data-i18n="confirmAction">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="alertModal" class="layer-modal hidden">
+    <div class="layer-modal-backdrop"></div>
+    <div class="confirm-panel glass alert-panel">
+      <h3 id="alertTitle">提示</h3>
+      <p id="alertMessage" class="subtle"></p>
+      <p id="alertDetail" class="subtle alert-detail"></p>
+      <div class="toolbar-inline">
+        <button id="btnAlertClose" class="btn btn-primary" data-i18n="closePanel">关闭</button>
       </div>
     </div>
   </div>
@@ -468,7 +1003,35 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-  <script src="./renderer.js"></script>
+  <script defer src="./src/renderer/state/store.js"></script>
+  <script defer src="./src/renderer/dom/elements.js"></script>
+  <script defer src="./src/renderer/utils/ipc.js"></script>
+  <script defer src="./src/renderer/i18n/zh.js"></script>
+  <script defer src="./src/renderer/i18n/en.js"></script>
+  <script defer src="./src/renderer/i18n/index.js"></script>
+  <script defer src="./src/renderer/utils/format.js"></script>
+  <script defer src="./src/renderer/utils/dialogs.js"></script>
+  <script defer src="./src/renderer/utils/errorHandler.js"></script>
+  <script defer src="./src/renderer/utils/dom.js"></script>
+  <script defer src="./src/renderer/data/normalize.js"></script>
+  <script defer src="./src/renderer/map/coordTransform.js"></script>
+  <script defer src="./src/renderer/map/map.js"></script>
+  <script defer src="./src/renderer/map/zones.js"></script>
+  <script defer src="./src/renderer/map/points.js"></script>
+  <script defer src="./src/renderer/features/theme/config.js"></script>
+  <script defer src="./src/renderer/features/theme/index.js"></script>
+  <script defer src="./src/renderer/features/phenology/index.js"></script>
+  <script defer src="./src/renderer/features/images/index.js"></script>
+  <script defer src="./src/renderer/features/basemap/index.js"></script>
+  <script defer src="./src/renderer/features/query/index.js"></script>
+  <script defer src="./src/renderer/features/stats/charts.js"></script>
+  <script defer src="./src/renderer/features/stats/index.js"></script>
+  <script defer src="./src/renderer/features/recycleBin/index.js"></script>
+  <script defer src="./src/renderer/features/backup/index.js"></script>
+  <script defer src="./src/renderer/features/progress/index.js"></script>
+  <script defer src="./src/renderer/features/merge/index.js"></script>
+  <script defer src="./src/renderer/features/project/index.js"></script>
+  <script defer src="./src/renderer/app.js"></script>
 
 
   </body>

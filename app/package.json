@@ -1,17 +1,24 @@
 {
   "name": "campus-plant-zone-manager",
-  "version": "0.4.0",
+  "version": "9.0.1",
   "description": "校园植物分区管理系统（支持自定义底图、项目目录持久化、中文/英文界面）",
   "main": "main.js",
-  "author": "YU GangZuo",
+  "author": "YUGANG Zuo",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win nsis"
+    "dist": "electron-builder --win nsis",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{js,css,html,json}\"",
+    "self-check": "node scripts/self-check.js",
+    "check": "npm run lint && npm run self-check",
+    "test": "npm run self-check"
   },
   "devDependencies": {
     "electron": "^31.7.7",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0"
   },
   "build": {
     "appId": "com.cqnu.plantmap",
@@ -22,9 +29,11 @@
     "files": [
       "main.js",
       "preload.js",
-      "renderer.js",
       "index.html",
-      "style.css"
+      "style.css",
+      "src/**/*",
+      "scripts/**/*",
+      "build/**/*"
     ],
     "win": {
       "target": [
@@ -38,16 +47,19 @@
       "publisherName": [
         "CQNU"
       ],
-      "legalTrademarks": "CQNU"
+      "legalTrademarks": "CQNU",
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "校园植物分区管理系统"
+      "shortcutName": "校园植物分区管理系统",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     },
-    "copyright": "Copyright © YU GangZuo"
+    "copyright": "Copyright © YUGANG Zuo"
   },
   "dependencies": {
     "exifr": "^7.1.3",

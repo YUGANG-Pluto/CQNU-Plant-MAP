@@ -1,0 +1,219 @@
+const fs = require('fs');
+const path = require('path');
+
+const LEVELS = Object.freeze({
+  debug: 10,
+  info: 20,
+  warn: 30,
+  error: 40
+});
+
+const DEFAULT_RETENTION_DAYS = 14;
+const DEFAULT_MAX_FILE_BYTES = 2 * 1024 * 1024;
+const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
+let config = {
+  logDir: path.join(process.cwd(), 'logs'),
+  level: 'info',
+  retentionDays: DEFAULT_RETENTION_DAYS,
+  maxFileBytes: DEFAULT_MAX_FILE_BYTES
+};
+let cleanupTimer = null;
+
+function pad(value) {
+  return String(value).padStart(2, '0');
+}
+
+function dateStamp(date = new Date()) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function currentLogPath() {
+  return path.join(config.logDir, `app-${dateStamp()}.log`);
+}
+
+function ensureLogDir() {
+  fs.mkdirSync(config.logDir, { recursive: true });
+}
+
+function normalizeLevel(level) {
+  return Object.prototype.hasOwnProperty.call(LEVELS, level) ? level : 'info';
+}
+
+function shouldWrite(level) {
+  return LEVELS[normalizeLevel(level)] >= LEVELS[normalizeLevel(config.level)];
+}
+
+function safePathLabel(value) {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const normalized = path.normalize(value);
+  const parent = path.basename(path.dirname(normalized));
+  const base = path.basename(normalized);
+  return parent && parent !== '.' ? path.join(parent, base) : base;
+}
+
+function sanitizeMeta(value, depth = 0) {
+  if (depth > 3) {
+    return '[truncated]';
+  }
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    return value.length > 800 ? `${value.slice(0, 800)}...` : value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.slice(0, 20).map(item => sanitizeMeta(item, depth + 1));
+  }
+  if (typeof value === 'object') {
+    const out = {};
+    Object.entries(value).slice(0, 30).forEach(([key, item]) => {
+      if (/content|data|settings|zones|points|payload/i.test(key)) {
+        out[key] = '[redacted]';
+        return;
+      }
+      out[key] = /path|dir|file/i.test(key) ? safePathLabel(item) : sanitizeMeta(item, depth + 1);
+    });
+    return out;
+  }
+  return String(value);
+}
+
+function rotateIfNeeded(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return;
+  }
+
+  const stat = fs.statSync(filePath);
+  if (stat.size < config.maxFileBytes) {
+    return;
+  }
+
+  const rotated = filePath.replace(/\.log$/, `-${Date.now()}.log`);
+  fs.renameSync(filePath, rotated);
+}
+
+function cleanupOldLogs() {
+  ensureLogDir();
+  const cutoff = Date.now() - Math.max(1, config.retentionDays) * 24 * 60 * 60 * 1000;
+  fs.readdirSync(config.logDir, { withFileTypes: true })
+    .filter(item => item.isFile() && /^app-\d{4}-\d{2}-\d{2}(?:-\d+)?\.log$/.test(item.name))
+    .forEach(item => {
+      const fullPath = path.join(config.logDir, item.name);
+      const stat = fs.statSync(fullPath);
+      if ((stat.mtimeMs || 0) < cutoff) {
+        fs.rmSync(fullPath, { force: true });
+      }
+    });
+}
+
+function configureLogger(options = {}) {
+  config = {
+    ...config,
+    ...options,
+    level: normalizeLevel(options.level || config.level),
+    retentionDays: Number.isFinite(Number(options.retentionDays))
+      ? Number(options.retentionDays)
+      : config.retentionDays,
+    maxFileBytes: Number.isFinite(Number(options.maxFileBytes))
+      ? Number(options.maxFileBytes)
+      : config.maxFileBytes
+  };
+  ensureLogDir();
+  cleanupOldLogs();
+}
+
+function initLogger(app, options = {}) {
+  const userDataDir = app?.getPath ? app.getPath('userData') : process.cwd();
+  configureLogger({
+    logDir: path.join(userDataDir, 'logs'),
+    ...options
+  });
+
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer);
+  }
+  cleanupTimer = setInterval(cleanupOldLogs, CLEANUP_INTERVAL_MS);
+  cleanupTimer.unref?.();
+}
+
+function setLogLevel(level) {
+  config.level = normalizeLevel(level);
+  return config.level;
+}
+
+function writeLog(level, scope, message, meta = {}) {
+  const normalizedLevel = normalizeLevel(level);
+  if (!shouldWrite(normalizedLevel)) {
+    return;
+  }
+
+  const entry = {
+    ts: new Date().toISOString(),
+    level: normalizedLevel,
+    scope: String(scope || 'app'),
+    message: String(message || ''),
+    meta: sanitizeMeta(meta)
+  };
+
+  try {
+    ensureLogDir();
+    const filePath = currentLogPath();
+    rotateIfNeeded(filePath);
+    fs.appendFileSync(filePath, `${JSON.stringify(entry)}\n`, 'utf8');
+  } catch (error) {
+    console.error('[logger] write failed', error);
+  }
+}
+
+function errorToLogMeta(error) {
+  if (!error || typeof error !== 'object') {
+    return { error: String(error || '') };
+  }
+  return {
+    name: error.name,
+    code: error.code,
+    stack: typeof error.stack === 'string' ? error.stack.slice(0, 2000) : undefined,
+    cause: error.cause ? sanitizeMeta(error.cause) : undefined
+  };
+}
+
+function logError(scope, error, meta = {}) {
+  const message = error?.message || String(error || 'Error');
+  writeLog('error', scope, message, {
+    ...meta,
+    ...errorToLogMeta(error)
+  });
+}
+
+function reportRendererLog(payload = {}, event) {
+  const level = normalizeLevel(payload.level || 'error');
+  writeLog(level, payload.scope || 'renderer', payload.message || '', {
+    code: payload.code,
+    details: payload.details,
+    url: payload.url,
+    userAgent: event?.sender?.userAgent
+  });
+  return { logged: true };
+}
+
+function getLoggerConfig() {
+  return { ...config };
+}
+
+module.exports = {
+  configureLogger,
+  initLogger,
+  setLogLevel,
+  writeLog,
+  logError,
+  reportRendererLog,
+  cleanupOldLogs,
+  getLoggerConfig
+};
