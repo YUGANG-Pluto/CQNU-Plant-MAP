@@ -1,6 +1,11 @@
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
+const { pathToFileURL } = require('url');
 const { AppError } = require('./errors');
 const { ERROR_CODES } = require('./errorCodes');
+const { IMAGE_EXTENSIONS } = require('./constants');
+const { normalizeSelectedImage } = require('./pathGuard');
 
 const GBIF_BASE_URL = 'https://api.gbif.org/v1';
 const INAT_BASE_URL = 'https://api.inaturalist.org/v1';
@@ -9,6 +14,8 @@ const INAT_PLANT_TAXON_ID = 47126;
 const REQUEST_TIMEOUT_MS = 12000;
 const DETAIL_TIMEOUT_MS = 6500;
 const DETAIL_ENRICH_LIMIT = 3;
+const IMAGE_COMPARE_TIMEOUT_MS = 30000;
+const MAX_COMPARE_IMAGE_BYTES = 8 * 1024 * 1024;
 
 function cleanText(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');
@@ -109,6 +116,112 @@ async function fetchJson(url) {
     }
   }
   throw lastError;
+}
+
+function imageCompareFilters() {
+  return [{
+    name: 'Images',
+    extensions: [...IMAGE_EXTENSIONS].map(ext => ext.slice(1))
+  }];
+}
+
+function mimeFromImagePath(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+  if (ext === '.png') return 'image/png';
+  if (ext === '.webp') return 'image/webp';
+  if (ext === '.gif') return 'image/gif';
+  if (ext === '.bmp') return 'image/bmp';
+  return 'application/octet-stream';
+}
+
+function safeFileName(filePath) {
+  return path.basename(filePath).replace(/[^\w.\-()\u4e00-\u9fa5]+/g, '_');
+}
+
+function buildMultipartImageBody(filePath, fields = {}) {
+  const boundary = `----cqnu-plant-map-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const fileBuffer = fs.readFileSync(filePath);
+  if (fileBuffer.length > MAX_COMPARE_IMAGE_BYTES) {
+    throw new AppError(ERROR_CODES.INVALID_PAYLOAD, '图片超过 8MB，无法用于轻量图像比对。');
+  }
+  const parts = [];
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    parts.push(Buffer.from(
+      `--${boundary}\r\n`
+      + `Content-Disposition: form-data; name="${key}"\r\n\r\n`
+      + `${String(value)}\r\n`,
+      'utf8'
+    ));
+  });
+  parts.push(Buffer.from(
+    `--${boundary}\r\n`
+    + `Content-Disposition: form-data; name="image"; filename="${safeFileName(filePath)}"\r\n`
+    + `Content-Type: ${mimeFromImagePath(filePath)}\r\n\r\n`,
+    'utf8'
+  ));
+  parts.push(fileBuffer);
+  parts.push(Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8'));
+  return {
+    boundary,
+    body: Buffer.concat(parts),
+    size: fileBuffer.length
+  };
+}
+
+async function postMultipartJson(url, filePath, fields = {}, token = '') {
+  const multipart = buildMultipartImageBody(filePath, fields);
+  const headers = {
+    accept: 'application/json',
+    'content-type': `multipart/form-data; boundary=${multipart.boundary}`,
+    'content-length': multipart.body.length,
+    'user-agent': 'CQNU-Plant-MAP/9.0 species-image-compare'
+  };
+  const cleanToken = cleanText(token);
+  if (cleanToken) {
+    headers.authorization = /^Bearer\s+/i.test(cleanToken) ? cleanToken : `Bearer ${cleanToken}`;
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = https.request(url, {
+      method: 'POST',
+      headers,
+      timeout: IMAGE_COMPARE_TIMEOUT_MS
+    }, response => {
+      const chunks = [];
+      response.on('data', chunk => chunks.push(chunk));
+      response.on('end', () => {
+        const text = Buffer.concat(chunks).toString('utf8');
+        let data = null;
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          data = { message: text };
+        }
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          const message = response.statusCode === 401
+            ? 'iNaturalist 图像比对需要有效访问令牌；令牌只会用于本次请求，不会保存。'
+            : (data?.error || data?.message || `iNaturalist 图像比对失败：HTTP ${response.statusCode}`);
+          reject(new AppError(ERROR_CODES.INTERNAL_ERROR, message));
+          return;
+        }
+        resolve({
+          data,
+          uploadedBytes: multipart.size
+        });
+      });
+    });
+
+    request.on('timeout', () => {
+      request.destroy(new AppError(ERROR_CODES.INTERNAL_ERROR, 'iNaturalist 图像比对请求超时。'));
+    });
+    request.on('error', error => {
+      reject(error instanceof AppError ? error : new AppError(ERROR_CODES.INTERNAL_ERROR, error.message || 'iNaturalist 图像比对失败。', error));
+    });
+    request.write(multipart.body);
+    request.end();
+  });
 }
 
 function compactClassification(item = {}) {
@@ -387,7 +500,85 @@ async function enrichSuggestions(source, suggestions, locale = 'zh-CN') {
   const enriched = await Promise.all(limited.map(item => (
     source === 'gbif' ? enrichGbifSuggestion(item) : enrichINaturalistSuggestion(item, locale)
   )));
-  return [...enriched, ...suggestions.slice(8)];
+  return [...enriched, ...suggestions.slice(DETAIL_ENRICH_LIMIT)];
+}
+
+function normalizeVisionScore(item = {}) {
+  const score = item.combined_score ?? item.vision_score ?? item.score ?? item.frequency_score ?? item.probability;
+  const value = Number(score);
+  if (!Number.isFinite(value)) return null;
+  return value <= 1 ? Math.round(value * 1000) / 10 : Math.round(value * 10) / 10;
+}
+
+function normalizeVisionSuggestion(item = {}) {
+  const taxon = item.taxon || item;
+  const normalized = normalizeINaturalistTaxon(taxon);
+  if (!normalized) return null;
+  const score = normalizeVisionScore(item);
+  return {
+    ...normalized,
+    id: `inat-vision-${taxon.id}`,
+    source: 'inaturalist',
+    sourceLabel: 'iNaturalist CV',
+    sourceUrl: `https://www.inaturalist.org/taxa/${taxon.id}`,
+    matchType: 'IMAGE',
+    confidence: score,
+    summary: [
+      score !== null ? `image=${score}%` : '',
+      normalized.rank ? `rank=${normalized.rank}` : '',
+      Number.isFinite(normalized.observationsCount) ? `observations=${normalized.observationsCount}` : ''
+    ].filter(Boolean).join(' / ')
+  };
+}
+
+function normalizeVisionResults(data = {}) {
+  const results = data.results || data.suggestions || data.predictions || [];
+  return results
+    .map(normalizeVisionSuggestion)
+    .filter(Boolean)
+    .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+    .slice(0, 8);
+}
+
+async function querySpeciesImageCompare(payload = {}) {
+  const locale = cleanText(payload.locale) || 'zh-CN';
+  const token = cleanText(payload.token);
+  const { dialog } = require('electron');
+  const result = await dialog.showOpenDialog({
+    title: '选择用于 iNaturalist 图像比对的图片',
+    properties: ['openFile'],
+    filters: imageCompareFilters()
+  });
+
+  if (result.canceled || !result.filePaths.length) {
+    return { canceled: true };
+  }
+
+  const imagePath = normalizeSelectedImage(result.filePaths[0]);
+  const response = await postMultipartJson(
+    buildUrl(INAT_BASE_URL, '/v1/computervision/score_image', { locale }),
+    imagePath,
+    { locale },
+    token
+  );
+  const suggestions = await enrichSuggestions('inaturalist', normalizeVisionResults(response.data), locale);
+
+  return {
+    canceled: false,
+    schema: 'cqnu-plant-species-image-compare-v1',
+    queriedAt: new Date().toISOString(),
+    selectedImageName: path.basename(imagePath),
+    selectedImageFileUrl: pathToFileURL(imagePath).toString(),
+    uploadedBytes: response.uploadedBytes,
+    sources: {
+      inaturalistVision: {
+        ok: true,
+        count: suggestions.length,
+        queriedUrls: [buildUrl(INAT_BASE_URL, '/v1/computervision/score_image')]
+      }
+    },
+    suggestions: dedupeSuggestions(suggestions)
+  };
 }
 
 async function queryGbif(scientificName, commonName) {
@@ -519,8 +710,10 @@ async function querySpeciesReference(payload = {}) {
 
 module.exports = {
   querySpeciesReference,
+  querySpeciesImageCompare,
   normalizeGbifMatch,
   normalizeGbifCandidate,
   normalizeINaturalistTaxon,
+  normalizeVisionSuggestion,
   dedupeSuggestions
 };

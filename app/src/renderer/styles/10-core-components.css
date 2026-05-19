@@ -1223,6 +1223,14 @@ input[type="range"] {
   margin: 12px 0;
 }
 
+.species-reference-image-compare {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(180px, 0.75fr);
+  gap: 10px;
+  align-items: end;
+  margin: 0 0 12px;
+}
+
 .species-reference-results {
   display: grid;
   gap: 10px;
@@ -1402,6 +1410,28 @@ input[type="range"] {
   gap: 8px;
 }
 
+.species-reference-compared-image-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.species-reference-compared-image-row > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.species-reference-compared-image-row strong,
+.species-reference-compared-image-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .species-reference-thumb {
   width: 72px;
   height: 72px;
@@ -1429,6 +1459,10 @@ input[type="range"] {
 
 @media (max-width: 720px) {
   .species-reference-query {
+    grid-template-columns: 1fr;
+  }
+
+  .species-reference-image-compare {
     grid-template-columns: 1fr;
   }
 

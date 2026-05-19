@@ -9,10 +9,20 @@ function safeExternalUrl(value) {
   }
 }
 
+function safePreviewUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return ['http:', 'https:', 'file:'].includes(url.protocol) ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 function clearSpeciesReferenceCache() {
   speciesReferenceCache = null;
   if (ui.speciesReferenceResults) clearNode(ui.speciesReferenceResults);
   if (ui.speciesReferenceSummary) ui.speciesReferenceSummary.textContent = t('speciesReferenceEmpty');
+  if (ui.speciesReferenceImageCompareStatus) ui.speciesReferenceImageCompareStatus.textContent = t('speciesReferenceImageCompareHint');
   renderSpeciesReferenceDetail(null);
   syncSpeciesReferenceApplyControls(null);
 }
@@ -39,6 +49,7 @@ function openSpeciesReferenceCenter() {
 
 function closeSpeciesReferenceCenter() {
   clearSpeciesReferenceCache();
+  if (ui.speciesReferenceImageTokenInput) ui.speciesReferenceImageTokenInput.value = '';
   closeLayerModal(ui.speciesReferenceModal);
 }
 
@@ -47,14 +58,28 @@ function setSpeciesReferenceBusy(busy) {
   if (ui.btnRunSpeciesReference) ui.btnRunSpeciesReference.textContent = busy ? t('speciesReferenceRunning') : t('runSpeciesReference');
 }
 
+function setSpeciesImageCompareBusy(busy) {
+  if (ui.btnRunSpeciesImageCompare) ui.btnRunSpeciesImageCompare.disabled = !!busy;
+  if (ui.btnRunSpeciesImageCompare) {
+    ui.btnRunSpeciesImageCompare.textContent = busy
+      ? t('speciesReferenceImageCompareRunning')
+      : t('speciesReferenceRunImageCompare');
+  }
+  if (ui.speciesReferenceImageTokenInput) ui.speciesReferenceImageTokenInput.disabled = !!busy;
+}
+
 function speciesReferenceLocale() {
   return (state.settings?.language || 'zh') === 'zh' ? 'zh-CN' : 'en';
 }
 
 function sourceStatusLabel(sources = {}) {
-  return ['gbif', 'inaturalist'].map(key => {
+  const known = [
+    ['gbif', 'GBIF'],
+    ['inaturalist', 'iNaturalist'],
+    ['inaturalistVision', 'iNaturalist CV']
+  ].filter(([key]) => Object.prototype.hasOwnProperty.call(sources, key));
+  return known.map(([key, label]) => {
     const item = sources[key] || {};
-    const label = key === 'gbif' ? 'GBIF' : 'iNaturalist';
     return `${label}: ${item.ok ? `${item.count || 0}` : t('speciesReferenceSourceFailed')}`;
   }).join(' / ');
 }
@@ -229,6 +254,25 @@ function renderSpeciesReferenceImages(suggestion) {
   `;
 }
 
+function renderSpeciesComparedImage() {
+  const fileUrl = safePreviewUrl(speciesReferenceCache?.selectedImageFileUrl);
+  if (!fileUrl) return '';
+  return `
+    <section class="species-reference-detail-section">
+      <h3>${escapeHtml(t('speciesReferenceComparedImage'))}</h3>
+      <div class="species-reference-compared-image-row">
+        <button type="button" class="species-reference-thumb species-reference-compared-thumb" data-compared-image="${escapeHtml(fileUrl)}" title="${escapeHtml(t('speciesReferencePreviewComparedImage'))}">
+          <img src="${escapeHtml(fileUrl)}" alt="${escapeHtml(speciesReferenceCache?.selectedImageName || '')}" />
+        </button>
+        <div>
+          <strong>${escapeHtml(speciesReferenceCache?.selectedImageName || t('notFilled'))}</strong>
+          <span>${escapeHtml(t('speciesReferenceComparedImageHint'))}</span>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
 function renderSpeciesReferenceDetail(suggestion) {
   if (!ui.speciesReferenceDetail) return;
   if (!suggestion) {
@@ -256,6 +300,7 @@ function renderSpeciesReferenceDetail(suggestion) {
       <span class="pill">${escapeHtml(suggestion.sourceLabel || suggestion.source || '')}</span>
     </div>
     <p class="species-reference-recommendation">${escapeHtml(recommendationText(suggestion))}</p>
+    ${renderSpeciesComparedImage()}
     ${detailListHtml('speciesReferenceClassification', taxonomyDetailRows(suggestion))}
     ${detailListHtml('speciesReferenceVernacularNames', names)}
     ${detailListHtml('speciesReferenceFeatureNotes', descriptions.length ? descriptions : features)}
@@ -275,7 +320,8 @@ function renderSpeciesReferenceResults(data) {
     selectedId
   };
 
-  ui.speciesReferenceSummary.textContent = `${t('speciesReferenceResultSummary')} ${suggestions.length} / ${sourceStatusLabel(data.sources)}`;
+  const imageLabel = data.selectedImageName ? `${t('speciesReferenceComparedImage')}: ${data.selectedImageName} / ` : '';
+  ui.speciesReferenceSummary.textContent = `${imageLabel}${t('speciesReferenceResultSummary')} ${suggestions.length} / ${sourceStatusLabel(data.sources)}`;
   if (!suggestions.length) {
     ui.speciesReferenceResults.innerHTML = `<div class="hint-box">${escapeHtml(t('speciesReferenceNoResult'))}</div>`;
     renderSpeciesReferenceDetail(null);
@@ -320,6 +366,46 @@ async function runSpeciesReferenceQuery() {
     });
   } finally {
     setSpeciesReferenceBusy(false);
+  }
+}
+
+async function runSpeciesImageCompare() {
+  const point = getSelectedPoint();
+  if (!point) return showAlert(t('noPointSelected'));
+
+  clearSpeciesReferenceCache();
+  setSpeciesImageCompareBusy(true);
+  if (ui.speciesReferenceImageCompareStatus) {
+    ui.speciesReferenceImageCompareStatus.textContent = t('speciesReferenceImageCompareRunning');
+  }
+  try {
+    const result = await callIpc(window.plantApp.species.imageCompare({
+      locale: speciesReferenceLocale(),
+      token: String(ui.speciesReferenceImageTokenInput?.value || '').trim()
+    }));
+    if (result.canceled) {
+      if (ui.speciesReferenceImageCompareStatus) {
+        ui.speciesReferenceImageCompareStatus.textContent = t('speciesReferenceImageCompareCanceled');
+      }
+      return;
+    }
+    renderSpeciesReferenceResults(result);
+    if (ui.speciesReferenceImageCompareStatus) {
+      ui.speciesReferenceImageCompareStatus.textContent = `${t('speciesReferenceImageCompareDone')} ${result.suggestions?.length || 0}`;
+    }
+    window.plantApp?.log?.report?.({
+      level: 'info',
+      scope: 'species-reference:image-compare',
+      message: 'Species image comparison completed',
+      details: { count: result.suggestions?.length || 0, uploadedBytes: result.uploadedBytes || 0 }
+    }).catch(() => {});
+  } catch (error) {
+    clearSpeciesReferenceCache();
+    handleUiError(error, 'species-reference:image-compare', {
+      title: t('speciesReferenceImageCompareFailed')
+    });
+  } finally {
+    setSpeciesImageCompareBusy(false);
   }
 }
 
@@ -418,6 +504,7 @@ function bindSpeciesReferenceEvents() {
   ui.speciesReferenceModal?.querySelector('.layer-modal-backdrop')
     ?.addEventListener('click', closeSpeciesReferenceCenter);
   ui.btnRunSpeciesReference?.addEventListener('click', runSpeciesReferenceQuery);
+  ui.btnRunSpeciesImageCompare?.addEventListener('click', runSpeciesImageCompare);
   ui.btnPreviewSpeciesReferenceImage?.addEventListener('click', () => openSelectedSpeciesReferenceImage());
   ui.btnDiscardSpeciesReference?.addEventListener('click', closeSpeciesReferenceCenter);
   ui.btnApplySpeciesReference?.addEventListener('click', applySpeciesReferenceSuggestion);
@@ -429,6 +516,10 @@ function bindSpeciesReferenceEvents() {
   ui.speciesReferenceDetail?.addEventListener('click', event => {
     const button = event.target.closest('.species-reference-thumb');
     if (!button) return;
+    if (button.dataset.comparedImage) {
+      openImagePreview(button.dataset.comparedImage, speciesReferenceCache?.selectedImageName || t('speciesReferenceComparedImage'), [button.dataset.comparedImage]);
+      return;
+    }
     openSelectedSpeciesReferenceImage(button.dataset.imageUrl || '');
   });
 }

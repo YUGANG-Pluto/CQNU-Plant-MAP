@@ -503,6 +503,14 @@
         <label class="check-card"><input id="speciesReferenceApplyCommon" type="checkbox" /> <span data-i18n="speciesReferenceApplyCommon">应用中文名</span></label>
         <label class="check-card"><input id="speciesReferenceAppendNote" type="checkbox" /> <span data-i18n="speciesReferenceAppendNote">追加参考摘要到备注</span></label>
       </div>
+      <div class="species-reference-image-compare">
+        <div class="field">
+          <label data-i18n="speciesReferenceImageToken">iNaturalist 图像令牌（临时）</label>
+          <input id="speciesReferenceImageTokenInput" class="input" type="password" autocomplete="off" data-i18n-placeholder="speciesReferenceImageTokenPlaceholder" />
+        </div>
+        <button id="btnRunSpeciesImageCompare" class="btn btn-soft" data-i18n="speciesReferenceRunImageCompare">选择图片比对</button>
+        <div id="speciesReferenceImageCompareStatus" class="subtle" data-i18n="speciesReferenceImageCompareHint">仅在用户主动选择图片后上传比对，不复制到项目目录。</div>
+      </div>
       <div id="speciesReferenceSummary" class="hint-box" data-i18n="speciesReferenceEmpty">请选择点位并填写中文名或学名后查询。</div>
       <div id="speciesReferenceDetail" class="species-reference-detail hint-box is-empty" data-i18n="speciesReferenceDetailEmpty">选择参考结果后可查看来源、图片、分类层级和特征备注。</div>
       <div id="speciesReferenceResults" class="species-reference-results modal-list"></div>

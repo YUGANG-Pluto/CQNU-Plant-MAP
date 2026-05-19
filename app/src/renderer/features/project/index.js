@@ -72,6 +72,9 @@ function applyI18n() {
     }
     node.textContent = t(key);
   });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(node => {
+    node.placeholder = t(node.getAttribute('data-i18n-placeholder'));
+  });
 
   if (ui.queryText) ui.queryText.placeholder = t('searchPlaceholder');
   document.querySelectorAll('.seg-btn[data-lang]').forEach(button => {

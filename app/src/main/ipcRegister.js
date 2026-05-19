@@ -81,6 +81,7 @@ function registerIpc() {
 
   handle('maintenance:checkImageRefs', maintenanceService.checkImageRefs);
   handle('species:referenceQuery', speciesReferenceService.querySpeciesReference);
+  handle('species:imageCompare', speciesReferenceService.querySpeciesImageCompare);
 }
 
 module.exports = {

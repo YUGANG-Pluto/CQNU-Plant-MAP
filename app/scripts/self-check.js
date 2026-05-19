@@ -1061,6 +1061,7 @@ function testSpeciesReferenceContract() {
   const serviceSource = fs.readFileSync(path.join(process.cwd(), 'src/main/speciesReferenceService.js'), 'utf8');
   const rendererSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/speciesReference/index.js'), 'utf8');
   const querySource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/query/index.js'), 'utf8');
+  const projectSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/project/index.js'), 'utf8');
   const elementsSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/dom/elements.js'), 'utf8');
   const appSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/app.js'), 'utf8');
   const stateSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/state/store.js'), 'utf8');
@@ -1074,6 +1075,9 @@ function testSpeciesReferenceContract() {
     'speciesReferenceSciInput',
     'speciesReferenceCommonInput',
     'btnRunSpeciesReference',
+    'speciesReferenceImageTokenInput',
+    'btnRunSpeciesImageCompare',
+    'speciesReferenceImageCompareStatus',
     'speciesReferenceDetail',
     'speciesReferenceResults',
     'btnPreviewSpeciesReferenceImage',
@@ -1088,10 +1092,16 @@ function testSpeciesReferenceContract() {
   assert.ok(html.indexOf('./src/renderer/features/speciesReference/index.js') < html.indexOf('./src/renderer/app.js'));
   assert.ok(appSource.includes('bindSpeciesReferenceEvents'));
   assert.ok(preloadSource.includes("referenceQuery: payload => invoke('species:referenceQuery'"));
+  assert.ok(preloadSource.includes("imageCompare: payload => invoke('species:imageCompare'"));
   assert.ok(ipcSource.includes("handle('species:referenceQuery'"));
+  assert.ok(ipcSource.includes("handle('species:imageCompare'"));
   assert.ok(ipcSource.includes("require('./speciesReferenceService')"));
   assert.ok(serviceSource.includes('https://api.gbif.org/v1'));
   assert.ok(serviceSource.includes('https://api.inaturalist.org/v1'));
+  assert.ok(serviceSource.includes('/v1/computervision/score_image'));
+  assert.ok(serviceSource.includes('MAX_COMPARE_IMAGE_BYTES'));
+  assert.ok(serviceSource.includes('querySpeciesImageCompare'));
+  assert.ok(serviceSource.includes('normalizeSelectedImage'));
   assert.ok(serviceSource.includes('/descriptions'));
   assert.ok(serviceSource.includes('/vernacularNames'));
   assert.ok(serviceSource.includes('/media'));
@@ -1107,6 +1117,10 @@ function testSpeciesReferenceContract() {
   assert.ok(rendererSource.includes('renderSpeciesReferenceDetail'));
   assert.ok(rendererSource.includes('recommendationText'));
   assert.ok(rendererSource.includes('safeExternalUrl'));
+  assert.ok(rendererSource.includes('runSpeciesImageCompare'));
+  assert.ok(rendererSource.includes('speciesReferenceImageTokenInput'));
+  assert.ok(rendererSource.includes('species-reference-compared-thumb'));
+  assert.ok(projectSource.includes('data-i18n-placeholder'));
   assert.ok(rendererSource.includes('await persistProject()'), 'reference suggestions may persist only after user apply');
   assert.ok(!rendererSource.includes('localStorage'));
   assert.ok(!rendererSource.includes('sessionStorage'));
@@ -1127,6 +1141,10 @@ function testSpeciesReferenceContract() {
       'speciesReferenceOpenWiki',
       'speciesReferenceDetailEmpty',
       'speciesReferencePreviewImage',
+      'speciesReferenceRunImageCompare',
+      'speciesReferenceImageTokenPlaceholder',
+      'speciesReferenceImageCompareFailed',
+      'speciesReferenceComparedImage',
       'speciesReferenceClassification',
       'speciesReferenceRecommendedFields',
       'speciesReferenceUnmappedToNote'
@@ -1162,6 +1180,18 @@ function testSpeciesReferenceContract() {
   assert.strictEqual(inat.observationsCount, 43523);
   assert.strictEqual(inat.conservationStatus, 'endangered');
   assert.strictEqual(inat.images.length, 1);
+  const vision = speciesReferenceService.normalizeVisionSuggestion({
+    combined_score: 0.82,
+    taxon: {
+      id: 64350,
+      name: 'Ginkgo biloba',
+      rank: 'species',
+      preferred_common_name: 'Ginkgo',
+      default_photo: { medium_url: 'https://example.test/ginkgo.jpg' }
+    }
+  });
+  assert.strictEqual(vision.sourceLabel, 'iNaturalist CV');
+  assert.strictEqual(vision.confidence, 82);
   assert.ok(rendererSource.includes('speciesReferenceOpenWiki'));
   assert.ok(rendererSource.includes('photoAttribution'));
   assert.strictEqual(speciesReferenceService.dedupeSuggestions([gbif, gbif, inat]).length, 2);

@@ -49,7 +49,7 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 - 物候记录：同一植物点位可维护多条物候记录。
 - 图片归档：导入图片、归档到项目目录，并支持预览。
 - 查询中心：按名称、分区、生活型、物候状态、来源、调查人、日期和记录完整性筛选，并可从点位结果手动打开物种参考。
-- 物种参考：按当前点位中文名或学名查询 GBIF 与 iNaturalist，可查看来源、图片、分类层级和特征备注；建议仅临时显示，由用户选择是否吸收到学名、中文名或物候备注。
+- 物种参考：按当前点位中文名或学名查询 GBIF 与 iNaturalist，可查看来源、图片、分类层级和特征备注；也可由用户主动选择图片进行 iNaturalist 图像比对。建议仅临时显示，由用户选择是否吸收到学名、中文名或物候备注。
 - 统计中心：查看分区、物种、时间和自定义统计图表。
 - 回收站：恢复误删记录或确认彻底删除。
 - 项目备份：手动备份项目，并处理过期备份。
@@ -66,7 +66,7 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 - Phenology records: multiple phenology entries can be maintained for one plant point.
 - Image archive: import images into the project folder and preview them.
 - Query center: filter by name, zone, growth form, phenology state, source, observer, date, and record completeness, with a manual species-reference action on point results.
-- Species reference: query GBIF and iNaturalist by the selected point's common name or scientific name, inspect source links, images, taxonomy, and feature notes, then choose whether to absorb the suggestion into scientific name, common name, or phenology notes.
+- Species reference: query GBIF and iNaturalist by the selected point's common name or scientific name, inspect source links, images, taxonomy, and feature notes, or manually choose an image for iNaturalist image comparison. Suggestions are temporary until the user chooses whether to absorb them into scientific name, common name, or phenology notes.
 - Statistics center: view zone, species, time, and custom statistical charts.
 - Recycle bin: restore deleted records or permanently delete them.
 - Project backup: create manual backups and handle expired backups.
@@ -192,6 +192,7 @@ The maintenance center supports routine project maintenance:
 - 建议在大量编辑、导入、合并或修复前先备份项目。
 - 不建议把真实调查数据、图片、日志或备份压缩包提交到公开仓库。
 - 在线底图加载依赖外部地图服务，若网络或服务不可用，地图显示可能受影响。
+- 物种参考和图像比对依赖外部 API。图像比对只在用户主动选择图片时上传，不会把图片复制到项目目录；若 iNaturalist 要求访问令牌，令牌仅用于本次请求，不会保存。
 - 保守修复不会删除记录、不会自动修改坐标、不会把孤立点位自动归属到某个分区。
 
 ### English
@@ -199,6 +200,7 @@ The maintenance center supports routine project maintenance:
 - Create a backup before large edits, imports, merges, or repairs.
 - Do not commit real survey data, images, logs, or backup archives to a public repository.
 - Online basemaps depend on external map services; map display may be affected by network or service availability.
+- Species reference and image comparison depend on external APIs. Image comparison uploads an image only after the user chooses it, and the image is not copied into the project folder. If iNaturalist requires an access token, it is used only for the current request and is not saved.
 - Safe repair does not delete records, automatically change coordinates, or assign orphan points to zones.
 
 ---
