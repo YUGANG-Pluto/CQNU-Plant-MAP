@@ -1277,6 +1277,9 @@ function testRepositoryHygieneContract() {
   ].forEach(fileName => assert.ok(repositoryFileExists(fileName), `${fileName} must exist`));
 
   assert.ok(readWorkspaceDoc('BASELINE_AUDIT.md').includes('No business data format was changed'));
+  assert.ok(readWorkspaceDoc('TESTING.md').includes('npm run verify'));
+  assert.ok(readWorkspaceDoc('MAINTENANCE.md').includes('Safe mode should remain browse-only'));
+  assert.ok(readWorkspaceDoc('RELEASE_CHECKLIST.md').includes('npm run dist'));
   assert.ok(repositoryFileExists('app/package-lock.json'), 'package-lock.json must exist');
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-js-syntax.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-repo-hygiene.js')));
