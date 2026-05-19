@@ -826,6 +826,7 @@ function handleModalEscapeKey(event) {
   if (ui.rightInspectorDrawer && !ui.rightInspectorDrawer.classList.contains('hidden')) closeRightInspectorDrawer();
   if (ui.basemapWorkspaceModal && !ui.basemapWorkspaceModal.classList.contains('hidden')) closeBasemapWorkspacePanel();
   if (ui.pointEditorModal && !ui.pointEditorModal.classList.contains('hidden')) closePointEditor();
+  if (ui.speciesReferenceModal && !ui.speciesReferenceModal.classList.contains('hidden')) closeSpeciesReferenceCenter();
   if (ui.smallPromptModal && !ui.smallPromptModal.classList.contains('hidden')) settleSmallPrompt('');
   if (ui.alertModal && !ui.alertModal.classList.contains('hidden')) closeLayerModal(ui.alertModal);
   if (!ui.confirmModal.classList.contains('hidden')) settleConfirmDialog(false);
@@ -845,6 +846,7 @@ function bindEvents() {
   bindMergeEvents();
   bindBackupEvents();
   if (typeof bindMaintenanceEvents === 'function') bindMaintenanceEvents();
+  if (typeof bindSpeciesReferenceEvents === 'function') bindSpeciesReferenceEvents();
   bindDialogEvents();
   bindImagePreviewEvents();
   bindKeyboardEvents();

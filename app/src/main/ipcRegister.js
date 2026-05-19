@@ -6,6 +6,7 @@ const imageService = require('./imageService');
 const backupService = require('./backupService');
 const logger = require('./logger');
 const maintenanceService = require('./maintenanceService');
+const speciesReferenceService = require('./speciesReferenceService');
 
 function ok(data) {
   return { ok: true, data };
@@ -79,6 +80,7 @@ function registerIpc() {
   handle('log:exportDiagnostics', dialogs.exportJson);
 
   handle('maintenance:checkImageRefs', maintenanceService.checkImageRefs);
+  handle('species:referenceQuery', speciesReferenceService.querySpeciesReference);
 }
 
 module.exports = {

@@ -128,6 +128,7 @@ const elementGroups = {
   stats: [
     'btnOpenStats',
     'btnOpenStatsFromSummary',
+    'btnOpenSpeciesReference',
     'workspaceStatsSummary',
     'statsModal',
     'btnCloseStatsModal',
@@ -327,6 +328,7 @@ const elementGroups = {
     'btnClosePointEditorModal',
     'phenologyTabs',
     'btnAddPhenology',
+    'btnOpenSpeciesReferenceInline',
     'btnDeletePhenology',
     'pointSummaryBox',
     'habitatOptions',
@@ -334,6 +336,20 @@ const elementGroups = {
     'growthFormOptions',
     'floweringStateOptions',
     'cultivatedStatusOptions'
+  ],
+  speciesReference: [
+    'speciesReferenceModal',
+    'btnCloseSpeciesReferenceModal',
+    'speciesReferenceSciInput',
+    'speciesReferenceCommonInput',
+    'btnRunSpeciesReference',
+    'speciesReferenceApplySci',
+    'speciesReferenceApplyCommon',
+    'speciesReferenceAppendNote',
+    'speciesReferenceSummary',
+    'speciesReferenceResults',
+    'btnDiscardSpeciesReference',
+    'btnApplySpeciesReference'
   ],
   importExport: ['btnExportCsv', 'btnExportGeoJSON', 'btnImportCsv', 'btnImportGeoJSON']
 };

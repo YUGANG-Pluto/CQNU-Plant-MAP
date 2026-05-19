@@ -39,6 +39,9 @@ contextBridge.exposeInMainWorld('plantApp', {
   maintenance: {
     checkImageRefs: payload => invoke('maintenance:checkImageRefs', payload)
   },
+  species: {
+    referenceQuery: payload => invoke('species:referenceQuery', payload)
+  },
   window: {
     toggleFullscreen: () => invoke('window:toggleFullscreen')
   }

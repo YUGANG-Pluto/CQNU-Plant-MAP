@@ -9,6 +9,7 @@ const projectStore = require('../src/main/projectStore');
 const fileWrite = require('../src/main/fileWrite');
 const logger = require('../src/main/logger');
 const maintenanceService = require('../src/main/maintenanceService');
+const speciesReferenceService = require('../src/main/speciesReferenceService');
 const { ERROR_CODES } = require('../src/main/errorCodes');
 const { unwrapIpc } = require('../src/renderer/utils/ipc');
 const { errorCode, errorMessage } = require('../src/renderer/utils/errorHandler');
@@ -1053,6 +1054,100 @@ function testMaintenanceCenterContract() {
   });
 }
 
+function testSpeciesReferenceContract() {
+  const html = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf8');
+  const preloadSource = fs.readFileSync(path.join(process.cwd(), 'preload.js'), 'utf8');
+  const ipcSource = fs.readFileSync(path.join(process.cwd(), 'src/main/ipcRegister.js'), 'utf8');
+  const serviceSource = fs.readFileSync(path.join(process.cwd(), 'src/main/speciesReferenceService.js'), 'utf8');
+  const rendererSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/speciesReference/index.js'), 'utf8');
+  const elementsSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/dom/elements.js'), 'utf8');
+  const appSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/app.js'), 'utf8');
+  const stateSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/state/store.js'), 'utf8');
+  const maintenanceSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/maintenance/index.js'), 'utf8');
+  const cssSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/10-core-components.css'), 'utf8');
+
+  [
+    'btnOpenSpeciesReference',
+    'btnOpenSpeciesReferenceInline',
+    'speciesReferenceModal',
+    'speciesReferenceSciInput',
+    'speciesReferenceCommonInput',
+    'btnRunSpeciesReference',
+    'speciesReferenceResults',
+    'btnDiscardSpeciesReference',
+    'btnApplySpeciesReference'
+  ].forEach(id => {
+    assert.ok(html.includes(`id="${id}"`), `${id} must exist in species reference UI`);
+    assert.ok(elementsSource.includes(`'${id}'`), `${id} must be registered`);
+  });
+
+  assert.ok(html.indexOf('./src/renderer/features/phenology/index.js') < html.indexOf('./src/renderer/features/speciesReference/index.js'));
+  assert.ok(html.indexOf('./src/renderer/features/speciesReference/index.js') < html.indexOf('./src/renderer/app.js'));
+  assert.ok(appSource.includes('bindSpeciesReferenceEvents'));
+  assert.ok(preloadSource.includes("referenceQuery: payload => invoke('species:referenceQuery'"));
+  assert.ok(ipcSource.includes("handle('species:referenceQuery'"));
+  assert.ok(ipcSource.includes("require('./speciesReferenceService')"));
+  assert.ok(serviceSource.includes('https://api.gbif.org/v1'));
+  assert.ok(serviceSource.includes('https://api.inaturalist.org/v1'));
+  assert.ok(!serviceSource.includes('writeFile'));
+  assert.ok(!serviceSource.includes('localStorage'));
+  assert.ok(rendererSource.includes('let speciesReferenceCache = null'));
+  assert.ok(rendererSource.includes('clearSpeciesReferenceCache'));
+  assert.ok(rendererSource.includes("guardMaintenanceReadOnlyAction('apply-species-reference')"));
+  assert.ok(rendererSource.includes('await persistProject()'), 'reference suggestions may persist only after user apply');
+  assert.ok(!rendererSource.includes('localStorage'));
+  assert.ok(!rendererSource.includes('sessionStorage'));
+  assert.ok(!stateSource.includes('speciesReferenceCache'), 'species reference cache must not become project state');
+  assert.ok(maintenanceSource.includes("'btnApplySpeciesReference'"));
+  assert.ok(!maintenanceSource.includes("'btnOpenSpeciesReference'"), 'safe mode should allow read-only reference lookup');
+  assert.ok(cssSource.includes('.species-reference-panel'));
+
+  ['zh.js', 'en.js'].forEach(name => {
+    const source = fs.readFileSync(path.join(process.cwd(), 'src/renderer/i18n', name), 'utf8');
+    [
+      'openSpeciesReference',
+      'speciesReferenceTitle',
+      'runSpeciesReference',
+      'speciesReferenceApply',
+      'speciesReferenceDiscard',
+      'speciesReferenceConservation',
+      'speciesReferenceOpenWiki'
+    ].forEach(key => assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`));
+  });
+
+  const gbif = speciesReferenceService.normalizeGbifMatch({
+    usageKey: 2687885,
+    scientificName: 'Ginkgo biloba L.',
+    canonicalName: 'Ginkgo biloba',
+    rank: 'SPECIES',
+    status: 'ACCEPTED',
+    confidence: 100,
+    matchType: 'EXACT',
+    family: 'Ginkgoaceae',
+    genus: 'Ginkgo'
+  });
+  assert.strictEqual(gbif.scientificName, 'Ginkgo biloba L.');
+  assert.strictEqual(gbif.classification.family, 'Ginkgoaceae');
+
+  const inat = speciesReferenceService.normalizeINaturalistTaxon({
+    id: 64350,
+    name: 'Ginkgo biloba',
+    rank: 'species',
+    is_active: true,
+    observations_count: 43523,
+    preferred_common_name: '银杏',
+    conservation_status: { status_name: 'endangered' },
+    wikipedia_url: 'https://example.test/wiki',
+    default_photo: { medium_url: 'https://example.test/ginkgo.jpg' }
+  });
+  assert.strictEqual(inat.commonName, '银杏');
+  assert.strictEqual(inat.observationsCount, 43523);
+  assert.strictEqual(inat.conservationStatus, 'endangered');
+  assert.ok(rendererSource.includes('speciesReferenceOpenWiki'));
+  assert.ok(rendererSource.includes('photoAttribution'));
+  assert.strictEqual(speciesReferenceService.dedupeSuggestions([gbif, gbif, inat]).length, 2);
+}
+
 function testReadmeIsUserManual() {
   const readme = readRepositoryReadme();
   [
@@ -1063,7 +1158,9 @@ function testReadmeIsUserManual() {
     'Main Features',
     'Basic Workflow',
     '仍可浏览信息、查询统计并拖动查看地图',
-    'Browsing, query, statistics viewing, and map dragging remain available'
+    'Browsing, query, statistics viewing, and map dragging remain available',
+    '物种参考',
+    'Species reference'
   ].forEach(fragment => assert.ok(readme.includes(fragment), `README missing ${fragment}`));
   [
     'npm install',
@@ -1096,6 +1193,7 @@ async function main() {
   testStatisticsChartVisualContract();
   testReducedInnerHtmlSurface();
   testMaintenanceCenterContract();
+  testSpeciesReferenceContract();
   testReadmeIsUserManual();
   await testExportWritesAtomicallyAndValidatesContent();
   await testImageImportDoesNotOverwriteExistingArchive();

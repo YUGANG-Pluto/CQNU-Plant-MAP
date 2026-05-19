@@ -58,6 +58,7 @@
         <div class="toolbar-grid quick-grid">
           <button id="btnOpenStats" class="btn morandi-btn morandi-purple" data-i18n="openStatsCenter">统计中心</button>
           <button id="btnOpenQuery" class="btn morandi-btn morandi-green" data-i18n="openQueryCenter">查询中心</button>
+          <button id="btnOpenSpeciesReference" class="btn morandi-btn morandi-green" data-i18n="openSpeciesReference">物种参考</button>
           <button id="btnOpenTrash" class="btn morandi-btn morandi-rose" data-i18n="openRecycleBin">回收站</button>
           <button id="btnOpenPointEditor" class="btn morandi-btn morandi-blue" data-i18n="openPhenologyCenter">物候录入中心</button>
           <button id="btnOpenTheme" class="btn morandi-btn morandi-sand" data-i18n="openThemeCenter">界面设置</button>
@@ -452,6 +453,7 @@
         <div id="phenologyTabs" class="seg-tabs phenology-tabs"></div>
         <div class="toolbar-inline compact-right">
           <button id="btnAddPhenology" class="btn btn-soft" data-i18n="addPhenology">添加物候</button>
+          <button id="btnOpenSpeciesReferenceInline" class="btn btn-soft" data-i18n="openSpeciesReference">物种参考</button>
           <button id="btnDeletePhenology" class="btn btn-danger-soft" data-i18n="deletePhenology">删去物候</button>
         </div>
       </div>
@@ -477,6 +479,35 @@
           <button id="btnApplyPoint" class="btn btn-primary" data-i18n="applyPointInfo">应用到当前点位</button>
         </div>
         <div id="imageList" class="image-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="speciesReferenceModal" class="layer-modal hidden">
+    <div class="layer-modal-backdrop"></div>
+    <div class="layer-modal-panel glass species-reference-panel">
+      <div class="layer-modal-header">
+        <div>
+          <h2 data-i18n="speciesReferenceTitle">物种参考建议</h2>
+          <p class="subtle" data-i18n="speciesReferenceSubtitle">仅查询 GBIF 与 iNaturalist，结果临时缓存，用户确认后才应用。</p>
+        </div>
+        <button id="btnCloseSpeciesReferenceModal" class="btn btn-soft layer-close">×</button>
+      </div>
+      <div class="species-reference-query">
+        <div class="field"><label data-i18n="plantNameSci">学名</label><input id="speciesReferenceSciInput" class="input" /></div>
+        <div class="field"><label data-i18n="plantNameCn">植物中文名</label><input id="speciesReferenceCommonInput" class="input" /></div>
+        <button id="btnRunSpeciesReference" class="btn btn-primary" data-i18n="runSpeciesReference">查询参考</button>
+      </div>
+      <div class="species-reference-apply-bar">
+        <label class="check-card"><input id="speciesReferenceApplySci" type="checkbox" /> <span data-i18n="speciesReferenceApplySci">应用学名</span></label>
+        <label class="check-card"><input id="speciesReferenceApplyCommon" type="checkbox" /> <span data-i18n="speciesReferenceApplyCommon">应用中文名</span></label>
+        <label class="check-card"><input id="speciesReferenceAppendNote" type="checkbox" /> <span data-i18n="speciesReferenceAppendNote">追加参考摘要到备注</span></label>
+      </div>
+      <div id="speciesReferenceSummary" class="hint-box" data-i18n="speciesReferenceEmpty">请选择点位并填写中文名或学名后查询。</div>
+      <div id="speciesReferenceResults" class="species-reference-results modal-list"></div>
+      <div class="toolbar-inline modal-footer-actions">
+        <button id="btnDiscardSpeciesReference" class="btn btn-soft" data-i18n="speciesReferenceDiscard">不使用并清除</button>
+        <button id="btnApplySpeciesReference" class="btn btn-primary" data-i18n="speciesReferenceApply">应用所选建议</button>
       </div>
     </div>
   </div>
@@ -1027,6 +1058,7 @@
   <script defer src="./src/renderer/features/theme/config.js"></script>
   <script defer src="./src/renderer/features/theme/index.js"></script>
   <script defer src="./src/renderer/features/phenology/index.js"></script>
+  <script defer src="./src/renderer/features/speciesReference/index.js"></script>
   <script defer src="./src/renderer/features/images/index.js"></script>
   <script defer src="./src/renderer/features/basemap/index.js"></script>
   <script defer src="./src/renderer/features/query/index.js"></script>

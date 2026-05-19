@@ -53,6 +53,7 @@ const SAFE_MODE_LOCKED_IDS = Object.freeze([
   'btnRunSafeRepair',
   'btnCleanupLogs',
   'btnExportDiagnostics',
+  'btnApplySpeciesReference',
   'btnExportUiSettings',
   'btnImportUiSettings'
 ]);
