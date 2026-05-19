@@ -60,6 +60,16 @@ function repositoryFileExists(fileName) {
   ].some(candidate => fs.existsSync(candidate));
 }
 
+function readRepositoryPath(fileName) {
+  const candidates = [
+    path.join(process.cwd(), fileName),
+    path.join(process.cwd(), '..', fileName)
+  ];
+  const found = candidates.find(candidate => fs.existsSync(candidate));
+  assert.ok(found, `${fileName} must exist`);
+  return fs.readFileSync(found, 'utf8');
+}
+
 const expectedCsvHeader = [
   '分区编号',
   '分区名称',
@@ -1280,6 +1290,16 @@ function testRepositoryHygieneContract() {
   assert.ok(readWorkspaceDoc('TESTING.md').includes('npm run verify'));
   assert.ok(readWorkspaceDoc('MAINTENANCE.md').includes('Safe mode should remain browse-only'));
   assert.ok(readWorkspaceDoc('RELEASE_CHECKLIST.md').includes('npm run dist'));
+  [
+    '.github/workflows/ci.yml',
+    '.github/pull_request_template.md',
+    '.github/ISSUE_TEMPLATE/bug_report.yml',
+    '.github/ISSUE_TEMPLATE/feature_request.yml',
+    '.github/ISSUE_TEMPLATE/config.yml'
+  ].forEach(fileName => assert.ok(repositoryFileExists(fileName), `${fileName} must exist`));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run verify'));
+  assert.ok(readRepositoryPath('.github/pull_request_template.md').includes('Compatibility'));
+  assert.ok(readRepositoryPath('.github/ISSUE_TEMPLATE/config.yml').includes('blank_issues_enabled: false'));
   assert.ok(repositoryFileExists('app/package-lock.json'), 'package-lock.json must exist');
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-js-syntax.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-repo-hygiene.js')));
