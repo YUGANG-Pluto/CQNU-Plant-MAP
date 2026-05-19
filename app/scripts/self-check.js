@@ -3,6 +3,7 @@ const os = require('os');
 const path = require('path');
 const assert = require('assert');
 const Module = require('module');
+const { pathToFileURL } = require('url');
 
 const pathGuard = require('../src/main/pathGuard');
 const projectStore = require('../src/main/projectStore');
@@ -131,7 +132,8 @@ async function withStubbedModules(stubs, fn) {
   }
 }
 
-function createWorkspace() {
+function createWorkspace(options = {}) {
+  const { trustProject = true } = options;
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plant-self-check-'));
   const projectDir = path.join(root, 'project');
   const imagesDir = path.join(projectDir, 'information', 'images');
@@ -139,6 +141,9 @@ function createWorkspace() {
 
   fs.mkdirSync(imagesDir, { recursive: true });
   fs.mkdirSync(backupDir, { recursive: true });
+  if (trustProject) {
+    pathGuard.trustProjectDirFromDialog(projectDir);
+  }
   return { root, projectDir, imagesDir, backupDir };
 }
 
@@ -193,6 +198,16 @@ function testPathGuard() {
     ERROR_CODES.INVALID_FILE_TYPE,
     '图片扩展名必须使用白名单'
   );
+
+  const untrusted = createWorkspace({ trustProject: false });
+  expectAppError(
+    () => projectStore.loadProject({ projectDir: untrusted.projectDir }),
+    ERROR_CODES.UNTRUSTED_PROJECT_DIR,
+    '项目目录必须先由系统目录选择器授信'
+  );
+  pathGuard.trustProjectDirFromDialog(untrusted.projectDir);
+  assert.strictEqual(projectStore.loadProject({ projectDir: untrusted.projectDir }).projectDir, untrusted.projectDir);
+  fs.rmSync(untrusted.root, { recursive: true, force: true });
 
   expectAppError(
     () => pathGuard.normalizeBackupDir(projectDir, backupDir),
@@ -558,9 +573,20 @@ async function testBackupCreateCleanupAndCounts() {
 
 async function testIpcDoesNotMaskFalsePayload() {
   const handlers = {};
+  const appIndexUrl = pathToFileURL(path.join(process.cwd(), 'index.html')).toString();
+  const trustedEvent = {
+    sender: {
+      userAgent: 'self-check',
+      getURL: () => appIndexUrl
+    },
+    senderFrame: { url: appIndexUrl }
+  };
   const electronStub = {
     BrowserWindow: {
       fromWebContents: () => null
+    },
+    shell: {
+      openExternal: async () => {}
     },
     ipcMain: {
       handle: (channel, fn) => {
@@ -579,18 +605,30 @@ async function testIpcDoesNotMaskFalsePayload() {
 
     try {
       console.error = () => {};
-      const response = await handlers['project:save']({ sender: {} }, false);
+      const rejectedSender = await handlers['project:save'](
+        { sender: { getURL: () => 'https://example.invalid/' }, senderFrame: { url: 'https://example.invalid/' } },
+        false
+      );
+      assert.strictEqual(rejectedSender.ok, false);
+      assert.strictEqual(rejectedSender.error.code, ERROR_CODES.UNTRUSTED_IPC_SENDER);
+
+      const response = await handlers['project:save'](trustedEvent, false);
       assert.strictEqual(response.ok, false);
       assert.strictEqual(response.error.code, ERROR_CODES.INVALID_PAYLOAD);
       const logResponse = await handlers['log:renderer'](
-        { sender: { userAgent: 'self-check' } },
+        trustedEvent,
         { level: 'warn', scope: 'renderer:self-check', message: 'warn' }
       );
       assert.strictEqual(logResponse.ok, true);
       assert.strictEqual(logResponse.data.logged, true);
-      const levelResponse = await handlers['log:setLevel']({ sender: {} }, { level: 'error' });
+      const levelResponse = await handlers['log:setLevel'](trustedEvent, { level: 'error' });
       assert.strictEqual(levelResponse.ok, true);
       assert.strictEqual(levelResponse.data.level, 'error');
+      const externalResponse = await handlers['window:openExternal'](trustedEvent, { url: 'https://www.gbif.org/' });
+      assert.strictEqual(externalResponse.ok, true);
+      const invalidExternalResponse = await handlers['window:openExternal'](trustedEvent, { url: 'file:///tmp/test' });
+      assert.strictEqual(invalidExternalResponse.ok, false);
+      assert.strictEqual(invalidExternalResponse.error.code, ERROR_CODES.INVALID_EXTERNAL_URL);
       [
         'settings:importJson',
         'settings:exportJson',
@@ -599,14 +637,14 @@ async function testIpcDoesNotMaskFalsePayload() {
         'log:exportDiagnostics',
         'maintenance:checkImageRefs'
       ].forEach(channel => assert.strictEqual(typeof handlers[channel], 'function', `${channel} must be registered`));
-      const recentResponse = await handlers['log:listRecent']({ sender: {} }, { limit: 10 });
+      const recentResponse = await handlers['log:listRecent'](trustedEvent, { limit: 10 });
       assert.strictEqual(recentResponse.ok, true);
-      const cleanupResponse = await handlers['log:cleanup']({ sender: {} }, {});
+      const cleanupResponse = await handlers['log:cleanup'](trustedEvent, {});
       assert.strictEqual(cleanupResponse.ok, true);
       const { root, projectDir, imagesDir } = createWorkspace();
       try {
         fs.writeFileSync(path.join(imagesDir, 'safe.png'), 'image');
-        const imageResponse = await handlers['maintenance:checkImageRefs']({ sender: {} }, {
+        const imageResponse = await handlers['maintenance:checkImageRefs'](trustedEvent, {
           projectDir,
           refs: ['information/images/safe.png']
         });
@@ -1144,6 +1182,9 @@ function testSpeciesReferenceContract() {
   assert.ok(rendererSource.includes('renderSpeciesReferenceDetail'));
   assert.ok(rendererSource.includes('recommendationText'));
   assert.ok(rendererSource.includes('safeExternalUrl'));
+  assert.ok(rendererSource.includes('externalLinkHtml'));
+  assert.ok(rendererSource.includes('window.plantApp.window.openExternal'));
+  assert.ok(rendererSource.includes('data-external-url'));
   assert.ok(rendererSource.includes('runSpeciesImageCompare'));
   assert.ok(rendererSource.includes('speciesReferenceImageTokenInput'));
   assert.ok(rendererSource.includes('species-reference-compared-thumb'));
@@ -1263,6 +1304,68 @@ function testReadmeIsUserManual() {
   ].forEach(fragment => assert.ok(!readme.includes(fragment), `README should stay user-facing and omit ${fragment}`));
 }
 
+function testElectronSecurityContract() {
+  const html = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf8');
+  const preloadSource = fs.readFileSync(path.join(process.cwd(), 'preload.js'), 'utf8');
+  const windowSource = fs.readFileSync(path.join(process.cwd(), 'src/main/windowManager.js'), 'utf8');
+  const ipcSource = fs.readFileSync(path.join(process.cwd(), 'src/main/ipcRegister.js'), 'utf8');
+  const pathGuardSource = fs.readFileSync(path.join(process.cwd(), 'src/main/pathGuard.js'), 'utf8');
+  const securitySource = fs.readFileSync(path.join(process.cwd(), 'src/main/securityPolicy.js'), 'utf8');
+  const errorCodesSource = fs.readFileSync(path.join(process.cwd(), 'src/main/errorCodes.js'), 'utf8');
+
+  [
+    'contextIsolation: true',
+    'nodeIntegration: false',
+    'sandbox: true',
+    'webSecurity: true',
+    'allowRunningInsecureContent: false',
+    'webviewTag: false',
+    'setWindowOpenHandler',
+    'will-navigate'
+  ].forEach(fragment => assert.ok(windowSource.includes(fragment), `window security missing ${fragment}`));
+
+  assert.ok(html.includes('Content-Security-Policy'));
+  assert.ok(html.includes("object-src 'none'"));
+  assert.ok(html.includes("frame-src 'none'"));
+  assert.ok(html.includes('https://unpkg.com'));
+
+  assert.ok(ipcSource.includes('assertTrustedIpcSender'));
+  assert.ok(ipcSource.includes("handle('window:openExternal'"));
+  assert.ok(preloadSource.includes('contextBridge.exposeInMainWorld'));
+  assert.ok(preloadSource.includes("invoke('window:openExternal'"));
+  ['readFile', 'writeFile', 'deleteFile', 'exec('].forEach(fragment => {
+    assert.ok(!preloadSource.includes(fragment), `preload must not expose ${fragment}`);
+  });
+
+  assert.ok(securitySource.includes('APP_INDEX_URL'));
+  assert.ok(securitySource.includes('shell.openExternal'));
+  assert.ok(securitySource.includes("['http:', 'https:']"));
+  assert.ok(errorCodesSource.includes('UNTRUSTED_IPC_SENDER'));
+  assert.ok(errorCodesSource.includes('UNTRUSTED_PROJECT_DIR'));
+  assert.ok(errorCodesSource.includes('INVALID_EXTERNAL_URL'));
+
+  assert.ok(pathGuardSource.includes('trustedProjectDirs'));
+  assert.ok(pathGuardSource.includes('trustProjectDirFromDialog'));
+  assert.ok(pathGuardSource.includes('assertTrustedProjectDir'));
+
+  const rendererDir = path.join(process.cwd(), 'src/renderer');
+  const rendererFiles = [];
+  function collect(dir) {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach(entry => {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) collect(fullPath);
+      if (entry.isFile() && entry.name.endsWith('.js')) rendererFiles.push(fullPath);
+    });
+  }
+  collect(rendererDir);
+  rendererFiles.forEach(filePath => {
+    const source = fs.readFileSync(filePath, 'utf8');
+    ['require(\'fs\')', 'require("fs")', 'require(\'child_process\')', 'require("child_process")', 'ipcRenderer'].forEach(fragment => {
+      assert.ok(!source.includes(fragment), `${path.relative(process.cwd(), filePath)} must not use ${fragment}`);
+    });
+  });
+}
+
 function testRepositoryHygieneContract() {
   const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
   assert.strictEqual(packageJson.license, 'UNLICENSED');
@@ -1290,6 +1393,8 @@ function testRepositoryHygieneContract() {
   assert.ok(readWorkspaceDoc('TESTING.md').includes('npm run verify'));
   assert.ok(readWorkspaceDoc('MAINTENANCE.md').includes('Safe mode should remain browse-only'));
   assert.ok(readWorkspaceDoc('RELEASE_CHECKLIST.md').includes('npm run dist'));
+  assert.ok(readWorkspaceDoc('SECURITY_MODEL.md').includes('contextIsolation'));
+  assert.ok(readWorkspaceDoc('IPC_CONTRACT.md').includes('window:openExternal'));
   [
     '.github/workflows/ci.yml',
     '.github/pull_request_template.md',
@@ -1344,6 +1449,7 @@ async function main() {
   testMaintenanceCenterContract();
   testSpeciesReferenceContract();
   testReadmeIsUserManual();
+  testElectronSecurityContract();
   testRepositoryHygieneContract();
   await testExportWritesAtomicallyAndValidatesContent();
   await testImageImportDoesNotOverwriteExistingArchive();

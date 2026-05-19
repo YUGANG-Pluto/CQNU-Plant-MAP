@@ -16,7 +16,8 @@ const {
 
 const PROJECT_FILES = new Set([SETTINGS_FILE, ZONES_FILE, POINTS_FILE]);
 
-// 手动备份目录只在本次运行中信任，避免 renderer 持久化任意写入位置。
+// 项目目录和手动备份目录只在本次运行中信任，避免 renderer 持久化任意写入位置。
+const trustedProjectDirs = new Set();
 const trustedBackupDirs = new Set();
 
 function asNonEmptyString(value, label) {
@@ -107,6 +108,28 @@ function normalizeProjectDir(projectDir) {
     throw new AppError(ERROR_CODES.INVALID_PROJECT_DIR, '项目目录不能是磁盘根目录。');
   }
   return root;
+}
+
+function realpathForProjectDir(projectDir) {
+  const root = normalizeProjectDir(projectDir);
+  return fs.existsSync(root) ? fs.realpathSync.native(root) : realpathForExistingOrParent(root);
+}
+
+function trustProjectDirFromDialog(dirPath) {
+  const realDir = realpathForProjectDir(dirPath);
+  trustedProjectDirs.add(realDir);
+  return realDir;
+}
+
+function assertTrustedProjectDir(projectDir) {
+  const realDir = realpathForProjectDir(projectDir);
+  if (!trustedProjectDirs.has(realDir)) {
+    throw new AppError(
+      ERROR_CODES.UNTRUSTED_PROJECT_DIR,
+      '项目目录必须由系统目录选择器返回。'
+    );
+  }
+  return realDir;
 }
 
 function getProjectInfoDir(projectDir) {
@@ -238,6 +261,8 @@ module.exports = {
   assertInsidePath,
   realpathForExistingOrParent,
   normalizeProjectDir,
+  trustProjectDirFromDialog,
+  assertTrustedProjectDir,
   getProjectInfoDir,
   getProjectImagesDir,
   resolveProjectRelative,

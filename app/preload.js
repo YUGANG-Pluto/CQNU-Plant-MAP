@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld('plantApp', {
     imageCompare: payload => invoke('species:imageCompare', payload)
   },
   window: {
-    toggleFullscreen: () => invoke('window:toggleFullscreen')
+    toggleFullscreen: () => invoke('window:toggleFullscreen'),
+    openExternal: payload => invoke('window:openExternal', payload)
   }
 });

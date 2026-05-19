@@ -18,6 +18,33 @@ function safePreviewUrl(value) {
   }
 }
 
+function externalLinkHtml(url, label) {
+  const safeUrl = safeExternalUrl(url);
+  return safeUrl
+    ? `<a href="${escapeHtml(safeUrl)}" data-external-url="${escapeHtml(safeUrl)}" rel="noreferrer">${escapeHtml(label || safeUrl)}</a>`
+    : '';
+}
+
+async function openReferenceExternalUrl(value) {
+  const url = safeExternalUrl(value);
+  if (!url) return;
+  try {
+    await callIpc(window.plantApp.window.openExternal({ url }));
+  } catch (error) {
+    handleUiError(error, 'species-reference:open-external', {
+      title: t('operationFailed')
+    });
+  }
+}
+
+function interceptReferenceExternalLink(event) {
+  const anchor = event.target?.closest?.('a[data-external-url]');
+  if (!anchor) return false;
+  event.preventDefault();
+  openReferenceExternalUrl(anchor.dataset.externalUrl || anchor.href);
+  return true;
+}
+
 function clearSpeciesReferenceCache() {
   speciesReferenceCache = null;
   if (ui.speciesReferenceResults) clearNode(ui.speciesReferenceResults);
@@ -181,8 +208,8 @@ function renderSpeciesReferenceCard(item, checked) {
         <div class="species-reference-meta">${escapeHtml(taxonomy || item.summary || '-')}</div>
         <div class="species-reference-meta">${escapeHtml([item.matchType, confidence, count].filter(Boolean).join(' / ') || '-')}</div>
         <div class="species-reference-links">
-          ${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(t('speciesReferenceOpenSource'))}</a>` : ''}
-          ${wikiUrl ? `<a href="${escapeHtml(wikiUrl)}" target="_blank" rel="noreferrer">${escapeHtml(t('speciesReferenceOpenWiki'))}</a>` : ''}
+          ${externalLinkHtml(sourceUrl, t('speciesReferenceOpenSource'))}
+          ${externalLinkHtml(wikiUrl, t('speciesReferenceOpenWiki'))}
         </div>
       </div>
     </label>
@@ -200,7 +227,7 @@ function detailListHtml(titleKey, items) {
           if (typeof item === 'string') return `<div>${escapeHtml(item)}</div>`;
           const label = item.label ? `<strong>${escapeHtml(item.label)}</strong>` : '';
           const value = item.href
-            ? `<a href="${escapeHtml(safeExternalUrl(item.href))}" target="_blank" rel="noreferrer">${escapeHtml(item.value || item.description || item.href || '')}</a>`
+            ? externalLinkHtml(item.href, item.value || item.description || item.href || '')
             : escapeHtml(item.value || item.description || '');
           return `<div>${label}<span>${value}</span></div>`;
         }).join('')}
@@ -513,7 +540,9 @@ function bindSpeciesReferenceEvents() {
     speciesReferenceCache.selectedId = event.target.value;
     renderSpeciesReferenceResults(speciesReferenceCache);
   });
+  ui.speciesReferenceResults?.addEventListener('click', interceptReferenceExternalLink);
   ui.speciesReferenceDetail?.addEventListener('click', event => {
+    if (interceptReferenceExternalLink(event)) return;
     const button = event.target.closest('.species-reference-thumb');
     if (!button) return;
     if (button.dataset.comparedImage) {

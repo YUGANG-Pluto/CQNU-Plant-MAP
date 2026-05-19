@@ -10,6 +10,7 @@ const {
 } = require('./constants');
 const {
   normalizeProjectDir,
+  trustProjectDirFromDialog,
   normalizeImportFile,
   normalizeExportFile,
   trustBackupDirFromDialog
@@ -32,7 +33,7 @@ async function chooseProjectDir() {
 
   return {
     canceled: false,
-    projectDir: normalizeProjectDir(result.filePaths[0])
+    projectDir: trustProjectDirFromDialog(normalizeProjectDir(result.filePaths[0]))
   };
 }
 

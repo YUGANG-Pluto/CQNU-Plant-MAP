@@ -174,6 +174,8 @@ function checkRequiredFiles() {
     'docs/TESTING.md',
     'docs/MAINTENANCE.md',
     'docs/RELEASE_CHECKLIST.md',
+    'docs/SECURITY_MODEL.md',
+    'docs/IPC_CONTRACT.md',
     '.github/workflows/ci.yml',
     '.github/pull_request_template.md',
     '.github/ISSUE_TEMPLATE/bug_report.yml',
@@ -183,6 +185,7 @@ function checkRequiredFiles() {
     'app/scripts/check-js-syntax.js',
     'app/scripts/check-repo-hygiene.js',
     'app/scripts/self-check.js',
+    'app/src/main/securityPolicy.js',
     'app/build/icon.ico'
   ].forEach(relativePath => {
     if (!existsFromRoot(relativePath)) {

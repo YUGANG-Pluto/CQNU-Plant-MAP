@@ -1,12 +1,12 @@
 const fs = require('fs');
 const { AppError } = require('./errors');
 const { ERROR_CODES } = require('./errorCodes');
-const { normalizeProjectDir, resolveImageRelative } = require('./pathGuard');
+const { assertTrustedProjectDir, resolveImageRelative } = require('./pathGuard');
 
 const MAX_IMAGE_REF_CHECKS = 5000;
 
 function checkImageRefs(payload = {}) {
-  const projectDir = normalizeProjectDir(payload.projectDir);
+  const projectDir = assertTrustedProjectDir(payload.projectDir);
   const refs = Array.isArray(payload.refs) ? payload.refs : [];
   if (refs.length > MAX_IMAGE_REF_CHECKS) {
     throw new AppError(ERROR_CODES.INVALID_PAYLOAD, '一次最多检查 5000 个图片引用。');

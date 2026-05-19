@@ -7,6 +7,7 @@ const backupService = require('./backupService');
 const logger = require('./logger');
 const maintenanceService = require('./maintenanceService');
 const speciesReferenceService = require('./speciesReferenceService');
+const securityPolicy = require('./securityPolicy');
 
 function ok(data) {
   return { ok: true, data };
@@ -28,6 +29,7 @@ function fail(scope, error) {
 function handle(channel, fn) {
   ipcMain.handle(channel, async (event, payload) => {
     try {
+      securityPolicy.assertTrustedIpcSender(event);
       const safePayload = payload === undefined || payload === null ? {} : payload;
       return ok(await fn(safePayload, event));
     } catch (error) {
@@ -72,6 +74,7 @@ function registerIpc() {
   handle('backup:deleteExpired', backupService.deleteExpired);
 
   handle('window:toggleFullscreen', toggleCurrentWindowFullscreen);
+  handle('window:openExternal', securityPolicy.openExternalUrl);
 
   handle('log:renderer', logger.reportRendererLog);
   handle('log:setLevel', payload => ({ level: logger.setLogLevel(payload.level) }));

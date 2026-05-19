@@ -6,7 +6,7 @@ const { defaultSettings, SETTINGS_FILE, ZONES_FILE, POINTS_FILE } = require('./c
 const { writeTextFileAtomic } = require('./fileWrite');
 const {
   ensureDirectory,
-  normalizeProjectDir,
+  assertTrustedProjectDir,
   getProjectInfoDir,
   getProjectImagesDir,
   resolveProjectFile
@@ -31,7 +31,7 @@ function writeJson(filePath, data) {
 
 // information 目录固定承载三份项目数据，确保旧项目可直接加载。
 function ensureProjectStructure(projectDir) {
-  const root = normalizeProjectDir(projectDir);
+  const root = assertTrustedProjectDir(projectDir);
   const infoDir = getProjectInfoDir(root);
   const imagesDir = getProjectImagesDir(root);
 

@@ -6,7 +6,7 @@ const { AppError } = require('./errors');
 const { ERROR_CODES } = require('./errorCodes');
 const {
   ensureDirectory,
-  normalizeProjectDir,
+  assertTrustedProjectDir,
   normalizeBackupDir,
   resolveBackupFile,
   assertInsidePath
@@ -78,7 +78,7 @@ function writeBackupZip(projectRoot, projectName, zipPath) {
 
 // 备份压缩包必须写入可信目录，并再次校验最终 zip 路径。
 function create(payload) {
-  const projectRoot = normalizeProjectDir(payload.projectDir);
+  const projectRoot = assertTrustedProjectDir(payload.projectDir);
   const backupRoot = normalizeBackupDir(projectRoot, payload.backupDir);
   ensureDirectory(backupRoot);
 
@@ -95,7 +95,8 @@ function create(payload) {
 
 // 过期判断基于修改时间，便于“再保留 7 天”通过 utime 实现。
 function listExpired(payload) {
-  const backupRoot = normalizeBackupDir(payload.projectDir, payload.backupDir);
+  const projectRoot = assertTrustedProjectDir(payload.projectDir);
+  const backupRoot = normalizeBackupDir(projectRoot, payload.backupDir);
   const expireMs = normalizeExpireDays(payload.days) * 24 * 60 * 60 * 1000;
 
   if (!fs.existsSync(backupRoot)) {
@@ -121,13 +122,14 @@ function listExpired(payload) {
 }
 
 function keepExpired(payload) {
+  const projectRoot = assertTrustedProjectDir(payload.projectDir);
   const files = Array.isArray(payload.paths) ? payload.paths : [];
   const now = new Date();
   let updated = 0;
 
   for (const filePath of files) {
     const fullPath = resolveBackupFile(
-      payload.projectDir,
+      projectRoot,
       payload.backupDir,
       filePath,
       '备份文件'
@@ -144,12 +146,13 @@ function keepExpired(payload) {
 
 // 删除前逐个确认 zip 位于可信备份目录内，避免批量路径注入。
 function deleteExpired(payload) {
+  const projectRoot = assertTrustedProjectDir(payload.projectDir);
   const files = Array.isArray(payload.paths) ? payload.paths : [];
   let deleted = 0;
 
   for (const filePath of files) {
     const fullPath = resolveBackupFile(
-      payload.projectDir,
+      projectRoot,
       payload.backupDir,
       filePath,
       '备份文件'
