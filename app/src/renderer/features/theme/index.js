@@ -224,6 +224,7 @@ function getThemeColor(slot) {
 }
 
 function setThemeColor(slot, color) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('theme-color')) return;
   const theme = getCurrentTheme();
   const token = canonicalThemeSlot(slot);
   if (!theme.tokens[token]) return;
@@ -235,6 +236,7 @@ function setThemeColor(slot, color) {
 }
 
 function setThemeEffect(name, value) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('theme-effect')) return;
   const theme = getCurrentTheme();
   const ranges = {
     glassOpacity: [20, 90],
@@ -292,6 +294,7 @@ function getThemeGlassSettings() {
 }
 
 function setThemeGlassSetting(name, value) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('theme-glass')) return;
   const theme = getCurrentTheme();
   const glass = normalizeGlassSettings(theme.glass);
 
@@ -318,6 +321,7 @@ function setThemeGlassSetting(name, value) {
 }
 
 function resetThemeGlassSettings() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('reset-theme-glass')) return;
   const theme = getCurrentTheme();
   theme.glass = cloneDefaultGlassSettings();
   theme.colorMode = 'custom';
@@ -411,6 +415,7 @@ function normalizeMotionSettings(value = {}) {
 }
 
 function setProgressSetting(name, value) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('theme-progress')) return;
   const theme = getCurrentTheme();
   const progress = normalizeProgressSettings(theme.progress);
   if (['showPercent', 'showStage', 'glass'].includes(name)) progress[name] = Boolean(value);
@@ -423,6 +428,7 @@ function setProgressSetting(name, value) {
 }
 
 function setMotionSetting(name, value) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('theme-motion')) return;
   const theme = getCurrentTheme();
   const motion = normalizeMotionSettings(theme.motion);
 
@@ -452,6 +458,7 @@ function setMotionSetting(name, value) {
 }
 
 function setStatusColor(name, value) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('theme-status-color')) return;
   const theme = getCurrentTheme();
   if (!Object.prototype.hasOwnProperty.call(DEFAULT_STATUS_COLORS, name)) return;
   theme.statusColors = normalizeStatusColors({ ...theme.statusColors, [name]: value }, theme.tokens);
@@ -461,6 +468,7 @@ function setStatusColor(name, value) {
 }
 
 function resetStatusColors() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('reset-status-colors')) return;
   const theme = getCurrentTheme();
   theme.statusColors = normalizeStatusColors({}, theme.tokens);
   theme.colorMode = 'custom';
@@ -470,6 +478,7 @@ function resetStatusColors() {
 
 
 function applyThemePreset(styleId) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('theme-preset')) return;
   const current = getCurrentTheme();
   const resolvedStyleId = normalizeThemeStyleId(styleId);
   const next = createThemeDefaults(resolvedStyleId);
@@ -484,6 +493,7 @@ function applyThemePreset(styleId) {
 }
 
 function resetThemeSlot() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('reset-theme-slot')) return;
   const theme = getCurrentTheme();
   const preset = UI_STYLE_PRESETS[theme.styleId] || UI_STYLE_PRESETS[DEFAULT_UI_STYLE_ID];
   const token = canonicalThemeSlot(state.themeSlot);
@@ -492,6 +502,7 @@ function resetThemeSlot() {
 }
 
 function resetAllThemes() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('reset-theme-all')) return;
   state.settings.uiTheme = createThemeDefaults(DEFAULT_UI_STYLE_ID);
   syncLegacyThemeSlots(state.settings.uiTheme);
   applyThemeVariables();
@@ -499,6 +510,7 @@ function resetAllThemes() {
 }
 
 async function saveThemeSettings() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('save-theme')) return;
   applyThemeVariables();
   await persistProject();
   closeLayerModal(ui.themeModal);
@@ -706,6 +718,7 @@ function renderLayoutPresets() {
 }
 
 function applyLayoutPreset(layoutId) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('theme-layout')) return;
   const theme = getCurrentTheme();
   theme.layoutId = normalizeThemeLayoutId(layoutId);
   applyThemeVariables();
@@ -919,6 +932,7 @@ function setThemeSlot(slot) {
 }
 
 function updateThemeFromControls() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('theme-controls')) return;
   const h = Number(ui.themeHue?.value || 0);
   const s = Number(ui.themeSaturation?.value || 0);
   const l = Number(ui.themeLightness?.value || 50);
@@ -927,12 +941,14 @@ function updateThemeFromControls() {
 }
 
 function updateThemeAlphaFromControls() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('theme-alpha')) return;
   if (!ui.themeAlpha) return;
   setThemeEffect('glassOpacity', ui.themeAlpha.value);
   syncThemeControls();
 }
 
 function updateThemeEffectFromControl(input) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('theme-effect-control')) return;
   const effect = input?.dataset?.effect;
   if (!effect) return;
   setThemeEffect(effect, input.value);
@@ -942,6 +958,7 @@ function updateThemeEffectFromControl(input) {
 }
 
 function updateGlassSettingFromControl(control) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('theme-glass-control')) return;
   const field = control?.dataset?.glass;
   if (!field) return;
 
@@ -954,6 +971,7 @@ function updateGlassSettingFromControl(control) {
 }
 
 function generateThemeChartPalette() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('generate-chart-palette')) return;
   const theme = getCurrentTheme();
   const primaryHsl = hexToHsl(theme.tokens.primary);
   const secondaryHsl = hexToHsl(theme.tokens.secondary);

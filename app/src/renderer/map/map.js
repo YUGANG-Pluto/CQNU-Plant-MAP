@@ -223,6 +223,7 @@ function createZoneFromDraw(layer) {
 }
 
 function startDrawZoneMode() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('draw-zone')) return;
   state.drawHandler = new L.Draw.Polygon(state.map, {
     allowIntersection: false,
     showArea: true,
@@ -231,6 +232,7 @@ function startDrawZoneMode() {
 
   state.drawHandler.enable();
   state.map.once(L.Draw.Event.CREATED, async event => {
+    if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('draw-zone-created')) return;
     const zone = createZoneFromDraw(event.layer);
     state.zones.push(zone);
     addZoneLayer(zone);
@@ -243,6 +245,10 @@ function startDrawZoneMode() {
 }
 
 function setMode(mode) {
+  if (typeof isMaintenanceReadOnlyMode === 'function' && isMaintenanceReadOnlyMode() && mode !== 'browse') {
+    guardMaintenanceReadOnlyAction('set-mode');
+    mode = 'browse';
+  }
   disableDrawHandler();
   state.currentMode = mode;
   setActiveModeButton(mode);
@@ -259,6 +265,7 @@ function clearAllLayers() {
 }
 
 async function onMapClick(event) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && state.currentMode === 'addPoint' && guardMaintenanceReadOnlyAction('map-add-point')) return;
   if (state.currentMode !== 'addPoint') return;
   if (!state.projectDir) return showAlert(t('noProject'));
   createPendingPointAt(event.latlng);

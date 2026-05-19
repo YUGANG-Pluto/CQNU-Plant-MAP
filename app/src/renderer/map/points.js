@@ -224,6 +224,7 @@ function redrawPendingPointLayer(token = state.mapRenderToken) {
 
 // 临时点必须先落入选中分区，确认前不写入 points.json。
 function createPendingPointAt(latlng) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('create-point')) return;
   const zone = getSelectedZone();
   if (!zone) return showAlert(t('chooseZoneThenAddPoint'));
   if (state.pendingPoint) return showAlert(t('pendingPointBlocked'));
@@ -254,6 +255,7 @@ function createPendingPointAt(latlng) {
 }
 
 async function confirmPendingPoint() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('confirm-point')) return;
   if (!state.pendingPoint) return;
 
   const pending = { ...state.pendingPoint };

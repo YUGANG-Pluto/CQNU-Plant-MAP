@@ -150,7 +150,7 @@ project-folder/
 - 项目健康检查：检查缺失编号、重复编号、孤立点位、异常坐标、缺失名称、物候记录和图片引用。
 - 保守修复：只处理安全项，例如补齐缺失 ID、规范化记录结构、去除同一物候记录中的重复图片引用。
 - 日志与诊断：查看最近日志、清理过期日志、导出诊断文件。
-- 设置安全模式：进入轻量线性主题、关闭玻璃效果并停用动效；退出时恢复进入前的界面设置。
+- 安全模式：进入轻量线性主题、关闭玻璃效果并停用动效，同时锁定编辑、导入导出、合并、备份、底图配置和主题写入；仍可浏览信息、查询统计并拖动查看地图，退出时恢复进入前的界面设置。
 - 设置导入导出：只导入或导出语言、界面主题和统计偏好，不覆盖分区、点位、图片或底图策略。
 
 ### English
@@ -160,7 +160,7 @@ The maintenance center supports routine project maintenance:
 - Health check: checks missing codes, duplicate codes, orphan points, invalid coordinates, missing names, phenology records, and image references.
 - Safe repair: only handles conservative fixes such as missing IDs, record normalization, and duplicate image references inside one phenology entry.
 - Logs and diagnostics: review recent logs, clean expired logs, and export diagnostic files.
-- Settings safe mode: switch to a lightweight linear theme, disable glass effects, and turn motion off; exiting safe mode restores previous UI settings.
+- Safe mode: switch to a lightweight linear theme, disable glass effects, turn motion off, and lock editing, import/export, merge, backup, basemap configuration, and theme writes. Browsing, query, statistics viewing, and map dragging remain available; exiting safe mode restores previous UI settings.
 - Settings import/export: only handles language, UI theme, and statistics preferences. Zones, points, images, and basemap strategy are not overwritten.
 
 ---

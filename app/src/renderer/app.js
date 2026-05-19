@@ -477,12 +477,14 @@ function bindRightPanelEvents() {
 function bindProjectEvents() {
   ui.btnChooseDir.addEventListener('click', chooseAndLoadProject);
   ui.btnSave.addEventListener('click', async () => {
+    if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('save-project')) return;
     await persistProject();
     showAlert(t('saveSuccess'));
   });
 
   document.querySelectorAll('.seg-btn[data-lang]').forEach(button => {
     button.addEventListener('click', async () => {
+      if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('switch-language')) return;
       if (!state.settings) return;
       state.settings.language = button.dataset.lang;
       applyI18n();
@@ -520,6 +522,10 @@ function bindMapEvents() {
 
 function bindBasemapEvents() {
   ui.baseMapSelect.addEventListener('change', async () => {
+    if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('switch-basemap')) {
+      renderBaseMapSelect();
+      return;
+    }
     state.settings.activeBaseMapId = ui.baseMapSelect.value;
     if (typeof isAutoNormalizeBasemapEnabled === 'function' && isAutoNormalizeBasemapEnabled()) {
       standardizeCurrentBasemapConfig({ silent: true });
@@ -701,6 +707,7 @@ function bindMergeEvents() {
 }
 
 function applyMergeReviewSelection() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('apply-merge-review')) return;
   const mergeIdxs = [...ui.mergeReviewList.querySelectorAll('input[type=checkbox][data-idx]:checked')]
     .map(node => Number(node.dataset.idx));
   settleMergeReview({ mergeIdxs });

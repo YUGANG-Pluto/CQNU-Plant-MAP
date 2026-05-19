@@ -104,6 +104,7 @@ function clearPointForm() {
 }
 
 async function applyZoneInfo() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('apply-zone')) return;
   const zone = getEditableZone();
   if (!zone) return showAlert(t('noZoneSelected'));
 
@@ -134,6 +135,7 @@ function readPointFormIntoEntry(point, entry) {
 }
 
 async function applyPointInfo() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('apply-point')) return;
   const point = getEditablePoint();
   if (!point) return showAlert(t('noPointSelected'));
 
@@ -150,6 +152,7 @@ async function applyPointInfo() {
 }
 
 function openPointEditor() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('open-point-editor')) return;
   const point = getSelectedPoint();
   if (!point) return showAlert(t('noPointSelected'));
   populatePointForm();
@@ -177,6 +180,7 @@ function settleSmallPrompt(value) {
 }
 
 async function addPhenologyEntry() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('add-phenology')) return;
   const point = getSelectedPoint();
   if (!point) return showAlert(t('noPointSelected'));
 
@@ -195,6 +199,7 @@ async function addPhenologyEntry() {
 }
 
 async function deletePhenologyEntry() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('delete-phenology')) return;
   const point = getSelectedPoint();
   const entry = getSelectedPhenologyEntry(point);
   if (!point || !entry) return showAlert(t('noPhenologySelected'));

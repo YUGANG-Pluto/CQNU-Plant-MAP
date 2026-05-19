@@ -214,6 +214,7 @@ function updateAutoNormalizeSwitch() {
 }
 
 async function toggleAutoNormalizeBasemap() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('toggle-basemap-normalize')) return;
   if (!state.settings) return;
   state.settings.autoNormalizeBasemap = !isAutoNormalizeBasemapEnabled();
   updateAutoNormalizeSwitch();
@@ -524,6 +525,7 @@ function newBasemapForm() {
 }
 
 async function saveBasemap() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('save-basemap')) return;
   const id = state.currentBasemapEditId || `bm_${Date.now()}`;
   const existing = state.settings.baseMaps.find(b => b.id === id);
   const raw = {
@@ -566,6 +568,7 @@ async function saveBasemap() {
 }
 
 async function deleteBasemap() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('delete-basemap')) return;
   const bm = state.settings.baseMaps.find(b => b.id === state.currentBasemapEditId);
   if (!bm) return;
   if (bm.builtIn) return showAlert(t('cannotDeleteBuiltin'));
@@ -716,6 +719,7 @@ function renderOverlayStatusPanel() {
 }
 
 async function saveOverlayConfig() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('save-overlay')) return;
   if (!state.settings) return;
   const overlay = readOverlayForm();
   if (!overlay.url) return showAlert(t('basemapOverlayUrlRequired'));
@@ -746,6 +750,7 @@ function testOverlayConfig() {
 }
 
 async function resetBuiltinOverlays() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('reset-overlays')) return;
   if (!state.settings) return;
   const byId = new Map((state.settings.baseMaps || []).filter(item => !BUILTIN_OVERLAY_IDS.includes(item.id)).map(item => [item.id, item]));
   BUILTIN_BASEMAPS.filter(item => item.isOverlay).forEach(item => byId.set(item.id, normalizeBaseMapConfig(item)));
@@ -950,6 +955,7 @@ async function runBasemapStatusCheck() {
 }
 
 async function runBasemapStandardize() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('standardize-basemap')) return;
   const ok = await openConfirmDialog({
     title: t('basemapStandardizeTitle'),
     message: t('basemapStandardizeConfirm'),
@@ -972,6 +978,7 @@ async function runBasemapStandardize() {
 }
 
 async function correctSelectedGeometry(fromSystem) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('correct-geometry')) return;
   const source = normalizeCoordSystem(fromSystem);
   if (source === 'WGS84') return showAlert(t('basemapCorrectionNoop'));
   const target = getSelectedPoint() || getSelectedZone();
@@ -1010,6 +1017,7 @@ async function correctSelectedGeometry(fromSystem) {
 }
 
 async function undoLastCoordinateCorrection() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('undo-coordinate-correction')) return;
   if (!state.lastCoordinateCorrection) return showAlert(t('basemapCorrectionNoUndo'));
   state.points = state.lastCoordinateCorrection.points.map(normalizePointRecord);
   state.zones = state.lastCoordinateCorrection.zones.map(normalizeZoneRecord);

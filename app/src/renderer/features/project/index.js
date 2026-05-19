@@ -250,6 +250,7 @@ async function buildGeoJSONStringWithProgress(task) {
 }
 
 async function importRecordsCSV() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('import-csv')) return;
   if (!state.projectDir) return showAlert(t('noProject'));
 
   await withProgressTask({ type: 'import', title: t('importCsv'), stage: t('progressReading') }, async task => {
@@ -269,6 +270,7 @@ async function importRecordsCSV() {
 
 // GeoJSON 点坐标按标准 [lng, lat] 读取，再转入内部 lat/lng 字段。
 async function importGeoJSON() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('import-geojson')) return;
   if (!state.projectDir) return showAlert(t('noProject'));
 
   await withProgressTask({ type: 'import', title: t('importGeoJSON'), stage: t('progressReading') }, async task => {
@@ -350,6 +352,7 @@ function exportGeoJSONString() {
 }
 
 async function exportRecordsCSV() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('export-csv')) return;
   if (!state.projectDir) return showAlert(t('noProject'));
 
   await withProgressTask({ type: 'export', title: t('exportCsv'), stage: t('progressWriting') }, async task => {
@@ -366,6 +369,7 @@ async function exportRecordsCSV() {
 }
 
 async function exportGeoJSON() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('export-geojson')) return;
   if (!state.projectDir) return showAlert(t('noProject'));
 
   await withProgressTask({ type: 'export', title: t('exportGeoJSON'), stage: t('progressWriting') }, async task => {

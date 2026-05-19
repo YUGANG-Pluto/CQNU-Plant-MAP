@@ -66,6 +66,7 @@ function renderAllDerived() {
   updatePointSummaryBox();
   if (typeof updateBasemapWorkStatus === 'function') updateBasemapWorkStatus();
   if (typeof refreshRightPanelDisplayMode === 'function') refreshRightPanelDisplayMode('derived-render');
+  if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
 }
 
 function removePointLayer(pointId) {
@@ -104,6 +105,7 @@ function softDeletePointById(pointId) {
 }
 
 async function deleteCurrentPoint() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('delete-point')) return;
   const point = getSelectedPoint();
   if (!point) return showAlert(t('noPointSelected'));
   const ok = await openConfirmDialog({ title: t('confirmDeletePointTitle'), message: t('confirmDeletePoint') });
@@ -112,6 +114,7 @@ async function deleteCurrentPoint() {
 }
 
 async function deleteCurrentZone() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('delete-zone')) return;
   const zone = getEditableZone();
   if (!zone) return showAlert(t('noZoneSelected'));
   const ok = await openConfirmDialog({ title: t('confirmDeleteZoneTitle'), message: t('confirmDeleteZone') });
@@ -132,6 +135,7 @@ async function deleteCurrentZone() {
 }
 
 async function restoreSelectedTrash() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('restore-trash')) return;
   const item = getTrashSelection();
   if (!item) return;
   const trash = getRecycleBin();
@@ -173,6 +177,7 @@ async function restoreSelectedTrash() {
 }
 
 async function deleteTrashForever() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('delete-trash-forever')) return;
   const item = getTrashSelection();
   if (!item) return;
   const ok = await openConfirmDialog({ title: t('confirmDeleteForeverTitle'), message: t('deleteForeverSelected') });

@@ -92,6 +92,7 @@ async function retryManualBackupAfterTrustReset() {
 }
 
 async function runManualBackup() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('manual-backup')) return;
   if (!state.projectDir) {
     return showAlert(t('mergeNeedCurrent'));
   }

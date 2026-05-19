@@ -953,6 +953,13 @@ function testMaintenanceCenterContract() {
   const appSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/app.js'), 'utf8');
   const maintenanceSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/maintenance/index.js'), 'utf8');
   const cssSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/10-core-components.css'), 'utf8');
+  const mapSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/map/map.js'), 'utf8');
+  const pointMapSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/map/points.js'), 'utf8');
+  const recycleSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/recycleBin/index.js'), 'utf8');
+  const basemapSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/basemap/index.js'), 'utf8');
+  const projectSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/project/index.js'), 'utf8');
+  const statsSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/index.js'), 'utf8');
+  const themeSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/theme/index.js'), 'utf8');
 
   [
     'btnOpenMaintenance',
@@ -997,6 +1004,30 @@ function testMaintenanceCenterContract() {
   assert.ok(maintenanceSource.includes('function exitSafeModeSettings'));
   assert.ok(maintenanceSource.includes('previousUiTheme'));
   assert.ok(maintenanceSource.includes('syncMaintenanceSafeModeUi'));
+  assert.ok(maintenanceSource.includes('SAFE_MODE_LOCKED_IDS'));
+  assert.ok(maintenanceSource.includes('SAFE_MODE_READONLY_FIELD_IDS'));
+  assert.ok(maintenanceSource.includes('SAFE_MODE_DYNAMIC_LOCKED_SELECTORS'));
+  assert.ok(maintenanceSource.includes('function guardMaintenanceReadOnlyAction'));
+  assert.ok(maintenanceSource.includes('function enforceSafeModeMapBrowseOnly'));
+  [
+    "'btnSave'",
+    "'btnApplyZone'",
+    "'btnApplyPoint'",
+    "'btnRunMerge'",
+    "'btnRunManualBackup'",
+    "'btnExportDiagnostics'"
+  ].forEach(fragment => assert.ok(maintenanceSource.includes(fragment), `safe mode lock list missing ${fragment}`));
+  assert.ok(mapSource.includes("isMaintenanceReadOnlyMode() && mode !== 'browse'"));
+  assert.ok(mapSource.includes("guardMaintenanceReadOnlyAction('map-add-point')"));
+  assert.ok(pointMapSource.includes("guardMaintenanceReadOnlyAction('create-point')"));
+  assert.ok(pointMapSource.includes("guardMaintenanceReadOnlyAction('confirm-point')"));
+  assert.ok(recycleSource.includes("guardMaintenanceReadOnlyAction('delete-zone')"));
+  assert.ok(recycleSource.includes("guardMaintenanceReadOnlyAction('restore-trash')"));
+  assert.ok(basemapSource.includes("guardMaintenanceReadOnlyAction('save-basemap')"));
+  assert.ok(basemapSource.includes("guardMaintenanceReadOnlyAction('correct-geometry')"));
+  assert.ok(projectSource.includes("guardMaintenanceReadOnlyAction('import-csv')"));
+  assert.ok(statsSource.includes("guardMaintenanceReadOnlyAction('stats-settings')"));
+  assert.ok(themeSource.includes("guardMaintenanceReadOnlyAction('save-theme')"));
   assert.ok(!maintenanceSource.includes("maintenanceText('cancelCreatePoint')"));
   assert.ok(maintenanceSource.includes('createBackupZip(state.projectDir, \'\', \'maintenance\')'));
   assert.ok(maintenanceSource.includes('maintenanceSafeRepairScope'));
@@ -1004,6 +1035,7 @@ function testMaintenanceCenterContract() {
   assert.ok(!maintenanceSource.includes('state.points = state.points.filter'));
   assert.ok(fs.readFileSync(path.join(process.cwd(), 'src/renderer/utils/dialogs.js'), 'utf8').includes("t('cancelAction')"));
   assert.ok(cssSource.includes('.maintenance-grid'));
+  assert.ok(cssSource.includes('.safe-mode-locked-control'));
   ['zh.js', 'en.js'].forEach(name => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/renderer/i18n', name), 'utf8');
     [
@@ -1014,6 +1046,8 @@ function testMaintenanceCenterContract() {
       'maintenanceApplySafeMode',
       'maintenanceExitSafeMode',
       'maintenanceSafeModeOn',
+      'maintenanceSafeModeReadOnlyBlocked',
+      'maintenanceSafeModeReadOnlyTitle',
       'cancelAction'
     ].forEach(key => assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`));
   });
@@ -1027,7 +1061,9 @@ function testReadmeIsUserManual() {
     '导入导出 | Import and Export',
     '数据安全提示 | Data Safety Notes',
     'Main Features',
-    'Basic Workflow'
+    'Basic Workflow',
+    '仍可浏览信息、查询统计并拖动查看地图',
+    'Browsing, query, statistics viewing, and map dragging remain available'
   ].forEach(fragment => assert.ok(readme.includes(fragment), `README missing ${fragment}`));
   [
     'npm install',

@@ -25,12 +25,14 @@ function createDeleteImageButton(imgPath) {
   const button = document.createElement('button');
   button.className = 'btn btn-danger-soft';
   button.textContent = '×';
+  button.dataset.safeModeLocked = '1';
   button.addEventListener('click', () => removeImageFromPoint(imgPath));
   return button;
 }
 
 // 图片软删除只移除引用并记录回收站，物理文件留到彻底删除阶段。
 async function removeImageFromPoint(imgPath) {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('remove-image')) return;
   const point = getSelectedPoint();
   const entry = getSelectedPhenologyEntry(point);
   if (!point || !entry) return;
@@ -57,16 +59,21 @@ async function removeImageFromPoint(imgPath) {
 
 function renderImageList(images) {
   ui.imageList.innerHTML = '';
-  if (!images?.length) return;
+  if (!images?.length) {
+    if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
+    return;
+  }
 
   const imageSet = images.map(img => toFileUrl(img)).join('|');
   images.forEach(imgPath => {
     ui.imageList.appendChild(renderImageCard(imgPath, imageSet));
   });
+  if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
 }
 
 // EXIF 日期只填补空白调查日期，首张图片坐标可校正新建点位置。
 async function chooseAndImportImage() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('import-image')) return;
   const point = getSelectedPoint();
   if (!point) return showAlert(t('noPointSelected'));
 

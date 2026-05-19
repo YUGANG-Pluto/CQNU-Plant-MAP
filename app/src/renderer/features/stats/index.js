@@ -48,12 +48,13 @@ function resolveMetricsForCategory(category){
   return category==='zone' ? ['speciesCount','pointCount','percentage'] : ['count','percentage'];
 }
 function bindStatsControlEvents(){
-  ['statsCategorySelect','statsBarMetricSelect','statsLineMetricSelect','statsChartTypeSelect'].forEach(id=>{ const node=document.getElementById(id); if(node) node.addEventListener('change', async ()=>{ ensureThemeSettings(); const cfg=state.settings.statsCustom; cfg.category=document.getElementById('statsCategorySelect')?.value || cfg.category; const valid=resolveMetricsForCategory(cfg.category); cfg.barMetric=document.getElementById('statsBarMetricSelect')?.value || cfg.barMetric; cfg.lineMetric=document.getElementById('statsLineMetricSelect')?.value || cfg.lineMetric; cfg.chartType=document.getElementById('statsChartTypeSelect')?.value || cfg.chartType; if(!valid.includes(cfg.barMetric)) cfg.barMetric=valid[0]; if(!valid.includes(cfg.lineMetric)) cfg.lineMetric=valid[Math.min(1, valid.length-1)] || valid[0]; renderStatsModal(); await persistProject(); }); });
+  ['statsCategorySelect','statsBarMetricSelect','statsLineMetricSelect','statsChartTypeSelect'].forEach(id=>{ const node=document.getElementById(id); if(node) node.addEventListener('change', async ()=>{ if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('stats-settings')) { renderStatsModal(); return; } ensureThemeSettings(); const cfg=state.settings.statsCustom; cfg.category=document.getElementById('statsCategorySelect')?.value || cfg.category; const valid=resolveMetricsForCategory(cfg.category); cfg.barMetric=document.getElementById('statsBarMetricSelect')?.value || cfg.barMetric; cfg.lineMetric=document.getElementById('statsLineMetricSelect')?.value || cfg.lineMetric; cfg.chartType=document.getElementById('statsChartTypeSelect')?.value || cfg.chartType; if(!valid.includes(cfg.barMetric)) cfg.barMetric=valid[0]; if(!valid.includes(cfg.lineMetric)) cfg.lineMetric=valid[Math.min(1, valid.length-1)] || valid[0]; renderStatsModal(); await persistProject(); }); });
   const cat=document.getElementById('statsCategorySelect'); const bar=document.getElementById('statsBarMetricSelect'); const line=document.getElementById('statsLineMetricSelect');
   if(cat&&bar&&line){ const valid=resolveMetricsForCategory(cat.value); [bar,line].forEach(sel=>{ const current=sel.value; sel.innerHTML=valid.map(k=>`<option value="${k}" ${current===k?'selected':''}>${escapeHtml(metricLabel(k))}</option>`).join(''); if(!valid.includes(sel.value)) sel.value=valid[0]; }); }
 }
 function bindStatsAfterRender() {
   bindStatsControlEvents();
+  if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
 }
 
 function renderChartCard(title, body, options = {}) {

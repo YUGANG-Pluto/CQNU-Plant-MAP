@@ -389,6 +389,7 @@ async function resolveMergeDirs() {
 }
 
 async function runMergeFlow() {
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('run-merge')) return;
   try {
     const { baseDir, otherDir } = await resolveMergeDirs();
     state.mergeBaseDir = baseDir;

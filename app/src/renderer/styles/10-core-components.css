@@ -1158,6 +1158,20 @@ input[type="range"] {
   border-color: color-mix(in srgb, var(--danger) 32%, var(--border-light));
 }
 
+.maintenance-safe-mode .safe-mode-locked-control {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.maintenance-safe-mode input.safe-mode-locked-control,
+.maintenance-safe-mode textarea.safe-mode-locked-control {
+  background: color-mix(in srgb, var(--surface-muted) 76%, transparent);
+}
+
+.maintenance-safe-mode #map {
+  cursor: grab;
+}
+
 .maintenance-issue-title,
 .maintenance-log-entry-title {
   color: var(--text-main);
