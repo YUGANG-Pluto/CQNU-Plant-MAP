@@ -145,6 +145,7 @@ const elementGroups = {
     'btnCloseQueryModal',
     'queryText',
     'queryZone',
+    'queryCompleteness',
     'queryGrowthForm',
     'queryFloweringState',
     'queryCultivatedStatus',
@@ -347,7 +348,9 @@ const elementGroups = {
     'speciesReferenceApplyCommon',
     'speciesReferenceAppendNote',
     'speciesReferenceSummary',
+    'speciesReferenceDetail',
     'speciesReferenceResults',
+    'btnPreviewSpeciesReferenceImage',
     'btnDiscardSpeciesReference',
     'btnApplySpeciesReference'
   ],

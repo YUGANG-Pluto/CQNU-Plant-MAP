@@ -504,8 +504,10 @@
         <label class="check-card"><input id="speciesReferenceAppendNote" type="checkbox" /> <span data-i18n="speciesReferenceAppendNote">追加参考摘要到备注</span></label>
       </div>
       <div id="speciesReferenceSummary" class="hint-box" data-i18n="speciesReferenceEmpty">请选择点位并填写中文名或学名后查询。</div>
+      <div id="speciesReferenceDetail" class="species-reference-detail hint-box is-empty" data-i18n="speciesReferenceDetailEmpty">选择参考结果后可查看来源、图片、分类层级和特征备注。</div>
       <div id="speciesReferenceResults" class="species-reference-results modal-list"></div>
       <div class="toolbar-inline modal-footer-actions">
+        <button id="btnPreviewSpeciesReferenceImage" class="btn btn-soft" data-i18n="speciesReferencePreviewImage">放大参考图</button>
         <button id="btnDiscardSpeciesReference" class="btn btn-soft" data-i18n="speciesReferenceDiscard">不使用并清除</button>
         <button id="btnApplySpeciesReference" class="btn btn-primary" data-i18n="speciesReferenceApply">应用所选建议</button>
       </div>
@@ -567,6 +569,16 @@
       <div class="query-grid">
         <div class="field field-span-2"><label data-i18n="searchKeyword">关键词搜索</label><input id="queryText" class="input" /></div>
         <div class="field"><label data-i18n="zoneFilter">分区</label><select id="queryZone" class="input"></select></div>
+        <div class="field">
+          <label data-i18n="queryCompletenessFilter">完整性</label>
+          <select id="queryCompleteness" class="input">
+            <option value="" data-i18n="queryCompletenessAll">全部记录</option>
+            <option value="missingScientificName" data-i18n="queryMissingScientificName">缺学名</option>
+            <option value="missingCommonName" data-i18n="queryMissingCommonName">缺中文名</option>
+            <option value="missingPhenology" data-i18n="queryMissingPhenology">缺物候</option>
+            <option value="missingImage" data-i18n="queryMissingImage">缺图片</option>
+          </select>
+        </div>
         <div class="field"><label data-i18n="growthForm">生活型</label><input id="queryGrowthForm" class="input" list="growthFormOptions" /></div>
         <div class="field"><label data-i18n="floweringState">物候状态</label><input id="queryFloweringState" class="input" list="floweringStateOptions" /></div>
         <div class="field"><label data-i18n="cultivatedStatus">来源属性</label><input id="queryCultivatedStatus" class="input" list="cultivatedStatusOptions" /></div>

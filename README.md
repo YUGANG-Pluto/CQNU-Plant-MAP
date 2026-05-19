@@ -48,8 +48,8 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 - 点位管理：编辑点位编号、植物中文名、学名、坐标和调查信息。
 - 物候记录：同一植物点位可维护多条物候记录。
 - 图片归档：导入图片、归档到项目目录，并支持预览。
-- 查询中心：按名称、分区、生活型、物候状态、来源、调查人和日期筛选。
-- 物种参考：按当前点位中文名或学名查询 GBIF 与 iNaturalist，仅临时显示参考建议，由用户确认后再应用。
+- 查询中心：按名称、分区、生活型、物候状态、来源、调查人、日期和记录完整性筛选，并可从点位结果手动打开物种参考。
+- 物种参考：按当前点位中文名或学名查询 GBIF 与 iNaturalist，可查看来源、图片、分类层级和特征备注；建议仅临时显示，由用户选择是否吸收到学名、中文名或物候备注。
 - 统计中心：查看分区、物种、时间和自定义统计图表。
 - 回收站：恢复误删记录或确认彻底删除。
 - 项目备份：手动备份项目，并处理过期备份。
@@ -65,8 +65,8 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 - Point management: edit point code, Chinese name, scientific name, coordinates, and survey fields.
 - Phenology records: multiple phenology entries can be maintained for one plant point.
 - Image archive: import images into the project folder and preview them.
-- Query center: filter by name, zone, growth form, phenology state, source, observer, and date.
-- Species reference: query GBIF and iNaturalist by the selected point's common name or scientific name. Suggestions are temporary and applied only after user confirmation.
+- Query center: filter by name, zone, growth form, phenology state, source, observer, date, and record completeness, with a manual species-reference action on point results.
+- Species reference: query GBIF and iNaturalist by the selected point's common name or scientific name, inspect source links, images, taxonomy, and feature notes, then choose whether to absorb the suggestion into scientific name, common name, or phenology notes.
 - Statistics center: view zone, species, time, and custom statistical charts.
 - Recycle bin: restore deleted records or permanently delete them.
 - Project backup: create manual backups and handle expired backups.

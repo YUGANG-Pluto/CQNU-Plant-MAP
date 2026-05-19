@@ -629,6 +629,7 @@ function bindQueryEvents() {
   [
     ui.queryText,
     ui.queryZone,
+    ui.queryCompleteness,
     ui.queryGrowthForm,
     ui.queryFloweringState,
     ui.queryCultivatedStatus,
@@ -639,6 +640,7 @@ function bindQueryEvents() {
   ].forEach(node => node && node.addEventListener('input', renderQueryResults));
 
   ui.queryZone?.addEventListener('change', renderQueryResults);
+  ui.queryCompleteness?.addEventListener('change', renderQueryResults);
   ui.btnRunQuery.addEventListener('click', renderQueryResults);
   ui.btnResetQuery.addEventListener('click', resetQueryForm);
 }
@@ -646,6 +648,7 @@ function bindQueryEvents() {
 function resetQueryForm() {
   ui.queryText.value = '';
   ui.queryZone.value = '';
+  if (ui.queryCompleteness) ui.queryCompleteness.value = '';
   ui.queryGrowthForm.value = '';
   ui.queryFloweringState.value = '';
   ui.queryCultivatedStatus.value = '';

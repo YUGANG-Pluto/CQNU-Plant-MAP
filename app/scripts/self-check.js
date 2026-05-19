@@ -1060,6 +1060,7 @@ function testSpeciesReferenceContract() {
   const ipcSource = fs.readFileSync(path.join(process.cwd(), 'src/main/ipcRegister.js'), 'utf8');
   const serviceSource = fs.readFileSync(path.join(process.cwd(), 'src/main/speciesReferenceService.js'), 'utf8');
   const rendererSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/speciesReference/index.js'), 'utf8');
+  const querySource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/query/index.js'), 'utf8');
   const elementsSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/dom/elements.js'), 'utf8');
   const appSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/app.js'), 'utf8');
   const stateSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/state/store.js'), 'utf8');
@@ -1073,7 +1074,9 @@ function testSpeciesReferenceContract() {
     'speciesReferenceSciInput',
     'speciesReferenceCommonInput',
     'btnRunSpeciesReference',
+    'speciesReferenceDetail',
     'speciesReferenceResults',
+    'btnPreviewSpeciesReferenceImage',
     'btnDiscardSpeciesReference',
     'btnApplySpeciesReference'
   ].forEach(id => {
@@ -1089,11 +1092,21 @@ function testSpeciesReferenceContract() {
   assert.ok(ipcSource.includes("require('./speciesReferenceService')"));
   assert.ok(serviceSource.includes('https://api.gbif.org/v1'));
   assert.ok(serviceSource.includes('https://api.inaturalist.org/v1'));
+  assert.ok(serviceSource.includes('/descriptions'));
+  assert.ok(serviceSource.includes('/vernacularNames'));
+  assert.ok(serviceSource.includes('/media'));
+  assert.ok(serviceSource.includes('/speciesProfiles'));
+  assert.ok(serviceSource.includes('/v1/taxa/${item.key}'));
+  assert.ok(serviceSource.includes('DETAIL_ENRICH_LIMIT'));
   assert.ok(!serviceSource.includes('writeFile'));
   assert.ok(!serviceSource.includes('localStorage'));
   assert.ok(rendererSource.includes('let speciesReferenceCache = null'));
   assert.ok(rendererSource.includes('clearSpeciesReferenceCache'));
   assert.ok(rendererSource.includes("guardMaintenanceReadOnlyAction('apply-species-reference')"));
+  assert.ok(rendererSource.includes('openImagePreview(src, caption, imageSet)'));
+  assert.ok(rendererSource.includes('renderSpeciesReferenceDetail'));
+  assert.ok(rendererSource.includes('recommendationText'));
+  assert.ok(rendererSource.includes('safeExternalUrl'));
   assert.ok(rendererSource.includes('await persistProject()'), 'reference suggestions may persist only after user apply');
   assert.ok(!rendererSource.includes('localStorage'));
   assert.ok(!rendererSource.includes('sessionStorage'));
@@ -1111,7 +1124,12 @@ function testSpeciesReferenceContract() {
       'speciesReferenceApply',
       'speciesReferenceDiscard',
       'speciesReferenceConservation',
-      'speciesReferenceOpenWiki'
+      'speciesReferenceOpenWiki',
+      'speciesReferenceDetailEmpty',
+      'speciesReferencePreviewImage',
+      'speciesReferenceClassification',
+      'speciesReferenceRecommendedFields',
+      'speciesReferenceUnmappedToNote'
     ].forEach(key => assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`));
   });
 
@@ -1143,9 +1161,26 @@ function testSpeciesReferenceContract() {
   assert.strictEqual(inat.commonName, '银杏');
   assert.strictEqual(inat.observationsCount, 43523);
   assert.strictEqual(inat.conservationStatus, 'endangered');
+  assert.strictEqual(inat.images.length, 1);
   assert.ok(rendererSource.includes('speciesReferenceOpenWiki'));
   assert.ok(rendererSource.includes('photoAttribution'));
   assert.strictEqual(speciesReferenceService.dedupeSuggestions([gbif, gbif, inat]).length, 2);
+
+  [
+    'queryMissingScientificName',
+    'queryMissingCommonName',
+    'queryMissingPhenology',
+    'queryMissingImage'
+  ].forEach(fragment => {
+    assert.ok(html.includes(fragment), `query UI missing ${fragment}`);
+  });
+  assert.ok(html.includes('queryCompleteness'), 'query UI missing queryCompleteness');
+  assert.ok(elementsSource.includes('queryCompleteness'), 'query element missing queryCompleteness');
+  assert.ok(querySource.includes('pointCompletenessFlags'));
+  assert.ok(querySource.includes('openReferenceFromQueryResult'));
+  assert.ok(querySource.includes('openSpeciesReferenceCenter()'));
+  assert.ok(querySource.includes('query-reference-btn'));
+  assert.ok(appSource.includes('ui.queryCompleteness'));
 }
 
 function testReadmeIsUserManual() {
