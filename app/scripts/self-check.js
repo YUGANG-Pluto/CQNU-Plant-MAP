@@ -43,6 +43,23 @@ function readRepositoryReadme() {
   return fs.readFileSync(found, 'utf8');
 }
 
+function readRepositoryFile(fileName) {
+  const candidates = [
+    path.join(process.cwd(), fileName),
+    path.join(process.cwd(), '..', fileName)
+  ];
+  const found = candidates.find(candidate => fs.existsSync(candidate));
+  assert.ok(found, `${fileName} must exist in app root or repository root`);
+  return fs.readFileSync(found, 'utf8');
+}
+
+function repositoryFileExists(fileName) {
+  return [
+    path.join(process.cwd(), fileName),
+    path.join(process.cwd(), '..', fileName)
+  ].some(candidate => fs.existsSync(candidate));
+}
+
 const expectedCsvHeader = [
   '分区编号',
   '分区名称',
@@ -1236,6 +1253,50 @@ function testReadmeIsUserManual() {
   ].forEach(fragment => assert.ok(!readme.includes(fragment), `README should stay user-facing and omit ${fragment}`));
 }
 
+function testRepositoryHygieneContract() {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
+  assert.strictEqual(packageJson.license, 'UNLICENSED');
+  assert.strictEqual(packageJson.private, true);
+  [
+    'check:syntax',
+    'check:repo',
+    'self-check',
+    'verify'
+  ].forEach(scriptName => assert.ok(packageJson.scripts[scriptName], `package script missing ${scriptName}`));
+
+  [
+    'LICENSE.md',
+    'EULA.md',
+    'SCHOOL_USE_LICENSE.md',
+    'THIRD_PARTY_NOTICES.md',
+    'PRIVACY.md',
+    'SECURITY.md',
+    'CHANGELOG.md',
+    'VERSION_POLICY.md',
+    'CONTRIBUTING_PRIVATE.md'
+  ].forEach(fileName => assert.ok(repositoryFileExists(fileName), `${fileName} must exist`));
+
+  assert.ok(readWorkspaceDoc('BASELINE_AUDIT.md').includes('No business data format was changed'));
+  assert.ok(repositoryFileExists('app/package-lock.json'), 'package-lock.json must exist');
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-js-syntax.js')));
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-repo-hygiene.js')));
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'build', 'icon.ico')), 'installer icon must be present');
+
+  const readme = readRepositoryReadme();
+  assert.ok(readme.includes('版权与使用限制 | Copyright and Usage Restrictions'));
+  assert.ok(readme.includes('项目数据 | Project Data'));
+  assert.ok(readme.includes('校内教学、科研、植物资源统计和维护用途'));
+  assert.ok(readme.includes('Internal campus use for teaching, research, plant resource statistics, and maintenance'));
+
+  const copyright = readRepositoryFile('Copyright.md');
+  assert.ok(copyright.includes('2026'));
+  assert.ok(copyright.includes('YU GangZuo'));
+
+  const gitignore = readRepositoryFile('.gitignore');
+  assert.ok(!gitignore.split(/\r?\n/).map(line => line.trim()).includes('build/'));
+  assert.ok(gitignore.includes('!app/build/icon.ico'));
+}
+
 async function main() {
   testPathGuard();
   testNormalize();
@@ -1260,6 +1321,7 @@ async function main() {
   testMaintenanceCenterContract();
   testSpeciesReferenceContract();
   testReadmeIsUserManual();
+  testRepositoryHygieneContract();
   await testExportWritesAtomicallyAndValidatesContent();
   await testImageImportDoesNotOverwriteExistingArchive();
   await testBackupCreateCleanupAndCounts();

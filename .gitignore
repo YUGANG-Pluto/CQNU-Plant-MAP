@@ -3,7 +3,9 @@ node_modules/
 dist/
 release/
 out/
-build/
+/build/
+app/build/*
+!app/build/icon.ico
 
 # Logs
 *.log

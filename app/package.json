@@ -4,13 +4,17 @@
   "description": "校园植物分区管理系统（支持自定义底图、项目目录持久化、中文/英文界面）",
   "main": "main.js",
   "author": "YUGANG Zuo",
-  "license": "MIT",
+  "license": "UNLICENSED",
+  "private": true,
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,css,html,json}\"",
     "self-check": "node scripts/self-check.js",
+    "check:syntax": "node scripts/check-js-syntax.js",
+    "check:repo": "node scripts/check-repo-hygiene.js",
+    "verify": "npm run check:repo && npm run check:syntax && npm run self-check",
     "check": "npm run lint && npm run self-check",
     "test": "npm run self-check"
   },

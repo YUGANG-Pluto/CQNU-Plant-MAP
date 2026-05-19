@@ -211,6 +211,10 @@ The maintenance center supports routine project maintenance:
 
 本项目公开可见，但不授予开源许可。除 GitHub 平台浏览与引用所需的最低限度展示外，不对第三方授予复制、修改、再发布、商用或制作衍生作品的许可。
 
+授权范围以仓库中的正式授权文件为准。校内教学、科研、植物资源统计和维护用途可在授权范围内使用；对外分发、改名发布、商业销售、云服务部署或作为其他项目组成部分再发布，均需取得版权所有者书面许可。
+
 ### English
 
 This project is publicly visible but is not released under an open-source license. Except for the minimum visibility and interaction required by the GitHub platform, no permission is granted for copying, modification, redistribution, commercial use, or derivative development.
+
+The formal license files in this repository define the authorized scope. Internal campus use for teaching, research, plant resource statistics, and maintenance is permitted only within that scope. External distribution, renamed publishing, commercial sale, hosted service deployment, or redistribution as part of another project requires written permission from the copyright holder.
