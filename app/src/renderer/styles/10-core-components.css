@@ -1148,6 +1148,16 @@ input[type="range"] {
   color: var(--success);
 }
 
+.maintenance-safe-mode-status {
+  display: inline-flex;
+  margin: 0 0 8px;
+}
+
+.maintenance-safe-mode-status.is-on {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 32%, var(--border-light));
+}
+
 .maintenance-issue-title,
 .maintenance-log-entry-title {
   color: var(--text-main);

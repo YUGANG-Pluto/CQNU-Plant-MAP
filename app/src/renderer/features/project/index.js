@@ -44,7 +44,9 @@ async function loadProjectIntoRenderer(projectDir) {
   }
 
   applyThemeVariables();
+  if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
   applyI18n();
+  if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
   applyActiveBaseMap();
 
   selectZone(null);
@@ -79,6 +81,7 @@ function applyI18n() {
   renderBaseMapSelect();
   renderBasemapEditTargetSelect();
   renderAllDerived();
+  if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
 }
 
 function ensureZoneForImport(zoneId, zoneName = '') {

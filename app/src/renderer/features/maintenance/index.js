@@ -5,6 +5,10 @@ const MAINTENANCE_SEVERITY_ORDER = { error: 0, warn: 1, info: 2 };
 let maintenanceLastReport = null;
 let maintenanceLastLogSnapshot = null;
 
+function cloneMaintenanceJson(value) {
+  return JSON.parse(JSON.stringify(value ?? null));
+}
+
 function maintenanceText(key, fallback = '') {
   return typeof t === 'function' ? t(key) : fallback || key;
 }
@@ -19,6 +23,44 @@ function maintenanceProjectLabel() {
 function setMaintenanceBusy(button, busy) {
   if (!button) return;
   button.disabled = !!busy;
+}
+
+function getMaintenanceSafeModeState() {
+  ensureSettingsShape(state.settings || {});
+  const safeMode = state.settings.maintenanceSafeMode || {};
+  return safeMode && typeof safeMode === 'object' ? safeMode : { enabled: false };
+}
+
+function isMaintenanceSafeModeEnabled() {
+  return getMaintenanceSafeModeState().enabled === true;
+}
+
+function setMaintenanceSafeModeState(nextState) {
+  if (!state.settings) return;
+  state.settings.maintenanceSafeMode = {
+    enabled: false,
+    ...nextState
+  };
+}
+
+function syncMaintenanceSafeModeUi() {
+  const enabled = isMaintenanceSafeModeEnabled();
+  document.documentElement.classList.toggle('maintenance-safe-mode', enabled);
+  if (ui.maintenanceSafeModeStatus) {
+    ui.maintenanceSafeModeStatus.textContent = maintenanceText(enabled ? 'maintenanceSafeModeOn' : 'maintenanceSafeModeOff');
+    ui.maintenanceSafeModeStatus.classList.toggle('is-on', enabled);
+  }
+  if (ui.btnApplySafeMode) {
+    ui.btnApplySafeMode.disabled = enabled;
+  }
+  if (ui.btnExitSafeMode) {
+    ui.btnExitSafeMode.disabled = !enabled;
+  }
+  if (ui.maintenanceSettingsSummary) {
+    ui.maintenanceSettingsSummary.textContent = enabled
+      ? maintenanceText('maintenanceSafeModeActiveHint')
+      : maintenanceText('maintenanceSettingsHint');
+  }
 }
 
 function addMaintenanceIssue(issues, severity, code, title, detail = '', fixable = false) {
@@ -231,9 +273,10 @@ async function runMaintenanceHealthCheck(options = {}) {
     const imageIssues = state.projectDir ? await collectImageFileIssues() : [];
     maintenanceLastReport = collectProjectDataIssues(imageIssues);
     renderMaintenanceReport(maintenanceLastReport);
-    if (!options.silent) {
+    if (!options.silent && !isMaintenanceSafeModeEnabled()) {
       ui.maintenanceSettingsSummary.textContent = maintenanceText('maintenanceCheckFinished');
     }
+    syncMaintenanceSafeModeUi();
     return maintenanceLastReport;
   } catch (error) {
     handleUiError(error, 'maintenance:health-check', {
@@ -303,7 +346,7 @@ async function runMaintenanceSafeRepair() {
     title: maintenanceText('maintenanceSafeRepair'),
     message: `${maintenanceText('maintenanceSafeRepairConfirm')}\n${maintenanceText('maintenanceSafeRepairScope')}`,
     acceptLabel: maintenanceText('maintenanceSafeRepair'),
-    cancelLabel: maintenanceText('cancelCreatePoint')
+    cancelLabel: maintenanceText('cancelAction')
   });
   if (!confirmed) return;
 
@@ -413,10 +456,12 @@ async function applySettingsBundle(bundle) {
     ...state.settings,
     ...(bundle.language ? { language: bundle.language } : {}),
     ...(bundle.uiTheme ? { uiTheme: bundle.uiTheme } : {}),
-    ...(bundle.statsCustom ? { statsCustom: bundle.statsCustom } : {})
+    ...(bundle.statsCustom ? { statsCustom: bundle.statsCustom } : {}),
+    maintenanceSafeMode: { enabled: false }
   });
   ensureThemeSettings();
   applyThemeVariables();
+  syncMaintenanceSafeModeUi();
   applyI18n();
   renderAllDerived();
   await persistProject();
@@ -450,7 +495,7 @@ async function importUiSettings() {
       title: maintenanceText('maintenanceImportSettings'),
       message: maintenanceText('maintenanceImportSettingsConfirm'),
       acceptLabel: maintenanceText('maintenanceImportSettings'),
-      cancelLabel: maintenanceText('cancelCreatePoint')
+      cancelLabel: maintenanceText('cancelAction')
     });
     if (!confirmed) return;
     await applySettingsBundle(bundle);
@@ -462,47 +507,117 @@ async function importUiSettings() {
   }
 }
 
+function createMaintenanceSafeModeTheme() {
+  const theme = createThemeDefaults('linear-minimal');
+  theme.glass = {
+    ...theme.glass,
+    mode: 'off',
+    opacity: 0,
+    blur: 0,
+    saturate: 100,
+    highlight: 0,
+    shadow: 0,
+    brightness: 0,
+    apply: {
+      modules: false,
+      controls: false,
+      mapBadges: false,
+      charts: false,
+      settings: false
+    }
+  };
+  theme.motion = {
+    ...MOTION_MODE_PRESETS.off,
+    mode: 'off',
+    reduced: true
+  };
+  theme.progress = {
+    ...theme.progress,
+    mode: 'compact',
+    glass: false
+  };
+  return theme;
+}
+
 async function applySafeModeSettings() {
   if (!requireProject()) return;
+  if (isMaintenanceSafeModeEnabled()) {
+    showAlert(maintenanceText('maintenanceSafeModeAlreadyOn'));
+    syncMaintenanceSafeModeUi();
+    return;
+  }
   const confirmed = await openConfirmDialog({
     title: maintenanceText('maintenanceApplySafeMode'),
     message: maintenanceText('maintenanceSafeModeConfirm'),
     acceptLabel: maintenanceText('maintenanceApplySafeMode'),
-    cancelLabel: maintenanceText('cancelCreatePoint')
+    cancelLabel: maintenanceText('cancelAction')
   });
   if (!confirmed) return;
 
   try {
-    const theme = createThemeDefaults(DEFAULT_UI_STYLE_ID);
-    theme.glass = {
-      ...theme.glass,
-      mode: 'off',
-      opacity: 0,
-      blur: 0,
-      saturate: 100,
-      highlight: 0,
-      shadow: 0,
-      brightness: 0
-    };
-    theme.motion = {
-      ...MOTION_MODE_PRESETS.minimal,
-      mode: 'minimal',
-      reduced: true
-    };
+    const previousUiTheme = cloneMaintenanceJson(state.settings.uiTheme || {});
+    const theme = createMaintenanceSafeModeTheme();
     state.settings = ensureSettingsShape({
       ...state.settings,
-      uiTheme: theme
+      uiTheme: theme,
+      maintenanceSafeMode: {
+        enabled: true,
+        enabledAt: new Date().toISOString(),
+        previousUiTheme
+      }
     });
     ensureThemeSettings();
     applyThemeVariables();
+    syncMaintenanceSafeModeUi();
     applyI18n();
     renderAllDerived();
     await persistProject();
-    ui.maintenanceSettingsSummary.textContent = maintenanceText('maintenanceSafeModeDone');
     showAlert(maintenanceText('maintenanceSafeModeDone'));
   } catch (error) {
     handleUiError(error, 'maintenance:safe-mode', {
       title: maintenanceText('maintenanceSafeModeFailed')
+    });
+  }
+}
+
+async function exitSafeModeSettings() {
+  if (!requireProject()) return;
+  if (!isMaintenanceSafeModeEnabled()) {
+    showAlert(maintenanceText('maintenanceSafeModeAlreadyOff'));
+    syncMaintenanceSafeModeUi();
+    return;
+  }
+  const safeMode = getMaintenanceSafeModeState();
+  const confirmed = await openConfirmDialog({
+    title: maintenanceText('maintenanceExitSafeMode'),
+    message: maintenanceText('maintenanceExitSafeModeConfirm'),
+    acceptLabel: maintenanceText('maintenanceExitSafeMode'),
+    cancelLabel: maintenanceText('cancelAction')
+  });
+  if (!confirmed) return;
+
+  try {
+    const previousUiTheme = safeMode.previousUiTheme && typeof safeMode.previousUiTheme === 'object'
+      ? safeMode.previousUiTheme
+      : createThemeDefaults(DEFAULT_UI_STYLE_ID);
+    state.settings = ensureSettingsShape({
+      ...state.settings,
+      uiTheme: previousUiTheme,
+      maintenanceSafeMode: {
+        enabled: false,
+        disabledAt: new Date().toISOString()
+      }
+    });
+    ensureThemeSettings();
+    applyThemeVariables();
+    syncMaintenanceSafeModeUi();
+    applyI18n();
+    renderAllDerived();
+    await persistProject();
+    showAlert(maintenanceText('maintenanceExitSafeModeDone'));
+  } catch (error) {
+    handleUiError(error, 'maintenance:exit-safe-mode', {
+      title: maintenanceText('maintenanceExitSafeModeFailed')
     });
   }
 }
@@ -558,6 +673,7 @@ async function exportDiagnostics() {
 
 function openMaintenanceCenter() {
   ui.maintenanceProjectPath.textContent = maintenanceProjectLabel();
+  syncMaintenanceSafeModeUi();
   renderMaintenanceReport(maintenanceLastReport);
   openLayerModal(ui.maintenanceModal);
   refreshMaintenanceLogs();
@@ -574,6 +690,8 @@ function bindMaintenanceEvents() {
   ui.btnCleanupLogs?.addEventListener('click', cleanupMaintenanceLogs);
   ui.btnExportDiagnostics?.addEventListener('click', exportDiagnostics);
   ui.btnApplySafeMode?.addEventListener('click', applySafeModeSettings);
+  ui.btnExitSafeMode?.addEventListener('click', exitSafeModeSettings);
   ui.btnExportUiSettings?.addEventListener('click', exportUiSettings);
   ui.btnImportUiSettings?.addEventListener('click', importUiSettings);
+  syncMaintenanceSafeModeUi();
 }

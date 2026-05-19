@@ -8,6 +8,9 @@ function ensureSettingsShape(settings) {
   next.autoNormalizeBasemap = typeof next.autoNormalizeBasemap === 'boolean' ? next.autoNormalizeBasemap : true;
   next.recycleBin = Array.isArray(next.recycleBin) ? next.recycleBin : [];
   next.uiTheme = next.uiTheme || {};
+  next.maintenanceSafeMode = next.maintenanceSafeMode && typeof next.maintenanceSafeMode === 'object' && !Array.isArray(next.maintenanceSafeMode)
+    ? next.maintenanceSafeMode
+    : { enabled: false };
   next.statsCustom = Object.assign({
     category: 'zone',
     chartType: 'combo',
@@ -95,7 +98,7 @@ function openConfirmDialog({
   ui.confirmTitle.textContent = title || t('confirmAction');
   ui.confirmMessage.textContent = message || '';
   ui.btnConfirmAccept.textContent = acceptLabel || t('confirmAction');
-  ui.btnConfirmCancel.textContent = cancelLabel || t('cancelCreatePoint');
+  ui.btnConfirmCancel.textContent = cancelLabel || t('cancelAction');
   openLayerModal(ui.confirmModal);
   return new Promise(resolve => {
     state.confirmResolver = resolve;

@@ -367,3 +367,19 @@ Completed:
 - Added self-check coverage for the new IPC contract, guarded image-reference checks, maintenance UI wiring, and reduced `innerHTML` exposure.
 
 No record deletion, coordinate correction, orphan-point reassignment, basemap localization, dependency change, package build change, or persisted field migration was introduced.
+
+## 2026-05-19 Safe mode flow and README correction
+
+Completed:
+
+- Reworked Maintenance Center safe mode into a complete flow:
+  - entering safe mode stores the previous `uiTheme`,
+  - applies a lightweight linear theme,
+  - turns glass effects off,
+  - turns motion off,
+  - shows an explicit safe-mode status,
+  - provides an exit action that restores the saved previous UI settings.
+- Replaced maintenance confirmation cancel labels with a generic cancel label instead of the point-creation-specific label.
+- Updated README into a Chinese/English user manual focused on features, usage workflow, project data, maintenance center, import/export, and data-safety notes.
+
+No zone, point, image, basemap, IPC safety boundary, package dependency, or build configuration was changed.

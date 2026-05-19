@@ -1,151 +1,114 @@
 # CQNU Campus Plant Mapping System
 # 重庆师范大学校园植物分区管理系统
 
-> Copyright © YU GangZuo. All rights reserved.
-> 本仓库公开可见，仅用于项目展示、学术交流与参考阅读。
-> 未经版权所有者书面许可，不得复制、修改、再发布、商用或制作衍生作品。
->
-> This repository is publicly visible for project display, academic communication, and reference only.
-> Unless prior written permission is obtained from the copyright holder, no reproduction, modification, redistribution, commercial use, or derivative use is allowed.
+> Copyright © YU GangZuo. All rights reserved.  
+> 本仓库公开可见，仅用于项目展示、学术交流与参考阅读。未经版权所有者书面许可，不得复制、修改、再发布、商用或制作衍生作品。  
+> This repository is publicly visible for project display, academic communication, and reference only. Unless prior written permission is obtained from the copyright holder, no reproduction, modification, redistribution, commercial use, or derivative use is allowed.
 
 ---
 
-## 目录 | Table of Contents
-
-1. [项目简介 | Project Overview](#项目简介--project-overview)
-2. [版本说明 | Version Notes](#版本说明--version-notes)
-3. [主要功能 | Core Features](#主要功能--core-features)
-4. [技术栈 | Tech Stack](#技术栈--tech-stack)
-5. [项目结构 | Project Structure](#项目结构--project-structure)
-6. [安装与运行 | Installation and Run](#安装与运行--installation-and-run)
-7. [打包说明 | Packaging](#打包说明--packaging)
-8. [数据与安全边界 | Data and Safety Boundaries](#数据与安全边界--data-and-safety-boundaries)
-9. [版本与维护 | Versioning and Maintenance](#版本与维护--versioning-and-maintenance)
-10. [版权与使用限制 | Copyright and Usage Restrictions](#版权与使用限制--copyright-and-usage-restrictions)
-
----
-
-## 项目简介 | Project Overview
+## 简介 | Overview
 
 ### 中文
 
-本项目是一个面向校园植物调查、分区绘制、点位记录和长期项目维护的本地桌面系统。软件以 Electron 单机应用形式运行，项目数据保存在用户选择的本地项目目录中，不依赖服务器。
-
-当前版本围绕“地图分区 -> 点位记录 -> 植物与物候信息 -> 图片归档 -> 查询统计 -> 备份与合并”的调查链路进行维护，重点提升了安全边界、错误日志、主题设置、统计中心图表和界面工程化结构。
+重庆师范大学校园植物分区管理系统是一款本地桌面应用，用于校园植物资源调查、分区绘制、点位记录、图片归档、查询统计和项目维护。软件以“本地项目目录”为核心保存数据，不依赖服务器；底图可使用在线地图服务，避免把底图资源本地化造成空间浪费。
 
 ### English
 
-This project is a local desktop system for campus plant survey, zone drawing, point recording, and long-term project maintenance. It runs as an Electron application and stores project data in a local directory selected by the user, without requiring a server.
-
-The current version focuses on the workflow of map zoning, point records, plant and phenology data, image archiving, query and statistics, backup, and project merge. Recent maintenance improves safety boundaries, error logging, theme settings, statistical charts, and frontend structure.
+CQNU Campus Plant Mapping System is a local desktop application for campus plant surveys, zone drawing, point records, image archiving, query, statistics, and project maintenance. Data is stored in a user-selected local project folder. Online basemap services can be used directly, avoiding large local map assets.
 
 ---
 
-## 版本说明 | Version Notes
+## 适用场景 | Use Cases
 
 ### 中文
 
-当前同步版本建议标记为：
-
-```text
-v9.0.1-beta.1
-```
-
-本版本是 9.0.1 主线的 beta 更新，主要用于记录安全修复、工程化拆分、设置精简、VibeUI/design-md 风格适配、统计中心图表优化和动效收束。该 tag 仅作为源码版本标记，不附带 GitHub Release 安装包。
+- 校园植物资源普查与持续补充。
+- 按道路、片区、绿地或管理单元建立植物分区。
+- 为每个植物点位保存名称、坐标、物候、图片和备注。
+- 在校内查找植物、核对分区记录、输出 CSV 或 GeoJSON。
+- 对项目进行备份、合并、健康检查和日志诊断。
 
 ### English
 
-The recommended tag for this synchronized version is:
-
-```text
-v9.0.1-beta.1
-```
-
-This is a beta update on the 9.0.1 mainline. It records safety fixes, structural refactoring, settings simplification, VibeUI/design-md visual adaptation, statistics center chart polish, and motion consolidation. The tag is intended as a source-code version marker only, without a GitHub Release installer asset.
+- Campus plant resource survey and continuous updates.
+- Zone-based management by road, area, green space, or management unit.
+- Point-level records for plant names, coordinates, phenology, images, and notes.
+- Plant lookup, zone review, CSV export, and GeoJSON export.
+- Project backup, merge, health check, and diagnostics.
 
 ---
 
-## 主要功能 | Core Features
+## 主要功能 | Main Features
 
 ### 中文
 
-- 地图底图切换与自定义底图源配置
-- 分区绘制、编辑、删除和信息展示
-- 点位创建、编辑、删除、定位和选中
-- 单点位对应单物种，单物种支持多物候记录
-- 图片导入、EXIF 读取、图片归档和预览
-- 查询中心、高级筛选和结果定位
-- 统计中心、自由统计、柱状图、折线图、圆环图和组合图
-- 回收站、恢复与彻底删除
-- 项目备份、过期备份清理和项目合并
-- CSV / GeoJSON 导入导出
-- 中英文界面切换
-- 主题预设、玻璃效果、动效、状态色和品牌图标设置
-- 本地日志、用户错误弹窗和后台错误记录
+- 地图工作台：浏览地图、绘制分区、添加点位、选择对象并定位。
+- 分区管理：编辑分区编号、名称、描述和边界。
+- 点位管理：编辑点位编号、植物中文名、学名、坐标和调查信息。
+- 物候记录：同一植物点位可维护多条物候记录。
+- 图片归档：导入图片、归档到项目目录，并支持预览。
+- 查询中心：按名称、分区、生活型、物候状态、来源、调查人和日期筛选。
+- 统计中心：查看分区、物种、时间和自定义统计图表。
+- 回收站：恢复误删记录或确认彻底删除。
+- 项目备份：手动备份项目，并处理过期备份。
+- 项目合并：辅助合并两个本地项目并提示疑似重合点位。
+- 维护中心：执行项目健康检查、保守修复、日志查看、诊断导出、设置导入导出和安全模式。
+- 界面设置：切换主题、布局、玻璃效果、动效和状态颜色。
+- 中英双语：支持中文和 English 界面切换。
 
 ### English
 
-- Basemap switching and custom basemap source configuration
-- Zone drawing, editing, deletion, and information display
-- Point creation, editing, deletion, focusing, and selection
-- One point corresponds to one species; one species supports multiple phenology records
-- Image import, EXIF reading, image archiving, and preview
-- Query center, advanced filtering, and result focusing
-- Statistics center, custom statistics, bar chart, line chart, donut chart, and combined chart
-- Recycle bin, restore, and permanent deletion
-- Project backup, expired backup cleanup, and project merge
-- CSV / GeoJSON import and export
-- Chinese / English interface switching
-- Theme presets, glass effects, motion, status colors, and brand icon settings
-- Local logging, user-facing error dialogs, and backend error records
+- Map workspace: browse maps, draw zones, add points, select records, and focus locations.
+- Zone management: edit zone code, name, description, and boundary.
+- Point management: edit point code, Chinese name, scientific name, coordinates, and survey fields.
+- Phenology records: multiple phenology entries can be maintained for one plant point.
+- Image archive: import images into the project folder and preview them.
+- Query center: filter by name, zone, growth form, phenology state, source, observer, and date.
+- Statistics center: view zone, species, time, and custom statistical charts.
+- Recycle bin: restore deleted records or permanently delete them.
+- Project backup: create manual backups and handle expired backups.
+- Project merge: merge two local projects and review possible duplicate points.
+- Maintenance center: run health checks, safe repairs, log review, diagnostic export, settings import/export, and safe mode.
+- UI settings: switch themes, layouts, glass effects, motion, and status colors.
+- Bilingual UI: Chinese and English interface switching.
 
 ---
 
-## 技术栈 | Tech Stack
+## 基本使用流程 | Basic Workflow
 
 ### 中文
 
-- Electron
-- HTML / CSS / JavaScript
-- Leaflet
-- JSON 本地数据存储
-- CSV / GeoJSON 数据交换
-- ZIP 项目备份
-- Node.js 主进程文件能力
+1. 打开软件后，点击“选择项目目录”。
+2. 选择一个已有项目目录，或选择一个空目录让软件创建项目结构。
+3. 在左侧地图工具中选择“绘制分区”，在地图上画出分区边界。
+4. 选中分区后选择“添加点位”，在地图上放置植物点位。
+5. 在右侧检查器中填写分区、点位和植物信息。
+6. 在“物候录入中心”中补充物候、图片和调查备注。
+7. 使用“查询中心”和“统计中心”查找、核对和汇总记录。
+8. 定期使用“项目备份”和“维护中心”保存备份、检查项目健康状态。
 
 ### English
 
-- Electron
-- HTML / CSS / JavaScript
-- Leaflet
-- Local JSON-based data storage
-- CSV / GeoJSON data exchange
-- ZIP-based project backup
-- Node.js file capabilities in the main process
+1. Open the app and click “Choose Project Folder”.
+2. Select an existing project folder, or choose an empty folder so the app can create the project structure.
+3. Use “Draw Zone” in the map tools to draw a zone boundary.
+4. Select a zone, then choose “Add Point” and place a plant point on the map.
+5. Fill in zone, point, and plant information in the right inspector.
+6. Add phenology entries, images, and survey notes in the phenology editor.
+7. Use the query center and statistics center to search, review, and summarize records.
+8. Use project backup and maintenance center regularly to protect and check the project.
 
 ---
 
-## 项目结构 | Project Structure
+## 项目数据 | Project Data
 
 ### 中文
 
-推荐仓库结构如下：
+每个项目目录通常包含：
 
 ```text
-CQNU-Plant-MAP/
-├─ app/                 # Electron 应用源码
-├─ docs/                # 工程化、设置精简和视觉设计记录
-├─ README.md
-├─ Copyright.md
-├─ CHANGELOG.md
-├─ VERSION_POLICY.md
-└─ .gitignore
-```
-
-应用运行时选择的本地项目目录通常包含：
-
-```text
-project-directory/
+project-folder/
 └─ information/
    ├─ settings.json
    ├─ zones.json
@@ -153,25 +116,17 @@ project-directory/
    └─ images/
 ```
 
+- `settings.json` 保存界面、底图、统计偏好和回收站等设置。
+- `zones.json` 保存分区记录。
+- `points.json` 保存植物点位和物候记录。
+- `images/` 保存导入到项目中的图片。
+
 ### English
 
-Recommended repository structure:
+A project folder usually contains:
 
 ```text
-CQNU-Plant-MAP/
-├─ app/                 # Electron application source
-├─ docs/                # Engineering, settings, and design notes
-├─ README.md
-├─ Copyright.md
-├─ CHANGELOG.md
-├─ VERSION_POLICY.md
-└─ .gitignore
-```
-
-A runtime local project directory usually contains:
-
-```text
-project-directory/
+project-folder/
 └─ information/
    ├─ settings.json
    ├─ zones.json
@@ -179,139 +134,70 @@ project-directory/
    └─ images/
 ```
 
----
-
-## 安装与运行 | Installation and Run
-
-### 中文
-
-进入应用源码目录：
-
-```powershell
-cd app
-```
-
-安装依赖并运行：
-
-```powershell
-npm install
-npm start
-```
-
-如果在中国大陆网络环境下 Electron 下载较慢，可先设置镜像：
-
-```powershell
-$env:ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"
-$env:ELECTRON_BUILDER_BINARIES_MIRROR="https://npmmirror.com/mirrors/electron-builder-binaries/"
-```
-
-### English
-
-Enter the application source directory:
-
-```powershell
-cd app
-```
-
-Install dependencies and run:
-
-```powershell
-npm install
-npm start
-```
-
-For mainland China network environments, Electron mirrors can be configured before installation:
-
-```powershell
-$env:ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"
-$env:ELECTRON_BUILDER_BINARIES_MIRROR="https://npmmirror.com/mirrors/electron-builder-binaries/"
-```
+- `settings.json` stores UI, basemap, statistics preferences, and recycle-bin settings.
+- `zones.json` stores zone records.
+- `points.json` stores plant points and phenology records.
+- `images/` stores images imported into the project.
 
 ---
 
-## 打包说明 | Packaging
+## 维护中心 | Maintenance Center
 
 ### 中文
 
-Windows NSIS 安装包打包命令：
+维护中心用于处理日常维护问题：
 
-```powershell
-cd app
-npm run dist
-```
-
-生成的安装包建议作为单独发布文件管理。本次 `v9.0.1-beta.1` 只同步源码并打 tag，暂不上传 GitHub Release 安装包。
+- 项目健康检查：检查缺失编号、重复编号、孤立点位、异常坐标、缺失名称、物候记录和图片引用。
+- 保守修复：只处理安全项，例如补齐缺失 ID、规范化记录结构、去除同一物候记录中的重复图片引用。
+- 日志与诊断：查看最近日志、清理过期日志、导出诊断文件。
+- 设置安全模式：进入轻量线性主题、关闭玻璃效果并停用动效；退出时恢复进入前的界面设置。
+- 设置导入导出：只导入或导出语言、界面主题和统计偏好，不覆盖分区、点位、图片或底图策略。
 
 ### English
 
-Windows NSIS packaging command:
+The maintenance center supports routine project maintenance:
 
-```powershell
-cd app
-npm run dist
-```
-
-The generated installer should be managed as a separate release asset. For `v9.0.1-beta.1`, only source code and the tag are synchronized; no GitHub Release installer asset is uploaded.
+- Health check: checks missing codes, duplicate codes, orphan points, invalid coordinates, missing names, phenology records, and image references.
+- Safe repair: only handles conservative fixes such as missing IDs, record normalization, and duplicate image references inside one phenology entry.
+- Logs and diagnostics: review recent logs, clean expired logs, and export diagnostic files.
+- Settings safe mode: switch to a lightweight linear theme, disable glass effects, and turn motion off; exiting safe mode restores previous UI settings.
+- Settings import/export: only handles language, UI theme, and statistics preferences. Zones, points, images, and basemap strategy are not overwritten.
 
 ---
 
-## 数据与安全边界 | Data and Safety Boundaries
+## 导入导出 | Import and Export
 
 ### 中文
 
-本仓库只建议保存源码、构建配置和维护文档，不建议上传真实调查项目数据。
-
-请勿提交以下内容：
-
-- 真实 `information/` 项目数据目录
-- 真实图片资料库
-- 日志文件
-- 备份压缩包
-- 打包输出目录
-- API key、token 或本地私密路径
-
-当前版本持续维护以下安全边界：
-
-- 主进程统一处理文件读写、导入导出、图片归档和备份
-- 渲染进程通过受控 preload API 调用能力
-- 项目文件写入采用更稳妥的原子写入策略
-- 用户可见错误使用弹窗提示，后台同步记录日志
+- CSV：适合表格编辑、校内资料整理和人工核对。
+- GeoJSON：适合 GIS 工具、地图数据交换和空间核对。
+- 诊断 JSON：适合排查日志、项目健康检查和界面设置问题。
+- 设置 JSON：适合迁移界面偏好，不迁移业务数据。
 
 ### English
 
-This repository should contain source code, build configuration, and maintenance documents only. Real survey project data should not be committed.
-
-Do not commit:
-
-- Real `information/` project data directories
-- Real image archives
-- Log files
-- Backup archives
-- Packaged output directories
-- API keys, tokens, or private local paths
-
-The current version maintains the following safety boundaries:
-
-- The main process handles file writes, import/export, image archiving, and backup
-- The renderer process uses controlled preload APIs
-- Project file writes use a safer atomic-write strategy
-- User-facing errors are shown with dialogs while backend logs record error context
+- CSV: suitable for spreadsheet editing, campus data organization, and manual review.
+- GeoJSON: suitable for GIS tools, map data exchange, and spatial review.
+- Diagnostic JSON: useful for log, health-check, and UI-settings troubleshooting.
+- Settings JSON: useful for moving UI preferences without moving project records.
 
 ---
 
-## 版本与维护 | Versioning and Maintenance
+## 数据安全提示 | Data Safety Notes
 
 ### 中文
 
-本项目采用“主线稳定版优先”的维护方式。功能增强应尽量保持核心链路稳定，并优先通过小步修复、结构化拆分和可验证的自检来推进。
-
-后续维护 README 和版权声明时，应继续保持当前中英双文风格。除非功能有明显差异、版本说明需要更新，或版权所有者提出要求，不应随意改写版权声明口径。
+- 建议在大量编辑、导入、合并或修复前先备份项目。
+- 不建议把真实调查数据、图片、日志或备份压缩包提交到公开仓库。
+- 在线底图加载依赖外部地图服务，若网络或服务不可用，地图显示可能受影响。
+- 保守修复不会删除记录、不会自动修改坐标、不会把孤立点位自动归属到某个分区。
 
 ### English
 
-This project follows a stable-mainline-first maintenance approach. Enhancements should preserve core workflow stability and proceed through controlled fixes, structural separation, and verifiable self-checks.
-
-Future README and copyright updates should keep the current Chinese/English bilingual style. Unless functionality changes significantly, version notes need updates, or the copyright holder requests changes, the copyright statement should not be casually rewritten.
+- Create a backup before large edits, imports, merges, or repairs.
+- Do not commit real survey data, images, logs, or backup archives to a public repository.
+- Online basemaps depend on external map services; map display may be affected by network or service availability.
+- Safe repair does not delete records, automatically change coordinates, or assign orphan points to zones.
 
 ---
 

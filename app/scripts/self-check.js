@@ -32,6 +32,16 @@ function readWorkspaceDoc(fileName) {
   return fs.readFileSync(found, 'utf8');
 }
 
+function readRepositoryReadme() {
+  const candidates = [
+    path.join(process.cwd(), 'README.md'),
+    path.join(process.cwd(), '..', 'README.md')
+  ];
+  const found = candidates.find(candidate => fs.existsSync(candidate));
+  assert.ok(found, 'README.md must exist in app root or repository root');
+  return fs.readFileSync(found, 'utf8');
+}
+
 const expectedCsvHeader = [
   '分区编号',
   '分区名称',
@@ -951,6 +961,8 @@ function testMaintenanceCenterContract() {
     'btnRunSafeRepair',
     'btnExportDiagnostics',
     'btnApplySafeMode',
+    'btnExitSafeMode',
+    'maintenanceSafeModeStatus',
     'btnExportUiSettings',
     'btnImportUiSettings'
   ].forEach(id => {
@@ -960,6 +972,7 @@ function testMaintenanceCenterContract() {
   assert.ok(html.indexOf('./src/renderer/features/project/index.js') < html.indexOf('./src/renderer/features/maintenance/index.js'));
   assert.ok(html.indexOf('./src/renderer/features/maintenance/index.js') < html.indexOf('./src/renderer/app.js'));
   assert.ok(appSource.includes('bindMaintenanceEvents'));
+  assert.ok(appSource.includes('syncMaintenanceSafeModeUi'));
   [
     "invoke('settings:importJson'",
     "invoke('settings:exportJson'",
@@ -979,10 +992,17 @@ function testMaintenanceCenterContract() {
   assert.ok(loggerSource.includes('function listRecentLogs'));
   assert.ok(loggerSource.includes('function cleanupOldLogs'));
   assert.ok(maintenanceSource.includes('MAINTENANCE_SETTINGS_SCHEMA'));
+  assert.ok(maintenanceSource.includes('function createMaintenanceSafeModeTheme'));
+  assert.ok(maintenanceSource.includes("createThemeDefaults('linear-minimal')"));
+  assert.ok(maintenanceSource.includes('function exitSafeModeSettings'));
+  assert.ok(maintenanceSource.includes('previousUiTheme'));
+  assert.ok(maintenanceSource.includes('syncMaintenanceSafeModeUi'));
+  assert.ok(!maintenanceSource.includes("maintenanceText('cancelCreatePoint')"));
   assert.ok(maintenanceSource.includes('createBackupZip(state.projectDir, \'\', \'maintenance\')'));
   assert.ok(maintenanceSource.includes('maintenanceSafeRepairScope'));
   assert.ok(!maintenanceSource.includes('deleteCurrent'));
   assert.ok(!maintenanceSource.includes('state.points = state.points.filter'));
+  assert.ok(fs.readFileSync(path.join(process.cwd(), 'src/renderer/utils/dialogs.js'), 'utf8').includes("t('cancelAction')"));
   assert.ok(cssSource.includes('.maintenance-grid'));
   ['zh.js', 'en.js'].forEach(name => {
     const source = fs.readFileSync(path.join(process.cwd(), 'src/renderer/i18n', name), 'utf8');
@@ -991,9 +1011,31 @@ function testMaintenanceCenterContract() {
       'maintenanceCenterTitle',
       'maintenanceSafeRepair',
       'maintenanceExportDiagnostics',
-      'maintenanceApplySafeMode'
+      'maintenanceApplySafeMode',
+      'maintenanceExitSafeMode',
+      'maintenanceSafeModeOn',
+      'cancelAction'
     ].forEach(key => assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`));
   });
+}
+
+function testReadmeIsUserManual() {
+  const readme = readRepositoryReadme();
+  [
+    '基本使用流程 | Basic Workflow',
+    '维护中心 | Maintenance Center',
+    '导入导出 | Import and Export',
+    '数据安全提示 | Data Safety Notes',
+    'Main Features',
+    'Basic Workflow'
+  ].forEach(fragment => assert.ok(readme.includes(fragment), `README missing ${fragment}`));
+  [
+    'npm install',
+    'npm run dist',
+    'Versioning and Maintenance',
+    'Tech Stack',
+    'Project Structure'
+  ].forEach(fragment => assert.ok(!readme.includes(fragment), `README should stay user-facing and omit ${fragment}`));
 }
 
 async function main() {
@@ -1018,6 +1060,7 @@ async function main() {
   testStatisticsChartVisualContract();
   testReducedInnerHtmlSurface();
   testMaintenanceCenterContract();
+  testReadmeIsUserManual();
   await testExportWritesAtomicallyAndValidatesContent();
   await testImageImportDoesNotOverwriteExistingArchive();
   await testBackupCreateCleanupAndCounts();

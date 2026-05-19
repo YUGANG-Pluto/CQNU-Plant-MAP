@@ -285,7 +285,9 @@ const elementGroups = {
     'btnCleanupLogs',
     'btnExportDiagnostics',
     'maintenanceSettingsSummary',
+    'maintenanceSafeModeStatus',
     'btnApplySafeMode',
+    'btnExitSafeMode',
     'btnExportUiSettings',
     'btnImportUiSettings'
   ],

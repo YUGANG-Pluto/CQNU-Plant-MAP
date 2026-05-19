@@ -947,11 +947,13 @@
           <div class="maintenance-card-head">
             <div>
               <h3 data-i18n="maintenanceSettingsTitle">设置安全模式</h3>
+              <span id="maintenanceSafeModeStatus" class="pill maintenance-safe-mode-status">安全模式未启用</span>
               <p id="maintenanceSettingsSummary" class="subtle" data-i18n="maintenanceSettingsHint">仅处理界面主题、统计偏好和语言，不改分区、点位或图片。</p>
             </div>
           </div>
           <div class="toolbar-inline maintenance-actions">
             <button id="btnApplySafeMode" class="btn btn-danger-soft" data-i18n="maintenanceApplySafeMode">启用安全模式</button>
+            <button id="btnExitSafeMode" class="btn btn-primary" data-i18n="maintenanceExitSafeMode">退出安全模式</button>
             <button id="btnExportUiSettings" class="btn btn-soft" data-i18n="maintenanceExportSettings">导出设置</button>
             <button id="btnImportUiSettings" class="btn btn-soft" data-i18n="maintenanceImportSettings">导入设置</button>
           </div>

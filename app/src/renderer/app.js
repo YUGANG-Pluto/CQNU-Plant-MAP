@@ -867,8 +867,10 @@ function bootApp() {
   refreshSuggestionLists();
   state.settings = createInitialSettings();
   applyThemeVariables();
+  if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
   bindEvents();
   applyI18n();
+  if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
   applyActiveBaseMap();
   showPendingControls(false);
   renderLists();
