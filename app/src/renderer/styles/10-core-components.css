@@ -1323,15 +1323,55 @@ input[type="range"] {
   font-size: 12px;
 }
 
-.species-reference-body a {
+.species-reference-body a,
+.species-reference-link {
   color: var(--primary);
   font-size: 12px;
+}
+
+.species-reference-link {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.species-reference-link:hover,
+.species-reference-link:focus-visible {
+  color: color-mix(in srgb, var(--primary) 76%, var(--text-main));
+}
+
+.species-reference-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 44%, transparent);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
 .species-reference-links {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.species-reference-token-help {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--panel-bg-soft) 84%, transparent);
+}
+
+.species-reference-token-help ol {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .species-reference-detail {
@@ -1502,4 +1542,3 @@ input[type="range"] {
     grid-template-columns: 1fr;
   }
 }
-

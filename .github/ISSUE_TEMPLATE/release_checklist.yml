@@ -1,0 +1,32 @@
+name: Release checklist
+description: Track release readiness for a local desktop build.
+title: "[Release] "
+labels:
+  - release
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Planned release version.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Release scope
+      description: User-visible changes and compatibility notes.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Required checks
+      options:
+        - label: npm run verify passed.
+        - label: Manual smoke test completed.
+        - label: Installer build completed.
+        - label: License, privacy, and third-party notices reviewed.
+        - label: User project data was not packaged.
+        - label: Rollback notes are ready.
+

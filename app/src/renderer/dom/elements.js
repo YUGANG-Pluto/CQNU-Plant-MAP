@@ -348,6 +348,7 @@ const elementGroups = {
     'speciesReferenceApplyCommon',
     'speciesReferenceAppendNote',
     'speciesReferenceImageTokenInput',
+    'btnOpenInatTokenPage',
     'btnRunSpeciesImageCompare',
     'speciesReferenceImageCompareStatus',
     'speciesReferenceSummary',

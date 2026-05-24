@@ -1,4 +1,5 @@
 let speciesReferenceCache = null;
+const INATURALIST_API_TOKEN_URL = 'https://www.inaturalist.org/users/api_token';
 
 function safeExternalUrl(value) {
   try {
@@ -21,7 +22,7 @@ function safePreviewUrl(value) {
 function externalLinkHtml(url, label) {
   const safeUrl = safeExternalUrl(url);
   return safeUrl
-    ? `<a href="${escapeHtml(safeUrl)}" data-external-url="${escapeHtml(safeUrl)}" rel="noreferrer">${escapeHtml(label || safeUrl)}</a>`
+    ? `<button type="button" class="species-reference-link" data-external-url="${escapeHtml(safeUrl)}" title="${escapeHtml(safeUrl)}">${escapeHtml(label || safeUrl)}</button>`
     : '';
 }
 
@@ -38,11 +39,19 @@ async function openReferenceExternalUrl(value) {
 }
 
 function interceptReferenceExternalLink(event) {
-  const anchor = event.target?.closest?.('a[data-external-url]');
-  if (!anchor) return false;
+  const control = event.target?.closest?.('[data-external-url]');
+  if (!control) return false;
   event.preventDefault();
-  openReferenceExternalUrl(anchor.dataset.externalUrl || anchor.href);
+  event.stopPropagation();
+  openReferenceExternalUrl(control.dataset.externalUrl || '');
   return true;
+}
+
+function selectSpeciesReferenceSuggestion(suggestionId) {
+  if (!speciesReferenceCache || !suggestionId) return;
+  if (!speciesReferenceCache.suggestions.some(item => item.id === suggestionId)) return;
+  speciesReferenceCache.selectedId = suggestionId;
+  renderSpeciesReferenceResults(speciesReferenceCache);
 }
 
 function clearSpeciesReferenceCache() {
@@ -196,7 +205,7 @@ function renderSpeciesReferenceCard(item, checked) {
   const sourceUrl = safeExternalUrl(item.sourceUrl);
   const wikiUrl = safeExternalUrl(item.wikipediaUrl);
   return `
-    <label class="${className}">
+    <div class="${className}" data-suggestion-id="${escapeHtml(item.id)}">
       <input type="radio" name="speciesReferenceSuggestion" value="${escapeHtml(item.id)}" ${checked ? 'checked' : ''} />
       <div class="species-reference-photo" title="${escapeHtml(item.photoAttribution || '')}">${photo}</div>
       <div class="species-reference-body">
@@ -212,7 +221,7 @@ function renderSpeciesReferenceCard(item, checked) {
           ${externalLinkHtml(wikiUrl, t('speciesReferenceOpenWiki'))}
         </div>
       </div>
-    </label>
+    </div>
   `;
 }
 
@@ -531,16 +540,22 @@ function bindSpeciesReferenceEvents() {
   ui.speciesReferenceModal?.querySelector('.layer-modal-backdrop')
     ?.addEventListener('click', closeSpeciesReferenceCenter);
   ui.btnRunSpeciesReference?.addEventListener('click', runSpeciesReferenceQuery);
+  ui.btnOpenInatTokenPage?.addEventListener('click', () => openReferenceExternalUrl(INATURALIST_API_TOKEN_URL));
   ui.btnRunSpeciesImageCompare?.addEventListener('click', runSpeciesImageCompare);
   ui.btnPreviewSpeciesReferenceImage?.addEventListener('click', () => openSelectedSpeciesReferenceImage());
   ui.btnDiscardSpeciesReference?.addEventListener('click', closeSpeciesReferenceCenter);
   ui.btnApplySpeciesReference?.addEventListener('click', applySpeciesReferenceSuggestion);
   ui.speciesReferenceResults?.addEventListener('change', event => {
     if (!speciesReferenceCache || event.target.name !== 'speciesReferenceSuggestion') return;
-    speciesReferenceCache.selectedId = event.target.value;
-    renderSpeciesReferenceResults(speciesReferenceCache);
+    selectSpeciesReferenceSuggestion(event.target.value);
   });
-  ui.speciesReferenceResults?.addEventListener('click', interceptReferenceExternalLink);
+  ui.speciesReferenceResults?.addEventListener('click', event => {
+    if (interceptReferenceExternalLink(event)) return;
+    if (event.target?.matches?.('input[name="speciesReferenceSuggestion"]')) return;
+    const card = event.target?.closest?.('.species-reference-card[data-suggestion-id]');
+    if (!card) return;
+    selectSpeciesReferenceSuggestion(card.dataset.suggestionId || '');
+  });
   ui.speciesReferenceDetail?.addEventListener('click', event => {
     if (interceptReferenceExternalLink(event)) return;
     const button = event.target.closest('.species-reference-thumb');

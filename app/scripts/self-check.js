@@ -1141,6 +1141,7 @@ function testSpeciesReferenceContract() {
     'speciesReferenceCommonInput',
     'btnRunSpeciesReference',
     'speciesReferenceImageTokenInput',
+    'btnOpenInatTokenPage',
     'btnRunSpeciesImageCompare',
     'speciesReferenceImageCompareStatus',
     'speciesReferenceDetail',
@@ -1182,9 +1183,15 @@ function testSpeciesReferenceContract() {
   assert.ok(rendererSource.includes('renderSpeciesReferenceDetail'));
   assert.ok(rendererSource.includes('recommendationText'));
   assert.ok(rendererSource.includes('safeExternalUrl'));
+  assert.ok(rendererSource.includes('INATURALIST_API_TOKEN_URL'));
+  assert.ok(rendererSource.includes('https://www.inaturalist.org/users/api_token'));
   assert.ok(rendererSource.includes('externalLinkHtml'));
+  assert.ok(rendererSource.includes('class="species-reference-link"'));
   assert.ok(rendererSource.includes('window.plantApp.window.openExternal'));
   assert.ok(rendererSource.includes('data-external-url'));
+  assert.ok(rendererSource.includes('event.stopPropagation()'));
+  assert.ok(rendererSource.includes('function selectSpeciesReferenceSuggestion'));
+  assert.ok(rendererSource.includes('data-suggestion-id'));
   assert.ok(rendererSource.includes('runSpeciesImageCompare'));
   assert.ok(rendererSource.includes('speciesReferenceImageTokenInput'));
   assert.ok(rendererSource.includes('species-reference-compared-thumb'));
@@ -1211,6 +1218,11 @@ function testSpeciesReferenceContract() {
       'speciesReferencePreviewImage',
       'speciesReferenceRunImageCompare',
       'speciesReferenceImageTokenPlaceholder',
+      'speciesReferenceOpenTokenPage',
+      'speciesReferenceTokenStepLogin',
+      'speciesReferenceTokenStepOpen',
+      'speciesReferenceTokenStepCopy',
+      'speciesReferenceTokenStepPrivacy',
       'speciesReferenceImageCompareFailed',
       'speciesReferenceComparedImage',
       'speciesReferenceClassification',
@@ -1386,8 +1398,27 @@ function testRepositoryHygieneContract() {
     'SECURITY.md',
     'CHANGELOG.md',
     'VERSION_POLICY.md',
+    'CONTRIBUTING.md',
     'CONTRIBUTING_PRIVATE.md'
   ].forEach(fileName => assert.ok(repositoryFileExists(fileName), `${fileName} must exist`));
+
+  [
+    'ARCHITECTURE.md',
+    'DATA_SCHEMA.md',
+    'DEV_GUIDE.md',
+    'TESTING_GUIDE.md',
+    'RELEASE_GUIDE.md',
+    'USER_MANUAL.md',
+    'BACKUP_GUIDE.md',
+    'IMPORT_EXPORT_GUIDE.md',
+    'DIAGNOSTICS_GUIDE.md',
+    'COMMERCIAL_SAMPLE_CHECKLIST.md',
+    'MAINTENANCE_GUIDE.md',
+    'ADR/0001-local-first-electron.md',
+    'ADR/0002-proprietary-school-use-license.md',
+    'ADR/0003-ipc-security-boundary.md',
+    'ADR/0004-data-storage-strategy.md'
+  ].forEach(fileName => assert.ok(readWorkspaceDoc(fileName).length > 0, `${fileName} must be documented`));
 
   assert.ok(readWorkspaceDoc('BASELINE_AUDIT.md').includes('No business data format was changed'));
   assert.ok(readWorkspaceDoc('TESTING.md').includes('npm run verify'));
@@ -1397,15 +1428,23 @@ function testRepositoryHygieneContract() {
   assert.ok(readWorkspaceDoc('IPC_CONTRACT.md').includes('window:openExternal'));
   [
     '.github/workflows/ci.yml',
+    '.github/CODEOWNERS',
     '.github/pull_request_template.md',
     '.github/ISSUE_TEMPLATE/bug_report.yml',
     '.github/ISSUE_TEMPLATE/feature_request.yml',
+    '.github/ISSUE_TEMPLATE/release_checklist.yml',
     '.github/ISSUE_TEMPLATE/config.yml'
   ].forEach(fileName => assert.ok(repositoryFileExists(fileName), `${fileName} must exist`));
   assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run verify'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('- dev'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run test --if-present'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run build --if-present'));
   assert.ok(readRepositoryPath('.github/pull_request_template.md').includes('Compatibility'));
+  assert.ok(readRepositoryPath('.github/pull_request_template.md').includes('Data Format Impact'));
+  assert.ok(readRepositoryPath('.github/pull_request_template.md').includes('Rollback'));
   assert.ok(readRepositoryPath('.github/ISSUE_TEMPLATE/config.yml').includes('blank_issues_enabled: false'));
   assert.ok(repositoryFileExists('app/package-lock.json'), 'package-lock.json must exist');
+  assert.ok(repositoryFileExists('.editorconfig'), '.editorconfig must exist');
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-js-syntax.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-repo-hygiene.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'build', 'icon.ico')), 'installer icon must be present');
@@ -1423,6 +1462,45 @@ function testRepositoryHygieneContract() {
   const gitignore = readRepositoryFile('.gitignore');
   assert.ok(!gitignore.split(/\r?\n/).map(line => line.trim()).includes('build/'));
   assert.ok(gitignore.includes('!app/build/icon.ico'));
+}
+
+function testDocumentationUpdateContract() {
+  const dataSchema = readWorkspaceDoc('DATA_SCHEMA.md');
+  assert.ok(dataSchema.includes('Deferred Database Changes'));
+  assert.ok(dataSchema.includes('No database structure change is part of the current task.'));
+  assert.ok(dataSchema.includes('SQLite or other database-storage design notes are deferred.'));
+  assert.ok(!dataSchema.includes('## SQLite Draft'));
+
+  const architecture = readWorkspaceDoc('ARCHITECTURE.md');
+  assert.ok(architecture.includes('source-link and token validation documented'));
+  assert.ok(architecture.includes('Database and schema migration work is deferred'));
+
+  const adr = readWorkspaceDoc('ADR/0004-data-storage-strategy.md');
+  assert.ok(adr.includes('database structure changes are deferred'));
+  assert.ok(adr.includes('Do not introduce database tables, schema migrations, or format-conversion code'));
+
+  const testingGuide = readWorkspaceDoc('TESTING_GUIDE.md');
+  [
+    'Species Reference Link And Token Smoke Test',
+    'system default browser opens the target page',
+    'https://www.inaturalist.org/users/api_token',
+    'token text is not saved into project JSON'
+  ].forEach(fragment => assert.ok(testingGuide.includes(fragment), `TESTING_GUIDE missing ${fragment}`));
+
+  const userManual = readWorkspaceDoc('USER_MANUAL.md');
+  [
+    '## Species Reference',
+    'Source, Wiki, and attribution links open through the system default browser',
+    'copy the temporary API token',
+    'does not store it in project JSON'
+  ].forEach(fragment => assert.ok(userManual.includes(fragment), `USER_MANUAL missing ${fragment}`));
+
+  const checklist = readWorkspaceDoc('COMMERCIAL_SAMPLE_CHECKLIST.md');
+  [
+    'Species reference source links open in the system default browser',
+    'iNaturalist token page opens from the image comparison area',
+    'Database structure changes remain deferred'
+  ].forEach(fragment => assert.ok(checklist.includes(fragment), `COMMERCIAL_SAMPLE_CHECKLIST missing ${fragment}`));
 }
 
 async function main() {
@@ -1451,6 +1529,7 @@ async function main() {
   testReadmeIsUserManual();
   testElectronSecurityContract();
   testRepositoryHygieneContract();
+  testDocumentationUpdateContract();
   await testExportWritesAtomicallyAndValidatesContent();
   await testImageImportDoesNotOverwriteExistingArchive();
   await testBackupCreateCleanupAndCounts();
