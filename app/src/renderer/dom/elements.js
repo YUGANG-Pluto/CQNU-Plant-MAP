@@ -136,7 +136,14 @@ const elementGroups = {
     'btnStatsTabOverview',
     'btnStatsTabZone',
     'btnStatsTabSpecies',
+    'btnStatsTabLife',
+    'btnStatsTabDiversity',
+    'btnStatsTabSimilarity',
+    'btnStatsTabPhenology',
     'btnStatsTabTime',
+    'btnStatsTabQuality',
+    'btnStatsTabExport',
+    'btnStatsTabNotes',
     'btnStatsTabCustom'
   ],
   query: [

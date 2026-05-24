@@ -62,3 +62,18 @@ Use temporary or synthetic data only. Do not commit real survey records, private
 - map selection and redraw behavior;
 - backup creation and cleanup;
 - species reference source links, token-page opening, and temporary cache behavior.
+
+## Statistics Center Regression
+
+1. Open the statistics center from the workspace summary and from the main toolbar.
+2. Confirm overview, zone analysis, taxonomic composition, life form and origin, diversity metrics, zone similarity, phenology, time trend, data quality, export, metric notes, and custom statistics sections render without layout overlap.
+3. Confirm empty projects show explicit empty states and do not display `NaN`, `undefined`, or `null`.
+4. Confirm Jaccard, Sørensen-Dice, Bray-Curtis, month-by-phenology, and zone-by-quality matrices use table heatmaps with legends and horizontal scrolling.
+5. Use chart display control to switch recommended charts, report-oriented charts, quality charts, all charts, hidden charts, and a custom chart selection.
+6. Open a bar, donut, combo, and heatmap chart in fullscreen, then close with the `X` button and the `Esc` key.
+7. Confirm long zone names are truncated inside tables and heatmaps with the full value available through the cell title, and that unassigned zones are not shown as `N/A`.
+8. Switch the heatmap palette between warm orange-red and default, then confirm matrix values and exports are unchanged.
+9. Confirm the export page uses readable Chinese or English labels instead of internal export keys.
+10. Export at least one statistics CSV, full JSON, Markdown summary, heatmap CSV, heatmap JSON, heatmap Markdown, and heatmap SVG.
+11. Confirm exported CSV starts with a UTF-8 BOM and SVG files open in a browser without external resource references.
+12. Confirm point, zone, image, backup, maintenance, and project save workflows still work after opening and exporting statistics.

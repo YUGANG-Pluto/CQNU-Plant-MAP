@@ -61,6 +61,8 @@ function registerIpc() {
   handle('project:exportCsv', dialogs.exportCsv);
   handle('project:importGeoJson', async () => dialogs.importGeoJson());
   handle('project:exportGeoJson', dialogs.exportGeoJson);
+  handle('project:exportMarkdown', dialogs.exportMarkdown);
+  handle('project:exportSvg', dialogs.exportSvg);
   handle('settings:importJson', dialogs.importJson);
   handle('settings:exportJson', dialogs.exportJson);
 

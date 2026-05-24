@@ -11,6 +11,7 @@ const fileWrite = require('../src/main/fileWrite');
 const logger = require('../src/main/logger');
 const maintenanceService = require('../src/main/maintenanceService');
 const speciesReferenceService = require('../src/main/speciesReferenceService');
+const statsResearch = require('../src/renderer/features/stats/statsResearch');
 const { ERROR_CODES } = require('../src/main/errorCodes');
 const { unwrapIpc } = require('../src/renderer/utils/ipc');
 const { errorCode, errorMessage } = require('../src/renderer/utils/errorHandler');
@@ -975,11 +976,53 @@ function testBrandLogoResource() {
 
 function testStatisticsChartVisualContract() {
   const statsSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/index.js'), 'utf8');
+  const statsResearchSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/statsResearch.js'), 'utf8');
   const chartSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/charts.js'), 'utf8');
+  const html = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf8');
+  const coreCss = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/10-core-components.css'), 'utf8');
   const visualCss = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/60-refined-workbench.css'), 'utf8');
   const vibeCss = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/70-vibeui-design-md.css'), 'utf8');
   assert.ok(statsSource.includes('function renderChartCard'), 'statistics cards should use a shared chart-card renderer');
+  assert.ok(html.includes('./src/renderer/features/stats/statsResearch.js'));
+  [
+    'normalizePointForStats',
+    'calculateDiversityMetrics',
+    'calculateJaccardMatrix',
+    'calculateSorensenMatrix',
+    'calculateBrayCurtisMatrix',
+    'buildMatrixModel',
+    'renderHeatmapSvg',
+    'resolveZoneLabel',
+    'formatZoneLabel',
+    'getDisplayZoneName'
+  ].forEach(fragment => assert.ok(statsResearchSource.includes(fragment), `stats research core missing ${fragment}`));
+  [
+    'STATS_CHART_GROUPS',
+    'STATS_RECOMMENDED_CHARTS',
+    'stats-heatmap-table',
+    'data-stats-export',
+    'data-stats-chart-toggle',
+    'data-stats-chart-action',
+    'data-stats-fullscreen',
+    'statsFullscreenLayer',
+    'document.body.appendChild(layer)',
+    'zoneDisplayFromRow',
+    'formatZoneDisplayName',
+    'zoneChartRow',
+    'metricAxisLabel',
+    'metricDecimals',
+    'rowsToLabeledCsv',
+    'Escape',
+    'statsHeatPalette',
+    'renderHeatmapMatrix',
+    'matrixToCsv',
+    'matrixToMarkdown',
+    'renderHeatmapSvg'
+  ].forEach(fragment => assert.ok(statsSource.includes(fragment) || statsResearchSource.includes(fragment), `research stats UI missing ${fragment}`));
   assert.ok(chartSource.includes('chart-bar-depth'));
+  assert.ok(chartSource.includes('chartMetricLabel'), 'charts should use explicit metric labels for legends and tooltips');
+  assert.ok(chartSource.includes('chartAxisLabel'), 'combo charts should label each y axis by metric semantics');
+  assert.ok(chartSource.includes('axisLabels'), 'combo charts should render y-axis semantic labels');
   assert.ok(chartSource.includes('chart-empty-state'));
   assert.ok(chartSource.includes('donutSvgFromCounts(entries, palette, settings, donut = true, chartKey = \'donut\')'));
   assert.ok(chartSource.includes('arcSlicePath(center, innerRadius, outerRadius, startAngle, endAngle)'));
@@ -999,6 +1042,144 @@ function testStatisticsChartVisualContract() {
     '.chart-empty-state',
     '.chart-value'
   ].forEach(selector => assert.ok(vibeCss.includes(selector), `${selector} must stay in the final visual layer`));
+  [
+    '.stats-heatmap-table',
+    '.stats-heatmap-scroll',
+    '.stats-heatmap-cell',
+    '.heat-level-5',
+    '.stats-center-layout',
+    '.stats-chart-grid',
+    '.stats-card-grid',
+    '.stats-fullscreen-layer',
+    '.stats-text-cell',
+    '.heat-palette-warm',
+    '.heat-palette-default',
+    '.stats-export-grid',
+    '.stats-notes-list'
+  ].forEach(selector => assert.ok(coreCss.includes(selector), `${selector} must support research stats UI`));
+  assert.ok(coreCss.includes('z-index: 10000'), 'statistics fullscreen overlay must stay above ordinary modals');
+  assert.ok(coreCss.includes('z-index: 10001'), 'statistics fullscreen dialog must stay above its overlay backdrop');
+  ['zh.js', 'en.js'].forEach(name => {
+    const source = fs.readFileSync(path.join(process.cwd(), 'src/renderer/i18n', name), 'utf8');
+    [
+      'statsChartDisplayControl',
+      'statsChartGroupOverview',
+      'statsChartGroupSimilarity',
+      'statsChartRecommended',
+      'statsChartHideAll',
+      'statsFullscreen',
+      'statsHeatPaletteWarm',
+      'statsHeatPaletteDefault',
+      'statsExportProjectSummary',
+      'statsExportZoneStats',
+      'statsExportJaccard',
+      'statsExportMarkdownSummary',
+      'statsExportHeatmapSvg',
+      'statsMetricShannon',
+      'statsMetricSimpsonDiversity',
+      'statsMetricPielou',
+      'statsMetricHillQ0',
+      'statsMetricHillQ1',
+      'statsMetricHillQ2',
+      'statsAxisMetricValue',
+      'statsAxisEffectiveSpecies',
+      'statsColumnSpeciesKey'
+    ].forEach(key => assert.ok(source.includes(key), `${name} missing ${key}`));
+  });
+  assert.ok(!statsSource.includes("label: zoneDisplayText(row.label)"), 'zone chart rows must reuse the shared zone display helper');
+  assert.ok(!statsSource.includes("engine.rowsToCsv(headers, rows)"), 'diversity CSV export must not expose internal metric keys');
+}
+
+function assertClose(actual, expected, tolerance, message) {
+  assert.ok(Math.abs(actual - expected) <= tolerance, `${message}: expected ${expected}, got ${actual}`);
+}
+
+function testResearchStatsFormulaContract() {
+  const diversity = statsResearch.calculateDiversityMetrics({ A: 5, B: 5 });
+  assertClose(diversity.shannon, 0.693147, 0.00001, 'Shannon must match expected value');
+  assert.strictEqual(diversity.simpsonDominance, 0.5);
+  assert.strictEqual(diversity.simpsonDiversity, 0.5);
+  assertClose(diversity.pielou, 1, 0.00001, 'Pielou must match expected value');
+  assertClose(diversity.margalef, 1 / Math.log(10), 0.00001, 'Margalef must match expected value');
+  assertClose(diversity.menhinick, 2 / Math.sqrt(10), 0.00001, 'Menhinick must match expected value');
+  assert.strictEqual(statsResearch.calculateDiversityMetrics({ A: 7, B: 3 }).bergerParker, 0.7);
+  const hill = statsResearch.calculateHillNumbers({ A: 5, B: 5 });
+  assert.strictEqual(hill.q0, 2);
+  assertClose(hill.q1, 2, 0.00001, 'Hill q1 must match expected value');
+  assert.strictEqual(hill.q2, 2);
+
+  const sets = {
+    A: new Set(['a', 'b', 'c']),
+    B: new Set(['b', 'c', 'd'])
+  };
+  const jaccard = statsResearch.calculateJaccardMatrix(sets);
+  const sorensen = statsResearch.calculateSorensenMatrix(sets);
+  assert.strictEqual(jaccard.cells.find(cell => cell.rowId === 'A' && cell.columnId === 'B').value, 0.5);
+  assertClose(sorensen.cells.find(cell => cell.rowId === 'A' && cell.columnId === 'B').value, 0.666667, 0.000001, 'Sorensen must match expected value');
+
+  const bray = statsResearch.calculateBrayCurtisMatrix({
+    A: new Map([['a', 5], ['b', 5]]),
+    B: new Map([['a', 5], ['b', 0]])
+  });
+  assertClose(bray.cells.find(cell => cell.rowId === 'A' && cell.columnId === 'B').value, 0.333333, 0.000001, 'Bray-Curtis must match expected value');
+
+  const twoByTwo = statsResearch.calculateJaccardMatrix({
+    'Zone A': new Set(['a', 'b']),
+    'Zone B': new Set(['b', 'c'])
+  });
+  assertClose(twoByTwo.cells.find(cell => cell.rowId === 'Zone A' && cell.columnId === 'Zone B').value, 1 / 3, 0.001, 'Jaccard 2x2 must match expected value');
+  assert.strictEqual(twoByTwo.cells.find(cell => cell.rowId === 'Zone A' && cell.columnId === 'Zone A').value, 1);
+  assert.strictEqual(statsResearch.calculateJaccardMatrix({ A: new Set(), B: new Set() }).cells.find(cell => cell.rowId === 'A' && cell.columnId === 'B').value, null);
+  assert.strictEqual(statsResearch.calculateJaccardMatrix({ A: new Set(['a']), B: new Set() }).cells.find(cell => cell.rowId === 'A' && cell.columnId === 'B').value, 0);
+
+  const countMatrix = statsResearch.buildMatrixModel({
+    rows: [{ id: 'r', label: 'R' }],
+    columns: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }],
+    cells: [
+      { rowId: 'r', columnId: 'a', value: 0 },
+      { rowId: 'r', columnId: 'b', value: 5 },
+      { rowId: 'r', columnId: 'c', value: 10 }
+    ],
+    valueType: 'count'
+  });
+  assert.strictEqual(statsResearch.heatLevel(0, countMatrix), 0);
+  assert.ok(statsResearch.heatLevel(5, countMatrix) >= 2);
+  assert.strictEqual(statsResearch.heatLevel(10, countMatrix), 5);
+  assert.strictEqual(statsResearch.resolveZoneLabel('z1', [{ id: 'z1', name: 'Main Zone' }]), 'Main Zone');
+  assert.strictEqual(statsResearch.formatZoneLabel('N/A', { language: 'en' }), 'Unassigned zone');
+  assert.notStrictEqual(statsResearch.resolveZoneLabel('missing-zone', [], { language: 'en' }), 'N/A');
+
+  const zones = [{ id: 'z1', zoneId: 'Z1', name: 'Zone 1' }, { id: 'z2', zoneId: 'Z2', name: 'Zone 2' }];
+  const points = [
+    { id: 'p1', pointId: 'P1', zoneRef: 'z1', lat: 29, lng: 106, plantNameSci: 'A', plantNameCn: '甲', family: 'F', genus: 'G', images: ['information/images/a.jpg'], phenologyEntries: [{ id: 'e1', floweringState: '开花', surveyDate: '2026-04-01' }] },
+    { id: 'p2', pointId: 'P2', zoneRef: 'z1', lat: 29.000001, lng: 106.000001, plantNameSci: 'A', plantNameCn: '甲', phenologyEntries: [] },
+    { id: 'p3', pointId: 'P3', zoneRef: 'z2', lat: '', lng: '', plantNameCn: '', phenologyEntries: [] }
+  ];
+  const original = JSON.stringify({ zones, points });
+  const built = statsResearch.buildStatistics(zones, points);
+  assert.strictEqual(JSON.stringify({ zones, points }), original, 'statistics functions must not mutate input data');
+  assert.strictEqual(built.projectSummary.zoneCount, 2);
+  assert.strictEqual(built.zoneSummaries.length, 2);
+  assert.ok(built.dataQuality.issues.missingScientificName >= 1);
+  assert.ok(built.dataQuality.issues.missingCoordinate >= 1);
+  assert.ok(built.dataQuality.duplicateCandidates.length >= 1);
+  assert.ok(built.heatmapMatrices.jaccard.cells.length > 0);
+
+  const csv = statsResearch.matrixToCsv(built.heatmapMatrices.jaccard);
+  assert.ok(csv.charCodeAt(0) === 0xFEFF, 'CSV export must include UTF-8 BOM');
+  const json = JSON.parse(statsResearch.statisticsFullJson(built));
+  assert.ok(json.generatedAt);
+  assert.ok(json.metricDefinitions.length);
+  assert.ok(json.formulaNotes.length);
+  const svg = statsResearch.renderHeatmapSvg(built.heatmapMatrices.jaccard);
+  assert.ok(svg.includes('<svg'));
+  assert.ok(svg.includes('<rect'));
+  assert.ok(!/(href|src)=["']https?:\/\//.test(svg), 'SVG must not reference external resources');
+  assert.ok(!/NaN|undefined|null/.test(svg), 'SVG must not contain invalid display strings');
+  const warmSvg = statsResearch.renderHeatmapSvg(built.heatmapMatrices.jaccard, { palette: 'warm' });
+  const defaultSvg = statsResearch.renderHeatmapSvg(built.heatmapMatrices.jaccard, { palette: 'default' });
+  assert.ok(warmSvg.includes('#dc2626'), 'warm heatmap SVG must use orange-red palette');
+  assert.ok(defaultSvg.includes('#167284'), 'default heatmap SVG must keep the legacy palette');
 }
 
 function testReducedInnerHtmlSurface() {
@@ -1523,6 +1704,7 @@ async function main() {
   testThemeSettingsProgressiveDisclosure();
   testBrandLogoResource();
   testStatisticsChartVisualContract();
+  testResearchStatsFormulaContract();
   testReducedInnerHtmlSurface();
   testMaintenanceCenterContract();
   testSpeciesReferenceContract();

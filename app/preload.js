@@ -12,7 +12,9 @@ contextBridge.exposeInMainWorld('plantApp', {
     importCsv: () => invoke('project:importCsv'),
     exportCsv: payload => invoke('project:exportCsv', payload),
     importGeoJson: () => invoke('project:importGeoJson'),
-    exportGeoJson: payload => invoke('project:exportGeoJson', payload)
+    exportGeoJson: payload => invoke('project:exportGeoJson', payload),
+    exportMarkdown: payload => invoke('project:exportMarkdown', payload),
+    exportSvg: payload => invoke('project:exportSvg', payload)
   },
   settings: {
     importJson: payload => invoke('settings:importJson', payload),

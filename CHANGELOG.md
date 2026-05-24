@@ -5,6 +5,13 @@
 
 ## Unreleased
 
+- Refined the statistics center layout so wide screens use available space more effectively while narrow screens collapse to a single column.
+- Added session-based chart display controls, fullscreen chart review, warm/default heatmap palettes, long zone-name truncation, and localized export labels for the statistics center.
+
+- 将统计中心重构为研究型统计中心，新增分区统计、分类组成、生活型与来源属性、多样性指数、分区相似性、物候、时间趋势、数据质量、导出和口径说明视图。
+- 新增 DOM 无关统计核心，覆盖 Shannon、Simpson、Pielou、Margalef、Menhinick、Berger-Parker、Hill numbers、Jaccard、Sørensen、Bray-Curtis、Whittaker beta、疑似重复点位和数据质量评分。
+- 新增表格热力矩阵和 SVG 热力图导出，支持 Jaccard、Sørensen、Bray-Curtis、月份 × 物候状态、分区 × 数据质量问题矩阵。
+- 新增统计 CSV、JSON、Markdown 和热力矩阵 CSV/JSON/Markdown/SVG 导出能力。
 - 在物种参考图像比对区域增加 iNaturalist 临时令牌获取入口和使用步骤说明。
 - 修复物种参考来源链接点击无跳转问题，改为通过受控主进程通道调用系统默认浏览器打开 GBIF 与 iNaturalist 链接。
 - 同步物种参考来源链接、iNaturalist 临时令牌和数据库结构变更暂缓的测试文档与自检要求。

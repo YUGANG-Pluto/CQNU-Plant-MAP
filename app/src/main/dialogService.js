@@ -6,7 +6,9 @@ const {
   MAX_IMPORT_TEXT_BYTES,
   CSV_EXTENSIONS,
   GEOJSON_EXTENSIONS,
-  JSON_EXTENSIONS
+  JSON_EXTENSIONS,
+  MARKDOWN_EXTENSIONS,
+  SVG_EXTENSIONS
 } = require('./constants');
 const {
   normalizeProjectDir,
@@ -180,6 +182,28 @@ async function exportJson(payload) {
   });
 }
 
+async function exportMarkdown(payload) {
+  return exportTextByDialog({
+    title: payload.title || '导出 Markdown',
+    defaultPath: payload.defaultPath || 'statistics_summary.md',
+    filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }],
+    content: payload.content ?? '',
+    allowed: MARKDOWN_EXTENSIONS,
+    defaultExt: '.md'
+  });
+}
+
+async function exportSvg(payload) {
+  return exportTextByDialog({
+    title: payload.title || '导出 SVG',
+    defaultPath: payload.defaultPath || 'heatmap.svg',
+    filters: [{ name: 'SVG', extensions: ['svg'] }],
+    content: payload.content ?? '',
+    allowed: SVG_EXTENSIONS,
+    defaultExt: '.svg'
+  });
+}
+
 module.exports = {
   chooseProjectDir,
   chooseMergeProjectDir,
@@ -189,5 +213,7 @@ module.exports = {
   importJson,
   exportCsv,
   exportGeoJson,
-  exportJson
+  exportJson,
+  exportMarkdown,
+  exportSvg
 };

@@ -34,6 +34,9 @@
 - [ ] Species reference source links open in the system default browser.
 - [ ] iNaturalist token page opens from the image comparison area.
 - [ ] iNaturalist token use is documented as temporary and not stored in project JSON.
+- [ ] Statistics center shows overview, zone, composition, diversity, similarity, phenology, trend, quality, export, and metric-note sections.
+- [ ] Statistics heatmap matrices support CSV, JSON, Markdown, and SVG export.
+- [ ] Statistics formulas and data-scope limits are visible in the UI.
 
 ## Data
 
@@ -43,6 +46,9 @@
 - [ ] Manual restore path is documented.
 - [ ] CSV export works.
 - [ ] GeoJSON export works.
+- [ ] Statistics CSV export opens correctly in Excel.
+- [ ] Statistics full JSON and Markdown summary exports work.
+- [ ] Heatmap SVG export opens without external resources.
 - [ ] Maintenance health check works.
 - [ ] Current JSON storage is documented as active.
 - [ ] Database structure changes remain deferred unless a separate migration task is approved.

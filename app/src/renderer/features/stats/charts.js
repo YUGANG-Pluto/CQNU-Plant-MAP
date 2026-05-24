@@ -182,6 +182,18 @@ function formatChartValue(value, decimals = 0) {
   return Number.isInteger(number) || decimals === 0 ? number.toFixed(0) : number.toFixed(decimals);
 }
 
+function chartMetricDecimals(metric, fallback = 0) {
+  return typeof metricDecimals === 'function' ? metricDecimals(metric) : fallback;
+}
+
+function chartMetricLabel(metric, fallback = metric) {
+  return typeof metricLabel === 'function' ? metricLabel(metric) : fallback;
+}
+
+function chartAxisLabel(metric, fallback) {
+  return typeof metricAxisLabel === 'function' ? metricAxisLabel(metric) : fallback;
+}
+
 function svgTitle(seriesName, categoryLabel, value) {
   return `<title>${escapeHtml(seriesName)} · ${escapeHtml(categoryLabel)}：${escapeHtml(value)}</title>`;
 }
@@ -245,8 +257,8 @@ function arcSlicePath(center, innerRadius, outerRadius, startAngle, endAngle) {
 }
 
 function resolveComboLabelState(item, dimensions) {
-  const barText = formatChartValue(item.barValue, 0);
-  const lineText = item.barMetric === item.lineMetric ? barText : formatChartValue(item.lineValue, 1);
+  const barText = formatChartValue(item.barValue, chartMetricDecimals(item.barMetric, 0));
+  const lineText = item.barMetric === item.lineMetric ? barText : formatChartValue(item.lineValue, chartMetricDecimals(item.lineMetric, 1));
   const barY = Math.max(dimensions.padding.top + 14, item.barY - 8);
   const lineY = Math.max(dimensions.padding.top + 14, item.lineY - dimensions.nodeSize - 8);
   const overlap = labelBoxesOverlap(
@@ -302,7 +314,7 @@ function renderBarList(items, valueKey, labelBuilder, chartKey = 'barList') {
     const y = plot.y1 - barHeight;
     const valueY = Math.max(dimensions.padding.top + 14, y - 8);
     const label = dimensions.labelStrategy === 'hover' ? '' : `<text x="${layout.centerX.toFixed(1)}" y="${valueY.toFixed(1)}" text-anchor="middle" class="chart-value" style="font-size:${dimensions.labelSize}px">${escapeHtml(row.value)}</text>`;
-    bars += `<g class="chart-bar-group" style="--chart-index:${index};"><rect class="chart-bar-depth" x="${(layout.barX + 4).toFixed(1)}" y="${(y + 7).toFixed(1)}" width="${layout.barWidth.toFixed(1)}" height="${Math.max(0, barHeight - 2).toFixed(1)}" rx="10"></rect><rect class="chart-bar-rect" data-center-x="${layout.centerX.toFixed(1)}" data-band-width="${layout.bandWidth.toFixed(1)}" x="${layout.barX.toFixed(1)}" y="${y.toFixed(1)}" width="${layout.barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" rx="10" fill="url(#barGrad${index % palette.length})">${svgTitle(t('statsMetricCount'), row.label, row.value)}</rect><rect class="chart-bar-highlight" data-center-x="${layout.centerX.toFixed(1)}" data-band-width="${layout.bandWidth.toFixed(1)}" x="${layout.barX.toFixed(1)}" y="${y.toFixed(1)}" width="${layout.barWidth.toFixed(1)}" height="${Math.min(14, Math.max(0, barHeight)).toFixed(1)}" rx="10" fill="url(#barGloss)"></rect>${label}</g>`;
+    bars += `<g class="chart-bar-group" style="--chart-index:${index};"><rect class="chart-bar-depth" x="${(layout.barX + 4).toFixed(1)}" y="${(y + 7).toFixed(1)}" width="${layout.barWidth.toFixed(1)}" height="${Math.max(0, barHeight - 2).toFixed(1)}" rx="10"></rect><rect class="chart-bar-rect" data-center-x="${layout.centerX.toFixed(1)}" data-band-width="${layout.bandWidth.toFixed(1)}" x="${layout.barX.toFixed(1)}" y="${y.toFixed(1)}" width="${layout.barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" rx="10" fill="url(#barGrad${index % palette.length})">${svgTitle(chartMetricLabel(valueKey, valueKey), row.label, row.value)}</rect><rect class="chart-bar-highlight" data-center-x="${layout.centerX.toFixed(1)}" data-band-width="${layout.bandWidth.toFixed(1)}" x="${layout.barX.toFixed(1)}" y="${y.toFixed(1)}" width="${layout.barWidth.toFixed(1)}" height="${Math.min(14, Math.max(0, barHeight)).toFixed(1)}" rx="10" fill="url(#barGloss)"></rect>${label}</g>`;
     labels += renderCategoryLabel(row.label, layout.centerX, dimensions.height - dimensions.padding.bottom + 28, dimensions.labelSize);
     axes += `<line x1="${layout.centerX.toFixed(1)}" y1="${plot.y1.toFixed(1)}" x2="${layout.centerX.toFixed(1)}" y2="${(plot.y1 + 6).toFixed(1)}" class="chart-axis-tick"></line>`;
   });
@@ -339,8 +351,10 @@ function renderComboChart(rows, barMetric = 'count', lineMetric = 'percentage', 
   const linePoints = categories.map(item => ({ x: item.centerX, y: item.lineY, value: item.lineValue, label: item.label }));
   const linePath = smoothLinePath(linePoints, dimensions.lineTension);
   const areaPath = linePoints.length > 1 ? `${linePath} L${linePoints[linePoints.length - 1].x.toFixed(1)},${plot.y1.toFixed(1)} L${linePoints[0].x.toFixed(1)},${plot.y1.toFixed(1)} Z` : '';
-  const barLabel = metricLabel(barMetric);
-  const lineLabel = metricLabel(lineMetric);
+  const barLabel = chartMetricLabel(barMetric, barMetric);
+  const lineLabel = chartMetricLabel(lineMetric, lineMetric);
+  const leftAxisLabel = chartAxisLabel(barMetric, barLabel);
+  const rightAxisLabel = chartAxisLabel(lineMetric, lineLabel);
   const categoryGroups = categories.map(item => {
     const labelState = resolveComboLabelState(item, dimensions);
     const barLabelClass = labelState.mode === 'deferred' ? 'chart-value chart-value-deferred' : 'chart-value';
@@ -357,8 +371,9 @@ function renderComboChart(rows, barMetric = 'count', lineMetric = 'percentage', 
   const leftTicks = renderGridAndTicks(barTicks, barTop, plot, dimensions.padding, dimensions.width, 'left', dimensions.labelSize);
   const rightTicks = renderGridAndTicks(lineTicks, lineTop, plot, dimensions.padding, dimensions.width, 'right', dimensions.labelSize);
   const axisLines = `<line x1="${plot.x0}" y1="${plot.y0}" x2="${plot.x0}" y2="${plot.y1}" class="chart-axis"></line><line x1="${plot.x0}" y1="${plot.y1}" x2="${plot.x1}" y2="${plot.y1}" class="chart-axis"></line><line x1="${plot.x1}" y1="${plot.y0}" x2="${plot.x1}" y2="${plot.y1}" class="chart-axis chart-axis-secondary"></line>`;
+  const axisLabels = `<text x="${Math.max(16, plot.x0 - 54).toFixed(1)}" y="${((plot.y0 + plot.y1) / 2).toFixed(1)}" transform="rotate(-90 ${Math.max(16, plot.x0 - 54).toFixed(1)} ${((plot.y0 + plot.y1) / 2).toFixed(1)})" text-anchor="middle" class="axis-label">${escapeHtml(leftAxisLabel)}</text><text x="${Math.min(dimensions.width - 16, plot.x1 + 54).toFixed(1)}" y="${((plot.y0 + plot.y1) / 2).toFixed(1)}" transform="rotate(90 ${Math.min(dimensions.width - 16, plot.x1 + 54).toFixed(1)} ${((plot.y0 + plot.y1) / 2).toFixed(1)})" text-anchor="middle" class="axis-label">${escapeHtml(rightAxisLabel)}</text>`;
   const legend = `<div class="chart-legend-inline"><span><i class="legend-dot" style="background:var(--theme-chart-a)"></i>${escapeHtml(barLabel)}</span><span><i class="legend-dot" style="background:var(--theme-accent-ui)"></i>${escapeHtml(lineLabel)}</span></div>`;
-  const svg = `<svg viewBox="0 0 ${dimensions.width} ${dimensions.height}" class="combo-chart-svg">${chartGradientDefs(palette)}${leftTicks}${rightTicks}${axisLines}${axes}${areaPath ? `<path d="${areaPath}" class="chart-line-area"></path>` : ''}${categoryGroups}<path d="${linePath}" class="chart-line-path" style="stroke-width:${dimensions.lineWidth}"></path>${labels}</svg>`;
+  const svg = `<svg viewBox="0 0 ${dimensions.width} ${dimensions.height}" class="combo-chart-svg">${chartGradientDefs(palette)}${leftTicks}${rightTicks}${axisLines}${axisLabels}${axes}${areaPath ? `<path d="${areaPath}" class="chart-line-area"></path>` : ''}${categoryGroups}<path d="${linePath}" class="chart-line-path" style="stroke-width:${dimensions.lineWidth}"></path>${labels}</svg>`;
   return `${legend}${renderScrollableChart(svg, dimensions.width, dimensions.height, 'combo-chart-scroller', chartKey, dimensions.scale)}`;
 }
 

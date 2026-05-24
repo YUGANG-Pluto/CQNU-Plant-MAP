@@ -33,7 +33,15 @@ Open the query center to filter by name, zone, growth form, phenology state, sou
 
 ## Statistics
 
-Open the statistics center to view overview, zone, species, time, and custom charts.
+Open the statistics center to view research-oriented project statistics, zone analysis, taxonomic composition, life form and origin composition, diversity metrics, zone similarity, phenology statistics, time trends, data quality, export tools, and metric notes.
+
+The diversity and similarity pages use the current project records as the statistical scope. By default, diversity metrics use point-record frequency; if a project contains reliable abundance fields, those fields can be used by later analysis workflows. Matrix views show Jaccard, Sørensen-Dice, Bray-Curtis, month-by-phenology, and zone-by-quality results as table-based heatmaps that can be reviewed cell by cell.
+
+Use chart display control to switch between recommended charts, report-oriented charts, quality charts, all charts, or a custom selection. Chart cards include a fullscreen action for reviewing dense charts and heatmaps; press `Esc` or use the close button to return to the statistics center. Heatmaps support a warm orange-red palette and the default palette while keeping exported data unchanged.
+
+Use the export page or matrix export buttons to save CSV, JSON, Markdown, and SVG outputs for reports. CSV files include a UTF-8 BOM for easier Excel opening. SVG heatmaps contain the title, matrix, legend, and scope note without external resources.
+
+Metric notes explain formulas and limits. Data quality scores only describe record completeness; they do not represent ecological quality.
 
 ## Species Reference
 
