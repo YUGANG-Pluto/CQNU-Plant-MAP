@@ -20,6 +20,8 @@ The table model verifies:
 
 This adapter is not a runtime converter and does not create `.db`, `.sqlite`, or `.sqlite3` files.
 
+The adapter is covered by independent Node unit tests with synthetic fixtures in `app/tests/fixtures/`.
+
 ## Current Conversion Report Model
 
 The current codebase can generate a neutral conversion report from the in-memory table model. The report includes:

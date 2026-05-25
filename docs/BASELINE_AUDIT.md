@@ -38,7 +38,7 @@ Audit date: 2026-05-19
 - SQLite readiness is tracked as documentation and verification state only; no runtime database feature is enabled.
 - An in-memory JSON/table-model round-trip check exists for future SQLite preparation.
 - A data-only conversion report and backup preflight plan exist for future SQLite preparation.
-- SQLite dependency and IPC boundary decisions are documented, but no SQLite package is installed.
+- SQLite dependency and IPC boundary decisions are documented; `better-sqlite3` is installed for dependency probing only.
 
 ## Known Follow-Up Items
 

@@ -1556,128 +1556,25 @@ function testSqliteExchangeModelContract() {
   assert.ok(!source.includes("require('fs')"), 'SQLite exchange phase 1 must not write files');
   assert.ok(!source.includes('better-sqlite3'), 'SQLite exchange phase 1 must not add runtime database dependency');
   const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
-  ['better-sqlite3', 'sqlite3', 'sql.js'].forEach(name => {
-    assert.ok(!packageJson.dependencies?.[name], `${name} must not be installed before runtime SQLite implementation`);
-    assert.ok(!packageJson.devDependencies?.[name], `${name} must not be installed before runtime SQLite implementation`);
+  assert.ok(packageJson.dependencies?.['better-sqlite3'], 'SQLite dependency probe uses better-sqlite3');
+  ['sqlite3', 'sql.js'].forEach(name => {
+    assert.ok(!packageJson.dependencies?.[name], `${name} must not be installed during better-sqlite3 probe`);
+    assert.ok(!packageJson.devDependencies?.[name], `${name} must not be installed during better-sqlite3 probe`);
   });
+  const probeSource = fs.readFileSync(path.join(process.cwd(), 'scripts/sqlite-dependency-probe.js'), 'utf8');
+  assert.ok(probeSource.includes('os.tmpdir()'));
+  assert.ok(probeSource.includes('better-sqlite3'));
+  assert.ok(probeSource.includes('prepare('));
 
-  const project = {
-    settings: {
-      language: 'zh',
-      mapZoom: 17,
-      customSetting: { keep: true }
-    },
-    zones: [
-      {
-        id: 'zone-1',
-        zoneId: 'Z-001',
-        name: '东门长分区',
-        geometry: { type: 'Polygon', coordinates: [[[106.1, 29.1], [106.2, 29.1], [106.2, 29.2], [106.1, 29.1]]] },
-        legacyZoneNote: 'keep-zone-extra'
-      }
-    ],
-    points: [
-      {
-        id: 'point-1',
-        pointId: 'P-001',
-        zoneRef: 'zone-1',
-        lat: 29.61,
-        lng: 106.31,
-        plantNameCn: '桂花',
-        plantNameSci: 'Osmanthus fragrans',
-        family: 'Oleaceae',
-        genus: 'Osmanthus',
-        identificationStatus: 'identified',
-        taxonomySource: 'GBIF',
-        taxonomyMatchedName: 'Osmanthus fragrans',
-        taxonomyConfidence: 0.91,
-        taxonomyConfidenceLabel: 'high',
-        taxonomyVerificationStatus: 'suggested',
-        taxonomyUpdatedAt: '2026-05-25T00:00:00.000Z',
-        images: ['information/images/osmanthus.jpg'],
-        phenologyEntries: [
-          {
-            id: 'phenology-1',
-            label: '盛花期',
-            surveyDate: '2026-05-01',
-            floweringState: '盛花期',
-            images: ['information/images/osmanthus-flower.jpg'],
-            legacyPhenologyField: 'keep-entry-extra'
-          }
-        ],
-        taxonomyCandidatesSummary: [
-          {
-            provider: 'GBIF',
-            matchedName: 'Osmanthus fragrans',
-            scientificName: 'Osmanthus fragrans',
-            family: 'Oleaceae',
-            genus: 'Osmanthus',
-            rank: 'species',
-            score: 95,
-            occurrenceWeight: 1.5,
-            legacyCandidateField: 'keep-candidate-extra'
-          }
-        ],
-        legacyPointField: { keep: 'point-extra' }
-      }
-    ]
-  };
-  const before = JSON.stringify(project);
-  const model = sqliteExchangeModel.buildSqliteModelFromJsonProject(project);
-  assert.strictEqual(JSON.stringify(project), before, 'SQLite exchange model must not mutate JSON project input');
+  const model = sqliteExchangeModel.buildSqliteModelFromJsonProject({
+    settings: { language: 'zh' },
+    zones: [],
+    points: []
+  });
   assert.strictEqual(model.version, sqliteExchangeModel.MODEL_VERSION);
   assert.strictEqual(sqliteExchangeModel.validateSqliteExchangeModel(model).ok, true);
-  assert.strictEqual(model.tables.project_settings.length, 3);
-  assert.strictEqual(model.tables.zones.length, 1);
-  assert.strictEqual(model.tables.points.length, 1);
-  assert.strictEqual(model.tables.phenology_entries.length, 1);
-  assert.strictEqual(model.tables.taxonomy_candidates.length, 1);
-  assert.strictEqual(model.tables.images.length, 2);
-  assert.deepStrictEqual(JSON.parse(model.tables.points[0].compatJson), { legacyPointField: { keep: 'point-extra' } });
-  assert.deepStrictEqual(JSON.parse(model.tables.zones[0].compatJson), { legacyZoneNote: 'keep-zone-extra' });
-
-  const restored = sqliteExchangeModel.buildJsonProjectFromSqliteModel(model);
-  assert.deepStrictEqual(restored, project, 'JSON to SQLite table model round-trip must preserve project data');
-
-  const report = sqliteExchangeModel.buildConversionReport(model, {
-    generatedAt: '2026-05-25T00:00:00.000Z'
-  });
-  assert.strictEqual(report.status, 'ready-for-preflight');
-  assert.strictEqual(report.counts.settings, 3);
-  assert.strictEqual(report.counts.zones, 1);
-  assert.strictEqual(report.counts.points, 1);
-  assert.strictEqual(report.counts.phenologyEntries, 1);
-  assert.strictEqual(report.counts.imageReferences, 2);
-  assert.strictEqual(report.counts.uniqueImageReferences, 2);
-  assert.strictEqual(report.counts.taxonomyCandidates, 1);
-  assert.strictEqual(report.compatibility.totalUnknownFieldCount, 4);
-  assert.strictEqual(report.compatibility.rowsWithCompatibilityPayload, 4);
-  assert.strictEqual(report.privacy.containsAbsolutePaths, false);
-  assert.strictEqual(report.privacy.storesRawProviderResponses, false);
-  assert.strictEqual(report.safety.writesDatabaseFile, false);
-  assert.strictEqual(report.safety.executesBackup, false);
-  assert.ok(!/[A-Za-z]:\\/.test(JSON.stringify(report)), 'conversion report must not expose absolute Windows paths');
-
-  const backupPlan = sqliteExchangeModel.buildBackupPreflightPlan({
-    generatedAt: '2026-05-25T00:00:00.000Z'
-  });
-  assert.strictEqual(backupPlan.required, true);
-  assert.strictEqual(backupPlan.executeBackup, false);
-  assert.strictEqual(backupPlan.writeFiles, false);
-  assert.ok(backupPlan.includeRelativePaths.includes('information/points.json'));
-  assert.ok(backupPlan.excludePatterns.includes('*.sqlite3'));
-  assert.ok(backupPlan.validationGates.some(item => item.includes('unknown fields')));
-  assert.strictEqual(backupPlan.privacy.exposesAbsoluteProjectPath, false);
-  assert.ok(!/[A-Za-z]:\\/.test(JSON.stringify(backupPlan)), 'backup preflight plan must not expose absolute Windows paths');
-
-  const invalid = sqliteExchangeModel.validateSqliteExchangeModel({ version: 'old', tables: {} });
-  assert.strictEqual(invalid.ok, false);
-  assert.ok(invalid.errors.some(message => message.includes('unsupported model version')));
-  const invalidReport = sqliteExchangeModel.buildConversionReport({ version: 'old', tables: {} }, {
-    generatedAt: '2026-05-25T00:00:00.000Z'
-  });
-  assert.strictEqual(invalidReport.status, 'blocked');
-  assert.ok(invalidReport.warnings.length > 0);
+  assert.ok(typeof sqliteExchangeModel.buildConversionReport === 'function');
+  assert.ok(typeof sqliteExchangeModel.buildBackupPreflightPlan === 'function');
 }
 
 function testReadmeIsUserManual() {
@@ -1774,9 +1671,16 @@ function testRepositoryHygieneContract() {
     'check:size',
     'check:repo',
     'self-check',
+    'test:unit',
+    'test:integration',
+    'test',
+    'sqlite:probe',
+    'sqlite:probe:electron',
+    'sqlite:probe:node',
     'verify'
   ].forEach(scriptName => assert.ok(packageJson.scripts[scriptName], `package script missing ${scriptName}`));
   assert.ok(packageJson.scripts.verify.includes('check:size'), 'verify must include file size governance');
+  assert.ok(!packageJson.scripts.verify.includes('test:unit'), 'verify remains structural and does not force unit tests yet');
 
   [
     'LICENSE.md',
@@ -1846,7 +1750,27 @@ function testRepositoryHygieneContract() {
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-file-size.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-js-syntax.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-repo-hygiene.js')));
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'sqlite-dependency-probe.js')));
+  [
+    'tests/unit/sqliteExchangeModel.test.js',
+    'tests/unit/pathGuard.test.js',
+    'tests/integration/projectStore.test.js',
+    'tests/integration/backupService.test.js',
+    'tests/fixtures/json-project-basic/settings.json',
+    'tests/fixtures/json-project-unknown-fields/points.json'
+  ].forEach(fileName => assert.ok(fs.existsSync(path.join(process.cwd(), fileName)), `${fileName} must exist`));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'src/main/sqliteExchangeModel.js')));
+  [
+    'project.d.ts',
+    'zone.d.ts',
+    'point.d.ts',
+    'image.d.ts',
+    'phenology.d.ts',
+    'settings.d.ts',
+    'backup.d.ts',
+    'ipc.d.ts',
+    'sqlite-exchange.d.ts'
+  ].forEach(fileName => assert.ok(fs.existsSync(path.join(process.cwd(), 'src/shared/types', fileName)), `${fileName} must exist`));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'build', 'icon.ico')), 'installer icon must be present');
 
   const readme = readRepositoryReadme();
@@ -1882,9 +1806,12 @@ function testDocumentationUpdateContract() {
   const typePlan = readWorkspaceDoc('TYPE_SYSTEM_PLAN.md');
   assert.ok(typePlan.includes('checkJs'));
   assert.ok(typePlan.includes('Do not convert the whole renderer in one pass'));
+  assert.ok(typePlan.includes('Initial Shared Declarations'));
 
   const dependencyDecision = readWorkspaceDoc('SQLITE_DEPENDENCY_DECISION.md');
-  assert.ok(dependencyDecision.includes('No SQLite dependency is currently installed'));
+  assert.ok(dependencyDecision.includes('better-sqlite3 dependency probe is active'));
+  assert.ok(dependencyDecision.includes('Probe Result'));
+  assert.ok(dependencyDecision.includes('Electron native rebuild'));
   assert.ok(dependencyDecision.includes('better-sqlite3'));
   assert.ok(dependencyDecision.includes('sqlite3'));
   assert.ok(dependencyDecision.includes('sql.js'));
@@ -1905,6 +1832,7 @@ function testDocumentationUpdateContract() {
   const sqliteReadiness = readWorkspaceDoc('SQLITE_READINESS.md');
   assert.ok(sqliteReadiness.includes('SQLite remains a planned optional local data layer'));
   assert.ok(sqliteReadiness.includes('SQLite dependency decision documented'));
+  assert.ok(sqliteReadiness.includes('SQLite dependency probe result'));
   assert.ok(sqliteReadiness.includes('JSON to SQLite table model'));
   assert.ok(sqliteReadiness.includes('Conversion report model'));
   assert.ok(sqliteReadiness.includes('Backup preflight plan'));

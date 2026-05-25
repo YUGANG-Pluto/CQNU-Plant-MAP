@@ -15,19 +15,24 @@ This checklist is used to decide when SQLite conversion work can start without w
 | SQLite target schema documented | Ready | `SQLITE_SCHEMA.md` defines planned tables and compatibility rules. |
 | JSON/SQLite exchange plan documented | Ready | `JSON_SQLITE_EXCHANGE.md` defines conversion directions and reports. |
 | User-facing SQLite status documented | Ready | `SQLITE_GUIDE.md` states SQLite is planned and not required for current workflows. |
-| SQLite dependency decision documented | Ready | `SQLITE_DEPENDENCY_DECISION.md` defines preferred dependency, fallback, install probe, and IPC boundary. |
+| SQLite dependency decision documented | Ready | `SQLITE_DEPENDENCY_DECISION.md` defines active dependency probe, fallback, install probe, and IPC boundary. |
 | File size governance active | Ready | `npm run check:size` is included in `npm run verify`. |
 | Repository hygiene active | Ready | `npm run check:repo` requires the planning documents and verification scripts. |
 | Runtime self-check active | Ready | `npm run self-check` covers core storage, backup, export, security, statistics, and species reference contracts. |
-| JSON to SQLite table model | Ready | `sqliteExchangeModel.js` creates an in-memory table model and round-trips it back to JSON in self-check. |
+| Independent test structure | Ready | `tests/unit`, `tests/integration`, and synthetic fixtures exist. |
+| JSON to SQLite table model | Ready | `sqliteExchangeModel.js` creates an in-memory table model and has independent unit round-trip coverage. |
 | Conversion report model | Ready | The in-memory model produces counts, unknown-field preservation metrics, privacy flags, safety flags, and warnings. |
 | Backup preflight plan | Ready | The pure plan lists relative backup inputs and validation gates without executing backup work. |
+| SQLite dependency probe scripts | Ready | `sqlite:probe` and `sqlite:probe:electron` run Electron main-process temporary database load checks. |
+| SQLite dependency probe result | Ready | `better-sqlite3` installs, rebuilds for Electron, loads in Electron main process, runs a parameterized query, cleans temporary files, and packages through `npm run dist`. |
+| Path and storage service tests | Ready | `pathGuard`, `projectStore`, and `backupService` have focused Node test runner coverage using temporary directories. |
+| Minimal shared type declarations | Ready | `app/src/shared/types` defines project, point, zone, phenology, image, backup, IPC, and SQLite exchange contracts. |
 | Backup-before-conversion behavior | Planned | Backup behavior exists for JSON projects, but conversion-specific backup flow is not implemented. |
 | JSON to SQLite converter | Not implemented | No runtime conversion command, database writer, or UI exists. |
 | SQLite to JSON exporter | Not implemented | No runtime conversion command, database reader, or UI exists. |
-| SQLite schema checker | Not implemented | No database schema check command exists. |
-| Conversion round-trip tests | Not implemented | Dedicated conversion tests should be added with the converter. |
-| Typecheck command | Not implemented | `TYPE_SYSTEM_PLAN.md` defines the staged adoption path. |
+| SQLite schema checker | Not implemented | No project database schema check command exists. |
+| Runtime conversion tests | Not implemented | Runtime database conversion tests should be added with the converter. |
+| Typecheck command | Not implemented | Type declarations exist, but no `tsconfig.json` or `typecheck` script is active. |
 
 ## Gate Before Runtime SQLite Work
 
@@ -41,11 +46,13 @@ SQLite runtime implementation should not start until the following are part of t
 6. Round-trip self-check or tests.
 7. User-facing failure and rollback messages.
 8. Dependency install and package probe for the selected SQLite package.
+9. Runtime database path rules.
+10. Failure rollback tests.
 
 ## Non-Goals For The Current State
 
 - No SQLite database files are committed.
-- No SQLite runtime dependency is required.
+- `better-sqlite3` is installed only for dependency probing and is not wired into user-facing conversion workflows.
 - No project data is migrated automatically.
 - No current JSON workflow depends on SQLite.
 - The current table-model round-trip is a verification aid, not a database writer.

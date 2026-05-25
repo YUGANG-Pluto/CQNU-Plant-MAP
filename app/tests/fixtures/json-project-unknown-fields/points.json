@@ -1,0 +1,46 @@
+[
+  {
+    "id": "point-legacy",
+    "pointId": "P-LEGACY",
+    "zoneRef": "zone-legacy",
+    "lat": 29.61,
+    "lng": 106.31,
+    "plantNameCn": "桂花",
+    "plantNameSci": "Osmanthus fragrans",
+    "family": "Oleaceae",
+    "genus": "Osmanthus",
+    "taxonomySource": "GBIF",
+    "taxonomyMatchedName": "Osmanthus fragrans",
+    "taxonomyConfidence": 0.91,
+    "taxonomyConfidenceLabel": "high",
+    "taxonomyVerificationStatus": "suggested",
+    "taxonomyUpdatedAt": "2026-05-25T00:00:00.000Z",
+    "images": ["information/images/osmanthus.jpg"],
+    "phenologyEntries": [
+      {
+        "id": "phenology-legacy",
+        "label": "盛花期",
+        "surveyDate": "2026-05-01",
+        "floweringState": "盛花期",
+        "images": ["information/images/osmanthus-flower.jpg"],
+        "legacyPhenologyField": "keep-entry-extra"
+      }
+    ],
+    "taxonomyCandidatesSummary": [
+      {
+        "provider": "GBIF",
+        "matchedName": "Osmanthus fragrans",
+        "scientificName": "Osmanthus fragrans",
+        "family": "Oleaceae",
+        "genus": "Osmanthus",
+        "rank": "species",
+        "score": 95,
+        "occurrenceWeight": 1.5,
+        "legacyCandidateField": "keep-candidate-extra"
+      }
+    ],
+    "legacyPointField": {
+      "keep": "point-extra"
+    }
+  }
+]

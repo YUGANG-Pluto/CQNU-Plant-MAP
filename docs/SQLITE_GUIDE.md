@@ -35,5 +35,4 @@ The application currently stores project data in local JSON files under the trus
 
 ## Dependency Status
 
-`SQLITE_DEPENDENCY_DECISION.md` records the dependency direction for a future SQLite runtime. No SQLite package is currently installed, and current JSON workflows do not require a database dependency.
-
+`SQLITE_DEPENDENCY_DECISION.md` records the dependency direction for a future SQLite runtime. `better-sqlite3` is installed for dependency probing, but current JSON workflows do not require a database conversion feature.

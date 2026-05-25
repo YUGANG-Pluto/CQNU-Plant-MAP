@@ -1,0 +1,19 @@
+[
+  {
+    "id": "zone-legacy",
+    "zoneId": "Z-LEGACY",
+    "name": "历史分区",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [106.1, 29.1],
+          [106.2, 29.1],
+          [106.2, 29.2],
+          [106.1, 29.1]
+        ]
+      ]
+    },
+    "legacyZoneNote": "keep-zone-extra"
+  }
+]

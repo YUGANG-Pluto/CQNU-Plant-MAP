@@ -9,6 +9,10 @@ npm run check:repo
 npm run check:syntax
 npm run check:size
 npm run self-check
+npm run test:unit
+npm run test:integration
+npm run sqlite:probe
+npm run sqlite:probe:electron
 npm test
 npm run verify
 ```
@@ -19,8 +23,26 @@ npm run verify
 | `check:syntax` | JavaScript syntax with `node --check`. |
 | `check:size` | Source file size thresholds and large-file allowlist reasons. |
 | `self-check` | Runtime contracts for path guards, project storage, backup, logging, UI wiring, security, and selected feature contracts. |
-| `test` | Current test entry, delegated to `self-check`. |
+| `test:unit` | Node test runner unit tests for pure models and path guards. |
+| `test:integration` | Node test runner integration tests using system temporary directories. |
+| `sqlite:probe` | Electron main-process probe for the selected SQLite dependency in a temporary directory. |
+| `sqlite:probe:electron` | Electron main-process probe for the selected SQLite dependency in a temporary directory. |
+| `sqlite:probe:node` | Optional Node ABI diagnostic for the selected SQLite dependency. It may fail after the native module is rebuilt for Electron. |
+| `test` | Unit and integration test sequence. |
 | `verify` | Repository, syntax, size, and self-check sequence. |
+
+## Test Layers
+
+| Layer | Location | Purpose |
+| --- | --- | --- |
+| Structural contracts | `scripts/self-check.js` | Application wiring, security boundaries, required files, documentation contracts, and broad feature contracts. |
+| Unit tests | `tests/unit/` | Pure model behavior and focused service contracts. |
+| Integration tests | `tests/integration/` | Main-process services that need temporary directories or zip files. |
+| Fixtures | `tests/fixtures/` | Synthetic JSON project data only. No real survey records or private images. |
+
+`npm run verify` intentionally remains a structural gate and does not force the full test suite yet. CI and local release checks should still run `npm run test --if-present`.
+
+SQLite probe commands create only temporary databases under the system temporary directory and delete them before exit.
 
 ## Manual Smoke Test
 
@@ -64,6 +86,7 @@ Use temporary or synthetic data only. Do not commit real survey records, private
 - map selection and redraw behavior;
 - backup creation and cleanup;
 - species reference source links, token-page opening, and temporary cache behavior.
+- SQLite readiness table-model round-trip, conversion report, and backup preflight plan.
 
 ## Statistics Center Regression
 

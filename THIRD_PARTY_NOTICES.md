@@ -7,6 +7,7 @@ This project uses third-party packages through the application package manifest 
 | Package | Purpose | Upstream License |
 | --- | --- | --- |
 | adm-zip | ZIP archive creation and reading | MIT |
+| better-sqlite3 | SQLite dependency probe and future local database access | MIT |
 | exifr | Image metadata reading | MIT |
 
 ## Development Dependencies
@@ -33,6 +34,7 @@ The software itself is not released under these third-party licenses. These noti
 | 包 | 用途 | 上游许可证 |
 | --- | --- | --- |
 | adm-zip | ZIP 归档创建与读取 | MIT |
+| better-sqlite3 | SQLite 依赖探针与未来本地数据库访问 | MIT |
 | exifr | 图片元数据读取 | MIT |
 
 ## 开发依赖

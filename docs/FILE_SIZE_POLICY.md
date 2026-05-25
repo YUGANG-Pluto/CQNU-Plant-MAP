@@ -43,4 +43,3 @@ npm run check:size
 ```
 
 `npm run verify` includes this check. The check fails when a new source file grows beyond the split-review threshold without a documented reason.
-

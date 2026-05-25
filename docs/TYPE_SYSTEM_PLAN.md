@@ -30,9 +30,26 @@ The application currently uses JavaScript with JSDoc typedefs in selected render
 | Statistics | Summary, zone rows, diversity metrics, heatmap matrix model, export descriptors. |
 | Export | CSV rows, JSON report, Markdown report, GeoJSON feature properties. |
 
+## Initial Shared Declarations
+
+The repository now includes minimal declaration files under `app/src/shared/types/`.
+
+| Declaration | Contract |
+| --- | --- |
+| `settings.d.ts` | `ProjectSettings` |
+| `zone.d.ts` | `ZoneRecord` |
+| `point.d.ts` | `PointRecord`, taxonomy summary contracts |
+| `phenology.d.ts` | `PhenologyRecord` |
+| `image.d.ts` | `ImageAsset` |
+| `backup.d.ts` | `BackupManifest` |
+| `ipc.d.ts` | `IpcResponse` |
+| `project.d.ts` | `JsonProjectSnapshot` |
+| `sqlite-exchange.d.ts` | `SqliteTableModel`, `ConversionReport`, `BackupPreflightPlan` |
+
+No `tsconfig.json`, `typecheck` script, or build integration is active yet. These declarations are a stable starting point for later narrow type checking.
+
 ## Non-Goals
 
 - No full-application rewrite.
 - No database migration as part of type-system work.
 - No change to Electron security boundaries.
-
