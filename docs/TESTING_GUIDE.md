@@ -7,6 +7,7 @@ Run from `app/`:
 ```bash
 npm run check:repo
 npm run check:syntax
+npm run check:size
 npm run self-check
 npm test
 npm run verify
@@ -16,9 +17,10 @@ npm run verify
 | --- | --- |
 | `check:repo` | Required files, license metadata, ignored files, restricted repository artifacts. |
 | `check:syntax` | JavaScript syntax with `node --check`. |
+| `check:size` | Source file size thresholds and large-file allowlist reasons. |
 | `self-check` | Runtime contracts for path guards, project storage, backup, logging, UI wiring, security, and selected feature contracts. |
 | `test` | Current test entry, delegated to `self-check`. |
-| `verify` | Repository, syntax, and self-check sequence. |
+| `verify` | Repository, syntax, size, and self-check sequence. |
 
 ## Manual Smoke Test
 

@@ -51,6 +51,8 @@
 - [ ] Heatmap SVG export opens without external resources.
 - [ ] Maintenance health check works.
 - [ ] Current JSON storage is documented as active.
+- [ ] File size governance passes with documented reasons for legacy large files.
+- [ ] SQLite exchange planning documents are present, while runtime conversion remains disabled until separately implemented.
 - [ ] Database structure changes remain deferred unless a separate migration task is approved.
 
 ## Release

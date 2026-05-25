@@ -57,6 +57,16 @@ Older zone records may contain `coordinates` or `latlngs`; renderer normalizatio
 | `lng` | number | Stored WGS84 longitude. |
 | `plantNameCn` | string | Chinese plant name. |
 | `plantNameSci` | string | Scientific name. |
+| `family` | string | Plant family. Optional for older projects. |
+| `genus` | string | Plant genus. Optional for older projects. |
+| `identificationStatus` | string | Identification workflow state such as draft, identified, needReview, verified, or doubtful. |
+| `taxonomySource` | string | Taxonomy information source such as manual, iNaturalist, GBIF, iNaturalist+GBIF, or unknown. |
+| `taxonomyMatchedName` | string | Simplified matched name from a species reference suggestion. |
+| `taxonomyConfidence` | number or null | Advisory taxonomy suggestion confidence from 0 to 1. |
+| `taxonomyConfidenceLabel` | string | Confidence label: high, medium, low, or unknown. |
+| `taxonomyVerificationStatus` | string | Taxonomy review state such as unverified, suggested, manuallyVerified, doubtful, or rejected. |
+| `taxonomyUpdatedAt` | string | Last taxonomy edit or suggestion time in ISO text form. |
+| `taxonomyCandidatesSummary` | array | Capped simplified candidate summaries. Complete provider responses are not stored. |
 | `phenologyEntries` | array | Multi-entry phenology records. |
 
 Top-level observer, survey, habitat, abundance, growth form, phenology, source, note, and images fields are retained as summary mirrors for older workflows.
@@ -92,8 +102,10 @@ Stored image references are project-relative paths such as `information/images/i
 CSV export currently uses the Chinese headers defined in `src/renderer/state/store.js`:
 
 ```text
-分区编号, 分区名称, 点位编号, 中文名, 学名, 记录者, 调查日期,
-微生境, 多度/数量, 生活型, 物候状态, 来源属性, 备注, 图片文件, 经度, 纬度
+分区编号, 分区名称, 点位编号, 中文名, 学名, 科, 属, 鉴定状态,
+科属来源, 科属匹配名称, 科属建议置信度, 科属置信等级, 科属核验状态,
+科属更新时间, 记录者, 调查日期, 微生境, 多度/数量, 生活型, 物候状态,
+来源属性, 备注, 图片文件, 经度, 纬度
 ```
 
 GeoJSON export emits point features with WGS84 coordinates in `[lng, lat]` order.
@@ -102,10 +114,10 @@ GeoJSON export emits point features with WGS84 coordinates in `[lng, lat]` order
 
 Manual backups are zip files created outside the project folder by default. Expired backup cleanup only handles trusted `.zip` files.
 
-## Deferred Database Changes
+## Database Planning Status
 
-No database structure change is part of the current task. The active data model remains the project-folder JSON layout described above.
+No runtime database structure change is active. The active data model remains the project-folder JSON layout described above.
 
 The current JSON files do not require a top-level `schemaVersion`. Missing `schemaVersion` must remain valid current data, and loading JSON must not rewrite files only to add version metadata.
 
-SQLite or other database-storage design notes are deferred. Do not add database tables, migrations, or schema conversion code until a later scoped task explicitly reopens that work with backup, rollback, compatibility, and test requirements.
+SQLite planning notes are documented separately in `SQLITE_SCHEMA.md`, `SQLITE_GUIDE.md`, `JSON_SQLITE_EXCHANGE.md`, and `DATA_MIGRATION_PLAN.md`. These documents describe future optional local storage behavior only. Do not add runtime database tables, migrations, or conversion UI until that work includes backup, rollback, compatibility, and dedicated conversion tests.

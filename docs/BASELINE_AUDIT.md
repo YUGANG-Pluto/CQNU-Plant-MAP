@@ -17,6 +17,7 @@ Audit date: 2026-05-19
 - Self-check script exists at `app/scripts/self-check.js`.
 - JavaScript syntax check is available through `npm run check:syntax`.
 - Repository hygiene check is available through `npm run check:repo`.
+- Source file size governance is available through `npm run check:size`.
 - Combined local verification is available through `npm run verify`.
 - The Windows installer command remains `npm run dist`.
 
@@ -30,6 +31,7 @@ Audit date: 2026-05-19
 ## Data And Runtime Impact
 
 - No business data format was changed in this baseline step.
+- Optional taxonomy fields are documented for compatibility with current point records.
 - No project migration was introduced.
 - No IPC channel or Electron security boundary was changed.
 - No user operation workflow was changed.
@@ -38,4 +40,4 @@ Audit date: 2026-05-19
 
 - Add neutral engineering documents for release, testing, and maintenance if team workflows expand.
 - Consider continuous integration after local verification scripts remain stable.
-- Plan any SQLite migration separately with a compatibility entrance for existing JSON projects.
+- Keep SQLite planning documents synchronized before any runtime conversion work is introduced.

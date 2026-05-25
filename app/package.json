@@ -12,9 +12,10 @@
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,css,html,json}\"",
     "self-check": "node scripts/self-check.js",
+    "check:size": "node scripts/check-file-size.js",
     "check:syntax": "node scripts/check-js-syntax.js",
     "check:repo": "node scripts/check-repo-hygiene.js",
-    "verify": "npm run check:repo && npm run check:syntax && npm run self-check",
+    "verify": "npm run check:repo && npm run check:syntax && npm run check:size && npm run self-check",
     "check": "npm run lint && npm run self-check",
     "test": "npm run self-check"
   },

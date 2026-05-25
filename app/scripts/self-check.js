@@ -1641,10 +1641,12 @@ function testRepositoryHygieneContract() {
   assert.strictEqual(packageJson.private, true);
   [
     'check:syntax',
+    'check:size',
     'check:repo',
     'self-check',
     'verify'
   ].forEach(scriptName => assert.ok(packageJson.scripts[scriptName], `package script missing ${scriptName}`));
+  assert.ok(packageJson.scripts.verify.includes('check:size'), 'verify must include file size governance');
 
   [
     'LICENSE.md',
@@ -1662,6 +1664,12 @@ function testRepositoryHygieneContract() {
   [
     'ARCHITECTURE.md',
     'DATA_SCHEMA.md',
+    'FILE_SIZE_POLICY.md',
+    'TYPE_SYSTEM_PLAN.md',
+    'SQLITE_SCHEMA.md',
+    'SQLITE_GUIDE.md',
+    'JSON_SQLITE_EXCHANGE.md',
+    'DATA_MIGRATION_PLAN.md',
     'DEV_GUIDE.md',
     'TESTING_GUIDE.md',
     'RELEASE_GUIDE.md',
@@ -1702,6 +1710,7 @@ function testRepositoryHygieneContract() {
   assert.ok(readRepositoryPath('.github/ISSUE_TEMPLATE/config.yml').includes('blank_issues_enabled: false'));
   assert.ok(repositoryFileExists('app/package-lock.json'), 'package-lock.json must exist');
   assert.ok(repositoryFileExists('.editorconfig'), '.editorconfig must exist');
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-file-size.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-js-syntax.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-repo-hygiene.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'build', 'icon.ico')), 'installer icon must be present');
@@ -1723,10 +1732,38 @@ function testRepositoryHygieneContract() {
 
 function testDocumentationUpdateContract() {
   const dataSchema = readWorkspaceDoc('DATA_SCHEMA.md');
-  assert.ok(dataSchema.includes('Deferred Database Changes'));
-  assert.ok(dataSchema.includes('No database structure change is part of the current task.'));
-  assert.ok(dataSchema.includes('SQLite or other database-storage design notes are deferred.'));
-  assert.ok(!dataSchema.includes('## SQLite Draft'));
+  assert.ok(dataSchema.includes('family'));
+  assert.ok(dataSchema.includes('taxonomyVerificationStatus'));
+  assert.ok(dataSchema.includes('Database Planning Status'));
+  assert.ok(dataSchema.includes('SQLITE_SCHEMA.md'));
+  assert.ok(!dataSchema.includes('Complete provider responses are stored'));
+
+  const fileSizePolicy = readWorkspaceDoc('FILE_SIZE_POLICY.md');
+  assert.ok(fileSizePolicy.includes('Over 1000'));
+  assert.ok(fileSizePolicy.includes('Allowlist required'));
+  assert.ok(fileSizePolicy.includes('npm run check:size'));
+
+  const typePlan = readWorkspaceDoc('TYPE_SYSTEM_PLAN.md');
+  assert.ok(typePlan.includes('checkJs'));
+  assert.ok(typePlan.includes('Do not convert the whole renderer in one pass'));
+
+  const sqliteSchema = readWorkspaceDoc('SQLITE_SCHEMA.md');
+  assert.ok(sqliteSchema.includes('SQLite is a planned optional local data layer'));
+  assert.ok(sqliteSchema.includes('No SQLite database file, migration script, or conversion command'));
+  assert.ok(sqliteSchema.includes('taxonomy_candidates'));
+
+  const sqliteGuide = readWorkspaceDoc('SQLITE_GUIDE.md');
+  assert.ok(sqliteGuide.includes('Convert JSON to SQLite'));
+  assert.ok(sqliteGuide.includes('Planned'));
+
+  const exchangePlan = readWorkspaceDoc('JSON_SQLITE_EXCHANGE.md');
+  assert.ok(exchangePlan.includes('JSON To SQLite'));
+  assert.ok(exchangePlan.includes('SQLite To JSON'));
+  assert.ok(exchangePlan.includes('unknown field preservation'));
+
+  const migrationPlan = readWorkspaceDoc('DATA_MIGRATION_PLAN.md');
+  assert.ok(migrationPlan.includes('Existing JSON projects remain valid'));
+  assert.ok(migrationPlan.includes('A backup is required'));
 
   const architecture = readWorkspaceDoc('ARCHITECTURE.md');
   assert.ok(architecture.includes('source-link and token validation documented'));

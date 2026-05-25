@@ -149,7 +149,7 @@ function checkPackageMetadata() {
     fail('package.json private must be true');
   }
 
-  ['check:syntax', 'check:repo', 'self-check', 'verify'].forEach(scriptName => {
+  ['check:syntax', 'check:size', 'check:repo', 'self-check', 'verify'].forEach(scriptName => {
     if (!packageJson.scripts || !packageJson.scripts[scriptName]) {
       fail(`package.json missing script ${scriptName}`);
     }
@@ -173,6 +173,12 @@ function checkRequiredFiles() {
     '.editorconfig',
     'docs/ARCHITECTURE.md',
     'docs/DATA_SCHEMA.md',
+    'docs/FILE_SIZE_POLICY.md',
+    'docs/TYPE_SYSTEM_PLAN.md',
+    'docs/SQLITE_SCHEMA.md',
+    'docs/SQLITE_GUIDE.md',
+    'docs/JSON_SQLITE_EXCHANGE.md',
+    'docs/DATA_MIGRATION_PLAN.md',
     'docs/DEV_GUIDE.md',
     'docs/TESTING_GUIDE.md',
     'docs/RELEASE_GUIDE.md',
@@ -201,6 +207,7 @@ function checkRequiredFiles() {
     '.github/ISSUE_TEMPLATE/release_checklist.yml',
     '.github/ISSUE_TEMPLATE/config.yml',
     'app/package-lock.json',
+    'app/scripts/check-file-size.js',
     'app/scripts/check-js-syntax.js',
     'app/scripts/check-repo-hygiene.js',
     'app/scripts/self-check.js',
