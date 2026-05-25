@@ -212,6 +212,7 @@ function checkRequiredFiles() {
     'app/scripts/check-js-syntax.js',
     'app/scripts/check-repo-hygiene.js',
     'app/scripts/self-check.js',
+    'app/src/main/sqliteExchangeModel.js',
     'app/src/main/securityPolicy.js',
     'app/build/icon.ico'
   ].forEach(relativePath => {

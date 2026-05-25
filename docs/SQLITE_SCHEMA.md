@@ -33,6 +33,23 @@ The following table layout is a target design only. It is not an active migratio
 | `taxonomy_candidates` | Simplified taxonomy candidate summaries, capped per point. |
 | `export_runs` | Optional conversion and export report metadata. |
 
+## Current In-Memory Model
+
+`app/src/main/sqliteExchangeModel.js` provides a table-shaped in-memory model for readiness checks. It does not connect to SQLite and does not write a database file.
+
+The model currently covers:
+
+- `project_settings`;
+- `zones`;
+- `points`;
+- `phenology_entries`;
+- `images`;
+- `taxonomy_candidates`.
+
+Rows include compatibility payloads so unknown JSON fields can be restored during round-trip checks.
+
+The same module can also produce a conversion report and backup preflight plan. These outputs are data-only readiness artifacts and do not write files.
+
 ## Compatibility Rules
 
 - JSON projects must remain readable.
@@ -50,4 +67,3 @@ Before this plan becomes runtime code, the project needs:
 - JSON to SQLite and SQLite to JSON round-trip checks.
 - Recovery behavior for failed conversion.
 - User-visible documentation for choosing JSON or SQLite storage.
-

@@ -4,6 +4,42 @@
 
 JSON and SQLite exchange must preserve existing project data, support local backups, and keep JSON as a compatible interchange format.
 
+## Current Table Model
+
+The current codebase includes an in-memory table-model adapter for readiness checks. It maps JSON project data to table-shaped records and back to JSON without opening or writing a SQLite database.
+
+The table model verifies:
+
+- settings key-value rows;
+- zone rows and compatibility payloads;
+- point rows with taxonomy fields;
+- phenology entry rows;
+- image reference rows;
+- capped taxonomy candidate rows;
+- unknown field preservation.
+
+This adapter is not a runtime converter and does not create `.db`, `.sqlite`, or `.sqlite3` files.
+
+## Current Conversion Report Model
+
+The current codebase can generate a neutral conversion report from the in-memory table model. The report includes:
+
+- direction and generated time;
+- source and target format names;
+- settings, zone, point, phenology, image reference, and taxonomy candidate counts;
+- unknown-field preservation counts;
+- rows with compatibility payloads;
+- privacy flags for local paths, service tokens, and raw provider responses;
+- safety flags that confirm no database file is written and no backup is executed.
+
+The report does not include absolute project paths, user home paths, service tokens, or complete provider responses.
+
+## Current Backup Preflight Plan
+
+The backup preflight plan is a data-only checklist for a later runtime conversion. It lists relative project files to include, generated outputs to exclude, validation gates, and rollback-oriented steps.
+
+The plan does not execute backup work and does not write files.
+
 ## JSON To SQLite
 
 Planned workflow:
@@ -60,4 +96,3 @@ Round-trip tests should verify:
 ## Not Implemented Yet
 
 The current application does not include runtime conversion UI, SQLite schema creation, or database migration commands.
-

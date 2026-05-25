@@ -36,6 +36,8 @@ Audit date: 2026-05-19
 - No IPC channel or Electron security boundary was changed.
 - No user operation workflow was changed.
 - SQLite readiness is tracked as documentation and verification state only; no runtime database feature is enabled.
+- An in-memory JSON/table-model round-trip check exists for future SQLite preparation.
+- A data-only conversion report and backup preflight plan exist for future SQLite preparation.
 
 ## Known Follow-Up Items
 

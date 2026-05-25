@@ -11,6 +11,7 @@ const fileWrite = require('../src/main/fileWrite');
 const logger = require('../src/main/logger');
 const maintenanceService = require('../src/main/maintenanceService');
 const speciesReferenceService = require('../src/main/speciesReferenceService');
+const sqliteExchangeModel = require('../src/main/sqliteExchangeModel');
 const statsResearch = require('../src/renderer/features/stats/statsResearch');
 const { ERROR_CODES } = require('../src/main/errorCodes');
 const { unwrapIpc } = require('../src/renderer/utils/ipc');
@@ -1550,6 +1551,130 @@ async function testTaxonomySuggestionRuntimeContract() {
   assert.ok(empty.warnings.length);
 }
 
+function testSqliteExchangeModelContract() {
+  const source = fs.readFileSync(path.join(process.cwd(), 'src/main/sqliteExchangeModel.js'), 'utf8');
+  assert.ok(!source.includes("require('fs')"), 'SQLite exchange phase 1 must not write files');
+  assert.ok(!source.includes('better-sqlite3'), 'SQLite exchange phase 1 must not add runtime database dependency');
+
+  const project = {
+    settings: {
+      language: 'zh',
+      mapZoom: 17,
+      customSetting: { keep: true }
+    },
+    zones: [
+      {
+        id: 'zone-1',
+        zoneId: 'Z-001',
+        name: '东门长分区',
+        geometry: { type: 'Polygon', coordinates: [[[106.1, 29.1], [106.2, 29.1], [106.2, 29.2], [106.1, 29.1]]] },
+        legacyZoneNote: 'keep-zone-extra'
+      }
+    ],
+    points: [
+      {
+        id: 'point-1',
+        pointId: 'P-001',
+        zoneRef: 'zone-1',
+        lat: 29.61,
+        lng: 106.31,
+        plantNameCn: '桂花',
+        plantNameSci: 'Osmanthus fragrans',
+        family: 'Oleaceae',
+        genus: 'Osmanthus',
+        identificationStatus: 'identified',
+        taxonomySource: 'GBIF',
+        taxonomyMatchedName: 'Osmanthus fragrans',
+        taxonomyConfidence: 0.91,
+        taxonomyConfidenceLabel: 'high',
+        taxonomyVerificationStatus: 'suggested',
+        taxonomyUpdatedAt: '2026-05-25T00:00:00.000Z',
+        images: ['information/images/osmanthus.jpg'],
+        phenologyEntries: [
+          {
+            id: 'phenology-1',
+            label: '盛花期',
+            surveyDate: '2026-05-01',
+            floweringState: '盛花期',
+            images: ['information/images/osmanthus-flower.jpg'],
+            legacyPhenologyField: 'keep-entry-extra'
+          }
+        ],
+        taxonomyCandidatesSummary: [
+          {
+            provider: 'GBIF',
+            matchedName: 'Osmanthus fragrans',
+            scientificName: 'Osmanthus fragrans',
+            family: 'Oleaceae',
+            genus: 'Osmanthus',
+            rank: 'species',
+            score: 95,
+            occurrenceWeight: 1.5,
+            legacyCandidateField: 'keep-candidate-extra'
+          }
+        ],
+        legacyPointField: { keep: 'point-extra' }
+      }
+    ]
+  };
+  const before = JSON.stringify(project);
+  const model = sqliteExchangeModel.buildSqliteModelFromJsonProject(project);
+  assert.strictEqual(JSON.stringify(project), before, 'SQLite exchange model must not mutate JSON project input');
+  assert.strictEqual(model.version, sqliteExchangeModel.MODEL_VERSION);
+  assert.strictEqual(sqliteExchangeModel.validateSqliteExchangeModel(model).ok, true);
+  assert.strictEqual(model.tables.project_settings.length, 3);
+  assert.strictEqual(model.tables.zones.length, 1);
+  assert.strictEqual(model.tables.points.length, 1);
+  assert.strictEqual(model.tables.phenology_entries.length, 1);
+  assert.strictEqual(model.tables.taxonomy_candidates.length, 1);
+  assert.strictEqual(model.tables.images.length, 2);
+  assert.deepStrictEqual(JSON.parse(model.tables.points[0].compatJson), { legacyPointField: { keep: 'point-extra' } });
+  assert.deepStrictEqual(JSON.parse(model.tables.zones[0].compatJson), { legacyZoneNote: 'keep-zone-extra' });
+
+  const restored = sqliteExchangeModel.buildJsonProjectFromSqliteModel(model);
+  assert.deepStrictEqual(restored, project, 'JSON to SQLite table model round-trip must preserve project data');
+
+  const report = sqliteExchangeModel.buildConversionReport(model, {
+    generatedAt: '2026-05-25T00:00:00.000Z'
+  });
+  assert.strictEqual(report.status, 'ready-for-preflight');
+  assert.strictEqual(report.counts.settings, 3);
+  assert.strictEqual(report.counts.zones, 1);
+  assert.strictEqual(report.counts.points, 1);
+  assert.strictEqual(report.counts.phenologyEntries, 1);
+  assert.strictEqual(report.counts.imageReferences, 2);
+  assert.strictEqual(report.counts.uniqueImageReferences, 2);
+  assert.strictEqual(report.counts.taxonomyCandidates, 1);
+  assert.strictEqual(report.compatibility.totalUnknownFieldCount, 4);
+  assert.strictEqual(report.compatibility.rowsWithCompatibilityPayload, 4);
+  assert.strictEqual(report.privacy.containsAbsolutePaths, false);
+  assert.strictEqual(report.privacy.storesRawProviderResponses, false);
+  assert.strictEqual(report.safety.writesDatabaseFile, false);
+  assert.strictEqual(report.safety.executesBackup, false);
+  assert.ok(!/[A-Za-z]:\\/.test(JSON.stringify(report)), 'conversion report must not expose absolute Windows paths');
+
+  const backupPlan = sqliteExchangeModel.buildBackupPreflightPlan({
+    generatedAt: '2026-05-25T00:00:00.000Z'
+  });
+  assert.strictEqual(backupPlan.required, true);
+  assert.strictEqual(backupPlan.executeBackup, false);
+  assert.strictEqual(backupPlan.writeFiles, false);
+  assert.ok(backupPlan.includeRelativePaths.includes('information/points.json'));
+  assert.ok(backupPlan.excludePatterns.includes('*.sqlite3'));
+  assert.ok(backupPlan.validationGates.some(item => item.includes('unknown fields')));
+  assert.strictEqual(backupPlan.privacy.exposesAbsoluteProjectPath, false);
+  assert.ok(!/[A-Za-z]:\\/.test(JSON.stringify(backupPlan)), 'backup preflight plan must not expose absolute Windows paths');
+
+  const invalid = sqliteExchangeModel.validateSqliteExchangeModel({ version: 'old', tables: {} });
+  assert.strictEqual(invalid.ok, false);
+  assert.ok(invalid.errors.some(message => message.includes('unsupported model version')));
+  const invalidReport = sqliteExchangeModel.buildConversionReport({ version: 'old', tables: {} }, {
+    generatedAt: '2026-05-25T00:00:00.000Z'
+  });
+  assert.strictEqual(invalidReport.status, 'blocked');
+  assert.ok(invalidReport.warnings.length > 0);
+}
+
 function testReadmeIsUserManual() {
   const readme = readRepositoryReadme();
   [
@@ -1714,6 +1839,7 @@ function testRepositoryHygieneContract() {
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-file-size.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-js-syntax.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-repo-hygiene.js')));
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'src/main/sqliteExchangeModel.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'build', 'icon.ico')), 'installer icon must be present');
 
   const readme = readRepositoryReadme();
@@ -1754,6 +1880,8 @@ function testDocumentationUpdateContract() {
   assert.ok(sqliteSchema.includes('SQLite is a planned optional local data layer'));
   assert.ok(sqliteSchema.includes('No SQLite database file, migration script, or conversion command'));
   assert.ok(sqliteSchema.includes('taxonomy_candidates'));
+  assert.ok(sqliteSchema.includes('Current In-Memory Model'));
+  assert.ok(sqliteSchema.includes('conversion report and backup preflight plan'));
 
   const sqliteGuide = readWorkspaceDoc('SQLITE_GUIDE.md');
   assert.ok(sqliteGuide.includes('Convert JSON to SQLite'));
@@ -1761,11 +1889,17 @@ function testDocumentationUpdateContract() {
 
   const sqliteReadiness = readWorkspaceDoc('SQLITE_READINESS.md');
   assert.ok(sqliteReadiness.includes('SQLite remains a planned optional local data layer'));
+  assert.ok(sqliteReadiness.includes('JSON to SQLite table model'));
+  assert.ok(sqliteReadiness.includes('Conversion report model'));
+  assert.ok(sqliteReadiness.includes('Backup preflight plan'));
   assert.ok(sqliteReadiness.includes('JSON to SQLite converter'));
   assert.ok(sqliteReadiness.includes('Not implemented'));
   assert.ok(sqliteReadiness.includes('Backup-before-conversion'));
 
   const exchangePlan = readWorkspaceDoc('JSON_SQLITE_EXCHANGE.md');
+  assert.ok(exchangePlan.includes('Current Table Model'));
+  assert.ok(exchangePlan.includes('Current Conversion Report Model'));
+  assert.ok(exchangePlan.includes('Current Backup Preflight Plan'));
   assert.ok(exchangePlan.includes('JSON To SQLite'));
   assert.ok(exchangePlan.includes('SQLite To JSON'));
   assert.ok(exchangePlan.includes('unknown field preservation'));
@@ -1831,6 +1965,7 @@ async function main() {
   testMaintenanceCenterContract();
   testSpeciesReferenceContract();
   await testTaxonomySuggestionRuntimeContract();
+  testSqliteExchangeModelContract();
   testReadmeIsUserManual();
   testElectronSecurityContract();
   testRepositoryHygieneContract();

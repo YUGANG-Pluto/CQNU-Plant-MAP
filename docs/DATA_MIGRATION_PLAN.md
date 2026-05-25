@@ -35,8 +35,9 @@ Current project data is JSON-based. Missing optional fields are normalized at lo
 ## Verification Before Enabling A Migration
 
 - `npm run verify` passes.
+- The in-memory JSON/table-model round-trip check passes.
+- The conversion report and backup preflight plan checks pass.
 - Dedicated conversion tests exist.
 - Round-trip JSON output is stable.
 - Failure cases leave the source project unchanged.
 - Manual backup and restore still work.
-

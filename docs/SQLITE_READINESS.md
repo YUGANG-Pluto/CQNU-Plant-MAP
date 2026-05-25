@@ -18,9 +18,12 @@ This checklist is used to decide when SQLite conversion work can start without w
 | File size governance active | Ready | `npm run check:size` is included in `npm run verify`. |
 | Repository hygiene active | Ready | `npm run check:repo` requires the planning documents and verification scripts. |
 | Runtime self-check active | Ready | `npm run self-check` covers core storage, backup, export, security, statistics, and species reference contracts. |
+| JSON to SQLite table model | Ready | `sqliteExchangeModel.js` creates an in-memory table model and round-trips it back to JSON in self-check. |
+| Conversion report model | Ready | The in-memory model produces counts, unknown-field preservation metrics, privacy flags, safety flags, and warnings. |
+| Backup preflight plan | Ready | The pure plan lists relative backup inputs and validation gates without executing backup work. |
 | Backup-before-conversion behavior | Planned | Backup behavior exists for JSON projects, but conversion-specific backup flow is not implemented. |
-| JSON to SQLite converter | Not implemented | No runtime conversion command or UI exists. |
-| SQLite to JSON exporter | Not implemented | No runtime conversion command or UI exists. |
+| JSON to SQLite converter | Not implemented | No runtime conversion command, database writer, or UI exists. |
+| SQLite to JSON exporter | Not implemented | No runtime conversion command, database reader, or UI exists. |
 | SQLite schema checker | Not implemented | No database schema check command exists. |
 | Conversion round-trip tests | Not implemented | Dedicated conversion tests should be added with the converter. |
 | Typecheck command | Not implemented | `TYPE_SYSTEM_PLAN.md` defines the staged adoption path. |
@@ -43,4 +46,5 @@ SQLite runtime implementation should not start until the following are part of t
 - No SQLite runtime dependency is required.
 - No project data is migrated automatically.
 - No current JSON workflow depends on SQLite.
-
+- The current table-model round-trip is a verification aid, not a database writer.
+- The current conversion report and backup preflight plan are data-only readiness aids.
