@@ -13,6 +13,7 @@ npm run test:unit
 npm run test:integration
 npm run sqlite:probe
 npm run sqlite:probe:electron
+npm run db:check-schema
 npm test
 npm run verify
 ```
@@ -28,6 +29,7 @@ npm run verify
 | `sqlite:probe` | Electron main-process probe for the selected SQLite dependency in a temporary directory. |
 | `sqlite:probe:electron` | Electron main-process probe for the selected SQLite dependency in a temporary directory. |
 | `sqlite:probe:node` | Optional Node ABI diagnostic for the selected SQLite dependency. It may fail after the native module is rebuilt for Electron. |
+| `db:check-schema` | Electron main-process schema readiness check using a temporary schema database. |
 | `test` | Unit and integration test sequence. |
 | `verify` | Repository, syntax, size, and self-check sequence. |
 
@@ -42,7 +44,7 @@ npm run verify
 
 `npm run verify` intentionally remains a structural gate and does not force the full test suite yet. CI and local release checks should still run `npm run test --if-present`.
 
-SQLite probe commands create only temporary databases under the system temporary directory and delete them before exit.
+SQLite probe commands create only temporary databases under the system temporary directory and delete them before exit. The schema check command also creates a temporary schema database under the system temporary directory and deletes it before exit.
 
 ## Manual Smoke Test
 
@@ -86,7 +88,7 @@ Use temporary or synthetic data only. Do not commit real survey records, private
 - map selection and redraw behavior;
 - backup creation and cleanup;
 - species reference source links, token-page opening, and temporary cache behavior.
-- SQLite readiness table-model round-trip, conversion report, and backup preflight plan.
+- SQLite readiness table-model round-trip, temporary schema database check, conversion report, and backup preflight plan.
 
 ## Statistics Center Regression
 

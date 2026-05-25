@@ -6,7 +6,7 @@ Decision record for future SQLite runtime work. The `better-sqlite3` dependency 
 
 The better-sqlite3 dependency probe is active for Electron main-process validation.
 
-Package metadata was checked on 2026-05-25 through npm package metadata only. No package installation was performed.
+Package metadata and local dependency behavior were checked on 2026-05-25 with the selected package installed in the application workspace.
 
 ## Current Runtime Context
 
@@ -36,6 +36,7 @@ Package metadata was checked on 2026-05-25 through npm package metadata only. No
 | Temporary database create | Pass: probe database is created under the system temporary directory. |
 | Parameterized query | Pass: insert and select use prepared statements. |
 | Close and cleanup | Pass: probe closes the database and removes the temporary directory. |
+| Schema readiness check | Pass: `db:check-schema` creates the planned tables in a temporary database and removes the temporary directory. |
 | Node ABI diagnostic | Not a runtime gate: Node CLI loading can fail after rebuilding the native module for Electron ABI. |
 | Installer packaging | Pass: `npm run dist` completes with `better-sqlite3` native dependency rebuild. |
 | Packaged app runtime DB load | Not exercised: no packaged runtime conversion service exists yet. |

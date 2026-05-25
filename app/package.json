@@ -22,7 +22,8 @@
     "test": "npm run test:unit && npm run test:integration",
     "sqlite:probe": "electron scripts/sqlite-dependency-probe.js",
     "sqlite:probe:electron": "electron scripts/sqlite-dependency-probe.js",
-    "sqlite:probe:node": "node scripts/sqlite-dependency-probe.js"
+    "sqlite:probe:node": "node scripts/sqlite-dependency-probe.js",
+    "db:check-schema": "electron scripts/check-sqlite-schema.js"
   },
   "devDependencies": {
     "electron": "^31.7.7",

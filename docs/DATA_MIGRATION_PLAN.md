@@ -26,15 +26,17 @@ Current project data is JSON-based. Missing optional fields are normalized at lo
 
 1. Load and validate source data.
 2. Create a backup.
-3. Convert into a temporary target.
-4. Run consistency checks.
-5. Write a report.
-6. Replace the active target only after validation passes.
-7. Keep rollback instructions visible in the report.
+3. Run a schema check against a temporary target.
+4. Convert into a temporary target.
+5. Run consistency checks.
+6. Write a report.
+7. Replace the active target only after validation passes.
+8. Keep rollback instructions visible in the report.
 
 ## Verification Before Enabling A Migration
 
 - `npm run verify` passes.
+- `npm run db:check-schema` passes.
 - The in-memory JSON/table-model round-trip check passes.
 - The conversion report and backup preflight plan checks pass.
 - Dedicated conversion tests exist.

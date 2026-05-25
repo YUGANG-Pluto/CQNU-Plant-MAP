@@ -30,7 +30,7 @@ This checklist is used to decide when SQLite conversion work can start without w
 | Backup-before-conversion behavior | Planned | Backup behavior exists for JSON projects, but conversion-specific backup flow is not implemented. |
 | JSON to SQLite converter | Not implemented | No runtime conversion command, database writer, or UI exists. |
 | SQLite to JSON exporter | Not implemented | No runtime conversion command, database reader, or UI exists. |
-| SQLite schema checker | Not implemented | No project database schema check command exists. |
+| SQLite schema checker | Ready | `db:check-schema` creates a temporary schema database, validates planned tables and representative columns, then deletes the temporary files. |
 | Runtime conversion tests | Not implemented | Runtime database conversion tests should be added with the converter. |
 | Typecheck command | Not implemented | Type declarations exist, but no `tsconfig.json` or `typecheck` script is active. |
 
@@ -38,16 +38,14 @@ This checklist is used to decide when SQLite conversion work can start without w
 
 SQLite runtime implementation should not start until the following are part of the same scoped change:
 
-1. A schema creation module.
-2. JSON to SQLite conversion.
-3. SQLite to JSON export.
-4. Backup-before-conversion.
-5. Conversion report generation.
-6. Round-trip self-check or tests.
-7. User-facing failure and rollback messages.
-8. Dependency install and package probe for the selected SQLite package.
-9. Runtime database path rules.
-10. Failure rollback tests.
+1. JSON to SQLite conversion.
+2. SQLite to JSON export.
+3. Backup-before-conversion.
+4. Conversion report generation.
+5. Round-trip self-check or tests.
+6. User-facing failure and rollback messages.
+7. Runtime database path rules.
+8. Failure rollback tests.
 
 ## Non-Goals For The Current State
 
@@ -57,3 +55,4 @@ SQLite runtime implementation should not start until the following are part of t
 - No current JSON workflow depends on SQLite.
 - The current table-model round-trip is a verification aid, not a database writer.
 - The current conversion report and backup preflight plan are data-only readiness aids.
+- The current schema checker is a temporary database readiness aid, not a project database writer.

@@ -6,6 +6,8 @@ SQLite is a planned optional local data layer. The active runtime format remains
 
 No SQLite database file, migration script, or conversion command is currently part of the application runtime.
 
+`npm run db:check-schema` is available as a development readiness check. It creates a temporary SQLite database in the system temp directory, validates the planned table layout, closes the database, and deletes the temporary files. It does not read or write project data.
+
 ## Storage Location
 
 When implemented, the default database file should live inside the trusted project folder, for example:
@@ -50,6 +52,23 @@ Rows include compatibility payloads so unknown JSON fields can be restored durin
 
 The same module can also produce a conversion report and backup preflight plan. These outputs are data-only readiness artifacts and do not write files.
 
+## Current Schema Service
+
+`app/src/main/sqliteSchemaService.js` defines the current schema creation statements and the temporary schema checker used by `npm run db:check-schema`.
+
+The schema service currently validates:
+
+- `project_settings`;
+- `zones`;
+- `points`;
+- `phenology_entries`;
+- `images`;
+- `point_images`;
+- `taxonomy_candidates`;
+- `export_runs`.
+
+The checker verifies required tables and representative columns, including taxonomy fields and compatibility payload columns. It uses `better-sqlite3` only in the main-process readiness path and does not expose a renderer database API.
+
 ## Compatibility Rules
 
 - JSON projects must remain readable.
@@ -60,10 +79,10 @@ The same module can also produce a conversion report and backup preflight plan. 
 
 ## Migration Readiness
 
-Before this plan becomes runtime code, the project needs:
+Before this plan becomes runtime conversion code, the project still needs:
 
-- A conversion report format.
 - Backup-before-conversion behavior.
+- Runtime JSON to SQLite writer and SQLite to JSON reader services.
 - JSON to SQLite and SQLite to JSON round-trip checks.
 - Recovery behavior for failed conversion.
 - User-visible documentation for choosing JSON or SQLite storage.

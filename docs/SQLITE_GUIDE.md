@@ -31,8 +31,10 @@ The application currently stores project data in local JSON files under the trus
 | Export JSON project data | Supported |
 | Convert JSON to SQLite | Planned |
 | Convert SQLite to JSON | Planned |
-| Run SQLite schema checks | Planned |
+| Run SQLite schema checks | Ready |
 
 ## Dependency Status
 
 `SQLITE_DEPENDENCY_DECISION.md` records the dependency direction for a future SQLite runtime. `better-sqlite3` is installed for dependency probing, but current JSON workflows do not require a database conversion feature.
+
+`npm run db:check-schema` is a development readiness command. It validates the planned schema in a temporary database only and does not create or modify project databases.
