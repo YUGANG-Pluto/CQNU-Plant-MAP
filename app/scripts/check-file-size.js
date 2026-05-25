@@ -19,15 +19,22 @@ const skippedDirs = new Set([
 ]);
 const checkedExtensions = new Set(['.js', '.css', '.html', '.mjs', '.cjs']);
 
-const largeFileAllowlist = {
+const splitReviewNotes = {
   'app/index.html': 'Single-window Electron shell; split only with a renderer component extraction.',
   'app/scripts/self-check.js': 'Central contract harness; split after stable domain test groups are defined.',
+  'app/src/main/speciesReferenceService.js': 'Reference lookup service with provider normalization; split by provider after interface contracts stabilize.',
+  'app/src/renderer/app.js': 'Renderer coordinator with feature binding; split after module event boundaries are stable.',
   'app/src/renderer/features/basemap/index.js': 'Basemap workflow module with UI wiring and provider rules.',
+  'app/src/renderer/features/maintenance/index.js': 'Maintenance workflow module with diagnostics and repair actions.',
   'app/src/renderer/features/stats/index.js': 'Statistics center UI module scheduled for gradual section extraction.',
   'app/src/renderer/features/stats/statsResearch.js': 'Pure statistics and export helpers kept together for formula consistency.',
   'app/src/renderer/features/theme/index.js': 'Theme editor workflow module with preview and persistence wiring.',
+  'app/src/renderer/i18n/en.js': 'English UI dictionary; split by feature after key ownership is stabilized.',
+  'app/src/renderer/i18n/zh.js': 'Chinese UI dictionary; split by feature after key ownership is stabilized.',
   'app/src/renderer/styles/10-core-components.css': 'Shared component CSS bundle; split with design token stabilization.',
-  'app/src/renderer/styles/40-workspace-basemap.css': 'Workspace and basemap CSS bundle; split with renderer view extraction.'
+  'app/src/renderer/styles/20-theme-layouts.css': 'Theme and layout CSS bundle; split after theme token names stabilize.',
+  'app/src/renderer/styles/40-workspace-basemap.css': 'Workspace and basemap CSS bundle; split with renderer view extraction.',
+  'app/src/renderer/styles/70-vibeui-design-md.css': 'Design adaptation CSS bundle; split after the adapted pattern set is stable.'
 };
 
 function normalizeRelative(filePath) {
@@ -68,13 +75,16 @@ for (const filePath of walk(repoRoot)) {
   }
   if (lines > splitReviewLimit) {
     oversized.push({ relativePath, lines });
+    if (!splitReviewNotes[relativePath]) {
+      errors.push(`${relativePath} has ${lines} lines and needs a split-review reason`);
+    }
   }
-  if (lines > hardLimit && !largeFileAllowlist[relativePath]) {
+  if (lines > hardLimit && !splitReviewNotes[relativePath]) {
     errors.push(`${relativePath} has ${lines} lines and needs a split plan or allowlist reason`);
   }
 }
 
-for (const [relativePath, reason] of Object.entries(largeFileAllowlist)) {
+for (const [relativePath, reason] of Object.entries(splitReviewNotes)) {
   if (!fs.existsSync(path.join(repoRoot, relativePath))) {
     errors.push(`large-file allowlist target is missing: ${relativePath}`);
   }
@@ -91,7 +101,7 @@ if (warnings.length) {
 if (oversized.length) {
   console.log('files above split-review threshold:');
   oversized.forEach(item => {
-    const reason = largeFileAllowlist[item.relativePath] || 'review required';
+    const reason = splitReviewNotes[item.relativePath];
     console.log(`- ${item.relativePath}: ${item.lines} lines (${reason})`);
   });
 }

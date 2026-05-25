@@ -177,6 +177,7 @@ function checkRequiredFiles() {
     'docs/TYPE_SYSTEM_PLAN.md',
     'docs/SQLITE_SCHEMA.md',
     'docs/SQLITE_GUIDE.md',
+    'docs/SQLITE_READINESS.md',
     'docs/JSON_SQLITE_EXCHANGE.md',
     'docs/DATA_MIGRATION_PLAN.md',
     'docs/DEV_GUIDE.md',

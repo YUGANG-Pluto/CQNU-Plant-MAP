@@ -53,6 +53,7 @@
 - [ ] Current JSON storage is documented as active.
 - [ ] File size governance passes with documented reasons for legacy large files.
 - [ ] SQLite exchange planning documents are present, while runtime conversion remains disabled until separately implemented.
+- [ ] SQLite readiness checklist identifies ready, planned, and not implemented gates.
 - [ ] Database structure changes remain deferred unless a separate migration task is approved.
 
 ## Release

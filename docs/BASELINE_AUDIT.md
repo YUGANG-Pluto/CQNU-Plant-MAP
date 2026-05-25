@@ -35,6 +35,7 @@ Audit date: 2026-05-19
 - No project migration was introduced.
 - No IPC channel or Electron security boundary was changed.
 - No user operation workflow was changed.
+- SQLite readiness is tracked as documentation and verification state only; no runtime database feature is enabled.
 
 ## Known Follow-Up Items
 

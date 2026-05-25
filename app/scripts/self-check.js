@@ -1668,6 +1668,7 @@ function testRepositoryHygieneContract() {
     'TYPE_SYSTEM_PLAN.md',
     'SQLITE_SCHEMA.md',
     'SQLITE_GUIDE.md',
+    'SQLITE_READINESS.md',
     'JSON_SQLITE_EXCHANGE.md',
     'DATA_MIGRATION_PLAN.md',
     'DEV_GUIDE.md',
@@ -1742,6 +1743,8 @@ function testDocumentationUpdateContract() {
   assert.ok(fileSizePolicy.includes('Over 1000'));
   assert.ok(fileSizePolicy.includes('Allowlist required'));
   assert.ok(fileSizePolicy.includes('npm run check:size'));
+  assert.ok(fileSizePolicy.includes('Current Split Review Notes'));
+  assert.ok(fileSizePolicy.includes('app/src/renderer/app.js'));
 
   const typePlan = readWorkspaceDoc('TYPE_SYSTEM_PLAN.md');
   assert.ok(typePlan.includes('checkJs'));
@@ -1755,6 +1758,12 @@ function testDocumentationUpdateContract() {
   const sqliteGuide = readWorkspaceDoc('SQLITE_GUIDE.md');
   assert.ok(sqliteGuide.includes('Convert JSON to SQLite'));
   assert.ok(sqliteGuide.includes('Planned'));
+
+  const sqliteReadiness = readWorkspaceDoc('SQLITE_READINESS.md');
+  assert.ok(sqliteReadiness.includes('SQLite remains a planned optional local data layer'));
+  assert.ok(sqliteReadiness.includes('JSON to SQLite converter'));
+  assert.ok(sqliteReadiness.includes('Not implemented'));
+  assert.ok(sqliteReadiness.includes('Backup-before-conversion'));
 
   const exchangePlan = readWorkspaceDoc('JSON_SQLITE_EXCHANGE.md');
   assert.ok(exchangePlan.includes('JSON To SQLite'));
