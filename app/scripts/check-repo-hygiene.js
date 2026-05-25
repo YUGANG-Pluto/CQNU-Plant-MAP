@@ -175,6 +175,7 @@ function checkRequiredFiles() {
     'docs/DATA_SCHEMA.md',
     'docs/FILE_SIZE_POLICY.md',
     'docs/TYPE_SYSTEM_PLAN.md',
+    'docs/SQLITE_DEPENDENCY_DECISION.md',
     'docs/SQLITE_SCHEMA.md',
     'docs/SQLITE_GUIDE.md',
     'docs/SQLITE_READINESS.md',

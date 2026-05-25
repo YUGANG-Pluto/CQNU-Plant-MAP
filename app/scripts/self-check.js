@@ -1555,6 +1555,11 @@ function testSqliteExchangeModelContract() {
   const source = fs.readFileSync(path.join(process.cwd(), 'src/main/sqliteExchangeModel.js'), 'utf8');
   assert.ok(!source.includes("require('fs')"), 'SQLite exchange phase 1 must not write files');
   assert.ok(!source.includes('better-sqlite3'), 'SQLite exchange phase 1 must not add runtime database dependency');
+  const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
+  ['better-sqlite3', 'sqlite3', 'sql.js'].forEach(name => {
+    assert.ok(!packageJson.dependencies?.[name], `${name} must not be installed before runtime SQLite implementation`);
+    assert.ok(!packageJson.devDependencies?.[name], `${name} must not be installed before runtime SQLite implementation`);
+  });
 
   const project = {
     settings: {
@@ -1791,6 +1796,7 @@ function testRepositoryHygieneContract() {
     'DATA_SCHEMA.md',
     'FILE_SIZE_POLICY.md',
     'TYPE_SYSTEM_PLAN.md',
+    'SQLITE_DEPENDENCY_DECISION.md',
     'SQLITE_SCHEMA.md',
     'SQLITE_GUIDE.md',
     'SQLITE_READINESS.md',
@@ -1817,6 +1823,7 @@ function testRepositoryHygieneContract() {
   assert.ok(readWorkspaceDoc('RELEASE_CHECKLIST.md').includes('npm run dist'));
   assert.ok(readWorkspaceDoc('SECURITY_MODEL.md').includes('contextIsolation'));
   assert.ok(readWorkspaceDoc('IPC_CONTRACT.md').includes('window:openExternal'));
+  assert.ok(readWorkspaceDoc('IPC_CONTRACT.md').includes('Future Storage Conversion Boundary'));
   [
     '.github/workflows/ci.yml',
     '.github/CODEOWNERS',
@@ -1876,6 +1883,14 @@ function testDocumentationUpdateContract() {
   assert.ok(typePlan.includes('checkJs'));
   assert.ok(typePlan.includes('Do not convert the whole renderer in one pass'));
 
+  const dependencyDecision = readWorkspaceDoc('SQLITE_DEPENDENCY_DECISION.md');
+  assert.ok(dependencyDecision.includes('No SQLite dependency is currently installed'));
+  assert.ok(dependencyDecision.includes('better-sqlite3'));
+  assert.ok(dependencyDecision.includes('sqlite3'));
+  assert.ok(dependencyDecision.includes('sql.js'));
+  assert.ok(dependencyDecision.includes('Renderer code must not receive'));
+  assert.ok(dependencyDecision.includes('storage:conversionPreflight'));
+
   const sqliteSchema = readWorkspaceDoc('SQLITE_SCHEMA.md');
   assert.ok(sqliteSchema.includes('SQLite is a planned optional local data layer'));
   assert.ok(sqliteSchema.includes('No SQLite database file, migration script, or conversion command'));
@@ -1889,6 +1904,7 @@ function testDocumentationUpdateContract() {
 
   const sqliteReadiness = readWorkspaceDoc('SQLITE_READINESS.md');
   assert.ok(sqliteReadiness.includes('SQLite remains a planned optional local data layer'));
+  assert.ok(sqliteReadiness.includes('SQLite dependency decision documented'));
   assert.ok(sqliteReadiness.includes('JSON to SQLite table model'));
   assert.ok(sqliteReadiness.includes('Conversion report model'));
   assert.ok(sqliteReadiness.includes('Backup preflight plan'));

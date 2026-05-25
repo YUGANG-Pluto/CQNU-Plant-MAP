@@ -108,3 +108,11 @@ Species reference suggestions are temporary until the user chooses to apply them
 | `window:openExternal` | `window.openExternal(payload)` | `{ url }` | `{ opened, url }` |
 
 External opening is limited to `http:` and `https:` URLs.
+
+## Future Storage Conversion Boundary
+
+SQLite runtime work is not currently exposed through IPC. If storage conversion is implemented later, it must stay behind narrow main-process business commands.
+
+Renderer code must not receive SQL execution, raw database connections, absolute database paths, or file handles.
+
+Potential future commands are limited to conversion preflight, JSON-to-SQLite conversion, SQLite-to-JSON export, and report retrieval. Those commands must reuse trusted project-directory checks and must return stable success/error objects.

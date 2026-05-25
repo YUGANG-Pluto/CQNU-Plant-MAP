@@ -15,6 +15,7 @@ This checklist is used to decide when SQLite conversion work can start without w
 | SQLite target schema documented | Ready | `SQLITE_SCHEMA.md` defines planned tables and compatibility rules. |
 | JSON/SQLite exchange plan documented | Ready | `JSON_SQLITE_EXCHANGE.md` defines conversion directions and reports. |
 | User-facing SQLite status documented | Ready | `SQLITE_GUIDE.md` states SQLite is planned and not required for current workflows. |
+| SQLite dependency decision documented | Ready | `SQLITE_DEPENDENCY_DECISION.md` defines preferred dependency, fallback, install probe, and IPC boundary. |
 | File size governance active | Ready | `npm run check:size` is included in `npm run verify`. |
 | Repository hygiene active | Ready | `npm run check:repo` requires the planning documents and verification scripts. |
 | Runtime self-check active | Ready | `npm run self-check` covers core storage, backup, export, security, statistics, and species reference contracts. |
@@ -39,6 +40,7 @@ SQLite runtime implementation should not start until the following are part of t
 5. Conversion report generation.
 6. Round-trip self-check or tests.
 7. User-facing failure and rollback messages.
+8. Dependency install and package probe for the selected SQLite package.
 
 ## Non-Goals For The Current State
 

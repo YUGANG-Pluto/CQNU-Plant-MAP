@@ -33,3 +33,7 @@ The application currently stores project data in local JSON files under the trus
 | Convert SQLite to JSON | Planned |
 | Run SQLite schema checks | Planned |
 
+## Dependency Status
+
+`SQLITE_DEPENDENCY_DECISION.md` records the dependency direction for a future SQLite runtime. No SQLite package is currently installed, and current JSON workflows do not require a database dependency.
+
