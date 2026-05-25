@@ -22,6 +22,22 @@ This adapter is not a runtime converter and does not create `.db`, `.sqlite`, or
 
 The adapter is covered by independent Node unit tests with synthetic fixtures in `app/tests/fixtures/`.
 
+## Temporary Database Round Trip
+
+`app/src/main/sqliteConversionService.js` is a readiness-only conversion service for temporary databases. It takes the current table model, writes it into a temporary SQLite database, reads it back into table rows, and restores JSON.
+
+`npm run db:test-conversion` runs this check with synthetic fixtures. It verifies:
+
+- schema creation in a temporary database;
+- JSON to SQLite table insertion;
+- SQLite table read-back;
+- restored JSON equality;
+- unknown field preservation;
+- taxonomy candidate summary preservation;
+- cleanup of the temporary database directory.
+
+The command does not read an active project folder, write `information/data.db`, register IPC, or enable runtime migration UI.
+
 ## Current Conversion Report Model
 
 The current codebase can generate a neutral conversion report from the in-memory table model. The report includes:
@@ -97,4 +113,4 @@ Round-trip tests should verify:
 
 ## Not Implemented Yet
 
-The current application does not include runtime conversion UI, SQLite schema creation, or database migration commands.
+The current application does not include runtime conversion UI, project database migration commands, or a user-facing storage switch.

@@ -149,7 +149,7 @@ function checkPackageMetadata() {
     fail('package.json private must be true');
   }
 
-  ['check:syntax', 'check:size', 'check:repo', 'self-check', 'verify', 'db:check-schema'].forEach(scriptName => {
+  ['check:syntax', 'check:size', 'check:repo', 'self-check', 'verify', 'db:check-schema', 'db:test-conversion'].forEach(scriptName => {
     if (!packageJson.scripts || !packageJson.scripts[scriptName]) {
       fail(`package.json missing script ${scriptName}`);
     }
@@ -215,8 +215,10 @@ function checkRequiredFiles() {
     'app/scripts/self-check.js',
     'app/scripts/sqlite-dependency-probe.js',
     'app/scripts/check-sqlite-schema.js',
+    'app/scripts/test-sqlite-conversion.js',
     'app/tests/unit/sqliteExchangeModel.test.js',
     'app/tests/unit/sqliteSchemaService.test.js',
+    'app/tests/unit/sqliteConversionService.test.js',
     'app/tests/unit/pathGuard.test.js',
     'app/tests/integration/projectStore.test.js',
     'app/tests/integration/backupService.test.js',
@@ -228,6 +230,7 @@ function checkRequiredFiles() {
     'app/tests/fixtures/json-project-unknown-fields/points.json',
     'app/src/main/sqliteExchangeModel.js',
     'app/src/main/sqliteSchemaService.js',
+    'app/src/main/sqliteConversionService.js',
     'app/src/main/securityPolicy.js',
     'app/src/shared/types/project.d.ts',
     'app/src/shared/types/zone.d.ts',

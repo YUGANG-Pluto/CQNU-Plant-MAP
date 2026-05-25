@@ -37,6 +37,7 @@ Package metadata and local dependency behavior were checked on 2026-05-25 with t
 | Parameterized query | Pass: insert and select use prepared statements. |
 | Close and cleanup | Pass: probe closes the database and removes the temporary directory. |
 | Schema readiness check | Pass: `db:check-schema` creates the planned tables in a temporary database and removes the temporary directory. |
+| Temporary conversion test | Pass: `db:test-conversion` round-trips synthetic JSON fixtures through a temporary database and removes the temporary directory. |
 | Node ABI diagnostic | Not a runtime gate: Node CLI loading can fail after rebuilding the native module for Electron ABI. |
 | Installer packaging | Pass: `npm run dist` completes with `better-sqlite3` native dependency rebuild. |
 | Packaged app runtime DB load | Not exercised: no packaged runtime conversion service exists yet. |

@@ -69,6 +69,21 @@ The schema service currently validates:
 
 The checker verifies required tables and representative columns, including taxonomy fields and compatibility payload columns. It uses `better-sqlite3` only in the main-process readiness path and does not expose a renderer database API.
 
+## Current Temporary Conversion Test
+
+`app/src/main/sqliteConversionService.js` provides a temporary JSON/SQLite round-trip readiness service. It writes the in-memory table model into a temporary SQLite database, reads it back into the same table model shape, and restores JSON for equality checks.
+
+`npm run db:test-conversion` runs this service against synthetic fixtures only. The command:
+
+- creates the database under the system temporary directory;
+- writes no project database;
+- changes no project JSON files;
+- validates schema tables before reading back;
+- verifies JSON equality after SQLite round-trip;
+- deletes the temporary database before exit.
+
+This is not a user-facing conversion feature and does not register a renderer API.
+
 ## Compatibility Rules
 
 - JSON projects must remain readable.

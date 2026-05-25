@@ -31,7 +31,8 @@ This checklist is used to decide when SQLite conversion work can start without w
 | JSON to SQLite converter | Not implemented | No runtime conversion command, database writer, or UI exists. |
 | SQLite to JSON exporter | Not implemented | No runtime conversion command, database reader, or UI exists. |
 | SQLite schema checker | Ready | `db:check-schema` creates a temporary schema database, validates planned tables and representative columns, then deletes the temporary files. |
-| Runtime conversion tests | Not implemented | Runtime database conversion tests should be added with the converter. |
+| Temporary JSON/SQLite conversion test | Ready | `db:test-conversion` writes synthetic JSON fixtures through a temporary SQLite database and verifies JSON equality after read-back. |
+| Runtime conversion tests | Not implemented | User-facing conversion tests should be added with the runtime converter. |
 | Typecheck command | Not implemented | Type declarations exist, but no `tsconfig.json` or `typecheck` script is active. |
 
 ## Gate Before Runtime SQLite Work
@@ -56,3 +57,4 @@ SQLite runtime implementation should not start until the following are part of t
 - The current table-model round-trip is a verification aid, not a database writer.
 - The current conversion report and backup preflight plan are data-only readiness aids.
 - The current schema checker is a temporary database readiness aid, not a project database writer.
+- The current temporary conversion test writes only synthetic fixtures to a temporary database and is not a project migration feature.

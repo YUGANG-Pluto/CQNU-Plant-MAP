@@ -37,6 +37,7 @@ Current project data is JSON-based. Missing optional fields are normalized at lo
 
 - `npm run verify` passes.
 - `npm run db:check-schema` passes.
+- `npm run db:test-conversion` passes.
 - The in-memory JSON/table-model round-trip check passes.
 - The conversion report and backup preflight plan checks pass.
 - Dedicated conversion tests exist.

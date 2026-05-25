@@ -11,6 +11,7 @@ const fileWrite = require('../src/main/fileWrite');
 const logger = require('../src/main/logger');
 const maintenanceService = require('../src/main/maintenanceService');
 const speciesReferenceService = require('../src/main/speciesReferenceService');
+const sqliteConversionService = require('../src/main/sqliteConversionService');
 const sqliteExchangeModel = require('../src/main/sqliteExchangeModel');
 const sqliteSchemaService = require('../src/main/sqliteSchemaService');
 const statsResearch = require('../src/renderer/features/stats/statsResearch');
@@ -1568,10 +1569,18 @@ function testSqliteExchangeModelContract() {
   assert.ok(probeSource.includes('prepare('));
   const schemaSource = fs.readFileSync(path.join(process.cwd(), 'src/main/sqliteSchemaService.js'), 'utf8');
   const schemaCheckSource = fs.readFileSync(path.join(process.cwd(), 'scripts/check-sqlite-schema.js'), 'utf8');
+  const conversionSource = fs.readFileSync(path.join(process.cwd(), 'src/main/sqliteConversionService.js'), 'utf8');
+  const conversionCheckSource = fs.readFileSync(path.join(process.cwd(), 'scripts/test-sqlite-conversion.js'), 'utf8');
   assert.ok(schemaSource.includes('CREATE TABLE IF NOT EXISTS'));
   assert.ok(schemaSource.includes('better-sqlite3'));
   assert.ok(schemaSource.includes('os.tmpdir()'));
   assert.ok(schemaCheckSource.includes('checkSchemaInTemporaryDatabase'));
+  assert.ok(conversionSource.includes('runTemporaryJsonSqliteRoundTrip'));
+  assert.ok(conversionSource.includes('writeModelToDatabase'));
+  assert.ok(conversionSource.includes('readModelFromDatabase'));
+  assert.ok(conversionSource.includes('os.tmpdir()'));
+  assert.ok(conversionSource.includes('better-sqlite3'));
+  assert.ok(conversionCheckSource.includes('runTemporaryJsonSqliteRoundTrip'));
   assert.deepStrictEqual(sqliteSchemaService.getExpectedTables(), [
     'project_settings',
     'zones',
@@ -1586,6 +1595,14 @@ function testSqliteExchangeModelContract() {
     sqliteSchemaService.validateSchemaTableNames(sqliteSchemaService.getExpectedTables()).ok,
     true
   );
+  assert.deepStrictEqual(sqliteConversionService.getConversionTableNames(), [
+    'project_settings',
+    'zones',
+    'points',
+    'phenology_entries',
+    'images',
+    'taxonomy_candidates'
+  ]);
 
   const model = sqliteExchangeModel.buildSqliteModelFromJsonProject({
     settings: { language: 'zh' },
@@ -1699,6 +1716,7 @@ function testRepositoryHygieneContract() {
     'sqlite:probe:electron',
     'sqlite:probe:node',
     'db:check-schema',
+    'db:test-conversion',
     'verify'
   ].forEach(scriptName => assert.ok(packageJson.scripts[scriptName], `package script missing ${scriptName}`));
   assert.ok(packageJson.scripts.verify.includes('check:size'), 'verify must include file size governance');
@@ -1774,9 +1792,11 @@ function testRepositoryHygieneContract() {
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-repo-hygiene.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'sqlite-dependency-probe.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-sqlite-schema.js')));
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'test-sqlite-conversion.js')));
   [
     'tests/unit/sqliteExchangeModel.test.js',
     'tests/unit/sqliteSchemaService.test.js',
+    'tests/unit/sqliteConversionService.test.js',
     'tests/unit/pathGuard.test.js',
     'tests/integration/projectStore.test.js',
     'tests/integration/backupService.test.js',
@@ -1785,6 +1805,7 @@ function testRepositoryHygieneContract() {
   ].forEach(fileName => assert.ok(fs.existsSync(path.join(process.cwd(), fileName)), `${fileName} must exist`));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'src/main/sqliteExchangeModel.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'src/main/sqliteSchemaService.js')));
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'src/main/sqliteConversionService.js')));
   [
     'project.d.ts',
     'zone.d.ts',
@@ -1837,6 +1858,7 @@ function testDocumentationUpdateContract() {
   assert.ok(dependencyDecision.includes('better-sqlite3 dependency probe is active'));
   assert.ok(dependencyDecision.includes('Probe Result'));
   assert.ok(dependencyDecision.includes('Electron native rebuild'));
+  assert.ok(dependencyDecision.includes('Temporary conversion test'));
   assert.ok(dependencyDecision.includes('better-sqlite3'));
   assert.ok(dependencyDecision.includes('sqlite3'));
   assert.ok(dependencyDecision.includes('sql.js'));
@@ -1849,13 +1871,16 @@ function testDocumentationUpdateContract() {
   assert.ok(sqliteSchema.includes('taxonomy_candidates'));
   assert.ok(sqliteSchema.includes('Current In-Memory Model'));
   assert.ok(sqliteSchema.includes('Current Schema Service'));
+  assert.ok(sqliteSchema.includes('Current Temporary Conversion Test'));
   assert.ok(sqliteSchema.includes('npm run db:check-schema'));
+  assert.ok(sqliteSchema.includes('npm run db:test-conversion'));
   assert.ok(sqliteSchema.includes('conversion report and backup preflight plan'));
 
   const sqliteGuide = readWorkspaceDoc('SQLITE_GUIDE.md');
   assert.ok(sqliteGuide.includes('Convert JSON to SQLite'));
   assert.ok(sqliteGuide.includes('Planned'));
   assert.ok(sqliteGuide.includes('Run SQLite schema checks'));
+  assert.ok(sqliteGuide.includes('Run temporary JSON/SQLite conversion tests'));
   assert.ok(sqliteGuide.includes('Ready'));
 
   const sqliteReadiness = readWorkspaceDoc('SQLITE_READINESS.md');
@@ -1863,6 +1888,7 @@ function testDocumentationUpdateContract() {
   assert.ok(sqliteReadiness.includes('SQLite dependency decision documented'));
   assert.ok(sqliteReadiness.includes('SQLite dependency probe result'));
   assert.ok(sqliteReadiness.includes('SQLite schema checker'));
+  assert.ok(sqliteReadiness.includes('Temporary JSON/SQLite conversion test'));
   assert.ok(sqliteReadiness.includes('JSON to SQLite table model'));
   assert.ok(sqliteReadiness.includes('Conversion report model'));
   assert.ok(sqliteReadiness.includes('Backup preflight plan'));
@@ -1876,12 +1902,15 @@ function testDocumentationUpdateContract() {
   assert.ok(exchangePlan.includes('Current Backup Preflight Plan'));
   assert.ok(exchangePlan.includes('JSON To SQLite'));
   assert.ok(exchangePlan.includes('SQLite To JSON'));
+  assert.ok(exchangePlan.includes('Temporary Database Round Trip'));
+  assert.ok(exchangePlan.includes('db:test-conversion'));
   assert.ok(exchangePlan.includes('unknown field preservation'));
 
   const migrationPlan = readWorkspaceDoc('DATA_MIGRATION_PLAN.md');
   assert.ok(migrationPlan.includes('Existing JSON projects remain valid'));
   assert.ok(migrationPlan.includes('A backup is required'));
   assert.ok(migrationPlan.includes('schema check'));
+  assert.ok(migrationPlan.includes('db:test-conversion'));
 
   const architecture = readWorkspaceDoc('ARCHITECTURE.md');
   assert.ok(architecture.includes('source-link and token validation documented'));
@@ -1893,7 +1922,9 @@ function testDocumentationUpdateContract() {
 
   const testingGuide = readWorkspaceDoc('TESTING_GUIDE.md');
   assert.ok(testingGuide.includes('npm run db:check-schema'));
+  assert.ok(testingGuide.includes('npm run db:test-conversion'));
   assert.ok(testingGuide.includes('temporary schema database'));
+  assert.ok(testingGuide.includes('temporary conversion database'));
   [
     'Species Reference Link And Token Smoke Test',
     'system default browser opens the target page',
