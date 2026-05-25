@@ -46,6 +46,16 @@ const DEFAULT_POINT_FIELDS = Object.freeze({
   zoneRef: '',
   plantNameCn: '',
   plantNameSci: '',
+  family: '',
+  genus: '',
+  identificationStatus: 'draft',
+  taxonomySource: 'unknown',
+  taxonomyMatchedName: '',
+  taxonomyConfidence: null,
+  taxonomyConfidenceLabel: 'unknown',
+  taxonomyVerificationStatus: 'unverified',
+  taxonomyUpdatedAt: '',
+  taxonomyCandidatesSummary: [],
   lat: NaN,
   lng: NaN,
   selectedPhenologyId: ''
@@ -166,6 +176,16 @@ function normalizePointFields(point) {
     lng: Number(point.lng),
     plantNameCn: String(point.plantNameCn || '').trim(),
     plantNameSci: String(point.plantNameSci || '').trim(),
+    family: String(point.family || '').trim(),
+    genus: String(point.genus || '').trim(),
+    identificationStatus: String(point.identificationStatus || 'draft').trim(),
+    taxonomySource: String(point.taxonomySource || 'unknown').trim(),
+    taxonomyMatchedName: String(point.taxonomyMatchedName || '').trim(),
+    taxonomyConfidence: Number.isFinite(Number(point.taxonomyConfidence)) ? Number(point.taxonomyConfidence) : null,
+    taxonomyConfidenceLabel: String(point.taxonomyConfidenceLabel || 'unknown').trim(),
+    taxonomyVerificationStatus: String(point.taxonomyVerificationStatus || 'unverified').trim(),
+    taxonomyUpdatedAt: String(point.taxonomyUpdatedAt || '').trim(),
+    taxonomyCandidatesSummary: Array.isArray(point.taxonomyCandidatesSummary) ? point.taxonomyCandidatesSummary.slice(0, 5) : [],
     pointId: String(point.pointId || '').trim()
   };
 }

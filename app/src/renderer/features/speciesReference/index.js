@@ -154,6 +154,7 @@ function syncSpeciesReferenceApplyControls(suggestion) {
   [
     ui.speciesReferenceApplySci,
     ui.speciesReferenceApplyCommon,
+    ui.speciesReferenceApplyTaxonomy,
     ui.speciesReferenceAppendNote,
     ui.btnPreviewSpeciesReferenceImage,
     ui.btnApplySpeciesReference
@@ -164,6 +165,7 @@ function syncSpeciesReferenceApplyControls(suggestion) {
   if (!hasSuggestion) {
     if (ui.speciesReferenceApplySci) ui.speciesReferenceApplySci.checked = false;
     if (ui.speciesReferenceApplyCommon) ui.speciesReferenceApplyCommon.checked = false;
+    if (ui.speciesReferenceApplyTaxonomy) ui.speciesReferenceApplyTaxonomy.checked = false;
     if (ui.speciesReferenceAppendNote) ui.speciesReferenceAppendNote.checked = false;
     if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
     return;
@@ -178,6 +180,14 @@ function syncSpeciesReferenceApplyControls(suggestion) {
   if (ui.speciesReferenceApplyCommon) {
     ui.speciesReferenceApplyCommon.checked = !!suggestion.commonName && (!currentCommon || suggestion.commonName !== currentCommon);
     ui.speciesReferenceApplyCommon.disabled = !suggestion.commonName;
+  }
+  if (ui.speciesReferenceApplyTaxonomy) {
+    const classification = suggestion.classification || {};
+    const currentFamily = String(ui.familyInput?.value || getSelectedPoint()?.family || '').trim();
+    const currentGenus = String(ui.genusInput?.value || getSelectedPoint()?.genus || '').trim();
+    const hasTaxonomy = !!(classification.family || classification.genus);
+    ui.speciesReferenceApplyTaxonomy.checked = hasTaxonomy && (!currentFamily || !currentGenus);
+    ui.speciesReferenceApplyTaxonomy.disabled = !hasTaxonomy;
   }
   if (ui.speciesReferenceAppendNote) ui.speciesReferenceAppendNote.checked = hasReferenceDetails(suggestion);
   if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
@@ -266,6 +276,7 @@ function recommendationText(suggestion) {
   const fields = [];
   if (suggestion?.scientificName && suggestion.scientificName !== (point?.plantNameSci || '')) fields.push(t('plantNameSci'));
   if (suggestion?.commonName && suggestion.commonName !== (point?.plantNameCn || '')) fields.push(t('plantNameCn'));
+  if (suggestion?.classification?.family || suggestion?.classification?.genus) fields.push(`${t('speciesReferenceFamily')} / ${t('speciesReferenceGenus')}`);
   if (hasReferenceDetails(suggestion)) fields.push(t('plantNote'));
   return fields.length
     ? `${t('speciesReferenceRecommendedFields')}: ${fields.join(' / ')}. ${t('speciesReferenceUnmappedToNote')}`
@@ -482,8 +493,9 @@ async function applySpeciesReferenceSuggestion() {
 
   const useSci = !!ui.speciesReferenceApplySci?.checked && !!suggestion.scientificName;
   const useCommon = !!ui.speciesReferenceApplyCommon?.checked && !!suggestion.commonName;
+  const useTaxonomy = !!ui.speciesReferenceApplyTaxonomy?.checked && !!(suggestion.classification?.family || suggestion.classification?.genus);
   const appendNote = !!ui.speciesReferenceAppendNote?.checked;
-  if (!useSci && !useCommon && !appendNote) return showAlert(t('speciesReferenceNoFieldSelected'));
+  if (!useSci && !useCommon && !useTaxonomy && !appendNote) return showAlert(t('speciesReferenceNoFieldSelected'));
 
   const ok = await openConfirmDialog({
     title: t('speciesReferenceApply'),
@@ -507,6 +519,55 @@ async function applySpeciesReferenceSuggestion() {
     const note = buildSpeciesReferenceNote(suggestion);
     entry.note = [entry.note, note].filter(Boolean).join('\n');
     if (ui.plantNote) ui.plantNote.value = entry.note;
+  }
+  if (useTaxonomy) {
+    const hasExisting = !!String(point.family || '').trim() || !!String(point.genus || '').trim();
+    const locked = point.taxonomyVerificationStatus === 'manuallyVerified';
+    let overwrite = false;
+    if (hasExisting || locked) {
+      overwrite = await openConfirmDialog({
+        title: t('taxonomyApplySuggestion'),
+        message: t('taxonomyOverwriteConfirm'),
+        acceptLabel: t('taxonomyApplySuggestion'),
+        cancelLabel: t('cancelAction')
+      });
+      if (!overwrite) return;
+    }
+    const classification = suggestion.classification || {};
+    const provider = suggestion.source === 'gbif' ? 'GBIF' : 'iNaturalist';
+    const patch = {
+      family: classification.family || '',
+      genus: classification.genus || '',
+      taxonomySource: provider,
+      taxonomyMatchedName: suggestion.scientificName || suggestion.canonicalName || '',
+      taxonomyConfidence: Number.isFinite(Number(suggestion.confidence)) ? Number(suggestion.confidence) : null,
+      taxonomyConfidenceLabel: 'medium',
+      taxonomyVerificationStatus: 'suggested',
+      identificationStatus: 'needReview',
+      taxonomyUpdatedAt: new Date().toISOString(),
+      taxonomyCandidatesSummary: [{
+        provider,
+        matchedName: suggestion.scientificName || suggestion.canonicalName || '',
+        scientificName: suggestion.scientificName || '',
+        canonicalName: suggestion.canonicalName || '',
+        family: classification.family || '',
+        genus: classification.genus || '',
+        rank: suggestion.rank || '',
+        score: Number.isFinite(Number(suggestion.confidence)) ? Number(suggestion.confidence) : null,
+        matchType: suggestion.matchType || '',
+        occurrenceWeight: 1
+      }]
+    };
+    if (typeof applyTaxonomyFieldsToPoint === 'function') {
+      applyTaxonomyFieldsToPoint(point, patch, { overwrite });
+    } else {
+      if (patch.family && (overwrite || !point.family)) point.family = patch.family;
+      if (patch.genus && (overwrite || !point.genus)) point.genus = patch.genus;
+      point.taxonomySource = patch.taxonomySource;
+      point.taxonomyVerificationStatus = patch.taxonomyVerificationStatus;
+      point.taxonomyUpdatedAt = patch.taxonomyUpdatedAt;
+    }
+    refreshTaxonomyPanel?.(point);
   }
 
   syncPointSummary(point);

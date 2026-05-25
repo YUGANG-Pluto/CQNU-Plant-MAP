@@ -676,6 +676,7 @@ function bindRecycleAndEditorEvents() {
   ui.pointEditorModal?.querySelector('.layer-modal-backdrop')?.addEventListener('click', closePointEditor);
   ui.btnAddPhenology?.addEventListener('click', addPhenologyEntry);
   ui.btnDeletePhenology?.addEventListener('click', deletePhenologyEntry);
+  if (typeof bindTaxonomyEvents === 'function') bindTaxonomyEvents();
 }
 
 function bindThemeEvents() {

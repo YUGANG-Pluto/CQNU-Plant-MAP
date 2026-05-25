@@ -260,6 +260,12 @@ function metricLabel(metric) {
     phenologyStateShare: ['statsMetricPhenologyStateShare', 'Phenology state share (%)'],
     imageCompleteness: ['statsMetricImageCompleteness', 'Image completeness (%)'],
     phenologyCoverage: ['statsMetricPhenologyCoverage', 'Phenology coverage (%)'],
+    familyCompleteness: ['statsMetricFamilyCompleteness', 'Family completeness (%)'],
+    genusCompleteness: ['statsMetricGenusCompleteness', 'Genus completeness (%)'],
+    taxonomySuggestedCount: ['statsMetricTaxonomySuggested', 'Automatic suggestions'],
+    taxonomyUnverifiedCount: ['statsMetricTaxonomyUnverified', 'Unverified taxonomy records'],
+    manuallyVerifiedCount: ['statsMetricTaxonomyVerified', 'Manually verified records'],
+    doubtfulTaxonomyCount: ['statsMetricTaxonomyDoubtful', 'Doubtful taxonomy records'],
     qualityScore: ['statsColumnQualityScore', 'Quality score'],
     newPointCount: ['statsColumnNewPoints', 'New points'],
     cumulativePointCount: ['statsColumnCumulativePoints', 'Cumulative points'],
@@ -285,14 +291,14 @@ function metricLabel(metric) {
 }
 
 function metricAxisLabel(metric) {
-  if (['percentage', 'phenologyRecordShare', 'phenologyStateShare', 'imageCompleteness', 'phenologyCoverage'].includes(metric)) return statsUi('statsAxisRate', 'Rate (%)');
+  if (['percentage', 'phenologyRecordShare', 'phenologyStateShare', 'imageCompleteness', 'phenologyCoverage', 'familyCompleteness', 'genusCompleteness'].includes(metric)) return statsUi('statsAxisRate', 'Rate (%)');
   if (['hillQ0', 'hillQ1', 'hillQ2'].includes(metric)) return statsUi('statsAxisEffectiveSpecies', 'Effective species number');
   if (['shannon', 'simpsonDominance', 'simpsonDiversity', 'pielou', 'margalef', 'menhinick', 'bergerParker', 'evenness'].includes(metric)) return statsUi('statsAxisMetricValue', 'Metric value');
   return statsUi('statsAxisCount', 'Count');
 }
 
 function metricDecimals(metric) {
-  if (['percentage', 'phenologyRecordShare', 'phenologyStateShare', 'imageCompleteness', 'phenologyCoverage'].includes(metric)) return 1;
+  if (['percentage', 'phenologyRecordShare', 'phenologyStateShare', 'imageCompleteness', 'phenologyCoverage', 'familyCompleteness', 'genusCompleteness'].includes(metric)) return 1;
   if (['shannon', 'simpsonDominance', 'simpsonDiversity', 'pielou', 'margalef', 'menhinick', 'bergerParker', 'hillQ0', 'hillQ1', 'hillQ2', 'evenness'].includes(metric)) return 3;
   return 0;
 }
@@ -655,6 +661,35 @@ function renderZoneAnalysis(stats) {
 
 function renderTaxonomy(stats) {
   const taxonomy = stats.taxonomicComposition;
+  const completeness = stats.taxonomyCompleteness || {};
+  const kpis = renderKpiGrid([
+    { label: metricLabel('familyCompleteness'), value: completeness.familyCompleteness || 0, digits: 1 },
+    { label: metricLabel('genusCompleteness'), value: completeness.genusCompleteness || 0, digits: 1 },
+    { label: metricLabel('taxonomySuggestedCount'), value: completeness.taxonomySuggestedCount || 0, digits: 0 },
+    { label: metricLabel('taxonomyUnverifiedCount'), value: completeness.taxonomyUnverifiedCount || 0, digits: 0 },
+    { label: metricLabel('manuallyVerifiedCount'), value: completeness.manuallyVerifiedCount || 0, digits: 0 },
+    { label: metricLabel('doubtfulTaxonomyCount'), value: completeness.doubtfulTaxonomyCount || 0, digits: 0 }
+  ]);
+  const taxonomyTables = renderChartGrid([
+    renderChartCard(
+      statsUi('statsTaxonomySourceTitle', 'Taxonomy source distribution'),
+      renderStatsTable([
+        { key: 'label', label: statsUi('taxonomySource', 'Taxonomy source') },
+        { key: 'count', label: metricLabel('count') },
+        { key: 'percentage', label: metricLabel('percentage'), digits: 1 }
+      ], completeness.taxonomySourceSummary || []),
+      { fullscreen: false }
+    ),
+    renderChartCard(
+      statsUi('statsTaxonomyVerificationTitle', 'Taxonomy verification distribution'),
+      renderStatsTable([
+        { key: 'label', label: statsUi('taxonomyVerificationStatus', 'Taxonomy verification') },
+        { key: 'count', label: metricLabel('count') },
+        { key: 'percentage', label: metricLabel('percentage'), digits: 1 }
+      ], completeness.taxonomyVerificationSummary || []),
+      { fullscreen: false }
+    )
+  ]);
   const charts = renderChartGrid([
     renderOptionalChart('topFamilyBar', renderChartCard(statsChartLabel('topFamilyBar'), renderBarList(taxonomy.topFamilies, 'count', item => item.label, 'topFamilyBar'), { chartId: 'topFamilyBar', caption: taxonomy.note })),
     renderOptionalChart('topGenusBar', renderChartCard(statsChartLabel('topGenusBar'), renderBarList(taxonomy.topGenera, 'count', item => item.label, 'topGenusBar'), { chartId: 'topGenusBar', caption: taxonomy.note })),
@@ -662,7 +697,7 @@ function renderTaxonomy(stats) {
     renderOptionalChart('familyDonut', renderChartCard(statsChartLabel('familyDonut'), renderPieLike(taxonomy.familyComposition.slice(0, 8).map(row => [row.label, row.count]), true, 'familyDonut'), { chartId: 'familyDonut', className: 'donut-card', caption: statsUi('statsCaptionDistribution', 'Distribution based on current records.') })),
     renderOptionalChart('genusDonut', renderChartCard(statsChartLabel('genusDonut'), renderPieLike(taxonomy.genusComposition.slice(0, 8).map(row => [row.label, row.count]), true, 'genusDonut'), { chartId: 'genusDonut', className: 'donut-card', caption: statsUi('statsCaptionDistribution', 'Distribution based on current records.') }))
   ]);
-  return renderStatsPage(`<p class="stats-chart-note subtle stats-wide-panel">${escapeHtml(taxonomy.note)}</p>${charts}`, { groups: ['taxonomy'] });
+  return renderStatsPage(`${renderChartCard(statsUi('statsTaxonomyCompletenessTitle', 'Taxonomy completeness and verification'), `${kpis}<p class="stats-chart-note subtle">${escapeHtml(completeness.note || '')}</p>`, { fullscreen: false })}<p class="stats-chart-note subtle stats-wide-panel">${escapeHtml(taxonomy.note)}</p>${taxonomyTables}${charts}`, { groups: ['taxonomy'] });
 }
 
 function renderLifeOrigin(stats) {
@@ -796,7 +831,9 @@ function renderExport(stats) {
         renderExportButton('zone_species_list', 'statsExportZoneSpecies', 'Zone species list', 'csv', !hasStats),
         renderExportButton('diversity_metrics', 'statsExportDiversity', 'Diversity metrics table', 'csv', !stats.zoneSummaries.length),
         renderExportButton('phenology_statistics', 'statsExportPhenology', 'Phenology statistics table', 'csv', !stats.phenologyStats.totalPhenologyRecords),
-        renderExportButton('data_quality', 'statsExportQuality', 'Data quality report', 'csv', !hasStats)
+        renderExportButton('data_quality', 'statsExportQuality', 'Data quality report', 'csv', !hasStats),
+        renderExportButton('taxonomy_completion_report', 'statsExportTaxonomyCompletion', 'Taxonomy completion report', 'csv', !hasStats),
+        renderExportButton('taxonomy_candidates', 'statsExportTaxonomyCandidates', 'Taxonomy candidate summary', 'csv', !hasStats)
       ])}
       ${renderExportGroup(statsUi('statsExportGroupMatrices', 'Similarity and heatmap data'), [
         renderExportButton('zone_jaccard_matrix', 'statsExportJaccard', 'Jaccard zone similarity matrix', 'csv', !stats.heatmapMatrices.jaccard.rows.length),
@@ -869,6 +906,12 @@ function projectSummaryLabel(key) {
     speciesRichness: ['statsKpiSpecies', 'Valid species'],
     familyRichness: ['statsColumnFamilyRichness', 'Families'],
     genusRichness: ['statsColumnGenusRichness', 'Genera'],
+    familyCompleteness: ['statsMetricFamilyCompleteness', 'Family completeness (%)'],
+    genusCompleteness: ['statsMetricGenusCompleteness', 'Genus completeness (%)'],
+    taxonomySuggestedCount: ['statsMetricTaxonomySuggested', 'Automatic suggestions'],
+    taxonomyUnverifiedCount: ['statsMetricTaxonomyUnverified', 'Unverified taxonomy records'],
+    manuallyVerifiedCount: ['statsMetricTaxonomyVerified', 'Manually verified records'],
+    doubtfulTaxonomyCount: ['statsMetricTaxonomyDoubtful', 'Doubtful taxonomy records'],
     imagePointCount: ['statsColumnImagePointCount', 'Image points'],
     imageCompleteness: ['statsMetricImageCompleteness', 'Image completeness (%)'],
     phenologyCount: ['statsColumnPhenologyCount', 'Phenology records'],
@@ -898,6 +941,66 @@ function rowsToLabeledCsv(columns, rows) {
     return output;
   });
   return window.StatsResearch.rowsToCsv(headers, outputRows);
+}
+
+function taxonomyReviewWarning(point) {
+  const warnings = [];
+  if (!String(point.family || '').trim()) warnings.push('missingFamily');
+  if (!String(point.genus || '').trim()) warnings.push('missingGenus');
+  if (['suggested', 'unverified'].includes(point.taxonomyVerificationStatus || 'unverified')) warnings.push('needsVerification');
+  if (point.taxonomyVerificationStatus === 'doubtful') warnings.push('doubtful');
+  return warnings.join('; ');
+}
+
+function taxonomyCompletionRows() {
+  return (state.points || []).map(point => {
+    const zoneId = point.zoneId || point.zoneRef || point.zone || '';
+    const family = String(point.family || '').trim();
+    const genus = String(point.genus || '').trim();
+    const status = point.taxonomyVerificationStatus || 'unverified';
+    return {
+      pointId: point.pointId || point.id || '',
+      zoneId,
+      zoneName: formatZoneDisplayName({ zoneId, zoneRef: point.zoneRef, zoneName: point.zoneName }),
+      chineseName: point.plantNameCn || point.chineseName || '',
+      scientificName: point.plantNameSci || point.scientificName || '',
+      family,
+      genus,
+      taxonomySource: point.taxonomySource || 'unknown',
+      taxonomyMatchedName: point.taxonomyMatchedName || '',
+      taxonomyConfidence: Number.isFinite(Number(point.taxonomyConfidence)) ? Number(point.taxonomyConfidence) : '',
+      taxonomyConfidenceLabel: point.taxonomyConfidenceLabel || 'unknown',
+      taxonomyVerificationStatus: status,
+      taxonomyUpdatedAt: point.taxonomyUpdatedAt || '',
+      hasFamily: family ? 'true' : 'false',
+      hasGenus: genus ? 'true' : 'false',
+      needsReview: status === 'manuallyVerified' ? 'false' : 'true',
+      candidateCount: Array.isArray(point.taxonomyCandidatesSummary) ? point.taxonomyCandidatesSummary.length : 0,
+      warning: taxonomyReviewWarning({ ...point, family, genus, taxonomyVerificationStatus: status })
+    };
+  });
+}
+
+function taxonomyCandidateRows() {
+  return (state.points || []).flatMap(point => {
+    const candidates = Array.isArray(point.taxonomyCandidatesSummary) ? point.taxonomyCandidatesSummary : [];
+    const queryName = point.plantNameSci || point.plantNameCn || point.scientificName || point.chineseName || '';
+    return candidates.map(candidate => ({
+      pointId: point.pointId || point.id || '',
+      queryName,
+      provider: candidate.provider || '',
+      matchedName: candidate.matchedName || '',
+      scientificName: candidate.scientificName || '',
+      canonicalName: candidate.canonicalName || '',
+      family: candidate.family || '',
+      genus: candidate.genus || '',
+      rank: candidate.rank || '',
+      score: Number.isFinite(Number(candidate.score)) ? Number(candidate.score) : '',
+      matchType: candidate.matchType || '',
+      occurrenceWeight: Number.isFinite(Number(candidate.occurrenceWeight)) ? Number(candidate.occurrenceWeight) : '',
+      selected: (candidate.family && candidate.family === point.family) || (candidate.genus && candidate.genus === point.genus) ? 'true' : 'false'
+    }));
+  });
 }
 
 function exportRowsForKey(stats, key) {
@@ -976,6 +1079,53 @@ function exportRowsForKey(stats, key) {
         { key: 'count', label: metricLabel('count') },
         { key: 'percentage', label: statsUi('statsMetricIssueShare', 'Issue share (%)'), digits: 1 }
       ], stats.dataQuality.issueRows)
+    };
+  }
+  if (key === 'taxonomy_completion_report') {
+    const headers = [
+      'pointId',
+      'zoneId',
+      'zoneName',
+      'chineseName',
+      'scientificName',
+      'family',
+      'genus',
+      'taxonomySource',
+      'taxonomyMatchedName',
+      'taxonomyConfidence',
+      'taxonomyConfidenceLabel',
+      'taxonomyVerificationStatus',
+      'taxonomyUpdatedAt',
+      'hasFamily',
+      'hasGenus',
+      'needsReview',
+      'candidateCount',
+      'warning'
+    ];
+    return {
+      defaultPath: engine.buildExportFileName('taxonomy_completion_report', 'csv'),
+      content: engine.rowsToCsv(headers, taxonomyCompletionRows())
+    };
+  }
+  if (key === 'taxonomy_candidates') {
+    const headers = [
+      'pointId',
+      'queryName',
+      'provider',
+      'matchedName',
+      'scientificName',
+      'canonicalName',
+      'family',
+      'genus',
+      'rank',
+      'score',
+      'matchType',
+      'occurrenceWeight',
+      'selected'
+    ];
+    return {
+      defaultPath: engine.buildExportFileName('taxonomy_candidates', 'csv'),
+      content: engine.rowsToCsv(headers, taxonomyCandidateRows())
     };
   }
   return null;

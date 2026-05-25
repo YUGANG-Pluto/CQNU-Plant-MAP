@@ -59,6 +59,10 @@
  * @property {number} lng
  * @property {string} plantNameCn
  * @property {string} plantNameSci
+ * @property {string} family
+ * @property {string} genus
+ * @property {string} taxonomySource
+ * @property {string} taxonomyVerificationStatus
  * @property {PhenologyEntry[]} phenologyEntries
  */
 
@@ -151,6 +155,15 @@ const EXPORT_COLUMNS_ZH = [
   ['pointId', '点位编号'],
   ['plantNameCn', '中文名'],
   ['plantNameSci', '学名'],
+  ['family', '科'],
+  ['genus', '属'],
+  ['identificationStatus', '鉴定状态'],
+  ['taxonomySource', '科属来源'],
+  ['taxonomyMatchedName', '科属匹配名称'],
+  ['taxonomyConfidence', '科属建议置信度'],
+  ['taxonomyConfidenceLabel', '科属置信等级'],
+  ['taxonomyVerificationStatus', '科属核验状态'],
+  ['taxonomyUpdatedAt', '科属更新时间'],
   ['observer', '记录者'],
   ['surveyDate', '调查日期'],
   ['habitat', '微生境'],

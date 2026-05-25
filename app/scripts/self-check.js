@@ -73,22 +73,31 @@ function readRepositoryPath(fileName) {
 }
 
 const expectedCsvHeader = [
-  '分区编号',
-  '分区名称',
-  '点位编号',
-  '中文名',
-  '学名',
-  '记录者',
-  '调查日期',
-  '微生境',
-  '多度/数量',
-  '生活型',
-  '物候状态',
-  '来源属性',
-  '备注',
-  '图片文件',
-  '经度',
-  '纬度'
+  '\u5206\u533a\u7f16\u53f7',
+  '\u5206\u533a\u540d\u79f0',
+  '\u70b9\u4f4d\u7f16\u53f7',
+  '\u4e2d\u6587\u540d',
+  '\u5b66\u540d',
+  '\u79d1',
+  '\u5c5e',
+  '\u9274\u5b9a\u72b6\u6001',
+  '\u79d1\u5c5e\u6765\u6e90',
+  '\u79d1\u5c5e\u5339\u914d\u540d\u79f0',
+  '\u79d1\u5c5e\u5efa\u8bae\u7f6e\u4fe1\u5ea6',
+  '\u79d1\u5c5e\u7f6e\u4fe1\u7b49\u7ea7',
+  '\u79d1\u5c5e\u6838\u9a8c\u72b6\u6001',
+  '\u79d1\u5c5e\u66f4\u65b0\u65f6\u95f4',
+  '\u8bb0\u5f55\u8005',
+  '\u8c03\u67e5\u65e5\u671f',
+  '\u5fae\u751f\u5883',
+  '\u591a\u5ea6/\u6570\u91cf',
+  '\u751f\u6d3b\u578b',
+  '\u7269\u5019\u72b6\u6001',
+  '\u6765\u6e90\u5c5e\u6027',
+  '\u5907\u6ce8',
+  '\u56fe\u7247\u6587\u4ef6',
+  '\u7ecf\u5ea6',
+  '\u7eac\u5ea6'
 ];
 
 function expectAppError(fn, code, message) {
@@ -280,6 +289,9 @@ function testNormalize() {
   assert.strictEqual(point.floweringState, '盛花期');
   assert.deepStrictEqual(point.images, ['a.jpg', 'b.jpg']);
   assert.ok(!Object.prototype.hasOwnProperty.call(point, 'schemaVersion'));
+  assert.strictEqual(point.family, '');
+  assert.strictEqual(point.genus, '');
+  assert.strictEqual(point.taxonomyVerificationStatus, 'unverified');
 
   assert.deepStrictEqual(decodeCoordPair([106.3, 29.6]), [29.6, 106.3]);
   assert.deepStrictEqual(decodeCoordPair([29.6, 106.3]), [29.6, 106.3]);
@@ -1163,6 +1175,9 @@ function testResearchStatsFormulaContract() {
   assert.ok(built.dataQuality.issues.missingScientificName >= 1);
   assert.ok(built.dataQuality.issues.missingCoordinate >= 1);
   assert.ok(built.dataQuality.duplicateCandidates.length >= 1);
+  assert.ok(built.taxonomyCompleteness.familyCompleteness > 0);
+  assert.ok(Array.isArray(built.taxonomySourceSummary));
+  assert.ok(Array.isArray(built.taxonomyVerificationSummary));
   assert.ok(built.heatmapMatrices.jaccard.cells.length > 0);
 
   const csv = statsResearch.matrixToCsv(built.heatmapMatrices.jaccard);
@@ -1171,6 +1186,9 @@ function testResearchStatsFormulaContract() {
   assert.ok(json.generatedAt);
   assert.ok(json.metricDefinitions.length);
   assert.ok(json.formulaNotes.length);
+  assert.ok(json.taxonomyCompleteness);
+  assert.ok(json.familyComposition);
+  assert.ok(json.genusComposition);
   const svg = statsResearch.renderHeatmapSvg(built.heatmapMatrices.jaccard);
   assert.ok(svg.includes('<svg'));
   assert.ok(svg.includes('<rect'));
@@ -1322,6 +1340,7 @@ function testSpeciesReferenceContract() {
     'speciesReferenceCommonInput',
     'btnRunSpeciesReference',
     'speciesReferenceImageTokenInput',
+    'speciesReferenceApplyTaxonomy',
     'btnOpenInatTokenPage',
     'btnRunSpeciesImageCompare',
     'speciesReferenceImageCompareStatus',
@@ -1335,12 +1354,31 @@ function testSpeciesReferenceContract() {
     assert.ok(elementsSource.includes(`'${id}'`), `${id} must be registered`);
   });
 
+  [
+    'familyInput',
+    'genusInput',
+    'identificationStatus',
+    'taxonomySource',
+    'taxonomyVerificationStatus',
+    'btnSuggestTaxonomy',
+    'btnApplyTaxonomySuggestion',
+    'btnVerifyTaxonomy',
+    'btnDoubtfulTaxonomy',
+    'taxonomyCandidateList'
+  ].forEach(id => {
+    assert.ok(html.includes(`id="${id}"`), `${id} must exist in taxonomy point UI`);
+    assert.ok(elementsSource.includes(`'${id}'`), `${id} must be registered`);
+  });
+
   assert.ok(html.indexOf('./src/renderer/features/phenology/index.js') < html.indexOf('./src/renderer/features/speciesReference/index.js'));
   assert.ok(html.indexOf('./src/renderer/features/speciesReference/index.js') < html.indexOf('./src/renderer/app.js'));
   assert.ok(appSource.includes('bindSpeciesReferenceEvents'));
+  assert.ok(appSource.includes('bindTaxonomyEvents'));
   assert.ok(preloadSource.includes("referenceQuery: payload => invoke('species:referenceQuery'"));
+  assert.ok(preloadSource.includes("suggestTaxonomy: payload => invoke('species:suggestTaxonomy'"));
   assert.ok(preloadSource.includes("imageCompare: payload => invoke('species:imageCompare'"));
   assert.ok(ipcSource.includes("handle('species:referenceQuery'"));
+  assert.ok(ipcSource.includes("handle('species:suggestTaxonomy'"));
   assert.ok(ipcSource.includes("handle('species:imageCompare'"));
   assert.ok(ipcSource.includes("require('./speciesReferenceService')"));
   assert.ok(serviceSource.includes('https://api.gbif.org/v1'));
@@ -1376,6 +1414,8 @@ function testSpeciesReferenceContract() {
   assert.ok(rendererSource.includes('runSpeciesImageCompare'));
   assert.ok(rendererSource.includes('speciesReferenceImageTokenInput'));
   assert.ok(rendererSource.includes('species-reference-compared-thumb'));
+  assert.ok(rendererSource.includes('speciesReferenceApplyTaxonomy'));
+  assert.ok(fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/phenology/index.js'), 'utf8').includes('applyTaxonomyFieldsToPoint'));
   assert.ok(projectSource.includes('data-i18n-placeholder'));
   assert.ok(rendererSource.includes('await persistProject()'), 'reference suggestions may persist only after user apply');
   assert.ok(!rendererSource.includes('localStorage'));
@@ -1407,8 +1447,15 @@ function testSpeciesReferenceContract() {
       'speciesReferenceImageCompareFailed',
       'speciesReferenceComparedImage',
       'speciesReferenceClassification',
+      'speciesReferenceApplyTaxonomy',
       'speciesReferenceRecommendedFields',
-      'speciesReferenceUnmappedToNote'
+      'speciesReferenceUnmappedToNote',
+      'taxonomySuggest',
+      'taxonomyApplySuggestion',
+      'taxonomyStatusManuallyVerified',
+      'taxonomySourceBoth',
+      'statsExportTaxonomyCompletion',
+      'statsExportTaxonomyCandidates'
     ].forEach(key => assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`));
   });
 
@@ -1457,6 +1504,28 @@ function testSpeciesReferenceContract() {
   assert.ok(rendererSource.includes('photoAttribution'));
   assert.strictEqual(speciesReferenceService.dedupeSuggestions([gbif, gbif, inat]).length, 2);
 
+  const taxonomyCandidates = speciesReferenceService.normalizeTaxonomyCandidates([
+    { source: 'gbif', scientificName: 'Osmanthus fragrans', canonicalName: 'Osmanthus fragrans', rank: 'species', confidence: 95, classification: { family: 'Oleaceae', genus: 'Osmanthus' } },
+    { source: 'inaturalist', scientificName: 'Osmanthus fragrans', canonicalName: 'Osmanthus fragrans', rank: 'species', confidence: 0.91, classification: { family: 'Oleaceae', genus: 'Osmanthus' } },
+    { source: 'gbif', scientificName: 'Prunus mume', canonicalName: 'Prunus mume', rank: 'species', confidence: 70, classification: { family: 'Rosaceae', genus: 'Prunus' } }
+  ], 'Osmanthus fragrans', 'Osmanthus fragrans');
+  const taxonomySummary = speciesReferenceService.summarizeTaxonomySuggestion({ scientificName: 'Osmanthus fragrans' }, taxonomyCandidates, 'Osmanthus fragrans');
+  assert.strictEqual(taxonomySummary.suggestedFamily, 'Oleaceae');
+  assert.strictEqual(taxonomySummary.suggestedGenus, 'Osmanthus');
+  assert.ok(taxonomySummary.candidates.length <= 5);
+  const tieSummary = speciesReferenceService.summarizeTaxonomySuggestion({}, speciesReferenceService.normalizeTaxonomyCandidates([
+    { source: 'gbif', scientificName: 'A', classification: { family: 'Oleaceae', genus: 'Osmanthus' } },
+    { source: 'inaturalist', scientificName: 'B', classification: { family: 'Rosaceae', genus: 'Prunus' } }
+  ], '', ''), '');
+  assert.strictEqual(tieSummary.suggestedFamily, '');
+  assert.strictEqual(tieSummary.confidenceLabel, 'unknown');
+  const lockedSummary = speciesReferenceService.summarizeTaxonomySuggestion({
+    existingFamily: 'Oleaceae',
+    taxonomyVerificationStatus: 'manuallyVerified',
+    allowOverwriteManual: false
+  }, taxonomyCandidates, 'Osmanthus fragrans');
+  assert.strictEqual(lockedSummary.overwriteBlocked, true);
+
   [
     'queryMissingScientificName',
     'queryMissingCommonName',
@@ -1472,6 +1541,13 @@ function testSpeciesReferenceContract() {
   assert.ok(querySource.includes('openSpeciesReferenceCenter()'));
   assert.ok(querySource.includes('query-reference-btn'));
   assert.ok(appSource.includes('ui.queryCompleteness'));
+}
+
+async function testTaxonomySuggestionRuntimeContract() {
+  const empty = await speciesReferenceService.suggestTaxonomyFromReferences({});
+  assert.strictEqual(empty.ok, false);
+  assert.strictEqual(empty.candidates.length, 0);
+  assert.ok(empty.warnings.length);
 }
 
 function testReadmeIsUserManual() {
@@ -1708,6 +1784,7 @@ async function main() {
   testReducedInnerHtmlSurface();
   testMaintenanceCenterContract();
   testSpeciesReferenceContract();
+  await testTaxonomySuggestionRuntimeContract();
   testReadmeIsUserManual();
   testElectronSecurityContract();
   testRepositoryHygieneContract();

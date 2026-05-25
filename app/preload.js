@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld('plantApp', {
   },
   species: {
     referenceQuery: payload => invoke('species:referenceQuery', payload),
+    suggestTaxonomy: payload => invoke('species:suggestTaxonomy', payload),
     imageCompare: payload => invoke('species:imageCompare', payload)
   },
   window: {

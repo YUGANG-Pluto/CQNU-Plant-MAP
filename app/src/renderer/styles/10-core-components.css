@@ -1729,6 +1729,51 @@ input[type="range"] {
   margin: 12px 0;
 }
 
+.taxonomy-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.taxonomy-actions {
+  align-items: center;
+}
+
+.taxonomy-inheritance-note {
+  line-height: 1.5;
+}
+
+.taxonomy-candidate-list {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.taxonomy-candidate-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.taxonomy-candidate-card > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.taxonomy-candidate-card strong,
+.taxonomy-candidate-card span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .species-reference-image-compare {
   display: grid;
   grid-template-columns: minmax(220px, 1fr) auto minmax(180px, 0.75fr);

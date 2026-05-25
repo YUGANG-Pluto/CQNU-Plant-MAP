@@ -23,6 +23,8 @@
     { id: 'missingImage', label: '缺失图片' },
     { id: 'missingPhenology', label: '缺失物候记录' },
     { id: 'unreviewed', label: '未复核记录' },
+    { id: 'unverifiedTaxonomy', label: '未核验科属' },
+    { id: 'doubtfulTaxonomy', label: '存疑科属' },
     { id: 'duplicateCandidate', label: '疑似重复点位' },
     { id: 'abnormalCoordinate', label: '坐标异常' },
     { id: 'invalidZoneRef', label: '分区引用无效' },
@@ -191,6 +193,9 @@
   function getSpeciesMeta(point = {}) {
     const scientificName = cleanString(firstValue(point, ['scientificName', 'plantNameSci', 'latinName', 'sciName', '学名']), '');
     const chineseName = cleanString(firstValue(point, ['chineseName', 'plantNameCn', 'commonName', 'name', '中文名']), '');
+    const entries = getPointPhenologyEntries(point);
+    const entryFamily = entries.map(entry => entry.family).find(value => !isBlank(value) && value !== MISSING_LABEL);
+    const entryGenus = entries.map(entry => entry.genus).find(value => !isBlank(value) && value !== MISSING_LABEL);
     const family = firstText(point, ['family', 'familyName', '科']);
     const genus = firstText(point, ['genus', 'genusName', '属']);
     const speciesKey = normalizeSpeciesKey(point);
@@ -198,8 +203,8 @@
       speciesKey,
       scientificName,
       chineseName,
-      family,
-      genus,
+      family: family === MISSING_LABEL ? (entryFamily || MISSING_LABEL) : family,
+      genus: genus === MISSING_LABEL ? (entryGenus || MISSING_LABEL) : genus,
       displayName: scientificName || chineseName || MISSING_LABEL,
       missingSpecies: speciesKey === MISSING_SPECIES
     };
@@ -240,6 +245,8 @@
       floweringState: cleanString(raw.floweringState || raw.label || raw.phenology || raw.phaseName, MISSING_LABEL),
       growthForm: firstText(raw, ['growthForm', 'lifeForm', '生活型']),
       cultivatedStatus: firstText(raw, ['nativeStatus', 'cultivatedStatus', 'origin', '来源属性']),
+      family: firstText(raw, ['family', 'familyName', '科']),
+      genus: firstText(raw, ['genus', 'genusName', '属']),
       speciesKey: cleanString(raw.speciesKey || '', ''),
       images: normalizeImagesArray(raw.images)
     };
@@ -266,6 +273,21 @@
     });
   }
 
+  function normalizeTaxonomyStatus(value) {
+    const text = cleanString(value, 'unverified');
+    return ['unverified', 'suggested', 'manuallyVerified', 'doubtful', 'rejected'].includes(text) ? text : 'unverified';
+  }
+
+  function normalizeTaxonomySource(value) {
+    const text = cleanString(value, 'unknown');
+    return ['manual', 'iNaturalist', 'GBIF', 'iNaturalist+GBIF', 'unknown'].includes(text) ? text : 'unknown';
+  }
+
+  function pointNeedsTaxonomyReview(point = {}) {
+    const status = normalizeTaxonomyStatus(point.taxonomyVerificationStatus);
+    return status === 'suggested' || status === 'unverified';
+  }
+
   function normalizePointForStats(point = {}, options = {}) {
     const meta = getSpeciesMeta(point);
     const entries = getPointPhenologyEntries(point);
@@ -288,6 +310,14 @@
       speciesLabel: meta.displayName,
       family: meta.family,
       genus: meta.genus,
+      identificationStatus: cleanString(point.identificationStatus || 'draft', 'draft'),
+      taxonomySource: normalizeTaxonomySource(point.taxonomySource),
+      taxonomyMatchedName: cleanString(point.taxonomyMatchedName || '', ''),
+      taxonomyConfidence: toFiniteNumber(point.taxonomyConfidence),
+      taxonomyConfidenceLabel: cleanString(point.taxonomyConfidenceLabel || 'unknown', 'unknown'),
+      taxonomyVerificationStatus: normalizeTaxonomyStatus(point.taxonomyVerificationStatus),
+      taxonomyUpdatedAt: cleanString(point.taxonomyUpdatedAt || '', ''),
+      taxonomyCandidatesSummary: Array.isArray(point.taxonomyCandidatesSummary) ? point.taxonomyCandidatesSummary.slice(0, 5) : [],
       growthForm: firstText(point, ['growthForm', 'lifeForm', '生活型']),
       origin: firstText(point, ['nativeStatus', 'cultivatedStatus', 'origin', '来源属性']),
       abundanceValue: getAbundanceValue(point, options.abundanceValueMode),
@@ -669,6 +699,8 @@
       missingImage: 0,
       missingPhenology: 0,
       unreviewed: 0,
+      unverifiedTaxonomy: 0,
+      doubtfulTaxonomy: 0,
       duplicateCandidate: duplicates.length,
       abnormalCoordinate: 0,
       invalidZoneRef: 0,
@@ -686,6 +718,8 @@
       if (!point.images.length) issues.missingImage += 1;
       if (!point.phenologyEntries.length) issues.missingPhenology += 1;
       if (!point.reviewed) issues.unreviewed += 1;
+      if ((point.family !== MISSING_LABEL || point.genus !== MISSING_LABEL) && pointNeedsTaxonomyReview(point)) issues.unverifiedTaxonomy += 1;
+      if (point.taxonomyVerificationStatus === 'doubtful') issues.doubtfulTaxonomy += 1;
       if (coordinateAbnormal(point)) issues.abnormalCoordinate += 1;
       if (zoneRefInvalid(point, aliases)) issues.invalidZoneRef += 1;
       if (imageRefInvalid(point)) issues.invalidImageRef += 1;
@@ -763,12 +797,19 @@
     const phenologyPointCount = normalizedPoints.filter(point => point.phenologyEntries.length).length;
     const phenologyCount = normalizedPoints.reduce((sum, point) => sum + point.phenologyEntries.length, 0);
     const quality = calculateDataQuality(zones, points, options);
+    const taxonomy = buildTaxonomyCompleteness(zones, points, options);
     return {
       zoneCount: Array.isArray(zones) ? zones.length : 0,
       pointCount: normalizedPoints.length,
       speciesRichness: species.size,
       familyRichness: families.size,
       genusRichness: genera.size,
+      familyCompleteness: taxonomy.familyCompleteness,
+      genusCompleteness: taxonomy.genusCompleteness,
+      taxonomySuggestedCount: taxonomy.taxonomySuggestedCount,
+      taxonomyUnverifiedCount: taxonomy.taxonomyUnverifiedCount,
+      manuallyVerifiedCount: taxonomy.manuallyVerifiedCount,
+      doubtfulTaxonomyCount: taxonomy.doubtfulTaxonomyCount,
       imagePointCount,
       imageCompleteness: percent(imagePointCount, normalizedPoints.length),
       phenologyCount,
@@ -793,6 +834,8 @@
       const duplicateCandidateCount = quality.duplicateCandidates.length;
       const imagePointCount = zonePoints.filter(point => point.images.length).length;
       const phenologyPointCount = zonePoints.filter(point => point.phenologyEntries.length).length;
+      const familyPointCount = zonePoints.filter(point => point.family !== MISSING_LABEL).length;
+      const genusPointCount = zonePoints.filter(point => point.genus !== MISSING_LABEL).length;
       return {
         zoneId: zone.id,
         zoneCode: zone.zoneId,
@@ -802,6 +845,12 @@
         speciesRichness: speciesCounts.size,
         familyRichness: new Set(zonePoints.filter(point => point.family !== MISSING_LABEL).map(point => point.family)).size,
         genusRichness: new Set(zonePoints.filter(point => point.genus !== MISSING_LABEL).map(point => point.genus)).size,
+        familyCompleteness: percent(familyPointCount, zonePoints.length),
+        genusCompleteness: percent(genusPointCount, zonePoints.length),
+        taxonomySuggestedCount: zonePoints.filter(point => point.taxonomyVerificationStatus === 'suggested').length,
+        taxonomyUnverifiedCount: zonePoints.filter(point => pointNeedsTaxonomyReview(point) && (point.family !== MISSING_LABEL || point.genus !== MISSING_LABEL)).length,
+        manuallyVerifiedCount: zonePoints.filter(point => point.taxonomyVerificationStatus === 'manuallyVerified').length,
+        doubtfulTaxonomyCount: zonePoints.filter(point => point.taxonomyVerificationStatus === 'doubtful').length,
         phenologyCount: zonePoints.reduce((sum, point) => sum + point.phenologyEntries.length, 0),
         imagePointCount,
         imageCompleteness: percent(imagePointCount, zonePoints.length),
@@ -841,6 +890,41 @@
   function buildCategoryComposition(points = [], field, options = {}) {
     const normalizedPoints = points.map(point => normalizePointForStats(point, options));
     return rowsFromCountMap(countBy(normalizedPoints, field, { weighted: options.abundanceValueMode }));
+  }
+
+  function buildTaxonomyCompleteness(zones = [], points = [], options = {}) {
+    const normalizedPoints = points.map(point => normalizePointForStats(point, options));
+    const total = normalizedPoints.length;
+    const hasFamily = normalizedPoints.filter(point => point.family !== MISSING_LABEL).length;
+    const hasGenus = normalizedPoints.filter(point => point.genus !== MISSING_LABEL).length;
+    const taxonomySuggestedCount = normalizedPoints.filter(point => point.taxonomyVerificationStatus === 'suggested').length;
+    const taxonomyUnverifiedCount = normalizedPoints.filter(point => pointNeedsTaxonomyReview(point) && (point.family !== MISSING_LABEL || point.genus !== MISSING_LABEL)).length;
+    const manuallyVerifiedCount = normalizedPoints.filter(point => point.taxonomyVerificationStatus === 'manuallyVerified').length;
+    const doubtfulTaxonomyCount = normalizedPoints.filter(point => point.taxonomyVerificationStatus === 'doubtful').length;
+    const candidatePointCount = normalizedPoints.filter(point => point.taxonomyCandidatesSummary.length).length;
+    const candidateCount = normalizedPoints.reduce((sum, point) => sum + point.taxonomyCandidatesSummary.length, 0);
+    const confidenceRows = rowsFromCountMap(countBy(normalizedPoints.filter(point => point.taxonomyConfidenceLabel), 'taxonomyConfidenceLabel'), total);
+    return {
+      totalRecords: total,
+      hasFamilyCount: hasFamily,
+      hasGenusCount: hasGenus,
+      missingFamilyCount: total - hasFamily,
+      missingGenusCount: total - hasGenus,
+      familyCompleteness: percent(hasFamily, total),
+      genusCompleteness: percent(hasGenus, total),
+      taxonomySuggestedCount,
+      taxonomyUnverifiedCount,
+      manuallyVerifiedCount,
+      doubtfulTaxonomyCount,
+      taxonomySourceSummary: rowsFromCountMap(countBy(normalizedPoints, 'taxonomySource'), total),
+      taxonomyVerificationSummary: rowsFromCountMap(countBy(normalizedPoints, 'taxonomyVerificationStatus'), total),
+      taxonomySuggestionSummary: {
+        candidatePointCount,
+        candidateCount,
+        confidenceRows
+      },
+      note: '科属由人工填写或第三方物种参考服务自动建议，自动建议需经人工核验后用于正式统计。'
+    };
   }
 
   function buildLifeFormComposition(points = [], options = {}) {
@@ -1107,6 +1191,7 @@
     const zoneSpeciesSets = buildZoneSpeciesSets(zones, points, options);
     const zoneSpeciesCounts = buildZoneSpeciesCounts(zones, points, options);
     const taxonomicComposition = buildTaxonomicComposition(points, options);
+    const taxonomyCompleteness = buildTaxonomyCompleteness(zones, points, options);
     const phenologyStats = buildPhenologyStats(zones, points, options);
     const dataQuality = calculateDataQuality(zones, points, options);
     const similarityMatrices = {
@@ -1129,6 +1214,12 @@
       dataScopeNotes: DATA_SCOPE_NOTES,
       zoneSummaries,
       taxonomicComposition,
+      taxonomyCompleteness,
+      taxonomySourceSummary: taxonomyCompleteness.taxonomySourceSummary,
+      taxonomyVerificationSummary: taxonomyCompleteness.taxonomyVerificationSummary,
+      taxonomySuggestionSummary: taxonomyCompleteness.taxonomySuggestionSummary,
+      familyComposition: taxonomicComposition.familyComposition,
+      genusComposition: taxonomicComposition.genusComposition,
       lifeFormComposition: buildLifeFormComposition(points, options),
       originComposition: buildOriginComposition(points, options),
       diversityMetrics: {
@@ -1246,6 +1337,14 @@
       '## 物候统计摘要',
       `- 物候记录总数：${stats.phenologyStats.totalPhenologyRecords}`,
       `- 有物候记录点位数：${stats.phenologyStats.phenologyPointCount}`,
+      '',
+      '## 科属完整率摘要',
+      `- 科完整率：${stats.taxonomyCompleteness?.familyCompleteness ?? 0}%`,
+      `- 属完整率：${stats.taxonomyCompleteness?.genusCompleteness ?? 0}%`,
+      `- 自动建议数量：${stats.taxonomyCompleteness?.taxonomySuggestedCount ?? 0}`,
+      `- 未核验科属记录：${stats.taxonomyCompleteness?.taxonomyUnverifiedCount ?? 0}`,
+      `- 存疑科属记录：${stats.taxonomyCompleteness?.doubtfulTaxonomyCount ?? 0}`,
+      '- 科属由第三方物种参考服务自动建议，并需经人工核验后用于正式统计。',
       '',
       '## 数据质量摘要',
       `- 质量评分：${stats.dataQuality.qualityScore}`,
@@ -1370,6 +1469,7 @@ ${legend}
     buildProjectSummary,
     buildZoneSummaries,
     buildTaxonomicComposition,
+    buildTaxonomyCompleteness,
     buildLifeFormComposition,
     buildOriginComposition,
     buildPhenologyStats,

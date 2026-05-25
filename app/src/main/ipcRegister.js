@@ -86,6 +86,7 @@ function registerIpc() {
 
   handle('maintenance:checkImageRefs', maintenanceService.checkImageRefs);
   handle('species:referenceQuery', speciesReferenceService.querySpeciesReference);
+  handle('species:suggestTaxonomy', speciesReferenceService.suggestTaxonomyFromReferences);
   handle('species:imageCompare', speciesReferenceService.querySpeciesImageCompare);
 }
 
