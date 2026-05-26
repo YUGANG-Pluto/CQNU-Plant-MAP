@@ -717,6 +717,9 @@ function testLoggerWritesAndCleansUp() {
     const readLog = logger.readLogFile({ name: recent.files[0].name });
     assert.ok(readLog.content.includes('renderer:test'));
     assert.strictEqual(readLog.name, recent.files[0].name);
+    assert.strictEqual(readLog.diagnosis.status, 'issues');
+    assert.ok(readLog.diagnosis.issueCount >= 1);
+    assert.strictEqual(logger.diagnoseLogContent('plain info line').status, 'pass');
 
     const oldLog = path.join(logDir, 'app-2000-01-01.log');
     fs.writeFileSync(oldLog, 'old');
@@ -1246,6 +1249,8 @@ function testMaintenanceCenterContract() {
     'btnStoragePreflight',
     'btnCreateSqliteStorage',
     'btnExportSqliteJson',
+    'btnRefreshStorageArtifacts',
+    'btnDeleteSelectedStorageArtifacts',
     'btnApplySafeMode',
     'btnExitSafeMode',
     'maintenanceSafeModeStatus',
@@ -1269,6 +1274,8 @@ function testMaintenanceCenterContract() {
     "invoke('log:exportDiagnostics'",
     "invoke('maintenance:checkImageRefs'",
     "invoke('storage:conversionPreflight'",
+    "invoke('storage:listArtifacts'",
+    "invoke('storage:deleteArtifacts'",
     "invoke('storage:createSqliteFromJson'",
     "invoke('storage:exportSqliteToJson'"
   ].forEach(fragment => assert.ok(preloadSource.includes(fragment), `preload missing ${fragment}`));
@@ -1282,11 +1289,14 @@ function testMaintenanceCenterContract() {
     "handle('log:exportDiagnostics'",
     "handle('maintenance:checkImageRefs'",
     "handle('storage:conversionPreflight'",
+    "handle('storage:listArtifacts'",
+    "handle('storage:deleteArtifacts'",
     "handle('storage:createSqliteFromJson'",
     "handle('storage:exportSqliteToJson'"
   ].forEach(fragment => assert.ok(ipcSource.includes(fragment), `IPC missing ${fragment}`));
   assert.ok(loggerSource.includes('function listRecentLogs'));
   assert.ok(loggerSource.includes('function readLogFile'));
+  assert.ok(loggerSource.includes('function diagnoseLogContent'));
   assert.ok(loggerSource.includes('function deleteLogFiles'));
   assert.ok(loggerSource.includes('function cleanupOldLogs'));
   assert.ok(maintenanceSource.includes('MAINTENANCE_SETTINGS_SCHEMA'));
@@ -1311,7 +1321,9 @@ function testMaintenanceCenterContract() {
     "'btnCreateSqliteStorage'",
     "'btnExportSqliteJson'",
     "'btnLoadSqliteStorage'",
-    "'btnLoadJsonStorage'"
+    "'btnLoadJsonStorage'",
+    "'btnRefreshStorageArtifacts'",
+    "'btnDeleteSelectedStorageArtifacts'"
   ].forEach(fragment => assert.ok(maintenanceSource.includes(fragment), `safe mode lock list missing ${fragment}`));
   assert.ok(mapSource.includes("isMaintenanceReadOnlyMode() && mode !== 'browse'"));
   assert.ok(mapSource.includes("guardMaintenanceReadOnlyAction('map-add-point')"));
@@ -1622,6 +1634,8 @@ function testSqliteExchangeModelContract() {
   assert.ok(storageSource.includes('SQLITE_DB_FILE'));
   assert.ok(storageCheckSource.includes('createSqliteFromJson'));
   assert.ok(storageCheckSource.includes('exportSqliteToJson'));
+  assert.ok(storageSource.includes('listStorageArtifacts'));
+  assert.ok(storageSource.includes('deleteStorageArtifacts'));
   assert.strictEqual(storageConversionService.SQLITE_DB_FILE, 'data.db');
   assert.strictEqual(storageConversionService.SQLITE_REPORT_FILE, 'sqlite-conversion-report.json');
   assert.deepStrictEqual(sqliteSchemaService.getExpectedTables(), [
@@ -1709,11 +1723,15 @@ function testElectronSecurityContract() {
   assert.ok(ipcSource.includes('assertTrustedIpcSender'));
   assert.ok(ipcSource.includes("handle('window:openExternal'"));
   assert.ok(ipcSource.includes("handle('storage:conversionPreflight'"));
+  assert.ok(ipcSource.includes("handle('storage:listArtifacts'"));
+  assert.ok(ipcSource.includes("handle('storage:deleteArtifacts'"));
   assert.ok(ipcSource.includes("handle('storage:createSqliteFromJson'"));
   assert.ok(ipcSource.includes("handle('storage:exportSqliteToJson'"));
   assert.ok(preloadSource.includes('contextBridge.exposeInMainWorld'));
   assert.ok(preloadSource.includes("invoke('window:openExternal'"));
   assert.ok(preloadSource.includes("invoke('storage:conversionPreflight'"));
+  assert.ok(preloadSource.includes("invoke('storage:listArtifacts'"));
+  assert.ok(preloadSource.includes("invoke('storage:deleteArtifacts'"));
   assert.ok(preloadSource.includes("invoke('storage:createSqliteFromJson'"));
   assert.ok(preloadSource.includes("invoke('storage:exportSqliteToJson'"));
   ['readFile', 'writeFile', 'deleteFile', 'exec('].forEach(fragment => {

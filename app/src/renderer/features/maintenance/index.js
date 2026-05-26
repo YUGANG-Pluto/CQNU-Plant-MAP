@@ -59,6 +59,8 @@ const SAFE_MODE_LOCKED_IDS = Object.freeze([
   'btnExportSqliteJson',
   'btnLoadSqliteStorage',
   'btnLoadJsonStorage',
+  'btnRefreshStorageArtifacts',
+  'btnDeleteSelectedStorageArtifacts',
   'btnApplySpeciesReference',
   'btnExportUiSettings',
   'btnImportUiSettings'
@@ -166,6 +168,13 @@ const SAFE_MODE_DYNAMIC_LOCKED_SELECTORS = Object.freeze([
 let maintenanceLastReport = null;
 let maintenanceLastLogSnapshot = null;
 let maintenanceSelectedLogName = '';
+let maintenanceSelectedLogNames = new Set();
+let maintenanceLastStorageInventory = null;
+const maintenanceSelectedStorageArtifacts = {
+  sqlite: false,
+  json: false,
+  backups: new Set()
+};
 let safeModeLockEventsBound = false;
 
 function cloneMaintenanceJson(value) {
@@ -671,24 +680,46 @@ function renderMaintenanceLogs(snapshot) {
   if (ui.maintenanceLogPreview && !maintenanceSelectedLogName) ui.maintenanceLogPreview.textContent = '';
   const files = snapshot?.files || [];
   const entries = snapshot?.entries || [];
-  ui.maintenanceLogSummary.textContent = `${files.length} files / ${entries.length} entries`;
+  ui.maintenanceLogSummary.textContent = `${files.length} files / ${entries.length} entries / ${maintenanceSelectedLogNames.size} selected`;
   if (ui.maintenanceLogFileList) {
     if (!files.length) {
       ui.maintenanceLogFileList.appendChild(listTextItem(maintenanceText('maintenanceNoLogs')));
     } else {
       files.forEach(file => {
-        const selected = file.name === maintenanceSelectedLogName;
-        const item = el('button', {
-          className: `maintenance-log-entry maintenance-log-file${selected ? ' is-selected' : ''}`,
-          type: 'button'
-        }, [
-          el('div', { className: 'maintenance-log-entry-title', text: file.name }),
-          el('div', { className: 'maintenance-log-entry-meta', text: `${file.size || 0} bytes / ${file.modifiedAt || ''}` })
-        ]);
-        item.addEventListener('click', () => {
+        const selectedForDelete = maintenanceSelectedLogNames.has(file.name);
+        const selectedForRead = file.name === maintenanceSelectedLogName;
+        const checkbox = el('input', {
+          title: maintenanceText('maintenanceSelectForDelete')
+        });
+        checkbox.type = 'checkbox';
+        checkbox.checked = selectedForDelete;
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            maintenanceSelectedLogNames.add(file.name);
+          } else {
+            maintenanceSelectedLogNames.delete(file.name);
+          }
+          renderMaintenanceLogs(maintenanceLastLogSnapshot);
+        });
+        const readButton = el('button', {
+          className: 'btn btn-soft maintenance-log-read-target',
+          text: file.name,
+          title: maintenanceText('maintenanceReadSelectedLog')
+        });
+        readButton.type = 'button';
+        readButton.addEventListener('click', () => {
           maintenanceSelectedLogName = file.name;
           renderMaintenanceLogs(maintenanceLastLogSnapshot);
         });
+        const item = el('div', {
+          className: `maintenance-log-entry maintenance-log-file${selectedForDelete ? ' is-selected' : ''}${selectedForRead ? ' is-read-selected' : ''}`
+        }, [
+          el('div', { className: 'maintenance-log-file-row' }, [
+            checkbox,
+            readButton
+          ]),
+          el('div', { className: 'maintenance-log-entry-meta', text: `${file.size || 0} bytes / ${file.modifiedAt || ''}` })
+        ]);
         ui.maintenanceLogFileList.appendChild(item);
       });
     }
@@ -708,6 +739,29 @@ function renderMaintenanceLogs(snapshot) {
   });
 }
 
+function formatLogDiagnosis(diagnosis) {
+  if (!diagnosis || diagnosis.status === 'pass') {
+    return [
+      `${maintenanceText('maintenanceLogDiagnosisTitle')}: PASS`,
+      maintenanceText('maintenanceLogDiagnosisPass')
+    ].join('\n');
+  }
+  const lines = [
+    `${maintenanceText('maintenanceLogDiagnosisTitle')}: ${maintenanceText('maintenanceLogDiagnosisIssues')} ${diagnosis.issueCount || 0}`,
+    `${maintenanceText('maintenanceLogDiagnosisLines')}: ${diagnosis.totalLines || 0}`
+  ];
+  if (diagnosis.hotScopes?.length) {
+    lines.push(`${maintenanceText('maintenanceLogDiagnosisScopes')}: ${diagnosis.hotScopes.map(item => `${item.scope}(${item.count})`).join(', ')}`);
+  }
+  (diagnosis.issues || []).slice(0, 8).forEach(issue => {
+    lines.push(`- [${issue.level}] ${issue.scope}: ${issue.message}`);
+  });
+  (diagnosis.suggestions || []).forEach(suggestion => {
+    lines.push(`${maintenanceText('maintenanceLogDiagnosisSuggestion')}: ${suggestion}`);
+  });
+  return lines.join('\n');
+}
+
 async function readSelectedMaintenanceLog() {
   if (!maintenanceSelectedLogName) {
     showAlert(maintenanceText('maintenanceSelectLogFirst'));
@@ -718,9 +772,13 @@ async function readSelectedMaintenanceLog() {
       name: maintenanceSelectedLogName
     }));
     if (ui.maintenanceLogPreview) {
-      ui.maintenanceLogPreview.textContent = result.truncated
+      const diagnosisText = formatLogDiagnosis(result.diagnosis);
+      const content = result.truncated
         ? `${maintenanceText('maintenanceLogTruncated')}\n${result.content || ''}`
         : result.content || '';
+      ui.maintenanceLogPreview.textContent = result.truncated
+        ? `${diagnosisText}\n\n--- LOG ---\n${content}`
+        : `${diagnosisText}\n\n--- LOG ---\n${content}`;
     }
   } catch (error) {
     handleUiError(error, 'maintenance:log-read', {
@@ -747,22 +805,26 @@ async function refreshMaintenanceLogs() {
 
 async function cleanupMaintenanceLogs() {
   if (guardMaintenanceReadOnlyAction('delete-selected-log')) return;
-  if (!maintenanceSelectedLogName) {
+  const selectedNames = [...maintenanceSelectedLogNames];
+  if (!selectedNames.length) {
     showAlert(maintenanceText('maintenanceSelectLogFirst'));
     return;
   }
   const confirmed = await openConfirmDialog({
     title: maintenanceText('maintenanceDeleteSelectedLogs'),
-    message: maintenanceSelectedLogName,
+    message: selectedNames.join('\n'),
     acceptLabel: maintenanceText('deleteNow'),
     cancelLabel: maintenanceText('cancelAction')
   });
   if (!confirmed) return;
   try {
     const result = await callIpc(window.plantApp.log.deleteLogs({
-      names: [maintenanceSelectedLogName]
+      names: selectedNames
     }));
-    maintenanceSelectedLogName = '';
+    if (maintenanceSelectedLogNames.has(maintenanceSelectedLogName)) {
+      maintenanceSelectedLogName = '';
+    }
+    maintenanceSelectedLogNames = new Set();
     if (ui.maintenanceLogPreview) ui.maintenanceLogPreview.textContent = '';
     await refreshMaintenanceLogs();
     showAlert(`${maintenanceText('maintenanceCleanupDone')} ${result.deleted || 0}`);
@@ -1080,6 +1142,183 @@ function renderStorageReport(report) {
   });
 }
 
+function storageArtifactLabel(kind, item = {}) {
+  if (kind === 'sqlite') return `${maintenanceText('maintenanceStorageCurrentSqlite')} / ${item.name || 'data.db'}`;
+  if (kind === 'json') return maintenanceText('maintenanceStorageCurrentJson');
+  return `${maintenanceText('maintenanceStorageBackup')}: ${item.name || ''}`;
+}
+
+function selectedStorageNames() {
+  const names = [];
+  if (maintenanceSelectedStorageArtifacts.sqlite) {
+    names.push(maintenanceText('maintenanceStorageCurrentSqlite'));
+  }
+  if (maintenanceSelectedStorageArtifacts.json) {
+    names.push(maintenanceText('maintenanceStorageCurrentJson'));
+  }
+  maintenanceSelectedStorageArtifacts.backups.forEach(name => {
+    names.push(`${maintenanceText('maintenanceStorageBackup')}: ${name}`);
+  });
+  return names;
+}
+
+function renderStorageArtifacts(inventory) {
+  if (!ui.maintenanceStorageArtifactList) return;
+  clearNode(ui.maintenanceStorageArtifactList);
+  if (!inventory) {
+    ui.maintenanceStorageArtifactList.appendChild(listTextItem(maintenanceText('maintenanceStorageArtifactsEmpty')));
+    return;
+  }
+
+  const rows = [];
+  if (inventory.sqliteDatabase?.exists) {
+    rows.push({
+      type: 'sqlite',
+      selected: maintenanceSelectedStorageArtifacts.sqlite,
+      title: storageArtifactLabel('sqlite', inventory.sqliteDatabase),
+      meta: `${inventory.sqliteDatabase.size || 0} bytes / ${inventory.sqliteDatabase.modifiedAt || ''}`
+    });
+  }
+  if (inventory.jsonFilesExist) {
+    const totalSize = (inventory.jsonFiles || []).reduce((sum, file) => sum + (file.size || 0), 0);
+    rows.push({
+      type: 'json',
+      selected: maintenanceSelectedStorageArtifacts.json,
+      title: storageArtifactLabel('json'),
+      meta: `${totalSize} bytes / settings.json, zones.json, points.json`
+    });
+  }
+  (inventory.backupFiles || []).forEach(file => {
+    rows.push({
+      type: 'backup',
+      name: file.name,
+      selected: maintenanceSelectedStorageArtifacts.backups.has(file.name),
+      title: storageArtifactLabel('backup', file),
+      meta: `${file.size || 0} bytes / ${file.modifiedAt || ''}`
+    });
+  });
+
+  if (!rows.length) {
+    ui.maintenanceStorageArtifactList.appendChild(listTextItem(maintenanceText('maintenanceStorageArtifactsEmpty')));
+    return;
+  }
+
+  rows.forEach(row => {
+    const checkbox = el('input', {
+      title: maintenanceText('maintenanceStorageSelectForDelete')
+    });
+    checkbox.type = 'checkbox';
+    checkbox.checked = row.selected;
+    checkbox.addEventListener('change', () => {
+      if (row.type === 'sqlite') {
+        maintenanceSelectedStorageArtifacts.sqlite = checkbox.checked;
+      } else if (row.type === 'json') {
+        maintenanceSelectedStorageArtifacts.json = checkbox.checked;
+      } else if (checkbox.checked) {
+        maintenanceSelectedStorageArtifacts.backups.add(row.name);
+      } else {
+        maintenanceSelectedStorageArtifacts.backups.delete(row.name);
+      }
+      renderStorageArtifacts(maintenanceLastStorageInventory);
+    });
+    ui.maintenanceStorageArtifactList.appendChild(el('div', {
+      className: `maintenance-log-entry maintenance-log-file${row.selected ? ' is-selected' : ''}`
+    }, [
+      el('div', { className: 'maintenance-log-file-row' }, [
+        checkbox,
+        el('div', { className: 'maintenance-log-entry-title', text: row.title })
+      ]),
+      el('div', { className: 'maintenance-log-entry-meta', text: row.meta })
+    ]));
+  });
+}
+
+async function refreshStorageArtifacts() {
+  if (!requireProject()) return null;
+  try {
+    setMaintenanceBusy(ui.btnRefreshStorageArtifacts, true);
+    maintenanceLastStorageInventory = await callIpc(window.plantApp.storage.listArtifacts({
+      projectDir: state.projectDir,
+      backupDir: state.backupTargetDir || ''
+    }));
+    renderStorageArtifacts(maintenanceLastStorageInventory);
+    return maintenanceLastStorageInventory;
+  } catch (error) {
+    handleUiError(error, 'maintenance:storage-artifacts', {
+      title: maintenanceText('maintenanceStorageArtifactsFailed')
+    });
+    return null;
+  } finally {
+    setMaintenanceBusy(ui.btnRefreshStorageArtifacts, false);
+  }
+}
+
+async function deleteSelectedStorageArtifacts() {
+  if (guardMaintenanceReadOnlyAction('storage-delete-artifacts')) return;
+  if (!requireProject()) return;
+  const inventory = maintenanceLastStorageInventory || await refreshStorageArtifacts();
+  if (!inventory) return;
+
+  const selectedNames = selectedStorageNames();
+  if (!selectedNames.length) {
+    showAlert(maintenanceText('maintenanceStorageSelectFirst'));
+    return;
+  }
+
+  const confirmed = await openConfirmDialog({
+    title: maintenanceText('maintenanceStorageDeleteSelected'),
+    message: `${maintenanceText('maintenanceStorageDeleteConfirm')}\n${selectedNames.join('\n')}`,
+    acceptLabel: maintenanceText('deleteNow'),
+    cancelLabel: maintenanceText('cancelAction')
+  });
+  if (!confirmed) return;
+
+  const selectedStorageCount = (maintenanceSelectedStorageArtifacts.sqlite && inventory.sqliteDatabase?.exists ? 1 : 0)
+    + (maintenanceSelectedStorageArtifacts.json && inventory.jsonFilesExist ? 1 : 0);
+  const availableStorageCount = Array.isArray(inventory.availableStorageFormats)
+    ? inventory.availableStorageFormats.length
+    : 0;
+  let allowDeleteOnlyStorage = false;
+  if (selectedStorageCount > 0 && availableStorageCount - selectedStorageCount <= 0) {
+    allowDeleteOnlyStorage = await openConfirmDialog({
+      title: maintenanceText('maintenanceStorageOnlyOneTitle'),
+      message: maintenanceText('maintenanceStorageOnlyOneConfirm'),
+      acceptLabel: maintenanceText('deleteNow'),
+      cancelLabel: maintenanceText('cancelAction')
+    });
+    if (!allowDeleteOnlyStorage) return;
+  }
+
+  try {
+    const didRequestSqliteDelete = maintenanceSelectedStorageArtifacts.sqlite;
+    const didRequestJsonDelete = maintenanceSelectedStorageArtifacts.json;
+    const result = await callIpc(window.plantApp.storage.deleteArtifacts({
+      projectDir: state.projectDir,
+      backupDir: state.backupTargetDir || '',
+      deleteSqliteDatabase: didRequestSqliteDelete,
+      deleteJsonFiles: didRequestJsonDelete,
+      backupNames: [...maintenanceSelectedStorageArtifacts.backups],
+      allowDeleteOnlyStorage
+    }));
+    maintenanceSelectedStorageArtifacts.sqlite = false;
+    maintenanceSelectedStorageArtifacts.json = false;
+    maintenanceSelectedStorageArtifacts.backups = new Set();
+    maintenanceLastStorageInventory = result.inventory || await refreshStorageArtifacts();
+    renderStorageArtifacts(maintenanceLastStorageInventory);
+    renderStorageReport(result);
+    if (didRequestSqliteDelete && state.storageFormat === 'sqlite' && maintenanceLastStorageInventory?.jsonFilesExist) {
+      await loadProjectIntoRenderer(state.projectDir, { storageFormat: 'json' });
+    } else if (didRequestJsonDelete && state.storageFormat === 'json' && maintenanceLastStorageInventory?.databaseExists) {
+      await loadProjectIntoRenderer(state.projectDir, { storageFormat: 'sqlite' });
+    }
+    showAlert(`${maintenanceText('maintenanceStorageDeleteDone')} ${selectedNames.length}`);
+  } catch (error) {
+    handleUiError(error, 'maintenance:storage-delete-artifacts', {
+      title: maintenanceText('maintenanceStorageDeleteFailed')
+    });
+  }
+}
+
 async function runStoragePreflight() {
   if (!requireProject()) return null;
   try {
@@ -1088,6 +1327,7 @@ async function runStoragePreflight() {
       projectDir: state.projectDir
     }));
     renderStorageReport(report);
+    await refreshStorageArtifacts();
     if (ui.maintenanceStorageSummary) {
       ui.maintenanceStorageSummary.textContent = `${maintenanceText('maintenanceStoragePreflightDone')} ${storageCountsText(report.counts || {})}`;
     }
@@ -1129,6 +1369,7 @@ async function createSqliteStorage() {
     });
     renderStorageReport(report);
     await loadProjectIntoRenderer(state.projectDir, { storageFormat: 'sqlite' });
+    await refreshStorageArtifacts();
     if (ui.maintenanceStorageSummary) {
       ui.maintenanceStorageSummary.textContent = maintenanceText('maintenanceStorageCreateDone');
     }
@@ -1166,6 +1407,7 @@ async function exportSqliteJson() {
       return result;
     });
     renderStorageReport(report);
+    await refreshStorageArtifacts();
     if (ui.maintenanceStorageSummary) {
       ui.maintenanceStorageSummary.textContent = maintenanceText('maintenanceStorageExportDone');
     }
@@ -1198,6 +1440,7 @@ async function loadStorageFormat(format) {
         taxonomyCandidates: state.points.reduce((total, point) => total + (Array.isArray(point.taxonomyCandidatesSummary) ? point.taxonomyCandidatesSummary.length : 0), 0)
       }
     });
+    await refreshStorageArtifacts();
   } catch (error) {
     handleUiError(error, `maintenance:storage-load-${format}`, {
       title: maintenanceText('maintenanceStorageLoadFailed')
@@ -1210,8 +1453,10 @@ function openMaintenanceCenter() {
   syncMaintenanceSafeModeUi();
   renderMaintenanceReport(maintenanceLastReport);
   renderStorageReport(null);
+  renderStorageArtifacts(null);
   openLayerModal(ui.maintenanceModal);
   refreshMaintenanceLogs();
+  refreshStorageArtifacts();
 }
 
 function bindMaintenanceEvents() {
@@ -1230,6 +1475,8 @@ function bindMaintenanceEvents() {
   ui.btnExportSqliteJson?.addEventListener('click', exportSqliteJson);
   ui.btnLoadSqliteStorage?.addEventListener('click', () => loadStorageFormat('sqlite'));
   ui.btnLoadJsonStorage?.addEventListener('click', () => loadStorageFormat('json'));
+  ui.btnRefreshStorageArtifacts?.addEventListener('click', refreshStorageArtifacts);
+  ui.btnDeleteSelectedStorageArtifacts?.addEventListener('click', deleteSelectedStorageArtifacts);
   ui.btnApplySafeMode?.addEventListener('click', applySafeModeSettings);
   ui.btnExitSafeMode?.addEventListener('click', exitSafeModeSettings);
   ui.btnExportUiSettings?.addEventListener('click', exportUiSettings);

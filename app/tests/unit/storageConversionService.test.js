@@ -1,9 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const storageConversionService = require('../../src/main/storageConversionService');
+const pathGuard = require('../../src/main/pathGuard');
 
 test('storage conversion service exposes stable file names and version', () => {
   assert.equal(storageConversionService.CONVERSION_SERVICE_VERSION, 'storage-conversion-v1');
@@ -25,4 +27,40 @@ test('storage conversion source keeps database work behind main-process helpers'
   assert.ok(source.includes('rendererDatabaseAccess: false'));
   assert.ok(source.includes('exposesSql: false'));
   assert.ok(!source.includes('ipcMain'));
+});
+
+test('storage artifact inventory and guarded cleanup stay project scoped', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plant-storage-artifacts-'));
+  const projectDir = path.join(root, 'project');
+  const infoDir = path.join(projectDir, 'information');
+  fs.mkdirSync(infoDir, { recursive: true });
+  fs.writeFileSync(path.join(infoDir, 'settings.json'), '{}', 'utf8');
+  fs.writeFileSync(path.join(infoDir, 'zones.json'), '[]', 'utf8');
+  fs.writeFileSync(path.join(infoDir, 'points.json'), '[]', 'utf8');
+  fs.writeFileSync(path.join(infoDir, 'data.db'), 'not-real-db', 'utf8');
+  pathGuard.trustProjectDirFromDialog(projectDir);
+
+  try {
+    const inventory = storageConversionService.listStorageArtifacts({ projectDir });
+    assert.equal(inventory.jsonFilesExist, true);
+    assert.equal(inventory.databaseExists, true);
+    assert.deepEqual(inventory.availableStorageFormats.sort(), ['json', 'sqlite']);
+
+    assert.throws(() => storageConversionService.deleteStorageArtifacts({
+      projectDir,
+      deleteSqliteDatabase: true,
+      deleteJsonFiles: true
+    }));
+
+    const deleted = storageConversionService.deleteStorageArtifacts({
+      projectDir,
+      deleteSqliteDatabase: true,
+      allowDeleteOnlyStorage: false
+    });
+    assert.equal(deleted.deleted.sqliteDatabase, true);
+    assert.equal(fs.existsSync(path.join(infoDir, 'data.db')), false);
+    assert.equal(fs.existsSync(path.join(infoDir, 'settings.json')), true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });

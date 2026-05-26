@@ -45,6 +45,8 @@ contextBridge.exposeInMainWorld('plantApp', {
   },
   storage: {
     conversionPreflight: payload => invoke('storage:conversionPreflight', payload),
+    listArtifacts: payload => invoke('storage:listArtifacts', payload),
+    deleteArtifacts: payload => invoke('storage:deleteArtifacts', payload),
     createSqliteFromJson: payload => invoke('storage:createSqliteFromJson', payload),
     exportSqliteToJson: payload => invoke('storage:exportSqliteToJson', payload)
   },

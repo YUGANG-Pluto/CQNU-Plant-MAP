@@ -44,10 +44,14 @@ test('backup service stores default backups inside project statistics backup fol
   const { root, projectDir } = createWorkspace();
   const created = backupService.create({ projectDir, label: 'json_turn_sqlite' });
   const expectedRoot = path.join(projectDir, 'information', 'statistics', 'backup');
+  const listed = backupService.list({ projectDir });
 
   assert.ok(created.filePath.startsWith(expectedRoot));
   assert.ok(path.basename(created.filePath).includes('json_turn_sqlite'));
   assert.ok(fs.existsSync(created.filePath));
+  assert.equal(listed.backupDir, expectedRoot);
+  assert.equal(listed.items.length, 1);
+  assert.equal(listed.items[0].name, path.basename(created.filePath));
 
   fs.rmSync(root, { recursive: true, force: true });
 });

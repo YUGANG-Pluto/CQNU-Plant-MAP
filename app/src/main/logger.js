@@ -148,7 +148,8 @@ function readLogFile(payload = {}) {
     name: path.basename(filePath),
     size: stat.size,
     truncated: stat.size > maxBytes,
-    content: text
+    content: text,
+    diagnosis: diagnoseLogContent(text, path.basename(filePath))
   };
 }
 
@@ -201,6 +202,47 @@ function parseLogLine(line, fileName) {
       fileName
     };
   }
+}
+
+function diagnoseLogContent(content, fileName = '') {
+  const lines = String(content || '').split(/\r?\n/).filter(Boolean);
+  const parsed = lines.map(line => parseLogLine(line, fileName));
+  const issueEntries = parsed.filter(entry => {
+    const level = normalizeLevel(entry.level || 'info');
+    const text = `${entry.scope || ''} ${entry.message || ''}`.toLowerCase();
+    return level === 'error'
+      || level === 'warn'
+      || /failed|failure|exception|uncaught|blocked|invalid|corrupt|timeout/.test(text);
+  });
+  const scopeCounts = {};
+  issueEntries.forEach(entry => {
+    const scope = entry.scope || 'app';
+    scopeCounts[scope] = (scopeCounts[scope] || 0) + 1;
+  });
+  const hotScopes = Object.entries(scopeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([scope, count]) => ({ scope, count }));
+  const issues = issueEntries.slice(-20).reverse().map(entry => ({
+    ts: entry.ts || '',
+    level: normalizeLevel(entry.level || 'info'),
+    scope: entry.scope || 'app',
+    message: entry.message || ''
+  }));
+
+  return {
+    status: issues.length ? 'issues' : 'pass',
+    totalLines: lines.length,
+    issueCount: issueEntries.length,
+    hotScopes,
+    issues,
+    suggestions: issues.length
+      ? [
+        'Run project health check and inspect the listed scopes first.',
+        'If storage or conversion scopes appear, run conversion preflight before retrying the operation.'
+      ]
+      : []
+  };
 }
 
 function readLogTail(filePath, maxBytes = 256 * 1024) {
@@ -343,6 +385,7 @@ module.exports = {
   reportRendererLog,
   listRecentLogs,
   readLogFile,
+  diagnoseLogContent,
   deleteLogFiles,
   cleanupOldLogs,
   getLoggerConfig

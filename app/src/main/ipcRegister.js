@@ -89,6 +89,8 @@ function registerIpc() {
 
   handle('maintenance:checkImageRefs', maintenanceService.checkImageRefs);
   handle('storage:conversionPreflight', storageConversionService.getPreflight);
+  handle('storage:listArtifacts', storageConversionService.listStorageArtifacts);
+  handle('storage:deleteArtifacts', storageConversionService.deleteStorageArtifacts);
   handle('storage:createSqliteFromJson', storageConversionService.createSqliteFromJson);
   handle('storage:exportSqliteToJson', storageConversionService.exportSqliteToJson);
   handle('species:referenceQuery', speciesReferenceService.querySpeciesReference);

@@ -157,6 +157,39 @@ function listExpired(payload) {
   return { items };
 }
 
+function list(payload) {
+  const projectRoot = assertTrustedProjectDir(payload.projectDir);
+  const backupRoot = normalizeBackupDir(projectRoot, payload.backupDir);
+
+  if (!fs.existsSync(backupRoot)) {
+    return {
+      backupDir: backupRoot,
+      items: []
+    };
+  }
+
+  const items = fs.readdirSync(backupRoot, { withFileTypes: true })
+    .filter(item => item.isFile() && item.name.toLowerCase().endsWith('.zip'))
+    .map(item => {
+      const filePath = path.join(backupRoot, item.name);
+      const stat = fs.statSync(filePath);
+      return {
+        name: item.name,
+        path: filePath,
+        backupDir: backupRoot,
+        size: stat.size || 0,
+        mtimeMs: stat.mtimeMs || 0,
+        modifiedAt: new Date(stat.mtimeMs || Date.now()).toISOString()
+      };
+    })
+    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+  return {
+    backupDir: backupRoot,
+    items
+  };
+}
+
 function keepExpired(payload) {
   const projectRoot = assertTrustedProjectDir(payload.projectDir);
   const files = Array.isArray(payload.paths) ? payload.paths : [];
@@ -215,6 +248,7 @@ function deleteExpired(payload) {
 
 module.exports = {
   create,
+  list,
   listExpired,
   keepExpired,
   deleteExpired

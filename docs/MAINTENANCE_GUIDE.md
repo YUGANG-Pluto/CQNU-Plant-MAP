@@ -34,12 +34,14 @@ The storage conversion controls are optional maintenance actions:
 - Create SQLite copy saves the current project, creates a `json_turn_sqlite` backup under `information/statistics/backup`, writes `information/data.db`, removes source JSON files after success, and reloads SQLite.
 - Export back to JSON creates a `sqlite_turn_json` backup under `information/statistics/backup`, reads `information/data.db`, validates the schema, writes JSON through the normal project storage service, removes the source database after success, and reloads JSON.
 - Load SQLite and Load JSON let the user explicitly choose a format when both formats are present.
+- Refresh storage and backups lists current JSON files, the current SQLite database, and backup zip files. Users can select backup files or current storage files for deletion.
+- Deleting the only available storage format requires a second confirmation. This prevents accidental removal of the last readable project data file.
 
 Use a copied or backed-up project when testing conversion behavior.
 
 ## Log Review
 
-The maintenance center lists log files and recent entries separately. Select a log file to read its contents in the maintenance center or delete that selected file. Routine log cleanup is user-selected instead of automatic expiration cleanup.
+The maintenance center lists log files and recent entries separately. Select one log file to read its contents and diagnosis summary in the maintenance center. Multiple log files can be selected for deletion. Routine log cleanup is user-selected instead of automatic expiration cleanup. A log with no warning or error entries reports `PASS`; logs with warnings or errors show the latest scopes and messages to help locate the maintenance breakpoint.
 
 ## Safe Mode
 

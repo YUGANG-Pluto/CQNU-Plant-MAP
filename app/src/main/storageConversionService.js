@@ -44,6 +44,64 @@ function getStoragePaths(projectDir) {
   };
 }
 
+function getJsonProjectFiles(paths) {
+  return ['settings.json', 'zones.json', 'points.json'].map(fileName => {
+    const filePath = assertInsidePath(path.join(paths.infoDir, fileName), paths.projectRoot, fileName);
+    const exists = fs.existsSync(filePath);
+    const stat = exists ? fs.statSync(filePath) : null;
+    return {
+      name: fileName,
+      exists,
+      size: stat?.size || 0,
+      modifiedAt: stat ? new Date(stat.mtimeMs || Date.now()).toISOString() : ''
+    };
+  });
+}
+
+function getSqliteDatabaseInfo(paths) {
+  const exists = fs.existsSync(paths.databasePath);
+  const stat = exists ? fs.statSync(paths.databasePath) : null;
+  return {
+    name: path.basename(paths.databasePath),
+    exists,
+    size: stat?.size || 0,
+    modifiedAt: stat ? new Date(stat.mtimeMs || Date.now()).toISOString() : ''
+  };
+}
+
+function hasCompleteJsonProject(paths) {
+  return getJsonProjectFiles(paths).every(file => file.exists);
+}
+
+function buildStorageInventory(paths, backupDir = '') {
+  const jsonFiles = getJsonProjectFiles(paths);
+  const jsonFilesExist = jsonFiles.every(file => file.exists);
+  const sqliteDatabase = getSqliteDatabaseInfo(paths);
+  const backupList = backupService.list({
+    projectDir: paths.projectRoot,
+    backupDir
+  });
+  const availableStorageFormats = [
+    sqliteDatabase.exists ? 'sqlite' : '',
+    jsonFilesExist ? 'json' : ''
+  ].filter(Boolean);
+
+  return {
+    version: CONVERSION_SERVICE_VERSION,
+    projectDir: paths.projectRoot,
+    activeStorageFormat: sqliteDatabase.exists ? 'sqlite' : 'json',
+    databaseFile: path.basename(paths.databasePath),
+    jsonFiles,
+    jsonFilesExist,
+    sqliteDatabase,
+    databaseExists: sqliteDatabase.exists,
+    availableStorageFormats,
+    backupDir: backupList.backupDir,
+    backupFiles: backupList.items,
+    warnings: []
+  };
+}
+
 function createDatabaseTempPath(databasePath) {
   return path.join(
     path.dirname(databasePath),
@@ -124,6 +182,82 @@ function removeSqliteDatabase(paths) {
   }
   fs.rmSync(paths.databasePath, { force: true });
   return true;
+}
+
+function listStorageArtifacts(payload) {
+  const safePayload = ensurePayload(payload);
+  const paths = getStoragePaths(safePayload.projectDir);
+  return buildStorageInventory(paths, safePayload.backupDir || '');
+}
+
+function deleteStorageArtifacts(payload) {
+  const safePayload = ensurePayload(payload);
+  const paths = getStoragePaths(safePayload.projectDir);
+  const deleteSqliteDatabase = safePayload.deleteSqliteDatabase === true;
+  const deleteJsonFiles = safePayload.deleteJsonFiles === true;
+  const backupPaths = Array.isArray(safePayload.backupPaths) ? safePayload.backupPaths : [];
+  const backupNames = Array.isArray(safePayload.backupNames) ? safePayload.backupNames : [];
+  const currentBackups = backupNames.length
+    ? backupService.list({ projectDir: paths.projectRoot, backupDir: safePayload.backupDir || '' }).items
+    : [];
+  const backupTargets = [
+    ...backupPaths,
+    ...backupNames.map(name => currentBackups.find(item => item.name === path.basename(String(name || '')))?.path)
+  ].filter(Boolean);
+  const hasSqlite = fs.existsSync(paths.databasePath);
+  const hasJson = hasCompleteJsonProject(paths);
+  const selectedStorageCount = (deleteSqliteDatabase && hasSqlite ? 1 : 0)
+    + (deleteJsonFiles && hasJson ? 1 : 0);
+  const availableStorageCount = (hasSqlite ? 1 : 0) + (hasJson ? 1 : 0);
+
+  if (selectedStorageCount > 0
+    && availableStorageCount - selectedStorageCount <= 0
+    && safePayload.allowDeleteOnlyStorage !== true) {
+    throw new AppError(
+      ERROR_CODES.INVALID_PAYLOAD,
+      'Deleting the only available storage format requires explicit confirmation'
+    );
+  }
+
+  const deleted = {
+    sqliteDatabase: false,
+    jsonFiles: [],
+    backups: 0
+  };
+
+  if (backupTargets.length) {
+    const result = backupService.deleteExpired({
+      projectDir: paths.projectRoot,
+      backupDir: safePayload.backupDir || '',
+      paths: backupTargets
+    });
+    deleted.backups = result.deleted || 0;
+  }
+  if (deleteSqliteDatabase) {
+    deleted.sqliteDatabase = removeSqliteDatabase(paths);
+  }
+  if (deleteJsonFiles) {
+    deleted.jsonFiles = removeJsonProjectFiles(paths);
+  }
+
+  const inventory = buildStorageInventory(paths, safePayload.backupDir || '');
+  logger.writeLog('warn', 'storage:delete-artifacts', 'storage artifacts deleted', {
+    projectDir: paths.projectRoot,
+    deleteSqliteDatabase,
+    deleteJsonFiles,
+    backupCount: backupTargets.length,
+    deleted
+  });
+
+  return {
+    status: 'completed',
+    deleted,
+    inventory,
+    activeStorageFormat: inventory.activeStorageFormat,
+    databaseExists: inventory.databaseExists,
+    jsonFilesExist: inventory.jsonFilesExist,
+    warnings: inventory.warnings
+  };
 }
 
 function getPreflight(payload) {
@@ -316,6 +450,8 @@ module.exports = {
   JSON_TO_SQLITE_BACKUP_LABEL,
   SQLITE_TO_JSON_BACKUP_LABEL,
   getPreflight,
+  listStorageArtifacts,
+  deleteStorageArtifacts,
   createSqliteFromJson,
   exportSqliteToJson
 };

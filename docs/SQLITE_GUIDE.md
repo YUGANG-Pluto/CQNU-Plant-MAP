@@ -50,6 +50,8 @@ Use the maintenance center only after saving the current project:
 4. Select Export SQLite copy back to JSON only when the local SQLite storage should become JSON files again. A backup is created first, and validation failure stops the write.
 5. After successful SQLite to JSON export, the source `information/data.db` file is removed.
 6. If both JSON and SQLite files are present, automatic loading prefers SQLite. The maintenance center can explicitly load JSON when JSON files exist.
+7. Refresh storage and backups lists current storage artifacts and backup zip files. Selected backup files can be deleted directly; selected current storage files can be deleted only after confirmation.
+8. If the selected deletion would remove the only available storage format, the maintenance center requires a second confirmation before the main process accepts the request.
 
 The utility does not upload project data, images, local paths, or service tokens. Renderer code does not receive SQL strings, database handles, or absolute database paths.
 

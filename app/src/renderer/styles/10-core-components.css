@@ -1684,6 +1684,30 @@ input[type="range"] {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
+.maintenance-log-file.is-read-selected {
+  background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.68));
+}
+
+.maintenance-log-file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.maintenance-log-file-row input[type="checkbox"] {
+  flex: 0 0 auto;
+}
+
+.maintenance-log-read-target {
+  justify-content: flex-start;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .maintenance-log-preview {
   max-height: 260px;
   overflow: auto;
