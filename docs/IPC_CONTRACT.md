@@ -78,10 +78,12 @@ Manual backup directories must be trusted through the system directory picker. E
 | `log:renderer` | `log.report(payload)` | `{ level?, scope?, message?, code?, details?, url? }` | `{ logged }` |
 | `log:setLevel` | `log.setLevel(payload)` | `{ level }` | `{ level }` |
 | `log:listRecent` | `log.listRecent(payload)` | `{ limit? }` | `{ config, files, entries }` |
+| `log:readLog` | `log.readLog(payload)` | `{ name, maxBytes? }` | `{ name, size, truncated, content }` |
+| `log:deleteLogs` | `log.deleteLogs(payload)` | `{ names }` | `{ deleted, remaining }` |
 | `log:cleanup` | `log.cleanup(payload)` | optional | cleanup summary |
 | `log:exportDiagnostics` | `log.exportDiagnostics(payload)` | `{ title?, defaultPath?, content }` | `{ canceled, filePath? }` |
 
-Log metadata is sanitized before writing. Diagnostics export uses the JSON save dialog.
+Log metadata is sanitized before writing. Log file reads and deletes accept log file names only, not arbitrary paths. Diagnostics export uses the JSON save dialog.
 
 ## Maintenance
 
@@ -90,6 +92,16 @@ Log metadata is sanitized before writing. Diagnostics export uses the JSON save 
 | `maintenance:checkImageRefs` | `maintenance.checkImageRefs(payload)` | `{ projectDir, refs }` | `{ checked, items }` |
 
 Image reference checks are limited to trusted project directories and image relative paths.
+
+## Storage Conversion
+
+| Channel | Preload command | Payload | Result |
+| --- | --- | --- | --- |
+| `storage:conversionPreflight` | `storage.conversionPreflight(payload)` | `{ projectDir }` | conversion readiness report |
+| `storage:createSqliteFromJson` | `storage.createSqliteFromJson(payload)` | `{ projectDir, backupDir? }` | conversion report |
+| `storage:exportSqliteToJson` | `storage.exportSqliteToJson(payload)` | `{ projectDir, backupDir? }` | export report |
+
+Storage conversion channels are limited to trusted project directories. They create a backup under `information/statistics/backup` before writing project files, remove the previous source format after successful conversion, and do not expose SQL execution, raw database connections, absolute database paths, or file handles to renderer code.
 
 ## Species Reference
 
@@ -111,8 +123,6 @@ External opening is limited to `http:` and `https:` URLs.
 
 ## Future Storage Conversion Boundary
 
-SQLite runtime work is not currently exposed through IPC. If storage conversion is implemented later, it must stay behind narrow main-process business commands.
-
 Renderer code must not receive SQL execution, raw database connections, absolute database paths, or file handles.
 
-Potential future commands are limited to conversion preflight, JSON-to-SQLite conversion, SQLite-to-JSON export, and report retrieval. Those commands must reuse trusted project-directory checks and must return stable success/error objects.
+The current storage conversion commands are limited to conversion preflight, JSON-to-SQLite copy creation, SQLite-to-JSON export, and report retrieval. Future storage work must preserve the same narrow boundary. Those commands reuse trusted project-directory checks and return stable success/error objects.

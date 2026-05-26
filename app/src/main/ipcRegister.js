@@ -7,6 +7,7 @@ const backupService = require('./backupService');
 const logger = require('./logger');
 const maintenanceService = require('./maintenanceService');
 const speciesReferenceService = require('./speciesReferenceService');
+const storageConversionService = require('./storageConversionService');
 const securityPolicy = require('./securityPolicy');
 
 function ok(data) {
@@ -81,10 +82,15 @@ function registerIpc() {
   handle('log:renderer', logger.reportRendererLog);
   handle('log:setLevel', payload => ({ level: logger.setLogLevel(payload.level) }));
   handle('log:listRecent', logger.listRecentLogs);
+  handle('log:readLog', logger.readLogFile);
+  handle('log:deleteLogs', logger.deleteLogFiles);
   handle('log:cleanup', () => logger.cleanupOldLogs());
   handle('log:exportDiagnostics', dialogs.exportJson);
 
   handle('maintenance:checkImageRefs', maintenanceService.checkImageRefs);
+  handle('storage:conversionPreflight', storageConversionService.getPreflight);
+  handle('storage:createSqliteFromJson', storageConversionService.createSqliteFromJson);
+  handle('storage:exportSqliteToJson', storageConversionService.exportSqliteToJson);
   handle('species:referenceQuery', speciesReferenceService.querySpeciesReference);
   handle('species:suggestTaxonomy', speciesReferenceService.suggestTaxonomyFromReferences);
   handle('species:imageCompare', speciesReferenceService.querySpeciesImageCompare);

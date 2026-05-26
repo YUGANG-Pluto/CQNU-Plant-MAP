@@ -11,6 +11,7 @@ const fileWrite = require('../src/main/fileWrite');
 const logger = require('../src/main/logger');
 const maintenanceService = require('../src/main/maintenanceService');
 const speciesReferenceService = require('../src/main/speciesReferenceService');
+const storageConversionService = require('../src/main/storageConversionService');
 const sqliteConversionService = require('../src/main/sqliteConversionService');
 const sqliteExchangeModel = require('../src/main/sqliteExchangeModel');
 const sqliteSchemaService = require('../src/main/sqliteSchemaService');
@@ -230,7 +231,7 @@ function testPathGuard() {
 
   assert.strictEqual(
     pathGuard.normalizeBackupDir(projectDir),
-    path.join(root, 'project_backups'),
+    path.join(projectDir, 'information', 'statistics', 'backup'),
     '默认备份目录必须位于项目同级目录'
   );
 
@@ -362,6 +363,7 @@ function testProjectStoreRejectsInvalidSavePayloads() {
   const { root, projectDir } = createWorkspace();
 
   try {
+    projectStore.ensureProjectStructure(projectDir);
     expectAppError(
       () => projectStore.saveProject({
         projectDir,
@@ -712,6 +714,9 @@ function testLoggerWritesAndCleansUp() {
     assert.ok(Array.isArray(recent.files));
     assert.ok(recent.entries.some(entry => entry.scope === 'renderer:test'));
     assert.strictEqual(recent.config.level, 'info');
+    const readLog = logger.readLogFile({ name: recent.files[0].name });
+    assert.ok(readLog.content.includes('renderer:test'));
+    assert.strictEqual(readLog.name, recent.files[0].name);
 
     const oldLog = path.join(logDir, 'app-2000-01-01.log');
     fs.writeFileSync(oldLog, 'old');
@@ -719,6 +724,9 @@ function testLoggerWritesAndCleansUp() {
     const cleanup = logger.cleanupOldLogs();
     assert.ok(cleanup.deleted >= 1);
     assert.ok(!fs.existsSync(oldLog));
+    const deleted = logger.deleteLogFiles({ names: [recent.files[0].name] });
+    assert.strictEqual(deleted.deleted, 1);
+    assert.ok(!fs.existsSync(path.join(logDir, recent.files[0].name)));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -1235,6 +1243,9 @@ function testMaintenanceCenterContract() {
     'btnRunHealthCheck',
     'btnRunSafeRepair',
     'btnExportDiagnostics',
+    'btnStoragePreflight',
+    'btnCreateSqliteStorage',
+    'btnExportSqliteJson',
     'btnApplySafeMode',
     'btnExitSafeMode',
     'maintenanceSafeModeStatus',
@@ -1252,19 +1263,31 @@ function testMaintenanceCenterContract() {
     "invoke('settings:importJson'",
     "invoke('settings:exportJson'",
     "invoke('log:listRecent'",
+    "invoke('log:readLog'",
+    "invoke('log:deleteLogs'",
     "invoke('log:cleanup'",
     "invoke('log:exportDiagnostics'",
-    "invoke('maintenance:checkImageRefs'"
+    "invoke('maintenance:checkImageRefs'",
+    "invoke('storage:conversionPreflight'",
+    "invoke('storage:createSqliteFromJson'",
+    "invoke('storage:exportSqliteToJson'"
   ].forEach(fragment => assert.ok(preloadSource.includes(fragment), `preload missing ${fragment}`));
   [
     "handle('settings:importJson'",
     "handle('settings:exportJson'",
     "handle('log:listRecent'",
+    "handle('log:readLog'",
+    "handle('log:deleteLogs'",
     "handle('log:cleanup'",
     "handle('log:exportDiagnostics'",
-    "handle('maintenance:checkImageRefs'"
+    "handle('maintenance:checkImageRefs'",
+    "handle('storage:conversionPreflight'",
+    "handle('storage:createSqliteFromJson'",
+    "handle('storage:exportSqliteToJson'"
   ].forEach(fragment => assert.ok(ipcSource.includes(fragment), `IPC missing ${fragment}`));
   assert.ok(loggerSource.includes('function listRecentLogs'));
+  assert.ok(loggerSource.includes('function readLogFile'));
+  assert.ok(loggerSource.includes('function deleteLogFiles'));
   assert.ok(loggerSource.includes('function cleanupOldLogs'));
   assert.ok(maintenanceSource.includes('MAINTENANCE_SETTINGS_SCHEMA'));
   assert.ok(maintenanceSource.includes('function createMaintenanceSafeModeTheme'));
@@ -1283,7 +1306,12 @@ function testMaintenanceCenterContract() {
     "'btnApplyPoint'",
     "'btnRunMerge'",
     "'btnRunManualBackup'",
-    "'btnExportDiagnostics'"
+    "'btnExportDiagnostics'",
+    "'btnStoragePreflight'",
+    "'btnCreateSqliteStorage'",
+    "'btnExportSqliteJson'",
+    "'btnLoadSqliteStorage'",
+    "'btnLoadJsonStorage'"
   ].forEach(fragment => assert.ok(maintenanceSource.includes(fragment), `safe mode lock list missing ${fragment}`));
   assert.ok(mapSource.includes("isMaintenanceReadOnlyMode() && mode !== 'browse'"));
   assert.ok(mapSource.includes("guardMaintenanceReadOnlyAction('map-add-point')"));
@@ -1316,6 +1344,10 @@ function testMaintenanceCenterContract() {
       'maintenanceSafeModeOn',
       'maintenanceSafeModeReadOnlyBlocked',
       'maintenanceSafeModeReadOnlyTitle',
+      'maintenanceStorageTitle',
+      'maintenanceStoragePreflight',
+      'maintenanceStorageCreateSqlite',
+      'maintenanceStorageExportJson',
       'cancelAction'
     ].forEach(key => assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`));
   });
@@ -1571,6 +1603,8 @@ function testSqliteExchangeModelContract() {
   const schemaCheckSource = fs.readFileSync(path.join(process.cwd(), 'scripts/check-sqlite-schema.js'), 'utf8');
   const conversionSource = fs.readFileSync(path.join(process.cwd(), 'src/main/sqliteConversionService.js'), 'utf8');
   const conversionCheckSource = fs.readFileSync(path.join(process.cwd(), 'scripts/test-sqlite-conversion.js'), 'utf8');
+  const storageSource = fs.readFileSync(path.join(process.cwd(), 'src/main/storageConversionService.js'), 'utf8');
+  const storageCheckSource = fs.readFileSync(path.join(process.cwd(), 'scripts/test-storage-conversion.js'), 'utf8');
   assert.ok(schemaSource.includes('CREATE TABLE IF NOT EXISTS'));
   assert.ok(schemaSource.includes('better-sqlite3'));
   assert.ok(schemaSource.includes('os.tmpdir()'));
@@ -1581,6 +1615,15 @@ function testSqliteExchangeModelContract() {
   assert.ok(conversionSource.includes('os.tmpdir()'));
   assert.ok(conversionSource.includes('better-sqlite3'));
   assert.ok(conversionCheckSource.includes('runTemporaryJsonSqliteRoundTrip'));
+  assert.ok(storageSource.includes('assertTrustedProjectDir'));
+  assert.ok(storageSource.includes('backupService.create'));
+  assert.ok(storageSource.includes('rendererDatabaseAccess: false'));
+  assert.ok(storageSource.includes('exposesSql: false'));
+  assert.ok(storageSource.includes('SQLITE_DB_FILE'));
+  assert.ok(storageCheckSource.includes('createSqliteFromJson'));
+  assert.ok(storageCheckSource.includes('exportSqliteToJson'));
+  assert.strictEqual(storageConversionService.SQLITE_DB_FILE, 'data.db');
+  assert.strictEqual(storageConversionService.SQLITE_REPORT_FILE, 'sqlite-conversion-report.json');
   assert.deepStrictEqual(sqliteSchemaService.getExpectedTables(), [
     'project_settings',
     'zones',
@@ -1665,10 +1708,19 @@ function testElectronSecurityContract() {
 
   assert.ok(ipcSource.includes('assertTrustedIpcSender'));
   assert.ok(ipcSource.includes("handle('window:openExternal'"));
+  assert.ok(ipcSource.includes("handle('storage:conversionPreflight'"));
+  assert.ok(ipcSource.includes("handle('storage:createSqliteFromJson'"));
+  assert.ok(ipcSource.includes("handle('storage:exportSqliteToJson'"));
   assert.ok(preloadSource.includes('contextBridge.exposeInMainWorld'));
   assert.ok(preloadSource.includes("invoke('window:openExternal'"));
+  assert.ok(preloadSource.includes("invoke('storage:conversionPreflight'"));
+  assert.ok(preloadSource.includes("invoke('storage:createSqliteFromJson'"));
+  assert.ok(preloadSource.includes("invoke('storage:exportSqliteToJson'"));
   ['readFile', 'writeFile', 'deleteFile', 'exec('].forEach(fragment => {
     assert.ok(!preloadSource.includes(fragment), `preload must not expose ${fragment}`);
+  });
+  ['SELECT ', 'INSERT ', 'CREATE TABLE', 'better-sqlite3', 'data.db'].forEach(fragment => {
+    assert.ok(!preloadSource.includes(fragment), `preload must not expose storage detail ${fragment}`);
   });
 
   assert.ok(securitySource.includes('APP_INDEX_URL'));
@@ -1717,6 +1769,7 @@ function testRepositoryHygieneContract() {
     'sqlite:probe:node',
     'db:check-schema',
     'db:test-conversion',
+    'db:test-storage-conversion',
     'verify'
   ].forEach(scriptName => assert.ok(packageJson.scripts[scriptName], `package script missing ${scriptName}`));
   assert.ok(packageJson.scripts.verify.includes('check:size'), 'verify must include file size governance');
@@ -1793,10 +1846,12 @@ function testRepositoryHygieneContract() {
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'sqlite-dependency-probe.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-sqlite-schema.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'test-sqlite-conversion.js')));
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'test-storage-conversion.js')));
   [
     'tests/unit/sqliteExchangeModel.test.js',
     'tests/unit/sqliteSchemaService.test.js',
     'tests/unit/sqliteConversionService.test.js',
+    'tests/unit/storageConversionService.test.js',
     'tests/unit/pathGuard.test.js',
     'tests/integration/projectStore.test.js',
     'tests/integration/backupService.test.js',
@@ -1806,6 +1861,7 @@ function testRepositoryHygieneContract() {
   assert.ok(fs.existsSync(path.join(process.cwd(), 'src/main/sqliteExchangeModel.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'src/main/sqliteSchemaService.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'src/main/sqliteConversionService.js')));
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'src/main/storageConversionService.js')));
   [
     'project.d.ts',
     'zone.d.ts',
@@ -1859,6 +1915,7 @@ function testDocumentationUpdateContract() {
   assert.ok(dependencyDecision.includes('Probe Result'));
   assert.ok(dependencyDecision.includes('Electron native rebuild'));
   assert.ok(dependencyDecision.includes('Temporary conversion test'));
+  assert.ok(dependencyDecision.includes('Project storage conversion'));
   assert.ok(dependencyDecision.includes('better-sqlite3'));
   assert.ok(dependencyDecision.includes('sqlite3'));
   assert.ok(dependencyDecision.includes('sql.js'));
@@ -1867,13 +1924,15 @@ function testDocumentationUpdateContract() {
 
   const sqliteSchema = readWorkspaceDoc('SQLITE_SCHEMA.md');
   assert.ok(sqliteSchema.includes('SQLite is a planned optional local data layer'));
-  assert.ok(sqliteSchema.includes('No SQLite database file, migration script, or conversion command'));
+  assert.ok(sqliteSchema.includes('No automatic SQLite migration'));
   assert.ok(sqliteSchema.includes('taxonomy_candidates'));
   assert.ok(sqliteSchema.includes('Current In-Memory Model'));
   assert.ok(sqliteSchema.includes('Current Schema Service'));
   assert.ok(sqliteSchema.includes('Current Temporary Conversion Test'));
+  assert.ok(sqliteSchema.includes('Current Project Storage Conversion'));
   assert.ok(sqliteSchema.includes('npm run db:check-schema'));
   assert.ok(sqliteSchema.includes('npm run db:test-conversion'));
+  assert.ok(sqliteSchema.includes('information/data.db'));
   assert.ok(sqliteSchema.includes('conversion report and backup preflight plan'));
 
   const sqliteGuide = readWorkspaceDoc('SQLITE_GUIDE.md');
@@ -1881,6 +1940,8 @@ function testDocumentationUpdateContract() {
   assert.ok(sqliteGuide.includes('Planned'));
   assert.ok(sqliteGuide.includes('Run SQLite schema checks'));
   assert.ok(sqliteGuide.includes('Run temporary JSON/SQLite conversion tests'));
+  assert.ok(sqliteGuide.includes('Create SQLite copy from JSON'));
+  assert.ok(sqliteGuide.includes('Export SQLite copy back to JSON'));
   assert.ok(sqliteGuide.includes('Ready'));
 
   const sqliteReadiness = readWorkspaceDoc('SQLITE_READINESS.md');
@@ -1889,6 +1950,7 @@ function testDocumentationUpdateContract() {
   assert.ok(sqliteReadiness.includes('SQLite dependency probe result'));
   assert.ok(sqliteReadiness.includes('SQLite schema checker'));
   assert.ok(sqliteReadiness.includes('Temporary JSON/SQLite conversion test'));
+  assert.ok(sqliteReadiness.includes('Project storage conversion service'));
   assert.ok(sqliteReadiness.includes('JSON to SQLite table model'));
   assert.ok(sqliteReadiness.includes('Conversion report model'));
   assert.ok(sqliteReadiness.includes('Backup preflight plan'));
@@ -1904,6 +1966,7 @@ function testDocumentationUpdateContract() {
   assert.ok(exchangePlan.includes('SQLite To JSON'));
   assert.ok(exchangePlan.includes('Temporary Database Round Trip'));
   assert.ok(exchangePlan.includes('db:test-conversion'));
+  assert.ok(exchangePlan.includes('Project Storage Conversion'));
   assert.ok(exchangePlan.includes('unknown field preservation'));
 
   const migrationPlan = readWorkspaceDoc('DATA_MIGRATION_PLAN.md');
@@ -1911,18 +1974,20 @@ function testDocumentationUpdateContract() {
   assert.ok(migrationPlan.includes('A backup is required'));
   assert.ok(migrationPlan.includes('schema check'));
   assert.ok(migrationPlan.includes('db:test-conversion'));
+  assert.ok(migrationPlan.includes('information/data.db'));
 
   const architecture = readWorkspaceDoc('ARCHITECTURE.md');
   assert.ok(architecture.includes('source-link and token validation documented'));
-  assert.ok(architecture.includes('Database and schema migration work is deferred'));
+  assert.ok(architecture.includes('SQLite project storage conversion is available'));
 
   const adr = readWorkspaceDoc('ADR/0004-data-storage-strategy.md');
-  assert.ok(adr.includes('database structure changes are deferred'));
-  assert.ok(adr.includes('Do not introduce database tables, schema migrations, or format-conversion code'));
+  assert.ok(adr.includes('SQLite conversion is opt-in'));
+  assert.ok(adr.includes('pre-conversion backup'));
 
   const testingGuide = readWorkspaceDoc('TESTING_GUIDE.md');
   assert.ok(testingGuide.includes('npm run db:check-schema'));
   assert.ok(testingGuide.includes('npm run db:test-conversion'));
+  assert.ok(testingGuide.includes('npm run db:test-storage-conversion'));
   assert.ok(testingGuide.includes('temporary schema database'));
   assert.ok(testingGuide.includes('temporary conversion database'));
   [
@@ -1944,7 +2009,7 @@ function testDocumentationUpdateContract() {
   [
     'Species reference source links open in the system default browser',
     'iNaturalist token page opens from the image comparison area',
-    'Database structure changes remain deferred'
+    'SQLite storage conversion preflight'
   ].forEach(fragment => assert.ok(checklist.includes(fragment), `COMMERCIAL_SAMPLE_CHECKLIST missing ${fragment}`));
 }
 

@@ -34,6 +34,7 @@
 - [ ] Species reference source links open in the system default browser.
 - [ ] iNaturalist token page opens from the image comparison area.
 - [ ] iNaturalist token use is documented as temporary and not stored in project JSON.
+- [ ] SQLite storage conversion preflight completes on a synthetic or backup project.
 - [ ] Statistics center shows overview, zone, composition, diversity, similarity, phenology, trend, quality, export, and metric-note sections.
 - [ ] Statistics heatmap matrices support CSV, JSON, Markdown, and SVG export.
 - [ ] Statistics formulas and data-scope limits are visible in the UI.
@@ -54,7 +55,7 @@
 - [ ] File size governance passes with documented reasons for legacy large files.
 - [ ] SQLite exchange planning documents are present, while runtime conversion remains disabled until separately implemented.
 - [ ] SQLite readiness checklist identifies ready, planned, and not implemented gates.
-- [ ] Database structure changes remain deferred unless a separate migration task is approved.
+- [ ] Active SQLite runtime storage remains disabled unless a separate storage-mode switch is approved.
 
 ## Release
 

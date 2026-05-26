@@ -174,7 +174,7 @@ function resolveImageRelative(projectDir, relativePath, label = '图片路径') 
 
 function getDefaultBackupDir(projectDir) {
   const root = normalizeProjectDir(projectDir);
-  return path.join(path.dirname(root), `${path.basename(root)}_backups`);
+  return path.join(getProjectInfoDir(root), 'statistics', 'backup');
 }
 
 function assertBackupDirOutsideProject(projectDir, backupDir) {
@@ -196,7 +196,8 @@ function trustBackupDirFromDialog(dirPath) {
 // 默认备份目录由项目目录推导，手动目录必须来自本次运行的系统选择器。
 function normalizeBackupDir(projectDir, backupDir) {
   if (backupDir === undefined || backupDir === null || backupDir === '') {
-    return assertBackupDirOutsideProject(projectDir, getDefaultBackupDir(projectDir));
+    const root = normalizeProjectDir(projectDir);
+    return assertInsidePath(getDefaultBackupDir(root), root, 'default backup directory');
   }
 
   const realDir = assertBackupDirOutsideProject(projectDir, backupDir);

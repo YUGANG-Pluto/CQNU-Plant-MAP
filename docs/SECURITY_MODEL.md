@@ -97,6 +97,14 @@ The application may contact external services when the user uses related feature
 
 The iNaturalist token field is request-scoped. It is not saved to project state, local storage, or session storage.
 
+## Storage Conversion Boundary
+
+SQLite storage conversion is handled in the main process. Renderer code can request only preflight, create-copy, and export-back operations through preload. It does not receive SQL strings, database handles, absolute database paths, or direct file-system access.
+
+Storage conversion writes are limited to trusted project directories and create a backup under `information/statistics/backup` before project files are changed. Successful conversion removes the previous source format only after validation and backup.
+
+Log review is also main-process mediated. Renderer code can list log metadata, request one named log file, or delete selected log files by name. It cannot pass arbitrary log paths.
+
 ## Current Verification
 
 Security contracts are checked by:

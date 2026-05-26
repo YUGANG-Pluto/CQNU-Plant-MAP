@@ -52,7 +52,13 @@ const SAFE_MODE_LOCKED_IDS = Object.freeze([
   'btnRunManualBackup',
   'btnRunSafeRepair',
   'btnCleanupLogs',
+  'btnReadSelectedLog',
   'btnExportDiagnostics',
+  'btnStoragePreflight',
+  'btnCreateSqliteStorage',
+  'btnExportSqliteJson',
+  'btnLoadSqliteStorage',
+  'btnLoadJsonStorage',
   'btnApplySpeciesReference',
   'btnExportUiSettings',
   'btnImportUiSettings'
@@ -159,6 +165,7 @@ const SAFE_MODE_DYNAMIC_LOCKED_SELECTORS = Object.freeze([
 
 let maintenanceLastReport = null;
 let maintenanceLastLogSnapshot = null;
+let maintenanceSelectedLogName = '';
 let safeModeLockEventsBound = false;
 
 function cloneMaintenanceJson(value) {
@@ -660,9 +667,32 @@ async function runMaintenanceSafeRepair() {
 function renderMaintenanceLogs(snapshot) {
   if (!ui.maintenanceLogList) return;
   clearNode(ui.maintenanceLogList);
+  if (ui.maintenanceLogFileList) clearNode(ui.maintenanceLogFileList);
+  if (ui.maintenanceLogPreview && !maintenanceSelectedLogName) ui.maintenanceLogPreview.textContent = '';
   const files = snapshot?.files || [];
   const entries = snapshot?.entries || [];
   ui.maintenanceLogSummary.textContent = `${files.length} files / ${entries.length} entries`;
+  if (ui.maintenanceLogFileList) {
+    if (!files.length) {
+      ui.maintenanceLogFileList.appendChild(listTextItem(maintenanceText('maintenanceNoLogs')));
+    } else {
+      files.forEach(file => {
+        const selected = file.name === maintenanceSelectedLogName;
+        const item = el('button', {
+          className: `maintenance-log-entry maintenance-log-file${selected ? ' is-selected' : ''}`,
+          type: 'button'
+        }, [
+          el('div', { className: 'maintenance-log-entry-title', text: file.name }),
+          el('div', { className: 'maintenance-log-entry-meta', text: `${file.size || 0} bytes / ${file.modifiedAt || ''}` })
+        ]);
+        item.addEventListener('click', () => {
+          maintenanceSelectedLogName = file.name;
+          renderMaintenanceLogs(maintenanceLastLogSnapshot);
+        });
+        ui.maintenanceLogFileList.appendChild(item);
+      });
+    }
+  }
   if (!entries.length) {
     ui.maintenanceLogList.appendChild(listTextItem(maintenanceText('maintenanceNoLogs')));
     return;
@@ -676,6 +706,27 @@ function renderMaintenanceLogs(snapshot) {
       el('div', { className: 'maintenance-log-entry-meta', text: `${entry.ts || ''} ${entry.fileName || ''}` })
     ]));
   });
+}
+
+async function readSelectedMaintenanceLog() {
+  if (!maintenanceSelectedLogName) {
+    showAlert(maintenanceText('maintenanceSelectLogFirst'));
+    return;
+  }
+  try {
+    const result = await callIpc(window.plantApp.log.readLog({
+      name: maintenanceSelectedLogName
+    }));
+    if (ui.maintenanceLogPreview) {
+      ui.maintenanceLogPreview.textContent = result.truncated
+        ? `${maintenanceText('maintenanceLogTruncated')}\n${result.content || ''}`
+        : result.content || '';
+    }
+  } catch (error) {
+    handleUiError(error, 'maintenance:log-read', {
+      title: maintenanceText('maintenanceLogReadFailed')
+    });
+  }
 }
 
 async function refreshMaintenanceLogs() {
@@ -695,9 +746,24 @@ async function refreshMaintenanceLogs() {
 }
 
 async function cleanupMaintenanceLogs() {
-  if (guardMaintenanceReadOnlyAction('cleanup-logs')) return;
+  if (guardMaintenanceReadOnlyAction('delete-selected-log')) return;
+  if (!maintenanceSelectedLogName) {
+    showAlert(maintenanceText('maintenanceSelectLogFirst'));
+    return;
+  }
+  const confirmed = await openConfirmDialog({
+    title: maintenanceText('maintenanceDeleteSelectedLogs'),
+    message: maintenanceSelectedLogName,
+    acceptLabel: maintenanceText('deleteNow'),
+    cancelLabel: maintenanceText('cancelAction')
+  });
+  if (!confirmed) return;
   try {
-    const result = await callIpc(window.plantApp.log.cleanup());
+    const result = await callIpc(window.plantApp.log.deleteLogs({
+      names: [maintenanceSelectedLogName]
+    }));
+    maintenanceSelectedLogName = '';
+    if (ui.maintenanceLogPreview) ui.maintenanceLogPreview.textContent = '';
     await refreshMaintenanceLogs();
     showAlert(`${maintenanceText('maintenanceCleanupDone')} ${result.deleted || 0}`);
   } catch (error) {
@@ -961,10 +1027,189 @@ async function exportDiagnostics() {
   }
 }
 
+function storageCountsText(counts = {}) {
+  return [
+    `${maintenanceText('maintenanceStorageZones')}: ${counts.zones ?? 0}`,
+    `${maintenanceText('maintenanceStoragePoints')}: ${counts.points ?? 0}`,
+    `${maintenanceText('maintenanceStoragePhenology')}: ${counts.phenologyEntries ?? 0}`,
+    `${maintenanceText('maintenanceStorageImages')}: ${counts.imageReferences ?? 0}`,
+    `${maintenanceText('maintenanceStorageTaxonomy')}: ${counts.taxonomyCandidates ?? 0}`
+  ].join(' / ');
+}
+
+function renderStorageReport(report) {
+  if (!ui.maintenanceStorageReport) return;
+  clearNode(ui.maintenanceStorageReport);
+  if (!report) {
+    ui.maintenanceStorageReport.appendChild(listTextItem(maintenanceText('maintenanceStorageNoReport')));
+    return;
+  }
+
+  const statusText = report.ok === false || report.status === 'failed'
+    ? maintenanceText('maintenanceStorageStatusBlocked')
+    : maintenanceText('maintenanceStorageStatusReady');
+  const rows = [
+    [maintenanceText('maintenanceStorageStatus'), statusText],
+    [maintenanceText('maintenanceStorageActiveFormat'), report.activeStorageFormat || state.storageFormat || 'json'],
+    [maintenanceText('maintenanceStorageDatabase'), report.databaseFile || 'data.db'],
+    [maintenanceText('maintenanceStorageJsonKept'), report.jsonFilesKept === false ? maintenanceText('no') : maintenanceText('yes')],
+    [maintenanceText('maintenanceStorageCounts'), storageCountsText(report.counts || {})]
+  ];
+
+  if (report.databaseExists !== undefined) {
+    rows.splice(2, 0, [
+      maintenanceText('maintenanceStorageDatabaseExists'),
+      report.databaseExists ? maintenanceText('yes') : maintenanceText('no')
+    ]);
+  }
+  if (report.backupFile) {
+    rows.push([maintenanceText('maintenanceStorageBackup'), report.backupFile]);
+  }
+  if (report.removedSourceFiles?.length) {
+    rows.push([maintenanceText('maintenanceStorageRemovedSources'), report.removedSourceFiles.join(', ')]);
+  }
+  if (report.projectModifiedTime) {
+    rows.push([maintenanceText('maintenanceStorageProjectReloaded'), maintenanceText('yes')]);
+  }
+  if (report.warnings?.length) {
+    rows.push([maintenanceText('maintenanceWarn'), report.warnings.join('; ')]);
+  }
+
+  rows.forEach(([label, value]) => {
+    ui.maintenanceStorageReport.appendChild(listTextItem(label, value));
+  });
+}
+
+async function runStoragePreflight() {
+  if (!requireProject()) return null;
+  try {
+    setMaintenanceBusy(ui.btnStoragePreflight, true);
+    const report = await callIpc(window.plantApp.storage.conversionPreflight({
+      projectDir: state.projectDir
+    }));
+    renderStorageReport(report);
+    if (ui.maintenanceStorageSummary) {
+      ui.maintenanceStorageSummary.textContent = `${maintenanceText('maintenanceStoragePreflightDone')} ${storageCountsText(report.counts || {})}`;
+    }
+    return report;
+  } catch (error) {
+    handleUiError(error, 'maintenance:storage-preflight', {
+      title: maintenanceText('maintenanceStoragePreflightFailed')
+    });
+    return null;
+  } finally {
+    setMaintenanceBusy(ui.btnStoragePreflight, false);
+  }
+}
+
+async function createSqliteStorage() {
+  if (guardMaintenanceReadOnlyAction('storage-create-sqlite')) return;
+  if (!requireProject()) return;
+  const confirmed = await openConfirmDialog({
+    title: maintenanceText('maintenanceStorageCreateSqlite'),
+    message: maintenanceText('maintenanceStorageCreateConfirm'),
+    acceptLabel: maintenanceText('maintenanceStorageCreateSqlite'),
+    cancelLabel: maintenanceText('cancelAction')
+  });
+  if (!confirmed) return;
+
+  try {
+    const report = await withProgressTask({ type: 'maintenance', title: maintenanceText('maintenanceStorageCreateSqlite'), stage: maintenanceText('progressWriting') }, async task => {
+      task.update({ percent: 8, stage: maintenanceText('progressWriting') });
+      await persistProject();
+      task.update({ percent: 28, stage: maintenanceText('progressBackup') });
+      await yieldToUi();
+      const result = await callIpc(window.plantApp.storage.createSqliteFromJson({
+        projectDir: state.projectDir,
+        backupDir: state.backupTargetDir || ''
+      }));
+      task.update({ percent: 92, stage: maintenanceText('maintenanceStorageVerifying') });
+      await yieldToUi();
+      return result;
+    });
+    renderStorageReport(report);
+    await loadProjectIntoRenderer(state.projectDir, { storageFormat: 'sqlite' });
+    if (ui.maintenanceStorageSummary) {
+      ui.maintenanceStorageSummary.textContent = maintenanceText('maintenanceStorageCreateDone');
+    }
+    showAlert(`${maintenanceText('maintenanceStorageCreateDone')}\n${maintenanceText('maintenanceStorageBackup')}: ${report.backupFile || ''}`);
+  } catch (error) {
+    handleUiError(error, 'maintenance:storage-create-sqlite', {
+      title: maintenanceText('maintenanceStorageCreateFailed')
+    });
+  }
+}
+
+async function exportSqliteJson() {
+  if (guardMaintenanceReadOnlyAction('storage-export-json')) return;
+  if (!requireProject()) return;
+  const confirmed = await openConfirmDialog({
+    title: maintenanceText('maintenanceStorageExportJson'),
+    message: maintenanceText('maintenanceStorageExportConfirm'),
+    acceptLabel: maintenanceText('maintenanceStorageExportJson'),
+    cancelLabel: maintenanceText('cancelAction')
+  });
+  if (!confirmed) return;
+
+  try {
+    const report = await withProgressTask({ type: 'maintenance', title: maintenanceText('maintenanceStorageExportJson'), stage: maintenanceText('progressBackup') }, async task => {
+      task.update({ percent: 15, stage: maintenanceText('progressBackup') });
+      await yieldToUi();
+      const result = await callIpc(window.plantApp.storage.exportSqliteToJson({
+        projectDir: state.projectDir,
+        backupDir: state.backupTargetDir || ''
+      }));
+      task.update({ percent: 78, stage: maintenanceText('progressReloading') });
+      await loadProjectIntoRenderer(state.projectDir);
+      task.update({ percent: 94, stage: maintenanceText('maintenanceStorageVerifying') });
+      await yieldToUi();
+      return result;
+    });
+    renderStorageReport(report);
+    if (ui.maintenanceStorageSummary) {
+      ui.maintenanceStorageSummary.textContent = maintenanceText('maintenanceStorageExportDone');
+    }
+    showAlert(`${maintenanceText('maintenanceStorageExportDone')}\n${maintenanceText('maintenanceStorageBackup')}: ${report.backupFile || ''}`);
+  } catch (error) {
+    handleUiError(error, 'maintenance:storage-export-json', {
+      title: maintenanceText('maintenanceStorageExportFailed')
+    });
+  }
+}
+
+async function loadStorageFormat(format) {
+  if (!requireProject()) return;
+  try {
+    await loadProjectIntoRenderer(state.projectDir, { storageFormat: format });
+    if (ui.maintenanceStorageSummary) {
+      ui.maintenanceStorageSummary.textContent = `${maintenanceText('maintenanceStorageLoaded')}: ${state.storageFormat || format}`;
+    }
+    renderStorageReport({
+      status: 'completed',
+      activeStorageFormat: state.storageFormat || format,
+      databaseExists: state.sqliteDatabaseExists,
+      jsonFilesKept: state.jsonFilesExist,
+      databaseFile: 'data.db',
+      counts: {
+        zones: state.zones.length,
+        points: state.points.length,
+        phenologyEntries: state.points.reduce((total, point) => total + getPhenologyEntries(point).length, 0),
+        imageReferences: state.points.reduce((total, point) => total + normalizeImages(point.images).length, 0),
+        taxonomyCandidates: state.points.reduce((total, point) => total + (Array.isArray(point.taxonomyCandidatesSummary) ? point.taxonomyCandidatesSummary.length : 0), 0)
+      }
+    });
+  } catch (error) {
+    handleUiError(error, `maintenance:storage-load-${format}`, {
+      title: maintenanceText('maintenanceStorageLoadFailed')
+    });
+  }
+}
+
 function openMaintenanceCenter() {
   ui.maintenanceProjectPath.textContent = maintenanceProjectLabel();
   syncMaintenanceSafeModeUi();
   renderMaintenanceReport(maintenanceLastReport);
+  renderStorageReport(null);
   openLayerModal(ui.maintenanceModal);
   refreshMaintenanceLogs();
 }
@@ -977,8 +1222,14 @@ function bindMaintenanceEvents() {
   ui.btnRunHealthCheck?.addEventListener('click', () => runMaintenanceHealthCheck());
   ui.btnRunSafeRepair?.addEventListener('click', runMaintenanceSafeRepair);
   ui.btnRefreshLogs?.addEventListener('click', refreshMaintenanceLogs);
+  ui.btnReadSelectedLog?.addEventListener('click', readSelectedMaintenanceLog);
   ui.btnCleanupLogs?.addEventListener('click', cleanupMaintenanceLogs);
   ui.btnExportDiagnostics?.addEventListener('click', exportDiagnostics);
+  ui.btnStoragePreflight?.addEventListener('click', runStoragePreflight);
+  ui.btnCreateSqliteStorage?.addEventListener('click', createSqliteStorage);
+  ui.btnExportSqliteJson?.addEventListener('click', exportSqliteJson);
+  ui.btnLoadSqliteStorage?.addEventListener('click', () => loadStorageFormat('sqlite'));
+  ui.btnLoadJsonStorage?.addEventListener('click', () => loadStorageFormat('json'));
   ui.btnApplySafeMode?.addEventListener('click', applySafeModeSettings);
   ui.btnExitSafeMode?.addEventListener('click', exitSafeModeSettings);
   ui.btnExportUiSettings?.addEventListener('click', exportUiSettings);

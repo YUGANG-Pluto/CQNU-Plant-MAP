@@ -4,7 +4,7 @@
 
 SQLite remains a planned optional local data layer. The application continues to use the JSON project-folder model for active runtime behavior.
 
-This checklist is used to decide when SQLite conversion work can start without weakening JSON compatibility, backups, exports, or Electron security boundaries.
+This checklist is used to decide when SQLite storage work can continue without weakening JSON compatibility, backups, exports, or Electron security boundaries.
 
 ## Prerequisite Status
 
@@ -27,34 +27,36 @@ This checklist is used to decide when SQLite conversion work can start without w
 | SQLite dependency probe result | Ready | `better-sqlite3` installs, rebuilds for Electron, loads in Electron main process, runs a parameterized query, cleans temporary files, and packages through `npm run dist`. |
 | Path and storage service tests | Ready | `pathGuard`, `projectStore`, and `backupService` have focused Node test runner coverage using temporary directories. |
 | Minimal shared type declarations | Ready | `app/src/shared/types` defines project, point, zone, phenology, image, backup, IPC, and SQLite exchange contracts. |
-| Backup-before-conversion behavior | Planned | Backup behavior exists for JSON projects, but conversion-specific backup flow is not implemented. |
-| JSON to SQLite converter | Not implemented | No runtime conversion command, database writer, or UI exists. |
-| SQLite to JSON exporter | Not implemented | No runtime conversion command, database reader, or UI exists. |
+| Backup-before-conversion behavior | Ready | Project storage conversion creates a backup under `information/statistics/backup` before writing `information/data.db` or exporting back to JSON. |
+| Project storage conversion service | Ready | `storageConversionService.js` validates a trusted project folder, writes local SQLite storage, exports SQLite back to JSON, removes the previous source format after success, and writes a conversion report. |
+| JSON to SQLite converter | Ready | The guarded service writes the current table model into `information/data.db`, reloads SQLite, and removes the source JSON files after backup. |
+| SQLite to JSON exporter | Ready | The guarded service reads `information/data.db`, validates the schema, writes JSON through `projectStore` after backup, and removes the source database after success. |
 | SQLite schema checker | Ready | `db:check-schema` creates a temporary schema database, validates planned tables and representative columns, then deletes the temporary files. |
 | Temporary JSON/SQLite conversion test | Ready | `db:test-conversion` writes synthetic JSON fixtures through a temporary SQLite database and verifies JSON equality after read-back. |
-| Runtime conversion tests | Not implemented | User-facing conversion tests should be added with the runtime converter. |
+| Runtime conversion tests | Ready | `db:test-storage-conversion` uses a synthetic temporary project to verify backup-first project conversion and export equality. |
+| Active SQLite runtime switch | Not implemented | JSON remains the active runtime format after creating a SQLite copy. |
 | Typecheck command | Not implemented | Type declarations exist, but no `tsconfig.json` or `typecheck` script is active. |
 
 ## Gate Before Runtime SQLite Work
 
-SQLite runtime implementation should not start until the following are part of the same scoped change:
+SQLite active-runtime storage should not start until the following are part of the same scoped change:
 
-1. JSON to SQLite conversion.
-2. SQLite to JSON export.
-3. Backup-before-conversion.
-4. Conversion report generation.
-5. Round-trip self-check or tests.
-6. User-facing failure and rollback messages.
-7. Runtime database path rules.
-8. Failure rollback tests.
+1. User-controlled storage-mode selection.
+2. Recovery behavior for failed active-mode switching.
+3. Packaged application project conversion smoke tests.
+4. User-facing rollback messages.
+5. Runtime database path rules for active mode.
+6. Failure rollback tests.
 
 ## Non-Goals For The Current State
 
 - No SQLite database files are committed.
-- `better-sqlite3` is installed only for dependency probing and is not wired into user-facing conversion workflows.
+- `better-sqlite3` is used only in main-process readiness checks and the guarded project conversion service.
 - No project data is migrated automatically.
 - No current JSON workflow depends on SQLite.
 - The current table-model round-trip is a verification aid, not a database writer.
 - The current conversion report and backup preflight plan are data-only readiness aids.
 - The current schema checker is a temporary database readiness aid, not a project database writer.
 - The current temporary conversion test writes only synthetic fixtures to a temporary database and is not a project migration feature.
+- The current project storage conversion utility writes local SQLite storage only after explicit user action.
+- If both JSON and SQLite are present, automatic loading prefers SQLite while explicit JSON loading remains available when JSON files exist.

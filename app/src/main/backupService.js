@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const AdmZip = require('adm-zip');
 const { BACKUP_EXPIRE_DAYS } = require('./constants');
+const logger = require('./logger');
 const { AppError } = require('./errors');
 const { ERROR_CODES } = require('./errorCodes');
 const {
@@ -60,12 +61,41 @@ function createBackupPath(backupRoot, projectName, label) {
   throw new AppError(ERROR_CODES.INTERNAL_ERROR, '无法生成唯一备份文件名。');
 }
 
-function writeBackupZip(projectRoot, projectName, zipPath) {
+function isExcludedFromBackup(filePath, excludeRoots) {
+  return excludeRoots.some(root => {
+    const relative = path.relative(root, filePath);
+    return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+  });
+}
+
+function addProjectFolderToZip(zip, projectRoot, projectName, currentDir, excludeRoots) {
+  fs.readdirSync(currentDir, { withFileTypes: true }).forEach(entry => {
+    const fullPath = path.join(currentDir, entry.name);
+    if (isExcludedFromBackup(fullPath, excludeRoots)) {
+      return;
+    }
+    if (entry.isDirectory()) {
+      addProjectFolderToZip(zip, projectRoot, projectName, fullPath, excludeRoots);
+      return;
+    }
+    if (!entry.isFile()) {
+      return;
+    }
+    const relativePath = path.relative(projectRoot, fullPath).replace(/\\/g, '/');
+    zip.addFile(`${projectName}/${relativePath}`, fs.readFileSync(fullPath));
+  });
+}
+
+function writeBackupZip(projectRoot, projectName, zipPath, backupRoot) {
   const tempPath = createTempPath(zipPath);
 
   try {
     const zip = new AdmZip();
-    zip.addLocalFolder(projectRoot, projectName);
+    addProjectFolderToZip(zip, projectRoot, projectName, projectRoot, [
+      backupRoot,
+      tempPath,
+      zipPath
+    ]);
     zip.writeZip(tempPath);
     copyFileExclusive(tempPath, zipPath);
   } catch (error) {
@@ -85,7 +115,13 @@ function create(payload) {
   const projectName = path.basename(projectRoot);
   const label = safeBackupLabel(payload.label);
   const zipPath = createBackupPath(backupRoot, projectName, label);
-  writeBackupZip(projectRoot, projectName, zipPath);
+  writeBackupZip(projectRoot, projectName, zipPath, backupRoot);
+  logger.writeLog('info', 'backup:create', 'project backup created', {
+    projectDir: projectRoot,
+    backupDir: backupRoot,
+    filePath: zipPath,
+    label
+  });
 
   return {
     filePath: zipPath,
@@ -141,6 +177,11 @@ function keepExpired(payload) {
     }
   }
 
+  logger.writeLog('info', 'backup:keep', 'backup files kept', {
+    projectDir: projectRoot,
+    backupDir: payload.backupDir || '',
+    count: updated
+  });
   return { updated };
 }
 
@@ -164,6 +205,11 @@ function deleteExpired(payload) {
     }
   }
 
+  logger.writeLog('info', 'backup:delete', 'backup files deleted', {
+    projectDir: projectRoot,
+    backupDir: payload.backupDir || '',
+    count: deleted
+  });
   return { deleted };
 }
 

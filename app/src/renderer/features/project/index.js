@@ -7,20 +7,30 @@ async function persistProject() {
   state.settings.mapZoom = state.map.getZoom();
 
   const data = await callIpc(window.plantApp.project.save({
-    projectDir: state.projectDir,
-    settings: state.settings,
-    zones: state.zones,
-    points: state.points
+      projectDir: state.projectDir,
+      storageFormat: state.storageFormat || 'json',
+      settings: state.settings,
+      zones: state.zones,
+      points: state.points
   }));
 
   state.projectModifiedTime = data.projectModifiedTime || Date.now();
+  state.storageFormat = data.storageFormat || state.storageFormat || 'json';
+  state.jsonFilesExist = Boolean(data.jsonFilesExist);
+  state.sqliteDatabaseExists = Boolean(data.sqliteDatabaseExists);
 }
 
-async function loadProjectIntoRenderer(projectDir) {
-  const data = await callIpc(window.plantApp.project.load({ projectDir }));
+async function loadProjectIntoRenderer(projectDir, options = {}) {
+  const data = await callIpc(window.plantApp.project.load({
+    projectDir,
+    storageFormat: options.storageFormat || 'auto'
+  }));
 
   state.projectDir = data.projectDir;
   state.projectModifiedTime = data.projectModifiedTime || Date.now();
+  state.storageFormat = data.storageFormat || 'json';
+  state.jsonFilesExist = Boolean(data.jsonFilesExist);
+  state.sqliteDatabaseExists = Boolean(data.sqliteDatabaseExists);
   state.settings = ensureSettingsShape(data.settings);
   state.zones = (data.zones || []).map(normalizeZoneRecord);
   state.points = (data.points || []).map(point => normalizePointRecord({

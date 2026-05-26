@@ -2,7 +2,7 @@
 
 ## Status
 
-Decision record for future SQLite runtime work. The `better-sqlite3` dependency probe is active, but no runtime database conversion service or user-facing SQLite feature is enabled.
+Decision record for future SQLite runtime work. The `better-sqlite3` dependency probe is active, and a guarded Project storage conversion utility is available for explicit maintenance actions. JSON remains the active runtime storage format.
 
 The better-sqlite3 dependency probe is active for Electron main-process validation.
 
@@ -38,10 +38,11 @@ Package metadata and local dependency behavior were checked on 2026-05-25 with t
 | Close and cleanup | Pass: probe closes the database and removes the temporary directory. |
 | Schema readiness check | Pass: `db:check-schema` creates the planned tables in a temporary database and removes the temporary directory. |
 | Temporary conversion test | Pass: `db:test-conversion` round-trips synthetic JSON fixtures through a temporary database and removes the temporary directory. |
+| Project storage conversion | Pass: maintenance actions can create `information/data.db` after `json_turn_sqlite` backup and export that SQLite storage back to JSON after `sqlite_turn_json` backup. |
 | Node ABI diagnostic | Not a runtime gate: Node CLI loading can fail after rebuilding the native module for Electron ABI. |
 | Installer packaging | Pass: `npm run dist` completes with `better-sqlite3` native dependency rebuild. |
-| Packaged app runtime DB load | Not exercised: no packaged runtime conversion service exists yet. |
-| Runtime conversion | Not implemented. |
+| Packaged app runtime DB load | Planned: packaged conversion smoke testing remains a release gate. |
+| Active SQLite runtime storage | Not implemented. |
 
 ## Active Probe Direction
 
@@ -81,20 +82,20 @@ Future SQLite access must stay behind a main-process service. Renderer code must
 - raw database connections;
 - complete project directory listings.
 
-The renderer may request only business operations such as conversion preflight, conversion execution, export back to JSON, and report retrieval.
+The renderer may request only business operations such as conversion preflight, creating a SQLite copy, export back to JSON, and report retrieval.
 
 ## Minimal Future IPC Shape
 
-Potential future commands, subject to later implementation review:
+Current and future commands must stay narrow:
 
 | Channel | Payload | Result |
 | --- | --- | --- |
-| `storage:conversionPreflight` | `{ projectDir, direction }` | conversion report and backup preflight plan |
-| `storage:convertJsonToSqlite` | `{ projectDir, backupDir? }` | conversion report |
+| `storage:conversionPreflight` | `{ projectDir }` | conversion report and backup preflight plan |
+| `storage:createSqliteFromJson` | `{ projectDir, backupDir? }` | conversion report |
 | `storage:exportSqliteToJson` | `{ projectDir, backupDir? }` | export report |
 
 These channels must reuse trusted project-directory checks and must not expose SQL execution.
 
 ## Decision Boundary
 
-This decision does not authorize runtime SQLite implementation. It only defines the dependency direction, probe gate, and security boundary for the next implementation phase.
+This decision authorizes only the guarded project conversion utility and dependency probe. Automatic loading prefers SQLite when both formats are present, but a broader active-storage policy still requires separate review.

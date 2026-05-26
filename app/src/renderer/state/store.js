@@ -84,6 +84,9 @@ const BACKUP_EXPIRE_DAYS = 7;
 const state = {
   projectDir: '',
   projectModifiedTime: 0,
+  storageFormat: 'json',
+  jsonFilesExist: false,
+  sqliteDatabaseExists: false,
   settings: null,
   zones: [],
   points: [],

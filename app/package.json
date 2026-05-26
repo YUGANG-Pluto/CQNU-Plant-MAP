@@ -24,7 +24,8 @@
     "sqlite:probe:electron": "electron scripts/sqlite-dependency-probe.js",
     "sqlite:probe:node": "node scripts/sqlite-dependency-probe.js",
     "db:check-schema": "electron scripts/check-sqlite-schema.js",
-    "db:test-conversion": "electron scripts/test-sqlite-conversion.js"
+    "db:test-conversion": "electron scripts/test-sqlite-conversion.js",
+    "db:test-storage-conversion": "electron scripts/test-storage-conversion.js"
   },
   "devDependencies": {
     "electron": "^31.7.7",

@@ -4,7 +4,7 @@
 
 SQLite is a planned optional local data layer. The active runtime format remains the project-folder JSON layout documented in `DATA_SCHEMA.md`.
 
-No SQLite database file, migration script, or conversion command is currently part of the application runtime.
+No automatic SQLite migration runs during project open, save, backup, restore, or export. JSON remains the active runtime format.
 
 `npm run db:check-schema` is available as a development readiness check. It creates a temporary SQLite database in the system temp directory, validates the planned table layout, closes the database, and deletes the temporary files. It does not read or write project data.
 
@@ -84,6 +84,21 @@ The checker verifies required tables and representative columns, including taxon
 
 This is not a user-facing conversion feature and does not register a renderer API.
 
+## Current Project Storage Conversion
+
+The maintenance center now provides an opt-in project storage conversion service for controlled local checks:
+
+- Create SQLite copy from JSON: writes `information/data.db` inside the trusted project folder.
+- Export SQLite copy back to JSON: reads `information/data.db` and writes the project JSON files after validation.
+- Both write operations create a project backup first.
+- Conversion backups are written under `information/statistics/backup` with `json_turn_sqlite` or `sqlite_turn_json` in the file name.
+- After successful JSON to SQLite conversion, the source JSON files are removed and the project reloads from SQLite.
+- After successful SQLite to JSON export, the source SQLite database is removed and the project reloads from JSON.
+- If both formats are present, automatic project loading prefers SQLite; users can still explicitly load JSON when JSON files exist.
+- The service writes `information/sqlite-conversion-report.json` with record counts, schema validation status, the conversion report and backup preflight plan outcome, and safety flags.
+- Renderer code calls only business commands through preload. It does not receive SQL strings, database handles, or absolute database paths.
+- The repository must not commit generated database files or conversion reports from user projects.
+
 ## Compatibility Rules
 
 - JSON projects must remain readable.
@@ -94,10 +109,9 @@ This is not a user-facing conversion feature and does not register a renderer AP
 
 ## Migration Readiness
 
-Before this plan becomes runtime conversion code, the project still needs:
+Before SQLite becomes the active runtime storage mode, the project still needs:
 
-- Backup-before-conversion behavior.
-- Runtime JSON to SQLite writer and SQLite to JSON reader services.
-- JSON to SQLite and SQLite to JSON round-trip checks.
+- A user-controlled storage-mode switch.
 - Recovery behavior for failed conversion.
-- User-visible documentation for choosing JSON or SQLite storage.
+- Packaged application conversion smoke tests.
+- User-visible documentation for choosing JSON or SQLite as the active storage mode.

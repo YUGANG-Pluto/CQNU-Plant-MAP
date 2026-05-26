@@ -10,15 +10,12 @@ const LEVELS = Object.freeze({
 
 const DEFAULT_RETENTION_DAYS = 14;
 const DEFAULT_MAX_FILE_BYTES = 2 * 1024 * 1024;
-const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
-
 let config = {
   logDir: path.join(process.cwd(), 'logs'),
   level: 'info',
   retentionDays: DEFAULT_RETENTION_DAYS,
   maxFileBytes: DEFAULT_MAX_FILE_BYTES
 };
-let cleanupTimer = null;
 
 function pad(value) {
   return String(value).padStart(2, '0');
@@ -120,6 +117,57 @@ function cleanupOldLogs() {
   };
 }
 
+function normalizeLogFileName(name) {
+  const safeName = path.basename(String(name || ''));
+  if (!/^app-\d{4}-\d{2}-\d{2}(?:-\d+)?\.log$/.test(safeName)) {
+    throw new Error('invalid log file name');
+  }
+  return safeName;
+}
+
+function resolveLogFileByName(name) {
+  ensureLogDir();
+  const safeName = normalizeLogFileName(name);
+  const filePath = path.join(config.logDir, safeName);
+  const relative = path.relative(config.logDir, filePath);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error('log file is outside log directory');
+  }
+  return filePath;
+}
+
+function readLogFile(payload = {}) {
+  const filePath = resolveLogFileByName(payload.name);
+  if (!fs.existsSync(filePath)) {
+    throw new Error('log file does not exist');
+  }
+  const stat = fs.statSync(filePath);
+  const maxBytes = Math.min(Number(payload.maxBytes) || 512 * 1024, 2 * 1024 * 1024);
+  const text = stat.size > maxBytes ? readLogTail(filePath, maxBytes) : fs.readFileSync(filePath, 'utf8');
+  return {
+    name: path.basename(filePath),
+    size: stat.size,
+    truncated: stat.size > maxBytes,
+    content: text
+  };
+}
+
+function deleteLogFiles(payload = {}) {
+  const names = Array.isArray(payload.names) ? payload.names : [payload.name].filter(Boolean);
+  let deleted = 0;
+  names.forEach(name => {
+    const filePath = resolveLogFileByName(name);
+    if (fs.existsSync(filePath)) {
+      fs.rmSync(filePath, { force: true });
+      deleted += 1;
+    }
+  });
+  return {
+    deleted,
+    remaining: listLogFiles().length
+  };
+}
+
 function listLogFiles() {
   ensureLogDir();
   return fs.readdirSync(config.logDir, { withFileTypes: true })
@@ -211,7 +259,6 @@ function configureLogger(options = {}) {
       : config.maxFileBytes
   };
   ensureLogDir();
-  cleanupOldLogs();
 }
 
 function initLogger(app, options = {}) {
@@ -221,11 +268,6 @@ function initLogger(app, options = {}) {
     ...options
   });
 
-  if (cleanupTimer) {
-    clearInterval(cleanupTimer);
-  }
-  cleanupTimer = setInterval(cleanupOldLogs, CLEANUP_INTERVAL_MS);
-  cleanupTimer.unref?.();
 }
 
 function setLogLevel(level) {
@@ -300,6 +342,8 @@ module.exports = {
   logError,
   reportRendererLog,
   listRecentLogs,
+  readLogFile,
+  deleteLogFiles,
   cleanupOldLogs,
   getLoggerConfig
 };

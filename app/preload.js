@@ -35,11 +35,18 @@ contextBridge.exposeInMainWorld('plantApp', {
     report: payload => invoke('log:renderer', payload),
     setLevel: payload => invoke('log:setLevel', payload),
     listRecent: payload => invoke('log:listRecent', payload),
+    readLog: payload => invoke('log:readLog', payload),
+    deleteLogs: payload => invoke('log:deleteLogs', payload),
     cleanup: payload => invoke('log:cleanup', payload),
     exportDiagnostics: payload => invoke('log:exportDiagnostics', payload)
   },
   maintenance: {
     checkImageRefs: payload => invoke('maintenance:checkImageRefs', payload)
+  },
+  storage: {
+    conversionPreflight: payload => invoke('storage:conversionPreflight', payload),
+    createSqliteFromJson: payload => invoke('storage:createSqliteFromJson', payload),
+    exportSqliteToJson: payload => invoke('storage:exportSqliteToJson', payload)
   },
   species: {
     referenceQuery: payload => invoke('species:referenceQuery', payload),

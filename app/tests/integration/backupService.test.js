@@ -40,6 +40,18 @@ test('backup service creates unique zip backups', () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('backup service stores default backups inside project statistics backup folder', () => {
+  const { root, projectDir } = createWorkspace();
+  const created = backupService.create({ projectDir, label: 'json_turn_sqlite' });
+  const expectedRoot = path.join(projectDir, 'information', 'statistics', 'backup');
+
+  assert.ok(created.filePath.startsWith(expectedRoot));
+  assert.ok(path.basename(created.filePath).includes('json_turn_sqlite'));
+  assert.ok(fs.existsSync(created.filePath));
+
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('backup service lists, keeps, and deletes only trusted zip backups', () => {
   const { root, projectDir, backupDir } = createWorkspace();
   const created = backupService.create({ projectDir, backupDir, label: 'expired' });

@@ -49,6 +49,7 @@ Renderer code calls `window.plantApp`. Preload maps those calls to named IPC cha
 - `backupService.js`: zip backup creation and expired backup handling.
 - `logger.js`: local application logs and cleanup.
 - `maintenanceService.js`: project image reference checks.
+- `storageConversionService.js`: backup-first JSON to SQLite project copy and SQLite copy back to JSON export.
 - `speciesReferenceService.js`: GBIF and iNaturalist lookup.
 - `pathGuard.js`: directory trust and path safety.
 - `securityPolicy.js`: renderer source validation and external URL control.
@@ -73,4 +74,4 @@ The renderer has no Node integration. Preload exposes only business commands. Ma
 
 ## Future Direction
 
-The next architecture work should stay incremental: keep source-link and token validation documented, add focused tests around the current JSON model, and introduce shared type contracts only where they reduce maintenance risk. Database and schema migration work is deferred and should not be mixed into current feature fixes.
+The next architecture work should stay incremental: keep source-link and token validation documented, add focused tests around the current JSON model, and introduce shared type contracts only where they reduce maintenance risk. SQLite project storage conversion is available as an explicit maintenance action, but JSON remains the active runtime storage format until a separate storage-mode switch is implemented.
