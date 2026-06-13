@@ -36,8 +36,23 @@ The storage conversion controls are optional maintenance actions:
 - Load SQLite and Load JSON let the user explicitly choose a format when both formats are present.
 - Refresh storage and backups lists current JSON files, the current SQLite database, and backup zip files. Users can select backup files or current storage files for deletion.
 - Deleting the only available storage format requires a second confirmation. This prevents accidental removal of the last readable project data file.
+- If no readable storage format remains, restore by extracting the matching backup zip from `information/statistics/backup` into the project folder, then reopen the project.
+- Conversion failure keeps the source storage format in place. Use conversion preflight and the latest log diagnosis before retrying.
 
 Use a copied or backed-up project when testing conversion behavior.
+
+## Backup Restore
+
+Backup restore is a high-risk maintenance action and should be used only after inspecting the selected backup:
+
+- Select exactly one backup zip from `information/statistics/backup`.
+- Run restore inspection first. The inspection reports the backup file count, restored storage format, skipped nested backup entries, and blocking issues.
+- Restore requires a second high-risk confirmation before project files are changed.
+- Before restore writes project files, the application creates a `pre_restore` safety backup in `information/statistics/backup`.
+- Restore skips backup-folder entries inside the zip, so existing backup artifacts are preserved instead of being overwritten by nested backup files.
+- Restore accepts only backup zip files under the trusted backup folder and rejects unsafe zip entries such as absolute paths, drive paths, parent-directory escapes, or colon path segments.
+- If the restored backup contains SQLite storage, old JSON source files are removed after restore. If the restored backup contains JSON storage without SQLite, the old SQLite database is removed after restore.
+- After restore, reopen or reload the project through the application so the active storage format is read again.
 
 ## Log Review
 

@@ -2,9 +2,9 @@
 
 ## Current Rule
 
-Current project data is JSON-based. Missing optional fields are normalized at load time and are written only when the user saves the project through normal workflows.
+Current project data can be JSON-based or SQLite-based after explicit user conversion. Missing optional fields are normalized at load time and are written only when the user saves the project through normal workflows.
 
-The maintenance center can now create SQLite storage at `information/data.db` and export that storage back to JSON. This is an explicit backup-first utility. It does not run automatically when a project opens.
+The maintenance center can create SQLite storage at `information/data.db` and export that storage back to JSON. This is an explicit backup-first utility. It does not run automatically when a project opens. When both JSON and SQLite are present, automatic loading prefers SQLite; explicit JSON loading remains available when JSON files exist.
 
 ## Compatibility Requirements
 
@@ -15,6 +15,9 @@ The maintenance center can now create SQLite storage at `information/data.db` an
 - A backup is required before any storage format conversion writes project files.
 - Conversion backups are stored under `information/statistics/backup` and use direction labels such as `json_turn_sqlite` and `sqlite_turn_json`.
 - Generated database files such as `information/data.db` and generated reports such as `information/sqlite-conversion-report.json` are project artifacts, not repository files.
+- After a successful JSON to SQLite conversion, source JSON files are removed and kept in the direction-labeled backup.
+- After a successful SQLite to JSON export, the source database is removed and kept in the direction-labeled backup.
+- Each SQLite write path must run a schema check before the converted storage is accepted.
 
 ## Field Evolution
 
@@ -39,16 +42,17 @@ The maintenance center can now create SQLite storage at `information/data.db` an
 
 Exporting back to JSON also creates a backup first, reads `information/data.db`, validates the schema, restores unknown JSON fields from compatibility payloads, writes JSON through the normal project storage service, removes the source database after success, and reloads from JSON.
 
-## Future Active-Mode Migration Workflow
+## Runtime Storage Acceptance
 
-1. Load and validate source data.
-2. Create a backup.
-3. Run a schema check against a temporary target.
-4. Convert into a temporary target.
-5. Run consistency checks.
-6. Write a report.
-7. Replace the active target only after validation passes.
-8. Keep rollback instructions visible in the report.
+`npm run db:test-runtime` verifies the current explicit runtime behavior with a synthetic temporary project:
+
+1. Convert JSON to SQLite with backup-first behavior.
+2. Confirm automatic loading uses SQLite.
+3. Save project changes through SQLite.
+4. Create a JSON fallback and confirm automatic loading still prefers SQLite.
+5. Confirm explicit JSON loading reads the JSON fallback.
+6. Export SQLite back to JSON.
+7. Confirm the source database is removed and the exported JSON matches the SQLite-edited project.
 
 ## Verification Before Enabling A Migration
 
@@ -56,6 +60,7 @@ Exporting back to JSON also creates a backup first, reads `information/data.db`,
 - `npm run db:check-schema` passes.
 - `npm run db:test-conversion` passes.
 - `npm run db:test-storage-conversion` passes.
+- `npm run db:test-runtime` passes.
 - The in-memory JSON/table-model round-trip check passes.
 - The conversion report and backup preflight plan checks pass.
 - Dedicated conversion tests exist.

@@ -16,6 +16,7 @@ npm run sqlite:probe:electron
 npm run db:check-schema
 npm run db:test-conversion
 npm run db:test-storage-conversion
+npm run db:test-runtime
 npm test
 npm run verify
 ```
@@ -34,6 +35,7 @@ npm run verify
 | `db:check-schema` | Electron main-process schema readiness check using a temporary schema database. |
 | `db:test-conversion` | Electron main-process temporary JSON/SQLite round-trip check using synthetic fixtures. |
 | `db:test-storage-conversion` | Electron main-process project storage conversion check using a synthetic temporary project. |
+| `db:test-runtime` | Electron main-process SQLite runtime acceptance check using a synthetic temporary project. |
 | `test` | Unit and integration test sequence. |
 | `verify` | Repository, syntax, size, and self-check sequence. |
 
@@ -49,6 +51,8 @@ npm run verify
 `npm run verify` intentionally remains a structural gate and does not force the full test suite yet. CI and local release checks should still run `npm run test --if-present`.
 
 SQLite probe commands create only temporary databases under the system temporary directory and delete them before exit. The schema check command also creates a temporary schema database under the system temporary directory and deletes it before exit. The temporary conversion database created by `db:test-conversion` follows the same cleanup rule and uses only synthetic fixtures. The project conversion check created by `db:test-storage-conversion` uses a synthetic temporary project, writes a temporary `information/data.db`, verifies `information/statistics/backup`, verifies source-format cleanup after each direction, verifies backup-first conversion and export equality, then removes the temporary project.
+
+The runtime acceptance check created by `db:test-runtime` also uses a synthetic temporary project. It verifies automatic SQLite priority after conversion, saving through SQLite, explicit JSON loading when both formats exist, export back to JSON, source cleanup, direction-labeled backups, and the renderer SQL boundary flags. It removes the temporary project before exit.
 
 ## Manual Smoke Test
 
@@ -92,7 +96,7 @@ Use temporary or synthetic data only. Do not commit real survey records, private
 - map selection and redraw behavior;
 - backup creation and cleanup;
 - species reference source links, token-page opening, and temporary cache behavior.
-- SQLite readiness table-model round-trip, temporary schema database check, temporary conversion database check, project storage conversion check, conversion report, and backup preflight plan.
+- SQLite readiness table-model round-trip, temporary schema database check, temporary conversion database check, project storage conversion check, runtime acceptance check, conversion report, and backup preflight plan.
 - maintenance log file selection, reading, and selected-file deletion.
 
 ## Statistics Center Regression

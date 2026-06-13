@@ -89,7 +89,7 @@ function buildStorageInventory(paths, backupDir = '') {
   return {
     version: CONVERSION_SERVICE_VERSION,
     projectDir: paths.projectRoot,
-    activeStorageFormat: sqliteDatabase.exists ? 'sqlite' : 'json',
+    activeStorageFormat: sqliteDatabase.exists ? 'sqlite' : (jsonFilesExist ? 'json' : ''),
     databaseFile: path.basename(paths.databasePath),
     jsonFiles,
     jsonFilesExist,
@@ -256,6 +256,9 @@ function deleteStorageArtifacts(payload) {
     activeStorageFormat: inventory.activeStorageFormat,
     databaseExists: inventory.databaseExists,
     jsonFilesExist: inventory.jsonFilesExist,
+    jsonFilesKept: inventory.jsonFilesExist,
+    availableStorageFormats: inventory.availableStorageFormats,
+    backupFiles: inventory.backupFiles,
     warnings: inventory.warnings
   };
 }
@@ -290,7 +293,7 @@ function getPreflight(payload) {
     safety: {
       backupRequired: true,
       writesProjectDatabase: true,
-      keepsJsonFiles: true,
+      keepsJsonFiles: false,
       rendererDatabaseAccess: false,
       exposesSql: false
     },

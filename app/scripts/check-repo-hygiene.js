@@ -149,7 +149,7 @@ function checkPackageMetadata() {
     fail('package.json private must be true');
   }
 
-  ['check:syntax', 'check:size', 'check:repo', 'self-check', 'verify', 'db:check-schema', 'db:test-conversion', 'db:test-storage-conversion'].forEach(scriptName => {
+  ['check:syntax', 'check:size', 'check:repo', 'self-check', 'verify', 'db:check-schema', 'db:test-conversion', 'db:test-storage-conversion', 'db:test-runtime'].forEach(scriptName => {
     if (!packageJson.scripts || !packageJson.scripts[scriptName]) {
       fail(`package.json missing script ${scriptName}`);
     }
@@ -217,6 +217,7 @@ function checkRequiredFiles() {
     'app/scripts/check-sqlite-schema.js',
     'app/scripts/test-sqlite-conversion.js',
     'app/scripts/test-storage-conversion.js',
+    'app/scripts/test-sqlite-runtime-acceptance.js',
     'app/tests/unit/sqliteExchangeModel.test.js',
     'app/tests/unit/sqliteSchemaService.test.js',
     'app/tests/unit/sqliteConversionService.test.js',

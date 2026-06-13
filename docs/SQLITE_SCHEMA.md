@@ -1,16 +1,16 @@
-# SQLite Schema Plan
+# SQLite Schema
 
 ## Status
 
-SQLite is a planned optional local data layer. The active runtime format remains the project-folder JSON layout documented in `DATA_SCHEMA.md`.
+SQLite is an explicit local project storage mode. The application still supports the project-folder JSON layout documented in `DATA_SCHEMA.md`, and JSON remains the compatibility and interchange format.
 
-No automatic SQLite migration runs during project open, save, backup, restore, or export. JSON remains the active runtime format.
+No automatic SQLite conversion runs during project open, save, backup, restore, or export. SQLite is created only after a user starts the guarded maintenance conversion. After a successful JSON to SQLite conversion, automatic project loading prefers `information/data.db`; explicit JSON loading remains available when JSON files exist.
 
 `npm run db:check-schema` is available as a development readiness check. It creates a temporary SQLite database in the system temp directory, validates the planned table layout, closes the database, and deletes the temporary files. It does not read or write project data.
 
 ## Storage Location
 
-When implemented, the default database file should live inside the trusted project folder, for example:
+The default database file lives inside the trusted project folder:
 
 ```text
 project-folder/
@@ -20,9 +20,9 @@ project-folder/
 
 The repository must not commit `.db`, `.sqlite`, or `.sqlite3` files.
 
-## Draft Tables
+## Tables
 
-The following table layout is a target design only. It is not an active migration.
+The following table layout is the current SQLite storage schema used by the guarded conversion service:
 
 | Table | Purpose |
 | --- | --- |
@@ -107,11 +107,11 @@ The maintenance center now provides an opt-in project storage conversion service
 - Images remain files referenced by project-relative paths, not BLOB values by default.
 - Taxonomy suggestions remain advisory and keep manual verification status.
 
-## Migration Readiness
+## Runtime Readiness
 
-Before SQLite becomes the active runtime storage mode, the project still needs:
+Before SQLite becomes the recommended default for ordinary projects, the project still needs:
 
-- A user-controlled storage-mode switch.
-- Recovery behavior for failed conversion.
-- Packaged application conversion smoke tests.
-- User-visible documentation for choosing JSON or SQLite as the active storage mode.
+- Manual packaged-app smoke testing on a copied project.
+- User-visible guidance for choosing explicit JSON loading when both formats exist.
+- Release checklist confirmation that backup restore, source cleanup, and explicit JSON fallback remain usable.
+- A stable type-contract baseline before broader TypeScript architecture work.

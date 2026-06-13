@@ -65,11 +65,15 @@ Image deletion is limited to `information/images/` under a trusted project direc
 | --- | --- | --- | --- |
 | `backup:chooseDir` | `backup.chooseDir()` | none | `{ canceled, backupDir? }` |
 | `backup:create` | `backup.create(payload)` | `{ projectDir, backupDir?, label? }` | `{ filePath, backupDir }` |
+| `backup:inspectRestore` | `backup.inspectRestore(payload)` | `{ projectDir, backupDir?, backupName }` | restore readiness plan |
+| `backup:restore` | `backup.restore(payload)` | `{ projectDir, backupDir?, backupName, confirmRestore: true }` | restore report |
 | `backup:listExpired` | `backup.listExpired(payload)` | `{ projectDir, backupDir?, days? }` | `{ items }` |
 | `backup:keepExpired` | `backup.keepExpired(payload)` | `{ projectDir, backupDir, paths }` | `{ updated }` |
 | `backup:deleteExpired` | `backup.deleteExpired(payload)` | `{ projectDir, backupDir, paths }` | `{ deleted }` |
 
 Manual backup directories must be trusted through the system directory picker. Expired backup cleanup only handles `.zip` files in a trusted backup folder.
+
+Backup restore is limited to a selected backup file in the trusted backup folder. The inspection command reads zip metadata and reports whether the archive can be restored. The restore command requires `confirmRestore: true`, creates a `pre_restore` safety backup before changing project files, skips nested backup-folder entries, rejects unsafe archive paths, and does not expose generic unzip or arbitrary file-write capabilities to renderer code.
 
 ## Logs And Diagnostics
 

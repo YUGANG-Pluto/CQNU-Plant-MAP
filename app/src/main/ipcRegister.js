@@ -72,6 +72,8 @@ function registerIpc() {
 
   handle('backup:chooseDir', async () => dialogs.chooseBackupDir());
   handle('backup:create', backupService.create);
+  handle('backup:inspectRestore', backupService.inspectRestorePlan);
+  handle('backup:restore', backupService.restore);
   handle('backup:listExpired', backupService.listExpired);
   handle('backup:keepExpired', backupService.keepExpired);
   handle('backup:deleteExpired', backupService.deleteExpired);

@@ -311,6 +311,8 @@ const elementGroups = {
     'btnLoadJsonStorage',
     'btnRefreshStorageArtifacts',
     'btnDeleteSelectedStorageArtifacts',
+    'btnInspectSelectedBackup',
+    'btnRestoreSelectedBackup',
     'maintenanceStorageArtifactList',
     'maintenanceSettingsSummary',
     'maintenanceSafeModeStatus',

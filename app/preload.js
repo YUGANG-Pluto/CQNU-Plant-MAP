@@ -27,6 +27,8 @@ contextBridge.exposeInMainWorld('plantApp', {
   backup: {
     chooseDir: () => invoke('backup:chooseDir'),
     create: payload => invoke('backup:create', payload),
+    inspectRestore: payload => invoke('backup:inspectRestore', payload),
+    restore: payload => invoke('backup:restore', payload),
     listExpired: payload => invoke('backup:listExpired', payload),
     keepExpired: payload => invoke('backup:keepExpired', payload),
     deleteExpired: payload => invoke('backup:deleteExpired', payload)

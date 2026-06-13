@@ -2,9 +2,9 @@
 
 ## Current Decision
 
-SQLite remains a planned optional local data layer. The application continues to use the JSON project-folder model for active runtime behavior.
+SQLite is ready as an explicit local runtime storage mode after user-controlled conversion. JSON remains the compatibility and interchange format, and old JSON projects remain supported.
 
-This checklist is used to decide when SQLite storage work can continue without weakening JSON compatibility, backups, exports, or Electron security boundaries.
+This checklist is used to keep SQLite runtime work inside the existing compatibility, backup, export, and Electron security boundaries.
 
 ## Prerequisite Status
 
@@ -14,7 +14,7 @@ This checklist is used to decide when SQLite storage work can continue without w
 | JSON compatibility policy documented | Ready | `DATA_MIGRATION_PLAN.md` keeps old projects valid and unknown fields preserved. |
 | SQLite target schema documented | Ready | `SQLITE_SCHEMA.md` defines planned tables and compatibility rules. |
 | JSON/SQLite exchange plan documented | Ready | `JSON_SQLITE_EXCHANGE.md` defines conversion directions and reports. |
-| User-facing SQLite status documented | Ready | `SQLITE_GUIDE.md` states SQLite is planned and not required for current workflows. |
+| User-facing SQLite status documented | Ready | `SQLITE_GUIDE.md` states SQLite is explicit, backup-first, and compatible with JSON fallback workflows. |
 | SQLite dependency decision documented | Ready | `SQLITE_DEPENDENCY_DECISION.md` defines active dependency probe, fallback, install probe, and IPC boundary. |
 | File size governance active | Ready | `npm run check:size` is included in `npm run verify`. |
 | Repository hygiene active | Ready | `npm run check:repo` requires the planning documents and verification scripts. |
@@ -34,29 +34,34 @@ This checklist is used to decide when SQLite storage work can continue without w
 | SQLite schema checker | Ready | `db:check-schema` creates a temporary schema database, validates planned tables and representative columns, then deletes the temporary files. |
 | Temporary JSON/SQLite conversion test | Ready | `db:test-conversion` writes synthetic JSON fixtures through a temporary SQLite database and verifies JSON equality after read-back. |
 | Runtime conversion tests | Ready | `db:test-storage-conversion` uses a synthetic temporary project to verify backup-first project conversion and export equality. |
-| Active SQLite runtime switch | Not implemented | JSON remains the active runtime format after creating a SQLite copy. |
+| SQLite runtime acceptance test | Ready | `db:test-runtime` verifies explicit conversion, automatic SQLite priority, SQLite save, explicit JSON fallback, export back to JSON, and source cleanup. |
+| Active SQLite runtime switch | Ready | After explicit JSON to SQLite conversion, automatic project loading and saving use SQLite. Explicit JSON loading remains available when JSON files exist. |
 | Typecheck command | Not implemented | Type declarations exist, but no `tsconfig.json` or `typecheck` script is active. |
 
-## Gate Before Runtime SQLite Work
+## Gate Before TypeScript Architecture Work
 
-SQLite active-runtime storage should not start until the following are part of the same scoped change:
+This is the TypeScript architecture gate.
 
-1. User-controlled storage-mode selection.
-2. Recovery behavior for failed active-mode switching.
-3. Packaged application project conversion smoke tests.
-4. User-facing rollback messages.
-5. Runtime database path rules for active mode.
-6. Failure rollback tests.
+TypeScript architecture work can start after the following remain true in one verified pass:
+
+1. `npm run db:test-runtime` passes.
+2. `npm run db:test-storage-conversion` passes.
+3. Backup restore inspection and guarded restore tests pass.
+4. `npm run verify` passes.
+5. `npm run dist` packages successfully.
+6. Manual UI smoke test confirms explicit JSON loading, SQLite loading, restore, and cleanup controls on a copied project.
+
+After those gates pass, TypeScript work should begin with `checkJs` and shared storage/IPC contracts, not a whole-app rewrite.
 
 ## Non-Goals For The Current State
 
 - No SQLite database files are committed.
-- `better-sqlite3` is used only in main-process readiness checks and the guarded project conversion service.
+- `better-sqlite3` is used only in main-process checks and guarded project storage services.
 - No project data is migrated automatically.
-- No current JSON workflow depends on SQLite.
-- The current table-model round-trip is a verification aid, not a database writer.
-- The current conversion report and backup preflight plan are data-only readiness aids.
-- The current schema checker is a temporary database readiness aid, not a project database writer.
-- The current temporary conversion test writes only synthetic fixtures to a temporary database and is not a project migration feature.
+- No current JSON workflow requires SQLite.
+- The current table-model round-trip is a verification aid.
+- The current conversion report and backup preflight plan are guarded maintenance aids.
+- The current schema checker is a temporary database readiness aid.
+- The current temporary conversion test writes only synthetic fixtures to a temporary database.
 - The current project storage conversion utility writes local SQLite storage only after explicit user action.
 - If both JSON and SQLite are present, automatic loading prefers SQLite while explicit JSON loading remains available when JSON files exist.

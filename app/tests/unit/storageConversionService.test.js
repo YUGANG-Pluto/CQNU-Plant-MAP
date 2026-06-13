@@ -60,6 +60,15 @@ test('storage artifact inventory and guarded cleanup stay project scoped', () =>
     assert.equal(deleted.deleted.sqliteDatabase, true);
     assert.equal(fs.existsSync(path.join(infoDir, 'data.db')), false);
     assert.equal(fs.existsSync(path.join(infoDir, 'settings.json')), true);
+
+    const removedJson = storageConversionService.deleteStorageArtifacts({
+      projectDir,
+      deleteJsonFiles: true,
+      allowDeleteOnlyStorage: true
+    });
+    assert.deepEqual(removedJson.availableStorageFormats, []);
+    assert.equal(removedJson.activeStorageFormat, '');
+    assert.equal(removedJson.jsonFilesExist, false);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

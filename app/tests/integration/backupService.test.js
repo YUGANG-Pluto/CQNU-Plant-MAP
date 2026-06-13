@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const AdmZip = require('adm-zip');
 
 const backupService = require('../../src/main/backupService');
 const pathGuard = require('../../src/main/pathGuard');
@@ -85,6 +86,58 @@ test('backup service rejects path escapes and non-zip deletion targets', () => {
 
   expectCode(() => backupService.deleteExpired({ projectDir, backupDir, paths: [outside] }), ERROR_CODES.PATH_OUT_OF_SCOPE);
   expectCode(() => backupService.deleteExpired({ projectDir, backupDir, paths: [textFile] }), ERROR_CODES.INVALID_BACKUP_FILE);
+
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('backup service inspects and restores selected project backup safely', () => {
+  const { root, projectDir } = createWorkspace();
+  const infoDir = path.join(projectDir, 'information');
+  fs.writeFileSync(path.join(infoDir, 'settings.json'), JSON.stringify({ restored: true }), 'utf8');
+  const created = backupService.create({ projectDir, label: 'manual' });
+  fs.writeFileSync(path.join(infoDir, 'settings.json'), JSON.stringify({ restored: false }), 'utf8');
+  fs.writeFileSync(path.join(infoDir, 'data.db'), 'stale sqlite', 'utf8');
+
+  const plan = backupService.inspectRestorePlan({
+    projectDir,
+    backupName: path.basename(created.filePath)
+  });
+  assert.equal(plan.ok, true);
+  assert.equal(plan.hasJsonStorage, true);
+  assert.equal(plan.hasSqliteStorage, false);
+  assert.ok(plan.restoreFileCount >= 3);
+
+  expectCode(() => backupService.restore({
+    projectDir,
+    backupName: path.basename(created.filePath)
+  }), ERROR_CODES.INVALID_PAYLOAD);
+
+  const restored = backupService.restore({
+    projectDir,
+    backupName: path.basename(created.filePath),
+    confirmRestore: true
+  });
+  assert.equal(restored.status, 'completed');
+  assert.ok(path.basename(restored.safetyBackupFile).includes('pre_restore'));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(infoDir, 'settings.json'), 'utf8')).restored, true);
+  assert.equal(fs.existsSync(path.join(infoDir, 'data.db')), false);
+
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('backup restore inspection rejects unsafe zip entries', () => {
+  const { root, projectDir } = createWorkspace();
+  const backupRoot = path.join(projectDir, 'information', 'statistics', 'backup');
+  fs.mkdirSync(backupRoot, { recursive: true });
+  const unsafeZip = path.join(backupRoot, 'unsafe.zip');
+  const zip = new AdmZip();
+  zip.addFile('project/C:/escape.txt', Buffer.from('bad'));
+  zip.writeZip(unsafeZip);
+
+  expectCode(() => backupService.inspectRestorePlan({
+    projectDir,
+    backupName: 'unsafe.zip'
+  }), ERROR_CODES.INVALID_BACKUP_FILE);
 
   fs.rmSync(root, { recursive: true, force: true });
 });

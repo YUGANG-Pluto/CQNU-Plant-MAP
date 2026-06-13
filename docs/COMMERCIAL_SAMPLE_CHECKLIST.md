@@ -35,6 +35,7 @@
 - [ ] iNaturalist token page opens from the image comparison area.
 - [ ] iNaturalist token use is documented as temporary and not stored in project JSON.
 - [ ] SQLite storage conversion preflight completes on a synthetic or backup project.
+- [ ] SQLite runtime acceptance passes on a synthetic or copied project.
 - [ ] Statistics center shows overview, zone, composition, diversity, similarity, phenology, trend, quality, export, and metric-note sections.
 - [ ] Statistics heatmap matrices support CSV, JSON, Markdown, and SVG export.
 - [ ] Statistics formulas and data-scope limits are visible in the UI.
@@ -51,11 +52,11 @@
 - [ ] Statistics full JSON and Markdown summary exports work.
 - [ ] Heatmap SVG export opens without external resources.
 - [ ] Maintenance health check works.
-- [ ] Current JSON storage is documented as active.
+- [ ] JSON compatibility and explicit SQLite runtime behavior are documented.
 - [ ] File size governance passes with documented reasons for legacy large files.
-- [ ] SQLite exchange planning documents are present, while runtime conversion remains disabled until separately implemented.
-- [ ] SQLite readiness checklist identifies ready, planned, and not implemented gates.
-- [ ] Active SQLite runtime storage remains disabled unless a separate storage-mode switch is approved.
+- [ ] SQLite exchange documents describe automatic SQLite priority and explicit JSON fallback.
+- [ ] SQLite readiness checklist identifies TypeScript architecture gates.
+- [ ] Active SQLite runtime is used only after explicit maintenance conversion.
 
 ## Release
 

@@ -4,6 +4,8 @@
 
 The application currently uses JavaScript with JSDoc typedefs in selected renderer modules. This remains the active implementation style until shared contracts are stable enough for gradual type checking.
 
+SQLite explicit runtime storage is now part of the storage contract. TypeScript architecture work can start after the SQLite runtime acceptance gate passes together with backup restore, conversion, verification, and packaging checks.
+
 ## Principles
 
 - Keep runtime behavior unchanged while adding type coverage.
@@ -20,11 +22,24 @@ The application currently uses JavaScript with JSDoc typedefs in selected render
 4. Introduce `npm run typecheck` only after the first checked include list passes locally.
 5. Convert files to TypeScript only when the conversion reduces maintenance risk.
 
+## Start Gate
+
+Begin TypeScript architecture work only when all of these pass in one local verification pass:
+
+- `npm run verify`
+- `npm run test --if-present`
+- `npm run db:test-storage-conversion`
+- `npm run db:test-runtime`
+- `npm run dist`
+
+The first TypeScript change should add `tsconfig.json` with `checkJs` for `src/shared/types`, `src/main/projectStore.js`, `src/main/storageConversionService.js`, and preload IPC contracts only. Do not start with renderer-wide conversion.
+
 ## Initial Contract Targets
 
 | Area | Contract |
 | --- | --- |
 | Project storage | `settings.json`, `zones.json`, `points.json`, image references. |
+| SQLite runtime | `information/data.db`, conversion reports, explicit JSON fallback, source cleanup, backup restore. |
 | Taxonomy fields | `family`, `genus`, taxonomy source, confidence, verification status, candidate summary. |
 | IPC | Project load/save, backup, diagnostics, species reference, external link opening. |
 | Statistics | Summary, zone rows, diversity metrics, heatmap matrix model, export descriptors. |

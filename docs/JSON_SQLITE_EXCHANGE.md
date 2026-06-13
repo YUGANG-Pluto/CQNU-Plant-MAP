@@ -128,6 +128,15 @@ Round-trip tests should verify:
 - unknown field preservation;
 - UTF-8 CSV and JSON output stability.
 
-## Not Implemented Yet
+## Runtime Storage Acceptance
 
-The current application does not include an active SQLite runtime storage switch. Creating a SQLite copy does not disable JSON storage, and exporting back to JSON remains an explicit maintenance action.
+`npm run db:test-runtime` exercises the explicit SQLite runtime path against a synthetic temporary project. It verifies:
+
+- JSON to SQLite conversion removes the source JSON files after backup and validation;
+- automatic project loading uses SQLite after conversion;
+- saving without an explicit storage format writes back to SQLite when `information/data.db` exists;
+- when both JSON and SQLite files exist, automatic loading still prefers SQLite;
+- explicit JSON loading remains available when JSON files exist;
+- SQLite export writes JSON through `projectStore`, removes the source database after success, and preserves the SQLite-edited project data;
+- conversion backups include the direction labels `json_turn_sqlite` and `sqlite_turn_json`;
+- renderer-facing reports continue to hide SQL strings, database handles, and raw database paths.

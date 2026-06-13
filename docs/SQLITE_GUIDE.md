@@ -2,18 +2,21 @@
 
 ## Current Behavior
 
-The application currently stores project data in local JSON files under the trusted project folder. SQLite is documented as a future optional local data layer and is not required to open, edit, save, back up, or export current projects.
+The application can store project data either as local JSON files or as a local SQLite database under the trusted project folder. JSON remains the compatibility format. SQLite becomes the automatic runtime format only after the user explicitly converts a project in the maintenance center.
 
-The maintenance center also provides a guarded local conversion utility. It can create SQLite storage at `information/data.db` from the current JSON project, and it can export that SQLite storage back to JSON after validation. These actions are explicit and backup-first.
+The maintenance center provides a guarded local conversion utility. It can create SQLite storage at `information/data.db` from the current JSON project, and it can export that SQLite storage back to JSON after validation. These actions are explicit and backup-first.
 
 Conversion backup files are stored under `information/statistics/backup`. JSON to SQLite backups include `json_turn_sqlite` in the file name; SQLite to JSON backups include `sqlite_turn_json`.
 
-## User-Facing Rules For Future SQLite Mode
+Automatic loading prefers SQLite when both `information/data.db` and JSON files are present. Users can explicitly load JSON from the maintenance center when JSON files exist.
+
+## User-Facing Rules
 
 - The user chooses when to convert a project.
 - A backup is created before conversion.
 - Conversion failure must leave the source project usable.
 - JSON export remains available after conversion.
+- Explicit JSON loading remains available when JSON files exist.
 - Image files stay in the project folder and are referenced by relative paths.
 - The database file stays local to the project folder.
 
@@ -24,6 +27,7 @@ Conversion backup files are stored under `information/statistics/backup`. JSON t
 - Do not store absolute local image paths.
 - Do not replace existing JSON projects without an explicit user action.
 - Do not require SQLite for ordinary JSON project workflows.
+- Do not expose SQL strings, database handles, or absolute database paths to renderer code.
 
 ## Support Status
 
@@ -33,12 +37,15 @@ Conversion backup files are stored under `information/statistics/backup`. JSON t
 | Save JSON project | Supported |
 | Back up JSON project | Supported |
 | Export JSON project data | Supported |
-| Convert JSON to SQLite | Planned |
-| Convert SQLite to JSON | Planned |
+| Convert JSON to SQLite | Ready |
+| Convert SQLite to JSON | Ready |
 | Create SQLite copy from JSON | Ready |
 | Export SQLite copy back to JSON | Ready |
+| Automatic load prefers SQLite when both formats exist | Ready |
+| Explicit JSON load when both formats exist | Ready |
 | Run SQLite schema checks | Ready |
 | Run temporary JSON/SQLite conversion tests | Ready |
+| Run SQLite runtime acceptance | Ready |
 
 ## Maintenance Conversion Utility
 
@@ -52,6 +59,8 @@ Use the maintenance center only after saving the current project:
 6. If both JSON and SQLite files are present, automatic loading prefers SQLite. The maintenance center can explicitly load JSON when JSON files exist.
 7. Refresh storage and backups lists current storage artifacts and backup zip files. Selected backup files can be deleted directly; selected current storage files can be deleted only after confirmation.
 8. If the selected deletion would remove the only available storage format, the maintenance center requires a second confirmation before the main process accepts the request.
+9. If the project has no readable storage format after an explicit cleanup, extract the appropriate `json_turn_sqlite` or `sqlite_turn_json` backup zip into the project folder and reopen the project.
+10. If conversion fails, the source storage format remains in place. Review preflight output and the latest log diagnosis before retrying.
 
 The utility does not upload project data, images, local paths, or service tokens. Renderer code does not receive SQL strings, database handles, or absolute database paths.
 
@@ -64,3 +73,5 @@ The utility does not upload project data, images, local paths, or service tokens
 `npm run db:test-conversion` is also a development readiness command. It round-trips synthetic JSON fixtures through a temporary SQLite database and deletes the temporary database before exit.
 
 `npm run db:test-storage-conversion` exercises the guarded project conversion service against a synthetic temporary project. It verifies backup creation, `information/data.db`, the conversion report, and JSON equality after export.
+
+`npm run db:test-runtime` exercises the explicit SQLite runtime path against a synthetic temporary project. It verifies JSON to SQLite conversion, automatic SQLite loading, saving through SQLite, explicit JSON loading when both formats exist, SQLite to JSON export, source-format cleanup, backup labels, and renderer SQL boundary flags.

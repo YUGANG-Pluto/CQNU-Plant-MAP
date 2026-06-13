@@ -520,6 +520,12 @@ async function testBackupCreateCleanupAndCounts() {
 
     await withStubbedModules({ 'adm-zip': createAdmZipStub() }, async () => {
       const backupService = requireFresh('../src/main/backupService');
+      const backupSource = fs.readFileSync(path.join(process.cwd(), 'src/main/backupService.js'), 'utf8');
+      assert.ok(backupSource.includes('function inspectRestorePlan'));
+      assert.ok(backupSource.includes('function restore'));
+      assert.ok(backupSource.includes('confirmRestore'));
+      assert.ok(backupSource.includes("label: 'pre_restore'"));
+      assert.ok(backupSource.includes('normalizeZipEntryName'));
       const first = backupService.create({
         projectDir,
         backupDir: trustedBackupDir,
@@ -1267,6 +1273,8 @@ function testMaintenanceCenterContract() {
   [
     "invoke('settings:importJson'",
     "invoke('settings:exportJson'",
+    "invoke('backup:inspectRestore'",
+    "invoke('backup:restore'",
     "invoke('log:listRecent'",
     "invoke('log:readLog'",
     "invoke('log:deleteLogs'",
@@ -1282,6 +1290,8 @@ function testMaintenanceCenterContract() {
   [
     "handle('settings:importJson'",
     "handle('settings:exportJson'",
+    "handle('backup:inspectRestore'",
+    "handle('backup:restore'",
     "handle('log:listRecent'",
     "handle('log:readLog'",
     "handle('log:deleteLogs'",
@@ -1323,7 +1333,9 @@ function testMaintenanceCenterContract() {
     "'btnLoadSqliteStorage'",
     "'btnLoadJsonStorage'",
     "'btnRefreshStorageArtifacts'",
-    "'btnDeleteSelectedStorageArtifacts'"
+    "'btnDeleteSelectedStorageArtifacts'",
+    "'btnInspectSelectedBackup'",
+    "'btnRestoreSelectedBackup'"
   ].forEach(fragment => assert.ok(maintenanceSource.includes(fragment), `safe mode lock list missing ${fragment}`));
   assert.ok(mapSource.includes("isMaintenanceReadOnlyMode() && mode !== 'browse'"));
   assert.ok(mapSource.includes("guardMaintenanceReadOnlyAction('map-add-point')"));
@@ -1360,6 +1372,17 @@ function testMaintenanceCenterContract() {
       'maintenanceStoragePreflight',
       'maintenanceStorageCreateSqlite',
       'maintenanceStorageExportJson',
+      'maintenanceStorageAvailableFormats',
+      'maintenanceStorageNoReadableFormat',
+      'maintenanceStorageRecovery',
+      'maintenanceStorageRestoreFromBackupHint',
+      'maintenanceStorageCreateRecoveryHint',
+      'maintenanceStorageExportRecoveryHint',
+      'maintenanceStorageLoadRecoveryHint',
+      'maintenanceBackupInspectRestore',
+      'maintenanceBackupRestoreSelected',
+      'maintenanceBackupRestoreHighRiskConfirm',
+      'maintenanceBackupRestoreSafetyBackup',
       'cancelAction'
     ].forEach(key => assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`));
   });
@@ -1617,6 +1640,7 @@ function testSqliteExchangeModelContract() {
   const conversionCheckSource = fs.readFileSync(path.join(process.cwd(), 'scripts/test-sqlite-conversion.js'), 'utf8');
   const storageSource = fs.readFileSync(path.join(process.cwd(), 'src/main/storageConversionService.js'), 'utf8');
   const storageCheckSource = fs.readFileSync(path.join(process.cwd(), 'scripts/test-storage-conversion.js'), 'utf8');
+  const runtimeCheckSource = fs.readFileSync(path.join(process.cwd(), 'scripts/test-sqlite-runtime-acceptance.js'), 'utf8');
   assert.ok(schemaSource.includes('CREATE TABLE IF NOT EXISTS'));
   assert.ok(schemaSource.includes('better-sqlite3'));
   assert.ok(schemaSource.includes('os.tmpdir()'));
@@ -1634,6 +1658,9 @@ function testSqliteExchangeModelContract() {
   assert.ok(storageSource.includes('SQLITE_DB_FILE'));
   assert.ok(storageCheckSource.includes('createSqliteFromJson'));
   assert.ok(storageCheckSource.includes('exportSqliteToJson'));
+  assert.ok(runtimeCheckSource.includes('autoWithBothFormatsUsesSqlite'));
+  assert.ok(runtimeCheckSource.includes('explicitJsonLoadReadsJsonData'));
+  assert.ok(runtimeCheckSource.includes('saveWithoutFormatUsesSqlite'));
   assert.ok(storageSource.includes('listStorageArtifacts'));
   assert.ok(storageSource.includes('deleteStorageArtifacts'));
   assert.strictEqual(storageConversionService.SQLITE_DB_FILE, 'data.db');
@@ -1723,6 +1750,8 @@ function testElectronSecurityContract() {
   assert.ok(ipcSource.includes('assertTrustedIpcSender'));
   assert.ok(ipcSource.includes("handle('window:openExternal'"));
   assert.ok(ipcSource.includes("handle('storage:conversionPreflight'"));
+  assert.ok(ipcSource.includes("handle('backup:inspectRestore'"));
+  assert.ok(ipcSource.includes("handle('backup:restore'"));
   assert.ok(ipcSource.includes("handle('storage:listArtifacts'"));
   assert.ok(ipcSource.includes("handle('storage:deleteArtifacts'"));
   assert.ok(ipcSource.includes("handle('storage:createSqliteFromJson'"));
@@ -1730,6 +1759,8 @@ function testElectronSecurityContract() {
   assert.ok(preloadSource.includes('contextBridge.exposeInMainWorld'));
   assert.ok(preloadSource.includes("invoke('window:openExternal'"));
   assert.ok(preloadSource.includes("invoke('storage:conversionPreflight'"));
+  assert.ok(preloadSource.includes("invoke('backup:inspectRestore'"));
+  assert.ok(preloadSource.includes("invoke('backup:restore'"));
   assert.ok(preloadSource.includes("invoke('storage:listArtifacts'"));
   assert.ok(preloadSource.includes("invoke('storage:deleteArtifacts'"));
   assert.ok(preloadSource.includes("invoke('storage:createSqliteFromJson'"));
@@ -1788,6 +1819,7 @@ function testRepositoryHygieneContract() {
     'db:check-schema',
     'db:test-conversion',
     'db:test-storage-conversion',
+    'db:test-runtime',
     'verify'
   ].forEach(scriptName => assert.ok(packageJson.scripts[scriptName], `package script missing ${scriptName}`));
   assert.ok(packageJson.scripts.verify.includes('check:size'), 'verify must include file size governance');
@@ -1865,6 +1897,7 @@ function testRepositoryHygieneContract() {
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-sqlite-schema.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'test-sqlite-conversion.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'test-storage-conversion.js')));
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'test-sqlite-runtime-acceptance.js')));
   [
     'tests/unit/sqliteExchangeModel.test.js',
     'tests/unit/sqliteSchemaService.test.js',
@@ -1941,8 +1974,8 @@ function testDocumentationUpdateContract() {
   assert.ok(dependencyDecision.includes('storage:conversionPreflight'));
 
   const sqliteSchema = readWorkspaceDoc('SQLITE_SCHEMA.md');
-  assert.ok(sqliteSchema.includes('SQLite is a planned optional local data layer'));
-  assert.ok(sqliteSchema.includes('No automatic SQLite migration'));
+  assert.ok(sqliteSchema.includes('SQLite is an explicit local project storage mode'));
+  assert.ok(sqliteSchema.includes('No automatic SQLite conversion'));
   assert.ok(sqliteSchema.includes('taxonomy_candidates'));
   assert.ok(sqliteSchema.includes('Current In-Memory Model'));
   assert.ok(sqliteSchema.includes('Current Schema Service'));
@@ -1955,25 +1988,27 @@ function testDocumentationUpdateContract() {
 
   const sqliteGuide = readWorkspaceDoc('SQLITE_GUIDE.md');
   assert.ok(sqliteGuide.includes('Convert JSON to SQLite'));
-  assert.ok(sqliteGuide.includes('Planned'));
+  assert.ok(sqliteGuide.includes('automatic loading prefers SQLite'));
   assert.ok(sqliteGuide.includes('Run SQLite schema checks'));
   assert.ok(sqliteGuide.includes('Run temporary JSON/SQLite conversion tests'));
+  assert.ok(sqliteGuide.includes('Run SQLite runtime acceptance'));
   assert.ok(sqliteGuide.includes('Create SQLite copy from JSON'));
   assert.ok(sqliteGuide.includes('Export SQLite copy back to JSON'));
   assert.ok(sqliteGuide.includes('Ready'));
 
   const sqliteReadiness = readWorkspaceDoc('SQLITE_READINESS.md');
-  assert.ok(sqliteReadiness.includes('SQLite remains a planned optional local data layer'));
+  assert.ok(sqliteReadiness.includes('SQLite is ready as an explicit local runtime storage mode'));
   assert.ok(sqliteReadiness.includes('SQLite dependency decision documented'));
   assert.ok(sqliteReadiness.includes('SQLite dependency probe result'));
   assert.ok(sqliteReadiness.includes('SQLite schema checker'));
   assert.ok(sqliteReadiness.includes('Temporary JSON/SQLite conversion test'));
+  assert.ok(sqliteReadiness.includes('SQLite runtime acceptance test'));
   assert.ok(sqliteReadiness.includes('Project storage conversion service'));
   assert.ok(sqliteReadiness.includes('JSON to SQLite table model'));
   assert.ok(sqliteReadiness.includes('Conversion report model'));
   assert.ok(sqliteReadiness.includes('Backup preflight plan'));
   assert.ok(sqliteReadiness.includes('JSON to SQLite converter'));
-  assert.ok(sqliteReadiness.includes('Not implemented'));
+  assert.ok(sqliteReadiness.includes('TypeScript architecture gate'));
   assert.ok(sqliteReadiness.includes('Backup-before-conversion'));
 
   const exchangePlan = readWorkspaceDoc('JSON_SQLITE_EXCHANGE.md');
@@ -1985,6 +2020,7 @@ function testDocumentationUpdateContract() {
   assert.ok(exchangePlan.includes('Temporary Database Round Trip'));
   assert.ok(exchangePlan.includes('db:test-conversion'));
   assert.ok(exchangePlan.includes('Project Storage Conversion'));
+  assert.ok(exchangePlan.includes('Runtime Storage Acceptance'));
   assert.ok(exchangePlan.includes('unknown field preservation'));
 
   const migrationPlan = readWorkspaceDoc('DATA_MIGRATION_PLAN.md');
@@ -1996,7 +2032,7 @@ function testDocumentationUpdateContract() {
 
   const architecture = readWorkspaceDoc('ARCHITECTURE.md');
   assert.ok(architecture.includes('source-link and token validation documented'));
-  assert.ok(architecture.includes('SQLite project storage conversion is available'));
+  assert.ok(architecture.includes('keep SQLite runtime acceptance passing'));
 
   const adr = readWorkspaceDoc('ADR/0004-data-storage-strategy.md');
   assert.ok(adr.includes('SQLite conversion is opt-in'));
@@ -2006,6 +2042,7 @@ function testDocumentationUpdateContract() {
   assert.ok(testingGuide.includes('npm run db:check-schema'));
   assert.ok(testingGuide.includes('npm run db:test-conversion'));
   assert.ok(testingGuide.includes('npm run db:test-storage-conversion'));
+  assert.ok(testingGuide.includes('npm run db:test-runtime'));
   assert.ok(testingGuide.includes('temporary schema database'));
   assert.ok(testingGuide.includes('temporary conversion database'));
   [

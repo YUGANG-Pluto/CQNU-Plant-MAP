@@ -103,6 +103,8 @@ SQLite storage conversion is handled in the main process. Renderer code can requ
 
 Storage conversion writes are limited to trusted project directories and create a backup under `information/statistics/backup` before project files are changed. Successful conversion removes the previous source format only after validation and backup.
 
+Backup restore is also main-process mediated. Renderer code can request only restore inspection for a selected backup zip and a confirmed restore operation. Restore rejects unsafe zip entries, ignores nested backup-folder entries, creates a `pre_restore` safety backup before overlaying project files, and keeps generic archive extraction or arbitrary file writing out of the preload surface.
+
 Log review is also main-process mediated. Renderer code can list log metadata, request one named log file, or delete selected log files by name. It cannot pass arbitrary log paths.
 
 ## Current Verification
