@@ -6,17 +6,27 @@ export interface SqliteTableRow {
   [key: string]: unknown;
 }
 
+export type SqliteTableName =
+  | 'project_settings'
+  | 'zones'
+  | 'points'
+  | 'phenology_entries'
+  | 'images'
+  | 'taxonomy_candidates';
+
+export interface SqliteTables {
+  project_settings: SqliteTableRow[];
+  zones: SqliteTableRow[];
+  points: SqliteTableRow[];
+  phenology_entries: SqliteTableRow[];
+  images: SqliteTableRow[];
+  taxonomy_candidates: SqliteTableRow[];
+}
+
 export interface SqliteTableModel {
   version: string;
   generatedAt: string;
-  tables: {
-    project_settings: SqliteTableRow[];
-    zones: SqliteTableRow[];
-    points: SqliteTableRow[];
-    phenology_entries: SqliteTableRow[];
-    images: SqliteTableRow[];
-    taxonomy_candidates: SqliteTableRow[];
-  };
+  tables: SqliteTables;
   report?: {
     zoneCount: number;
     pointCount: number;
@@ -25,6 +35,13 @@ export interface SqliteTableModel {
     taxonomyCandidateCount: number;
     warnings: string[];
   };
+}
+
+export interface SqliteTableModelInput {
+  version?: string;
+  generatedAt?: string;
+  tables?: Partial<Record<SqliteTableName, SqliteTableRow[]>>;
+  report?: Partial<NonNullable<SqliteTableModel['report']>>;
 }
 
 export interface ConversionReport {

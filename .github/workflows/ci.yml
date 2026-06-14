@@ -16,12 +16,15 @@ permissions:
 
 jobs:
   verify:
-    name: Local verification
+    name: Windows verification
     runs-on: windows-latest
 
     defaults:
       run:
         working-directory: app
+    env:
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      npm_config_registry: https://registry.npmmirror.com
 
     steps:
       - name: Checkout
@@ -30,18 +33,33 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
           cache: npm
           cache-dependency-path: app/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --fund=false
 
-      - name: Verify repository
-        run: npm run verify
+      - name: Rebuild native dependencies for Electron
+        run: npm run rebuild:electron
 
-      - name: Run test script when present
+      - name: Check repository hygiene
+        run: npm run check:repo
+
+      - name: Check JavaScript syntax
+        run: npm run check:syntax
+
+      - name: Typecheck storage and IPC contracts
+        run: npm run typecheck
+
+      - name: Check file size policy
+        run: npm run check:size
+
+      - name: Run self-check
+        run: npm run self-check
+
+      - name: Run unit and integration tests
         run: npm run test --if-present
 
-      - name: Run build script when present
-        run: npm run build --if-present
+      - name: Run SQLite runtime acceptance
+        run: npm run db:test-runtime

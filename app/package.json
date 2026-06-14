@@ -17,6 +17,7 @@
     "check:repo": "node scripts/check-repo-hygiene.js",
     "typecheck": "tsc -p tsconfig.json",
     "verify": "npm run check:repo && npm run check:syntax && npm run typecheck && npm run check:size && npm run self-check",
+    "rebuild:electron": "electron-builder install-app-deps",
     "check": "npm run lint && npm run self-check",
     "test:unit": "node --test tests/unit/*.test.js",
     "test:integration": "node --test tests/integration/*.test.js",

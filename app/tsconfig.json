@@ -18,7 +18,9 @@
     "src/shared/types/**/*.d.ts",
     "src/main/projectStore.js",
     "src/main/storageConversionService.js",
-    "src/main/backupService.js"
+    "src/main/backupService.js",
+    "src/main/sqliteExchangeModel.js",
+    "src/main/sqliteSchemaService.js"
   ],
   "exclude": [
     "node_modules",

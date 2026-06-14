@@ -11,7 +11,7 @@ SQLite explicit runtime storage is now part of the storage contract. TypeScript 
 - Keep runtime behavior unchanged while adding type coverage.
 - Start with project data contracts, IPC payloads, export rows, and statistics models.
 - Do not convert the whole renderer in one pass.
-- Do not add a typecheck command until a `tsconfig` and initial checked files exist.
+- Keep the active typecheck command narrow and expand it only after each included area passes locally.
 - Keep JSON project compatibility as the primary storage contract.
 
 ## Recommended Sequence
@@ -32,9 +32,11 @@ The current checked scope is intentionally narrow:
 - `src/main/projectStore.js`
 - `src/main/storageConversionService.js`
 - `src/main/backupService.js`
+- `src/main/sqliteExchangeModel.js`
+- `src/main/sqliteSchemaService.js`
 - `src/shared/types/**/*.d.ts`
 
-This scope covers project loading/saving, explicit SQLite runtime behavior, storage conversion, guarded backup restore, and preload IPC shape. It does not check the full renderer yet.
+This scope covers project loading/saving, explicit SQLite runtime behavior, storage conversion, guarded backup restore, SQLite table-model/schema contracts, and preload IPC shape. It does not check the full renderer yet.
 
 ## Expansion Gate
 
@@ -46,7 +48,7 @@ Expand TypeScript architecture work only when all of these pass in one local ver
 - `npm run db:test-runtime`
 - `npm run dist`
 
-The next TypeScript change should add one bounded area at a time, preferably `sqliteExchangeModel`, `sqliteSchemaService`, or the maintenance storage UI contract. Do not start with renderer-wide conversion.
+The next TypeScript change should add one bounded area at a time, preferably `sqliteConversionService`, maintenance storage UI contracts, or species reference provider contracts. Do not start with renderer-wide conversion.
 
 ## Initial Contract Targets
 

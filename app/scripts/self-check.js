@@ -1811,6 +1811,7 @@ function testRepositoryHygieneContract() {
     'check:repo',
     'self-check',
     'typecheck',
+    'rebuild:electron',
     'test:unit',
     'test:integration',
     'test',
@@ -1884,10 +1885,18 @@ function testRepositoryHygieneContract() {
     '.github/ISSUE_TEMPLATE/release_checklist.yml',
     '.github/ISSUE_TEMPLATE/config.yml'
   ].forEach(fileName => assert.ok(repositoryFileExists(fileName), `${fileName} must exist`));
-  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run verify'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('node-version: 20'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('ELECTRON_MIRROR'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm_config_registry'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run check:repo'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run check:syntax'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run typecheck'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run rebuild:electron'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run check:size'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run self-check'));
   assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('- dev'));
   assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run test --if-present'));
-  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run build --if-present'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run db:test-runtime'));
   assert.ok(readRepositoryPath('.github/pull_request_template.md').includes('Compatibility'));
   assert.ok(readRepositoryPath('.github/pull_request_template.md').includes('Data Format Impact'));
   assert.ok(readRepositoryPath('.github/pull_request_template.md').includes('Rollback'));

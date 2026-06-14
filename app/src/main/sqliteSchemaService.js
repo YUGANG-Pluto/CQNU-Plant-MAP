@@ -4,6 +4,25 @@ const path = require('path');
 
 const SCHEMA_VERSION = 'sqlite-schema-v1';
 
+/**
+ * @typedef {{
+ *   ok: boolean,
+ *   schemaVersion: string,
+ *   expectedTables: string[],
+ *   tablesCreated: string[],
+ *   missingTables: string[],
+ *   missingColumns?: object,
+ *   error?: string,
+ *   runtime?: string,
+ *   package?: string,
+ *   temporaryDatabaseCreated?: boolean,
+ *   writesProjectData?: boolean,
+ *   closed?: boolean,
+ *   cleaned?: boolean,
+ *   warnings?: string[]
+ * }} SqliteSchemaValidation
+ */
+
 const EXPECTED_TABLES = Object.freeze([
   'project_settings',
   'zones',
@@ -187,6 +206,10 @@ function listMissingTables(tableNames) {
   return EXPECTED_TABLES.filter(tableName => !actual.has(tableName));
 }
 
+/**
+ * @param {string[]} tableNames
+ * @returns {SqliteSchemaValidation}
+ */
 function validateSchemaTableNames(tableNames) {
   const missingTables = listMissingTables(tableNames);
   return {
@@ -218,6 +241,10 @@ function validateRequiredColumns(db) {
   return missingColumns;
 }
 
+/**
+ * @param {{ prepare: (sql: string) => { all: () => Array<Record<string, unknown>> } }} db
+ * @returns {SqliteSchemaValidation}
+ */
 function validateSchemaTables(db) {
   const tableValidation = validateSchemaTableNames(readTableNames(db));
   const missingColumns = tableValidation.ok ? validateRequiredColumns(db) : {};
@@ -236,6 +263,10 @@ function removeQuietly(targetPath) {
   }
 }
 
+/**
+ * @param {{ Database?: new (filePath: string) => { pragma: (sql: string) => void, exec: (sql: string) => void, close: () => void, prepare: (sql: string) => { all: () => Array<Record<string, unknown>> } } }} [options]
+ * @returns {SqliteSchemaValidation}
+ */
 function checkSchemaInTemporaryDatabase(options = {}) {
   const Database = options.Database || require('better-sqlite3');
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plant-sqlite-schema-'));

@@ -1,5 +1,13 @@
 const MODEL_VERSION = 'sqlite-exchange-model-v1';
 
+/**
+ * @typedef {import('../shared/types/project').JsonProjectSnapshot} JsonProjectSnapshot
+ * @typedef {import('../shared/types/sqlite-exchange').SqliteTableModel} SqliteTableModel
+ * @typedef {import('../shared/types/sqlite-exchange').SqliteTableModelInput} SqliteTableModelInput
+ * @typedef {import('../shared/types/sqlite-exchange').ConversionReport} ConversionReport
+ * @typedef {import('../shared/types/sqlite-exchange').BackupPreflightPlan} BackupPreflightPlan
+ */
+
 const ZONE_FIELDS = Object.freeze([
   'id',
   'zoneId',
@@ -365,6 +373,10 @@ function collectImageRows(points) {
   return rows;
 }
 
+/**
+ * @param {Partial<JsonProjectSnapshot>} [project]
+ * @returns {SqliteTableModel}
+ */
 function buildSqliteModelFromJsonProject(project = {}) {
   const settings = cloneJson(project.settings || {}, {});
   const zones = Array.isArray(project.zones) ? cloneJson(project.zones, []) : [];
@@ -397,6 +409,10 @@ function buildSqliteModelFromJsonProject(project = {}) {
   };
 }
 
+/**
+ * @param {SqliteTableModelInput} [model]
+ * @returns {{ settings: Record<string, unknown>, zones: Array<Record<string, unknown>>, points: Array<Record<string, unknown>> }}
+ */
 function buildJsonProjectFromSqliteModel(model = {}) {
   const tables = model.tables || {};
   const settings = {};
@@ -406,7 +422,7 @@ function buildJsonProjectFromSqliteModel(model = {}) {
   const phenologyRows = Array.isArray(tables.phenology_entries) ? tables.phenology_entries : [];
   const candidateRows = Array.isArray(tables.taxonomy_candidates) ? tables.taxonomy_candidates : [];
   return {
-    settings,
+    settings: /** @type {Record<string, unknown>} */ (settings),
     zones: (tables.zones || [])
       .slice()
       .sort((a, b) => a.sourceIndex - b.sourceIndex)
@@ -418,6 +434,10 @@ function buildJsonProjectFromSqliteModel(model = {}) {
   };
 }
 
+/**
+ * @param {SqliteTableModelInput} [model]
+ * @returns {{ ok: boolean, errors: string[] }}
+ */
 function validateSqliteExchangeModel(model = {}) {
   const errors = [];
   if (model.version !== MODEL_VERSION) {
@@ -454,6 +474,11 @@ function uniqueImagePathCount(rows = []) {
   return new Set(rows.map(row => row.path).filter(Boolean)).size;
 }
 
+/**
+ * @param {SqliteTableModelInput} [model]
+ * @param {Record<string, unknown>} [options]
+ * @returns {ConversionReport}
+ */
 function buildConversionReport(model = {}, options = {}) {
   const tables = model.tables || {};
   const validation = validateSqliteExchangeModel(model);
@@ -479,10 +504,10 @@ function buildConversionReport(model = {}, options = {}) {
 
   return {
     version: MODEL_VERSION,
-    direction: options.direction || 'json-to-sqlite-table-model',
-    generatedAt: options.generatedAt || new Date().toISOString(),
-    sourceFormat: options.sourceFormat || 'json-project',
-    targetFormat: options.targetFormat || 'sqlite-table-model',
+    direction: safeText(options.direction || 'json-to-sqlite-table-model'),
+    generatedAt: safeText(options.generatedAt || new Date().toISOString()),
+    sourceFormat: safeText(options.sourceFormat || 'json-project'),
+    targetFormat: safeText(options.targetFormat || 'sqlite-table-model'),
     status: validation.ok ? 'ready-for-preflight' : 'blocked',
     counts: {
       settings: settingsRows.length,
@@ -516,9 +541,13 @@ function buildConversionReport(model = {}, options = {}) {
   };
 }
 
+/**
+ * @param {Record<string, unknown>} [options]
+ * @returns {BackupPreflightPlan}
+ */
 function buildBackupPreflightPlan(options = {}) {
-  const generatedAt = options.generatedAt || new Date().toISOString();
-  const direction = options.direction || 'json-to-sqlite';
+  const generatedAt = safeText(options.generatedAt || new Date().toISOString());
+  const direction = safeText(options.direction || 'json-to-sqlite');
   return {
     version: MODEL_VERSION,
     type: 'backup-preflight-plan',
@@ -527,7 +556,7 @@ function buildBackupPreflightPlan(options = {}) {
     required: true,
     executeBackup: false,
     writeFiles: false,
-    reason: options.reason || 'storage conversion preflight',
+    reason: safeText(options.reason || 'storage conversion preflight'),
     includeRelativePaths: [
       'information/settings.json',
       'information/zones.json',
