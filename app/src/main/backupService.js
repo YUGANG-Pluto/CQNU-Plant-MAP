@@ -14,6 +14,16 @@ const {
 } = require('./pathGuard');
 const { createTempPath, copyFileExclusive, removeQuietly } = require('./fileWrite');
 
+/**
+ * @typedef {import('../shared/types/backup').BackupCreatePayload} BackupCreatePayload
+ * @typedef {import('../shared/types/backup').BackupCreateResult} BackupCreateResult
+ * @typedef {import('../shared/types/backup').BackupListPayload} BackupListPayload
+ * @typedef {import('../shared/types/backup').BackupListResult} BackupListResult
+ * @typedef {import('../shared/types/backup').BackupRestorePayload} BackupRestorePayload
+ * @typedef {import('../shared/types/backup').BackupRestorePlan} BackupRestorePlan
+ * @typedef {import('../shared/types/backup').BackupRestoreResult} BackupRestoreResult
+ */
+
 const BACKUP_PATH_ATTEMPTS = 20;
 const RESTORE_SERVICE_VERSION = 'backup-restore-v1';
 const RESTORE_MAX_FILES = 20000;
@@ -148,7 +158,12 @@ function isRestoreBackupEntry(relativePath) {
     || normalized.startsWith('information/statistics/backup/');
 }
 
-function inspectRestorePlan(payload = {}) {
+/**
+ * @param {BackupRestorePayload} payload
+ * @returns {BackupRestorePlan}
+ */
+function inspectRestorePlan(payload) {
+  payload = /** @type {BackupRestorePayload} */ (payload || {});
   const projectRoot = assertTrustedProjectDir(payload.projectDir);
   const backupFile = resolveBackupPayloadFile(projectRoot, payload);
   if (!fs.existsSync(backupFile)) {
@@ -294,6 +309,10 @@ function removeStorageNotPresentInBackup(projectRoot, plan) {
 }
 
 // 备份压缩包必须写入可信目录，并再次校验最终 zip 路径。
+/**
+ * @param {BackupCreatePayload} payload
+ * @returns {BackupCreateResult}
+ */
 function create(payload) {
   const projectRoot = assertTrustedProjectDir(payload.projectDir);
   const backupRoot = normalizeBackupDir(projectRoot, payload.backupDir);
@@ -316,7 +335,12 @@ function create(payload) {
   };
 }
 
-function restore(payload = {}) {
+/**
+ * @param {BackupRestorePayload} payload
+ * @returns {BackupRestoreResult}
+ */
+function restore(payload) {
+  payload = /** @type {BackupRestorePayload} */ (payload || {});
   const projectRoot = assertTrustedProjectDir(payload.projectDir);
   if (payload.confirmRestore !== true) {
     throw new AppError(ERROR_CODES.INVALID_PAYLOAD, 'Backup restore requires explicit confirmation.');
@@ -374,6 +398,10 @@ function restore(payload = {}) {
 }
 
 // 过期判断基于修改时间，便于“再保留 7 天”通过 utime 实现。
+/**
+ * @param {BackupListPayload} payload
+ * @returns {{ items: import('../shared/types/backup').BackupFileItem[] }}
+ */
 function listExpired(payload) {
   const projectRoot = assertTrustedProjectDir(payload.projectDir);
   const backupRoot = normalizeBackupDir(projectRoot, payload.backupDir);
@@ -401,6 +429,10 @@ function listExpired(payload) {
   return { items };
 }
 
+/**
+ * @param {BackupListPayload} payload
+ * @returns {BackupListResult}
+ */
 function list(payload) {
   const projectRoot = assertTrustedProjectDir(payload.projectDir);
   const backupRoot = normalizeBackupDir(projectRoot, payload.backupDir);
@@ -434,6 +466,10 @@ function list(payload) {
   };
 }
 
+/**
+ * @param {BackupListPayload} payload
+ * @returns {{ updated: number }}
+ */
 function keepExpired(payload) {
   const projectRoot = assertTrustedProjectDir(payload.projectDir);
   const files = Array.isArray(payload.paths) ? payload.paths : [];
@@ -463,6 +499,10 @@ function keepExpired(payload) {
 }
 
 // 删除前逐个确认 zip 位于可信备份目录内，避免批量路径注入。
+/**
+ * @param {BackupListPayload} payload
+ * @returns {{ deleted: number }}
+ */
 function deleteExpired(payload) {
   const projectRoot = assertTrustedProjectDir(payload.projectDir);
   const files = Array.isArray(payload.paths) ? payload.paths : [];

@@ -149,7 +149,7 @@ function checkPackageMetadata() {
     fail('package.json private must be true');
   }
 
-  ['check:syntax', 'check:size', 'check:repo', 'self-check', 'verify', 'db:check-schema', 'db:test-conversion', 'db:test-storage-conversion', 'db:test-runtime'].forEach(scriptName => {
+  ['check:syntax', 'check:size', 'check:repo', 'self-check', 'typecheck', 'verify', 'db:check-schema', 'db:test-conversion', 'db:test-storage-conversion', 'db:test-runtime'].forEach(scriptName => {
     if (!packageJson.scripts || !packageJson.scripts[scriptName]) {
       fail(`package.json missing script ${scriptName}`);
     }
@@ -209,6 +209,7 @@ function checkRequiredFiles() {
     '.github/ISSUE_TEMPLATE/release_checklist.yml',
     '.github/ISSUE_TEMPLATE/config.yml',
     'app/package-lock.json',
+    'app/tsconfig.json',
     'app/scripts/check-file-size.js',
     'app/scripts/check-js-syntax.js',
     'app/scripts/check-repo-hygiene.js',

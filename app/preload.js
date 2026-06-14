@@ -1,8 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+/** @typedef {import('./src/shared/types/ipc').PlantAppApi} PlantAppApi */
+
 const invoke = (channel, payload) => ipcRenderer.invoke(channel, payload);
 
-contextBridge.exposeInMainWorld('plantApp', {
+/** @type {PlantAppApi} */
+const plantApp = {
   project: {
     chooseDir: () => invoke('project:chooseDir'),
     chooseMergeDir: () => invoke('project:chooseMergeDir'),
@@ -61,4 +64,6 @@ contextBridge.exposeInMainWorld('plantApp', {
     toggleFullscreen: () => invoke('window:toggleFullscreen'),
     openExternal: payload => invoke('window:openExternal', payload)
   }
-});
+};
+
+contextBridge.exposeInMainWorld('plantApp', plantApp);

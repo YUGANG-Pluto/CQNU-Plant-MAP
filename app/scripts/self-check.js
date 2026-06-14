@@ -1810,6 +1810,7 @@ function testRepositoryHygieneContract() {
     'check:size',
     'check:repo',
     'self-check',
+    'typecheck',
     'test:unit',
     'test:integration',
     'test',
@@ -1823,7 +1824,10 @@ function testRepositoryHygieneContract() {
     'verify'
   ].forEach(scriptName => assert.ok(packageJson.scripts[scriptName], `package script missing ${scriptName}`));
   assert.ok(packageJson.scripts.verify.includes('check:size'), 'verify must include file size governance');
+  assert.ok(packageJson.scripts.verify.includes('typecheck'), 'verify must include narrow TypeScript check');
   assert.ok(!packageJson.scripts.verify.includes('test:unit'), 'verify remains structural and does not force unit tests yet');
+  assert.ok(packageJson.devDependencies?.typescript, 'typescript must be an explicit devDependency');
+  assert.ok(packageJson.devDependencies?.['@types/node'], '@types/node must be an explicit devDependency');
 
   [
     'LICENSE.md',
@@ -1889,6 +1893,7 @@ function testRepositoryHygieneContract() {
   assert.ok(readRepositoryPath('.github/pull_request_template.md').includes('Rollback'));
   assert.ok(readRepositoryPath('.github/ISSUE_TEMPLATE/config.yml').includes('blank_issues_enabled: false'));
   assert.ok(repositoryFileExists('app/package-lock.json'), 'package-lock.json must exist');
+  assert.ok(repositoryFileExists('app/tsconfig.json'), 'tsconfig.json must exist');
   assert.ok(repositoryFileExists('.editorconfig'), '.editorconfig must exist');
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-file-size.js')));
   assert.ok(fs.existsSync(path.join(process.cwd(), 'scripts', 'check-js-syntax.js')));
@@ -1960,6 +1965,8 @@ function testDocumentationUpdateContract() {
   assert.ok(typePlan.includes('checkJs'));
   assert.ok(typePlan.includes('Do not convert the whole renderer in one pass'));
   assert.ok(typePlan.includes('Initial Shared Declarations'));
+  assert.ok(typePlan.includes('Current Typecheck Scope'));
+  assert.ok(typePlan.includes('npm run typecheck'));
 
   const dependencyDecision = readWorkspaceDoc('SQLITE_DEPENDENCY_DECISION.md');
   assert.ok(dependencyDecision.includes('better-sqlite3 dependency probe is active'));

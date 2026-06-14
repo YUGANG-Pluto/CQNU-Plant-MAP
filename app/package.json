@@ -15,7 +15,8 @@
     "check:size": "node scripts/check-file-size.js",
     "check:syntax": "node scripts/check-js-syntax.js",
     "check:repo": "node scripts/check-repo-hygiene.js",
-    "verify": "npm run check:repo && npm run check:syntax && npm run check:size && npm run self-check",
+    "typecheck": "tsc -p tsconfig.json",
+    "verify": "npm run check:repo && npm run check:syntax && npm run typecheck && npm run check:size && npm run self-check",
     "check": "npm run lint && npm run self-check",
     "test:unit": "node --test tests/unit/*.test.js",
     "test:integration": "node --test tests/integration/*.test.js",
@@ -29,10 +30,12 @@
     "db:test-runtime": "electron scripts/test-sqlite-runtime-acceptance.js"
   },
   "devDependencies": {
+    "@types/node": "^20.19.41",
     "electron": "^31.7.7",
     "electron-builder": "^24.13.3",
     "eslint": "^9.0.0",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "typescript": "^5.9.3"
   },
   "build": {
     "appId": "com.cqnu.plantmap",

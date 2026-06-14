@@ -15,6 +15,14 @@ const {
   resolveProjectFile
 } = require('./pathGuard');
 
+/**
+ * @typedef {import('../shared/types/project').ProjectLoadPayload} ProjectLoadPayload
+ * @typedef {import('../shared/types/project').ProjectSavePayload} ProjectSavePayload
+ * @typedef {import('../shared/types/project').LoadedProjectSnapshot} LoadedProjectSnapshot
+ * @typedef {import('../shared/types/project').ProjectSaveResult} ProjectSaveResult
+ * @typedef {import('../shared/types/project').ActiveStorageFormat} ActiveStorageFormat
+ */
+
 const SQLITE_DB_FILE = 'data.db';
 
 function readJson(filePath, fallback) {
@@ -228,6 +236,11 @@ function normalizeSettings(value) {
   return value;
 }
 
+/**
+ * @param {ReturnType<typeof getProjectPaths>} paths
+ * @param {string | undefined} requestedFormat
+ * @returns {ActiveStorageFormat}
+ */
 function resolveStorageFormat(paths, requestedFormat) {
   const format = requestedFormat || 'auto';
   if (format === 'sqlite') {
@@ -239,6 +252,10 @@ function resolveStorageFormat(paths, requestedFormat) {
   return databaseExists(paths) ? 'sqlite' : 'json';
 }
 
+/**
+ * @param {ProjectLoadPayload | string} payload
+ * @returns {LoadedProjectSnapshot}
+ */
 function loadProject(payload) {
   const projectDir = typeof payload === 'string' ? payload : payload.projectDir;
   const requestedFormat = typeof payload === 'string' ? 'auto' : payload.storageFormat;
@@ -271,6 +288,10 @@ function loadProject(payload) {
   };
 }
 
+/**
+ * @param {ProjectSavePayload} payload
+ * @returns {ProjectSaveResult}
+ */
 function saveProject(payload) {
   if (!payload || typeof payload !== 'object') {
     throw new AppError(ERROR_CODES.INVALID_PAYLOAD, 'save project payload is invalid');

@@ -17,7 +17,9 @@ This project uses third-party packages through the application package manifest 
 | electron | Desktop runtime | MIT |
 | electron-builder | Windows installer packaging | MIT |
 | eslint | JavaScript linting | MIT |
+| @types/node | Node.js type declarations for type checking | MIT |
 | prettier | Code formatting | MIT |
+| typescript | Narrow `checkJs` type checking | Apache-2.0 |
 
 ## Notes
 
@@ -44,7 +46,9 @@ The software itself is not released under these third-party licenses. These noti
 | electron | 桌面运行时 | MIT |
 | electron-builder | Windows 安装包构建 | MIT |
 | eslint | JavaScript 检查 | MIT |
+| @types/node | Node.js 类型声明，用于类型检查 | MIT |
 | prettier | 代码格式化 | MIT |
+| typescript | 窄范围 `checkJs` 类型检查 | Apache-2.0 |
 
 ## 说明
 

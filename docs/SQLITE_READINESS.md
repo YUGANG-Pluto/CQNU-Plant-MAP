@@ -36,7 +36,7 @@ This checklist is used to keep SQLite runtime work inside the existing compatibi
 | Runtime conversion tests | Ready | `db:test-storage-conversion` uses a synthetic temporary project to verify backup-first project conversion and export equality. |
 | SQLite runtime acceptance test | Ready | `db:test-runtime` verifies explicit conversion, automatic SQLite priority, SQLite save, explicit JSON fallback, export back to JSON, and source cleanup. |
 | Active SQLite runtime switch | Ready | After explicit JSON to SQLite conversion, automatic project loading and saving use SQLite. Explicit JSON loading remains available when JSON files exist. |
-| Typecheck command | Not implemented | Type declarations exist, but no `tsconfig.json` or `typecheck` script is active. |
+| Typecheck command | Ready | `tsconfig.json` and `npm run typecheck` cover storage, backup restore, preload IPC, and shared declarations. |
 
 ## Gate Before TypeScript Architecture Work
 

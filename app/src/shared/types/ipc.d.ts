@@ -18,6 +18,16 @@ export interface StorageConversionPayload {
   backupDir?: string;
 }
 
+export interface StorageArtifactDeletePayload {
+  projectDir: string;
+  backupDir?: string;
+  backupPaths?: string[];
+  backupNames?: string[];
+  deleteSqliteDatabase?: boolean;
+  deleteJsonFiles?: boolean;
+  allowDeleteOnlyStorage?: boolean;
+}
+
 export interface StorageConversionCounts {
   settings: number;
   zones: number;
@@ -32,6 +42,8 @@ export interface StorageConversionPreflight {
   version: string;
   projectDir: string;
   databaseExists: boolean;
+  jsonFilesExist: boolean;
+  activeStorageFormat: string;
   databaseFile: string;
   reportFile: string;
   counts: Record<string, number>;
@@ -55,8 +67,8 @@ export interface StorageConversionReport {
   reportFile: string;
   backupFile: string;
   projectChanged: boolean;
-  rendererDatabaseAccess: false;
-  exposesSql: false;
+  rendererDatabaseAccess: boolean;
+  exposesSql: boolean;
   sourceFormat: string;
   targetFormat: string;
   status: string;
@@ -64,7 +76,50 @@ export interface StorageConversionReport {
   schema: {
     ok: boolean;
     missingTables: string[];
-    missingColumns: Record<string, string[]>;
+    missingColumns: object;
   };
   warnings: string[];
+}
+
+export interface StorageArtifactInfo {
+  name: string;
+  exists: boolean;
+  size: number;
+  modifiedAt: string;
+}
+
+export interface StorageArtifactInventory {
+  version: string;
+  projectDir: string;
+  activeStorageFormat: string;
+  databaseFile: string;
+  jsonFiles: StorageArtifactInfo[];
+  jsonFilesExist: boolean;
+  sqliteDatabase: StorageArtifactInfo;
+  databaseExists: boolean;
+  availableStorageFormats: string[];
+  backupDir: string;
+  backupFiles: unknown[];
+  warnings: string[];
+}
+
+type IpcCommand<TPayload = unknown, TResult = unknown> = (payload: TPayload) => Promise<IpcResponse<TResult>>;
+type IpcNoPayloadCommand<TResult = unknown> = () => Promise<IpcResponse<TResult>>;
+
+export interface PlantAppApi {
+  project: Record<string, IpcCommand | IpcNoPayloadCommand>;
+  settings: Record<string, IpcCommand>;
+  image: Record<string, IpcCommand>;
+  backup: Record<string, IpcCommand | IpcNoPayloadCommand>;
+  log: Record<string, IpcCommand>;
+  maintenance: Record<string, IpcCommand>;
+  storage: {
+    conversionPreflight: IpcCommand<StorageConversionPayload, StorageConversionPreflight>;
+    listArtifacts: IpcCommand<StorageConversionPayload, StorageArtifactInventory>;
+    deleteArtifacts: IpcCommand<StorageArtifactDeletePayload, unknown>;
+    createSqliteFromJson: IpcCommand<StorageConversionPayload, StorageConversionReport>;
+    exportSqliteToJson: IpcCommand<StorageConversionPayload, StorageConversionReport>;
+  };
+  species: Record<string, IpcCommand>;
+  window: Record<string, IpcCommand | IpcNoPayloadCommand>;
 }

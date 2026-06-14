@@ -17,6 +17,15 @@ const {
   getProjectInfoDir
 } = require('./pathGuard');
 
+/**
+ * @typedef {import('../shared/types/settings').ProjectSettings} ProjectSettings
+ * @typedef {import('../shared/types/ipc').StorageConversionPayload} StorageConversionPayload
+ * @typedef {import('../shared/types/ipc').StorageArtifactDeletePayload} StorageArtifactDeletePayload
+ * @typedef {import('../shared/types/ipc').StorageArtifactInventory} StorageArtifactInventory
+ * @typedef {import('../shared/types/ipc').StorageConversionPreflight} StorageConversionPreflight
+ * @typedef {import('../shared/types/ipc').StorageConversionReport} StorageConversionReport
+ */
+
 const SQLITE_DB_FILE = 'data.db';
 const SQLITE_REPORT_FILE = 'sqlite-conversion-report.json';
 const CONVERSION_SERVICE_VERSION = 'storage-conversion-v1';
@@ -184,12 +193,20 @@ function removeSqliteDatabase(paths) {
   return true;
 }
 
+/**
+ * @param {StorageConversionPayload} payload
+ * @returns {StorageArtifactInventory}
+ */
 function listStorageArtifacts(payload) {
   const safePayload = ensurePayload(payload);
   const paths = getStoragePaths(safePayload.projectDir);
   return buildStorageInventory(paths, safePayload.backupDir || '');
 }
 
+/**
+ * @param {StorageArtifactDeletePayload} payload
+ * @returns {Record<string, unknown>}
+ */
 function deleteStorageArtifacts(payload) {
   const safePayload = ensurePayload(payload);
   const paths = getStoragePaths(safePayload.projectDir);
@@ -263,6 +280,10 @@ function deleteStorageArtifacts(payload) {
   };
 }
 
+/**
+ * @param {StorageConversionPayload} payload
+ * @returns {StorageConversionPreflight}
+ */
 function getPreflight(payload) {
   const safePayload = ensurePayload(payload);
   const paths = getStoragePaths(safePayload.projectDir);
@@ -308,6 +329,10 @@ function openDatabase(Database, databasePath) {
   return db;
 }
 
+/**
+ * @param {StorageConversionPayload} payload
+ * @returns {StorageConversionReport}
+ */
 function createSqliteFromJson(payload) {
   const safePayload = ensurePayload(payload);
   const paths = getStoragePaths(safePayload.projectDir);
@@ -396,6 +421,10 @@ function readSqliteModel(paths) {
   }
 }
 
+/**
+ * @param {StorageConversionPayload} payload
+ * @returns {StorageConversionReport}
+ */
 function exportSqliteToJson(payload) {
   const safePayload = ensurePayload(payload);
   const paths = getStoragePaths(safePayload.projectDir);
@@ -415,7 +444,7 @@ function exportSqliteToJson(payload) {
   const saved = projectStore.saveProject({
     projectDir: paths.projectRoot,
     storageFormat: 'json',
-    settings: project.settings,
+    settings: /** @type {ProjectSettings} */ (project.settings),
     zones: project.zones,
     points: project.points
   });

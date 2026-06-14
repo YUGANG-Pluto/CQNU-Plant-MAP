@@ -7,6 +7,7 @@ Run from `app/`:
 ```bash
 npm run check:repo
 npm run check:syntax
+npm run typecheck
 npm run check:size
 npm run self-check
 npm run test:unit
@@ -25,6 +26,7 @@ npm run verify
 | --- | --- |
 | `check:repo` | Required files, license metadata, ignored files, restricted repository artifacts. |
 | `check:syntax` | JavaScript syntax with `node --check`. |
+| `typecheck` | Narrow TypeScript `checkJs` gate for storage, backup restore, preload IPC, and shared declarations. |
 | `check:size` | Source file size thresholds and large-file allowlist reasons. |
 | `self-check` | Runtime contracts for path guards, project storage, backup, logging, UI wiring, security, and selected feature contracts. |
 | `test:unit` | Node test runner unit tests for pure models and path guards. |
@@ -48,7 +50,7 @@ npm run verify
 | Integration tests | `tests/integration/` | Main-process services that need temporary directories or zip files. |
 | Fixtures | `tests/fixtures/` | Synthetic JSON project data only. No real survey records or private images. |
 
-`npm run verify` intentionally remains a structural gate and does not force the full test suite yet. CI and local release checks should still run `npm run test --if-present`.
+`npm run verify` intentionally remains a structural gate and does not force the full test suite yet. It includes the narrow `typecheck` gate. CI and local release checks should still run `npm run test --if-present`.
 
 SQLite probe commands create only temporary databases under the system temporary directory and delete them before exit. The schema check command also creates a temporary schema database under the system temporary directory and deletes it before exit. The temporary conversion database created by `db:test-conversion` follows the same cleanup rule and uses only synthetic fixtures. The project conversion check created by `db:test-storage-conversion` uses a synthetic temporary project, writes a temporary `information/data.db`, verifies `information/statistics/backup`, verifies source-format cleanup after each direction, verifies backup-first conversion and export equality, then removes the temporary project.
 
