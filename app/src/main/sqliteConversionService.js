@@ -6,6 +6,32 @@ const { isDeepStrictEqual } = require('util');
 const sqliteExchangeModel = require('./sqliteExchangeModel');
 const sqliteSchemaService = require('./sqliteSchemaService');
 
+/**
+ * @typedef {import('../shared/types/project').JsonProjectSnapshot} JsonProjectSnapshot
+ * @typedef {import('../shared/types/sqlite-exchange').SqliteTableName} SqliteTableName
+ * @typedef {import('../shared/types/sqlite-exchange').SqliteTableRow} SqliteTableRow
+ * @typedef {import('../shared/types/sqlite-exchange').SqliteTableModel} SqliteTableModel
+ *
+ * @typedef {{
+ *   run: (...args: unknown[]) => unknown;
+ *   all: () => Record<string, unknown>[];
+ * }} PreparedStatementLike
+ *
+ * @typedef {{
+ *   exec: (sql: string) => void;
+ *   pragma: (sql: string) => unknown;
+ *   prepare: (sql: string) => PreparedStatementLike;
+ *   transaction: (fn: (items: SqliteTableRow[]) => void) => (items: SqliteTableRow[]) => void;
+ *   close: () => void;
+ * }} DatabaseLike
+ *
+ * @typedef {{
+ *   Database?: new (databasePath: string) => DatabaseLike;
+ *   generatedAt?: string;
+ * }} TemporaryRoundTripOptions
+ */
+
+/** @type {readonly SqliteTableName[]} */
 const TABLE_ORDER = Object.freeze([
   'project_settings',
   'zones',
@@ -113,10 +139,17 @@ const TABLE_COLUMNS = Object.freeze({
   ])
 });
 
+/**
+ * @returns {SqliteTableName[]}
+ */
 function getConversionTableNames() {
   return TABLE_ORDER.slice();
 }
 
+/**
+ * @param {string} targetPath
+ * @returns {void}
+ */
 function removeQuietly(targetPath) {
   try {
     fs.rmSync(targetPath, { recursive: true, force: true });
@@ -125,13 +158,23 @@ function removeQuietly(targetPath) {
   }
 }
 
+/**
+ * @param {string} tableName
+ * @returns {SqliteTableName}
+ */
 function tableSqlName(tableName) {
   if (!Object.prototype.hasOwnProperty.call(TABLE_COLUMNS, tableName)) {
     throw new Error(`unsupported table: ${tableName}`);
   }
-  return tableName;
+  return /** @type {SqliteTableName} */ (tableName);
 }
 
+/**
+ * @param {DatabaseLike} db
+ * @param {string} tableName
+ * @param {SqliteTableRow[]} [rows]
+ * @returns {number}
+ */
 function insertRows(db, tableName, rows = []) {
   const safeTableName = tableSqlName(tableName);
   const columns = TABLE_COLUMNS[safeTableName];
@@ -157,6 +200,11 @@ function insertRows(db, tableName, rows = []) {
   return rows.length;
 }
 
+/**
+ * @param {DatabaseLike} db
+ * @param {SqliteTableModel} model
+ * @returns {Record<string, number>}
+ */
 function writeModelToDatabase(db, model) {
   const validation = sqliteExchangeModel.validateSqliteExchangeModel(model);
   if (!validation.ok) {
@@ -165,6 +213,7 @@ function writeModelToDatabase(db, model) {
 
   db.exec(sqliteSchemaService.createSchemaSql());
   const tables = model.tables || {};
+  /** @type {Record<string, number>} */
   const written = {};
   TABLE_ORDER.forEach(tableName => {
     written[tableName] = insertRows(db, tableName, tables[tableName] || []);
@@ -172,7 +221,13 @@ function writeModelToDatabase(db, model) {
   return written;
 }
 
+/**
+ * @param {SqliteTableName} tableName
+ * @param {Record<string, unknown>} row
+ * @returns {SqliteTableRow}
+ */
 function rowFromDatabase(tableName, row) {
+  /** @type {SqliteTableRow} */
   const out = {};
   TABLE_COLUMNS[tableName].forEach(([dbColumn, modelKey]) => {
     if (modelKey === 'selected') {
@@ -184,6 +239,11 @@ function rowFromDatabase(tableName, row) {
   return out;
 }
 
+/**
+ * @param {DatabaseLike} db
+ * @param {SqliteTableName} tableName
+ * @returns {SqliteTableRow[]}
+ */
 function readRows(db, tableName) {
   tableSqlName(tableName);
   const orderBy = tableName === 'project_settings'
@@ -197,8 +257,21 @@ function readRows(db, tableName) {
     .map(row => rowFromDatabase(tableName, row));
 }
 
+/**
+ * @param {DatabaseLike} db
+ * @param {{ generatedAt?: string }} [options]
+ * @returns {SqliteTableModel}
+ */
 function readModelFromDatabase(db, options = {}) {
-  const tables = {};
+  /** @type {import('../shared/types/sqlite-exchange').SqliteTables} */
+  const tables = {
+    project_settings: [],
+    zones: [],
+    points: [],
+    phenology_entries: [],
+    images: [],
+    taxonomy_candidates: []
+  };
   TABLE_ORDER.forEach(tableName => {
     tables[tableName] = readRows(db, tableName);
   });
@@ -217,7 +290,12 @@ function readModelFromDatabase(db, options = {}) {
   };
 }
 
+/**
+ * @param {Partial<Record<SqliteTableName, SqliteTableRow[]>>} [tables]
+ * @returns {Record<string, number>}
+ */
 function countRows(tables = {}) {
+  /** @type {Record<string, number>} */
   const counts = {};
   TABLE_ORDER.forEach(tableName => {
     counts[tableName] = Array.isArray(tables[tableName]) ? tables[tableName].length : 0;
@@ -225,6 +303,11 @@ function countRows(tables = {}) {
   return counts;
 }
 
+/**
+ * @param {JsonProjectSnapshot} project
+ * @param {TemporaryRoundTripOptions} [options]
+ * @returns {Record<string, unknown>}
+ */
 function runTemporaryJsonSqliteRoundTrip(project, options = {}) {
   const Database = options.Database || require('better-sqlite3');
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plant-sqlite-conversion-'));

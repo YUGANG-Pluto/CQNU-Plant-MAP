@@ -5,6 +5,7 @@
 Run from `app/`:
 
 ```bash
+npm run ci:install
 npm run check:repo
 npm run check:syntax
 npm run typecheck
@@ -12,7 +13,7 @@ npm run check:size
 npm run self-check
 npm run test:unit
 npm run test:integration
-npm run rebuild:electron
+npm run prepare:electron
 npm run sqlite:probe
 npm run sqlite:probe:electron
 npm run db:check-schema
@@ -25,12 +26,13 @@ npm run verify
 
 | Command | Coverage |
 | --- | --- |
+| `ci:install` | CI dependency installation using `npm ci --ignore-scripts` so native modules do not compile against Node before the Electron rebuild step. |
 | `check:repo` | Required files, license metadata, ignored files, restricted repository artifacts. |
 | `check:syntax` | JavaScript syntax with `node --check`. |
 | `typecheck` | Narrow TypeScript `checkJs` gate for storage, backup restore, preload IPC, and shared declarations. |
 | `check:size` | Source file size thresholds and large-file allowlist reasons. |
 | `self-check` | Runtime contracts for path guards, project storage, backup, logging, UI wiring, security, and selected feature contracts. |
-| `rebuild:electron` | Rebuilds native dependencies, including SQLite native bindings, against the Electron runtime ABI after `npm ci`. |
+| `prepare:electron` | Installs the Electron runtime after script-free CI installation and rebuilds native dependencies against the Electron runtime ABI. |
 | `test:unit` | Node test runner unit tests for pure models and path guards. |
 | `test:integration` | Node test runner integration tests using system temporary directories. |
 | `sqlite:probe` | Electron main-process probe for the selected SQLite dependency in a temporary directory. |
@@ -54,7 +56,7 @@ npm run verify
 
 `npm run verify` intentionally remains a structural gate and does not force the full test suite yet. It includes the narrow `typecheck` gate. CI and local release checks should still run `npm run test --if-present`.
 
-GitHub CI uses Node 20 LTS and runs the structural checks as separate steps: repository hygiene, syntax, typecheck, file size policy, self-check, unit/integration tests, and SQLite runtime acceptance. Keeping these steps separate makes GitHub failures point to the exact gate instead of hiding them inside one combined command. CI sets `ELECTRON_MIRROR` and `npm_config_registry` so Electron binary installation uses the same mirror strategy as local setup when the default download path is unstable. CI also runs `npm run rebuild:electron` after `npm ci` so native SQLite bindings are compiled for Electron before runtime checks.
+GitHub CI uses Node 20 LTS and runs the structural checks as separate steps: repository hygiene, syntax, typecheck, file size policy, self-check, unit/integration tests, and SQLite runtime acceptance. Keeping these steps separate makes GitHub failures point to the exact gate instead of hiding them inside one combined command. CI sets `ELECTRON_MIRROR` and `npm_config_registry` so Electron binary installation uses the same mirror strategy as local setup when the default download path is unstable. CI runs `npm run ci:install` so install-time native scripts are skipped, then runs `npm run prepare:electron` so the Electron runtime is installed and native SQLite bindings are compiled for Electron before runtime checks.
 
 SQLite probe commands create only temporary databases under the system temporary directory and delete them before exit. The schema check command also creates a temporary schema database under the system temporary directory and deletes it before exit. The temporary conversion database created by `db:test-conversion` follows the same cleanup rule and uses only synthetic fixtures. The project conversion check created by `db:test-storage-conversion` uses a synthetic temporary project, writes a temporary `information/data.db`, verifies `information/statistics/backup`, verifies source-format cleanup after each direction, verifies backup-first conversion and export equality, then removes the temporary project.
 

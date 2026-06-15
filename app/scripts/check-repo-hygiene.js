@@ -149,7 +149,7 @@ function checkPackageMetadata() {
     fail('package.json private must be true');
   }
 
-  ['check:syntax', 'check:size', 'check:repo', 'self-check', 'typecheck', 'verify', 'rebuild:electron', 'db:check-schema', 'db:test-conversion', 'db:test-storage-conversion', 'db:test-runtime'].forEach(scriptName => {
+  ['check:syntax', 'check:size', 'check:repo', 'self-check', 'typecheck', 'ci:install', 'verify', 'install:electron', 'rebuild:electron', 'prepare:electron', 'db:check-schema', 'db:test-conversion', 'db:test-storage-conversion', 'db:test-runtime'].forEach(scriptName => {
     if (!packageJson.scripts || !packageJson.scripts[scriptName]) {
       fail(`package.json missing script ${scriptName}`);
     }

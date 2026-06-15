@@ -1811,7 +1811,10 @@ function testRepositoryHygieneContract() {
     'check:repo',
     'self-check',
     'typecheck',
+    'ci:install',
+    'install:electron',
     'rebuild:electron',
+    'prepare:electron',
     'test:unit',
     'test:integration',
     'test',
@@ -1826,6 +1829,9 @@ function testRepositoryHygieneContract() {
   ].forEach(scriptName => assert.ok(packageJson.scripts[scriptName], `package script missing ${scriptName}`));
   assert.ok(packageJson.scripts.verify.includes('check:size'), 'verify must include file size governance');
   assert.ok(packageJson.scripts.verify.includes('typecheck'), 'verify must include narrow TypeScript check');
+  assert.ok(packageJson.scripts['ci:install'].includes('--ignore-scripts'), 'CI install must skip native install scripts before Electron rebuild');
+  assert.ok(packageJson.scripts['prepare:electron'].includes('install:electron'), 'Electron preparation must install the Electron runtime after CI install');
+  assert.ok(packageJson.scripts['prepare:electron'].includes('rebuild:electron'), 'Electron preparation must rebuild native dependencies');
   assert.ok(!packageJson.scripts.verify.includes('test:unit'), 'verify remains structural and does not force unit tests yet');
   assert.ok(packageJson.devDependencies?.typescript, 'typescript must be an explicit devDependency');
   assert.ok(packageJson.devDependencies?.['@types/node'], '@types/node must be an explicit devDependency');
@@ -1888,10 +1894,11 @@ function testRepositoryHygieneContract() {
   assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('node-version: 20'));
   assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('ELECTRON_MIRROR'));
   assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm_config_registry'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run ci:install'));
+  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run prepare:electron'));
   assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run check:repo'));
   assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run check:syntax'));
   assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run typecheck'));
-  assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run rebuild:electron'));
   assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run check:size'));
   assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('npm run self-check'));
   assert.ok(readRepositoryPath('.github/workflows/ci.yml').includes('- dev'));
@@ -1975,6 +1982,7 @@ function testDocumentationUpdateContract() {
   assert.ok(typePlan.includes('Do not convert the whole renderer in one pass'));
   assert.ok(typePlan.includes('Initial Shared Declarations'));
   assert.ok(typePlan.includes('Current Typecheck Scope'));
+  assert.ok(typePlan.includes('sqliteConversionService'));
   assert.ok(typePlan.includes('npm run typecheck'));
 
   const dependencyDecision = readWorkspaceDoc('SQLITE_DEPENDENCY_DECISION.md');

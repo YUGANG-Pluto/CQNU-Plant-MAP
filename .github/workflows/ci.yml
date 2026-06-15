@@ -38,10 +38,10 @@ jobs:
           cache-dependency-path: app/package-lock.json
 
       - name: Install dependencies
-        run: npm ci --no-audit --fund=false
+        run: npm run ci:install
 
-      - name: Rebuild native dependencies for Electron
-        run: npm run rebuild:electron
+      - name: Prepare Electron runtime and native dependencies
+        run: npm run prepare:electron
 
       - name: Check repository hygiene
         run: npm run check:repo

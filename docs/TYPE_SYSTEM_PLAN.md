@@ -33,10 +33,11 @@ The current checked scope is intentionally narrow:
 - `src/main/storageConversionService.js`
 - `src/main/backupService.js`
 - `src/main/sqliteExchangeModel.js`
+- `src/main/sqliteConversionService.js`
 - `src/main/sqliteSchemaService.js`
 - `src/shared/types/**/*.d.ts`
 
-This scope covers project loading/saving, explicit SQLite runtime behavior, storage conversion, guarded backup restore, SQLite table-model/schema contracts, and preload IPC shape. It does not check the full renderer yet.
+This scope covers project loading/saving, explicit SQLite runtime behavior, storage conversion, guarded backup restore, SQLite table-model/schema/conversion contracts, and preload IPC shape. It does not check the full renderer yet.
 
 ## Expansion Gate
 
@@ -48,7 +49,7 @@ Expand TypeScript architecture work only when all of these pass in one local ver
 - `npm run db:test-runtime`
 - `npm run dist`
 
-The next TypeScript change should add one bounded area at a time, preferably `sqliteConversionService`, maintenance storage UI contracts, or species reference provider contracts. Do not start with renderer-wide conversion.
+The next TypeScript change should add one bounded area at a time, preferably maintenance storage UI contracts, species reference provider contracts, or the first pure-model `.ts` conversion. Do not start with renderer-wide conversion.
 
 ## Initial Contract Targets
 
