@@ -20,6 +20,11 @@ const BUILTIN_BASEMAPS = Object.freeze([
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     subdomains: 'abc',
     attribution: '© OpenStreetMap contributors',
+    sourceLabel: 'OpenStreetMap contributors',
+    termsUrl: 'https://www.openstreetmap.org/copyright',
+    reviewNumber: '',
+    authorizationRequired: false,
+    keyRequired: false,
     coordSystem: 'WGS84',
     maxNativeZoom: 19,
     maxZoom: 22,
@@ -34,9 +39,15 @@ const BUILTIN_BASEMAPS = Object.freeze([
     id: 'amap-satellite',
     name: { zh: '高德卫星图', en: 'Amap Satellite' },
     type: 'XYZ',
-    url: 'https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+    url: 'https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}&key={key}',
     subdomains: '1234',
-    attribution: '© 高德地图',
+    attribution: '© 高德地图 / AutoNavi',
+    sourceLabel: 'Amap / AutoNavi',
+    termsUrl: 'https://lbs.amap.com/pages/terms/',
+    reviewNumber: '',
+    authorizationRequired: true,
+    keyRequired: true,
+    authorizationNote: 'Use only with an authorized Amap Web service key and required provider attribution.',
     coordSystem: 'GCJ02',
     maxNativeZoom: 18,
     maxZoom: 22,
@@ -51,9 +62,15 @@ const BUILTIN_BASEMAPS = Object.freeze([
     id: 'amap-road-label',
     name: { zh: '高德路网注记覆盖层', en: 'Amap Road Label Overlay' },
     type: 'XYZ',
-    url: 'https://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}',
+    url: 'https://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}&key={key}',
     subdomains: '1234',
-    attribution: '© 高德地图',
+    attribution: '© 高德地图 / AutoNavi',
+    sourceLabel: 'Amap / AutoNavi',
+    termsUrl: 'https://lbs.amap.com/pages/terms/',
+    reviewNumber: '',
+    authorizationRequired: true,
+    keyRequired: true,
+    authorizationNote: 'Use only with an authorized Amap Web service key and required provider attribution.',
     coordSystem: 'GCJ02',
     maxNativeZoom: 18,
     maxZoom: 22,
@@ -168,6 +185,16 @@ function normalizeBaseMapConfig(raw = {}) {
     allowLocalUpscale: raw.allowLocalUpscale !== false,
     token,
     key: String(raw.key || token || '').trim(),
+    sourceLabel: String(raw.sourceLabel || raw.source || raw.provider || '').trim(),
+    termsUrl: String(raw.termsUrl || raw.serviceTermsUrl || '').trim(),
+    serviceTermsUrl: String(raw.serviceTermsUrl || raw.termsUrl || '').trim(),
+    reviewNumber: String(raw.reviewNumber || raw.mapReviewNumber || '').trim(),
+    mapReviewNumber: String(raw.mapReviewNumber || raw.reviewNumber || '').trim(),
+    authorizationRequired: Boolean(raw.authorizationRequired || raw.requiresAuthorization),
+    requiresAuthorization: Boolean(raw.requiresAuthorization || raw.authorizationRequired),
+    keyRequired: Boolean(raw.keyRequired || raw.requiresKey),
+    requiresKey: Boolean(raw.requiresKey || raw.keyRequired),
+    authorizationNote: String(raw.authorizationNote || raw.termsNote || '').trim(),
     notes: raw.notes || '',
     builtIn: Boolean(raw.builtIn)
   };
@@ -181,6 +208,15 @@ function inferBaseMapProvider(raw = {}) {
   if (text.includes('amap') || text.includes('autonavi')) return 'Amap';
   if (text.includes('bdimg') || text.includes('baidu')) return 'Baidu';
   return raw.provider || 'Custom';
+}
+
+function isProviderAuthorizationScoped(config = {}) {
+  const text = `${config.provider || ''} ${config.sourceLabel || ''} ${config.url || ''}`.toLowerCase();
+  return text.includes('amap') || text.includes('autonavi');
+}
+
+function hasKeyPlaceholder(url = '') {
+  return String(url || '').includes('{token}') || String(url || '').includes('{key}');
 }
 
 function getStatusIcon(level) {
@@ -273,7 +309,16 @@ function ensureStandardBaseMaps() {
   BUILTIN_BASEMAPS.forEach(item => {
     const existingItem = byId.get(item.id);
     if (existingItem) {
-      byId.set(item.id, normalizeBaseMapConfig({ ...item, ...existingItem, builtIn: true, isOverlay: item.isOverlay }));
+      byId.set(item.id, normalizeBaseMapConfig({
+        ...existingItem,
+        ...item,
+        token: existingItem.token || existingItem.key || item.token || '',
+        key: existingItem.key || existingItem.token || item.key || '',
+        reviewNumber: existingItem.reviewNumber || existingItem.mapReviewNumber || item.reviewNumber || '',
+        mapReviewNumber: existingItem.mapReviewNumber || existingItem.reviewNumber || item.mapReviewNumber || '',
+        builtIn: true,
+        isOverlay: item.isOverlay
+      }));
     } else {
       byId.set(item.id, normalizeBaseMapConfig(item));
     }
@@ -427,6 +472,10 @@ function fillBasemapForm(bm) {
   if (ui.bmMaxNativeZoom) ui.bmMaxNativeZoom.value = normalized.maxNativeZoom;
   if (ui.bmCoordSystem) ui.bmCoordSystem.value = normalized.coordSystem;
   if (ui.bmProvider) ui.bmProvider.value = normalized.provider || '';
+  if (ui.bmSourceLabel) ui.bmSourceLabel.value = normalized.sourceLabel || normalized.provider || '';
+  if (ui.bmToken) ui.bmToken.value = normalized.token || normalized.key || '';
+  if (ui.bmTermsUrl) ui.bmTermsUrl.value = normalized.termsUrl || normalized.serviceTermsUrl || '';
+  if (ui.bmReviewNumber) ui.bmReviewNumber.value = normalized.reviewNumber || normalized.mapReviewNumber || '';
   if (ui.bmTileSize) ui.bmTileSize.value = normalized.tileSize || 256;
   if (ui.bmZoomOffset) ui.bmZoomOffset.value = normalized.zoomOffset || 0;
   ui.bmSubdomains.value = normalized.subdomains || '';
@@ -516,6 +565,10 @@ function newBasemapForm() {
   if (ui.bmMaxNativeZoom) ui.bmMaxNativeZoom.value = 18;
   if (ui.bmCoordSystem) ui.bmCoordSystem.value = 'WGS84';
   if (ui.bmProvider) ui.bmProvider.value = 'Custom';
+  if (ui.bmSourceLabel) ui.bmSourceLabel.value = '';
+  if (ui.bmToken) ui.bmToken.value = '';
+  if (ui.bmTermsUrl) ui.bmTermsUrl.value = '';
+  if (ui.bmReviewNumber) ui.bmReviewNumber.value = '';
   if (ui.bmTileSize) ui.bmTileSize.value = 256;
   if (ui.bmZoomOffset) ui.bmZoomOffset.value = 0;
   ui.bmSubdomains.value = '';
@@ -528,6 +581,16 @@ async function saveBasemap() {
   if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('save-basemap')) return;
   const id = state.currentBasemapEditId || `bm_${Date.now()}`;
   const existing = state.settings.baseMaps.find(b => b.id === id);
+  const sourceLabel = ui.bmSourceLabel?.value.trim() || '';
+  const token = ui.bmToken?.value.trim() || '';
+  const termsUrl = ui.bmTermsUrl?.value.trim() || '';
+  const reviewNumber = ui.bmReviewNumber?.value.trim() || '';
+  const inferredAuthorizationRequired = isProviderAuthorizationScoped({
+    provider: ui.bmProvider?.value,
+    sourceLabel,
+    url: ui.bmUrl.value
+  });
+  const inferredKeyRequired = hasKeyPlaceholder(ui.bmUrl.value) || inferredAuthorizationRequired;
   const raw = {
     id,
     name: {
@@ -541,6 +604,13 @@ async function saveBasemap() {
     maxNativeZoom: Number(ui.bmMaxNativeZoom?.value || ui.bmMaxZoom.value || 18),
     coordSystem: ui.bmCoordSystem?.value || 'WGS84',
     provider: ui.bmProvider?.value.trim() || 'Custom',
+    sourceLabel,
+    token,
+    key: token,
+    termsUrl,
+    serviceTermsUrl: termsUrl,
+    reviewNumber,
+    mapReviewNumber: reviewNumber,
     tileSize: Number(ui.bmTileSize?.value || 256),
     zoomOffset: Number(ui.bmZoomOffset?.value || 0),
     subdomains: ui.bmSubdomains.value.trim(),
@@ -549,7 +619,12 @@ async function saveBasemap() {
     transparent: ui.bmTransparent.value,
     isOverlay: false,
     enabled: true,
-    builtIn: existing?.builtIn || false
+    builtIn: existing?.builtIn || false,
+    authorizationRequired: Boolean(existing?.authorizationRequired || inferredAuthorizationRequired),
+    requiresAuthorization: Boolean(existing?.requiresAuthorization || existing?.authorizationRequired || inferredAuthorizationRequired),
+    keyRequired: Boolean(existing?.keyRequired || inferredKeyRequired),
+    requiresKey: Boolean(existing?.requiresKey || existing?.keyRequired || inferredKeyRequired),
+    authorizationNote: existing?.authorizationNote || ''
   };
   if (!raw.url) return;
   if (raw.maxNativeZoom < 0 || raw.maxZoom < raw.maxNativeZoom || raw.maxZoom > 24) return showAlert(t('basemapZoomInvalid'));
@@ -614,6 +689,7 @@ function fillOverlayForm(overlay) {
   ui.bmOverlayEnabled.value = String(normalized.enabled !== false);
   ui.bmOverlayType.value = normalized.type.toLowerCase();
   ui.bmOverlayProvider.value = normalized.provider || 'Custom';
+  if (ui.bmOverlaySourceLabel) ui.bmOverlaySourceLabel.value = normalized.sourceLabel || normalized.provider || '';
   ui.bmOverlayUrl.value = normalized.url;
   ui.bmOverlaySubdomains.value = normalized.subdomains || '';
   ui.bmOverlayCoordSystem.value = normalized.coordSystem || 'GCJ02';
@@ -624,6 +700,8 @@ function fillOverlayForm(overlay) {
   ui.bmOverlayZIndex.value = normalized.zIndex || 420;
   ui.bmOverlayAttach.value = normalizeAttachBaseMapIds(normalized.attachToBaseMapIds).join(',');
   ui.bmOverlayToken.value = normalized.token || '';
+  if (ui.bmOverlayTermsUrl) ui.bmOverlayTermsUrl.value = normalized.termsUrl || normalized.serviceTermsUrl || '';
+  if (ui.bmOverlayReviewNumber) ui.bmOverlayReviewNumber.value = normalized.reviewNumber || normalized.mapReviewNumber || '';
   ui.bmOverlayNotes.value = normalized.notes || '';
 }
 
@@ -636,6 +714,7 @@ function newOverlayForm() {
   ui.bmOverlayEnabled.value = 'true';
   ui.bmOverlayType.value = 'xyz';
   ui.bmOverlayProvider.value = 'Custom';
+  if (ui.bmOverlaySourceLabel) ui.bmOverlaySourceLabel.value = '';
   ui.bmOverlayUrl.value = '';
   ui.bmOverlaySubdomains.value = '';
   ui.bmOverlayCoordSystem.value = 'GCJ02';
@@ -646,12 +725,24 @@ function newOverlayForm() {
   ui.bmOverlayZIndex.value = 420;
   ui.bmOverlayAttach.value = 'amap-satellite';
   ui.bmOverlayToken.value = '';
+  if (ui.bmOverlayTermsUrl) ui.bmOverlayTermsUrl.value = '';
+  if (ui.bmOverlayReviewNumber) ui.bmOverlayReviewNumber.value = '';
   ui.bmOverlayNotes.value = '';
 }
 
 function readOverlayForm() {
   const id = state.currentOverlayEditId || `overlay_${Date.now()}`;
   const existing = state.settings.baseMaps.find(item => item.id === id);
+  const sourceLabel = ui.bmOverlaySourceLabel?.value.trim() || '';
+  const token = ui.bmOverlayToken.value.trim();
+  const termsUrl = ui.bmOverlayTermsUrl?.value.trim() || '';
+  const reviewNumber = ui.bmOverlayReviewNumber?.value.trim() || '';
+  const inferredAuthorizationRequired = isProviderAuthorizationScoped({
+    provider: ui.bmOverlayProvider.value,
+    sourceLabel,
+    url: ui.bmOverlayUrl.value
+  });
+  const inferredKeyRequired = hasKeyPlaceholder(ui.bmOverlayUrl.value) || inferredAuthorizationRequired;
   return normalizeBaseMapConfig({
     id,
     name: {
@@ -661,6 +752,7 @@ function readOverlayForm() {
     enabled: ui.bmOverlayEnabled.value === 'true',
     type: ui.bmOverlayType.value,
     provider: ui.bmOverlayProvider.value.trim() || 'Custom',
+    sourceLabel,
     url: ui.bmOverlayUrl.value.trim(),
     subdomains: ui.bmOverlaySubdomains.value.trim(),
     coordSystem: ui.bmOverlayCoordSystem.value,
@@ -669,11 +761,21 @@ function readOverlayForm() {
     opacity: Number(ui.bmOverlayOpacity.value || 1),
     zIndex: Number(ui.bmOverlayZIndex.value || 420),
     attachToBaseMapIds: ui.bmOverlayAttach.value.trim(),
-    token: ui.bmOverlayToken.value.trim(),
+    token,
+    key: token,
+    termsUrl,
+    serviceTermsUrl: termsUrl,
+    reviewNumber,
+    mapReviewNumber: reviewNumber,
     notes: ui.bmOverlayNotes.value.trim(),
     transparent: true,
     isOverlay: true,
-    builtIn: existing?.builtIn || false
+    builtIn: existing?.builtIn || false,
+    authorizationRequired: Boolean(existing?.authorizationRequired || inferredAuthorizationRequired),
+    requiresAuthorization: Boolean(existing?.requiresAuthorization || existing?.authorizationRequired || inferredAuthorizationRequired),
+    keyRequired: Boolean(existing?.keyRequired || inferredKeyRequired),
+    requiresKey: Boolean(existing?.requiresKey || existing?.keyRequired || inferredKeyRequired),
+    authorizationNote: existing?.authorizationNote || ''
   });
 }
 
@@ -691,7 +793,7 @@ function validateOverlayConfig(overlay, active = getActiveBaseMapConfig()) {
     checks.push({ level: attachedOk ? 'ok' : 'warning', text: t('basemapOverlayAttachCurrent'), detail: attachedOk ? basemapLabel(current) : t('basemapOverlayNotRecommended') });
     checks.push({ level: normalized.coordSystem === current.coordSystem ? 'ok' : 'warning', text: t('basemapOverlayCoordMatch'), detail: `${normalized.coordSystem} / ${current.coordSystem}` });
   }
-  if (normalized.url.includes('{token}') || normalized.url.includes('{key}')) {
+  if (hasKeyPlaceholder(normalized.url)) {
     checks.push({ level: normalized.token || normalized.key ? 'ok' : 'warning', text: t('basemapOverlayToken'), detail: normalized.token || normalized.key ? t('configured') : t('notFilled') });
   }
   return checks;
@@ -782,8 +884,39 @@ function basemapTileStatus(bm) {
 function validateBaseMapConfig(bm) {
   const normalized = normalizeBaseMapConfig(bm);
   const checks = [];
+  const authorizationScoped = isProviderAuthorizationScoped(normalized);
+  const authorizationRequired = normalized.authorizationRequired || normalized.requiresAuthorization || authorizationScoped;
+  const keyRequired = normalized.keyRequired || normalized.requiresKey || authorizationScoped || hasKeyPlaceholder(normalized.url);
+  const keyConfigured = Boolean(normalized.token || normalized.key);
+  const keyTemplatePresent = hasKeyPlaceholder(normalized.url);
   checks.push({ level: normalized.coordSystem ? 'ok' : 'error', text: t('basemapCheckCoordSystem'), detail: normalized.coordSystem || t('notFilled') });
   checks.push({ level: TILE_LAYER_TYPES.includes(normalized.type) ? 'ok' : 'error', text: t('basemapCheckType'), detail: normalized.type });
+  checks.push({ level: normalized.sourceLabel || normalized.provider ? 'ok' : 'warning', text: t('basemapSourceLabel'), detail: normalized.sourceLabel || normalized.provider || t('notFilled') });
+  checks.push({
+    level: authorizationRequired ? 'pending' : 'ok',
+    text: t('basemapAuthorization'),
+    detail: authorizationRequired ? t('basemapAuthorizationHint') : t('basemapAuthorizationNotRequired')
+  });
+  checks.push({
+    level: keyRequired ? (keyTemplatePresent ? 'ok' : 'warning') : 'pending',
+    text: t('basemapKeyTemplate'),
+    detail: keyTemplatePresent ? '{key}/{token}' : (keyRequired ? t('basemapKeyTemplateMissing') : t('basemapAuthorizationNotRequired'))
+  });
+  checks.push({
+    level: keyRequired ? (keyConfigured ? 'ok' : 'warning') : 'pending',
+    text: t('basemapKeyStatus'),
+    detail: keyRequired ? (keyConfigured ? t('configured') : t('basemapKeyRequired')) : t('basemapAuthorizationNotRequired')
+  });
+  checks.push({
+    level: authorizationRequired ? (normalized.termsUrl || normalized.serviceTermsUrl ? 'ok' : 'warning') : 'pending',
+    text: t('basemapTermsUrl'),
+    detail: normalized.termsUrl || normalized.serviceTermsUrl || (authorizationRequired ? t('notFilled') : t('basemapAuthorizationNotRequired'))
+  });
+  checks.push({
+    level: authorizationRequired ? (normalized.reviewNumber || normalized.mapReviewNumber ? 'ok' : 'warning') : 'pending',
+    text: t('basemapReviewNumber'),
+    detail: normalized.reviewNumber || normalized.mapReviewNumber || (authorizationRequired ? t('basemapReviewNumberRequired') : t('basemapAuthorizationNotRequired'))
+  });
   checks.push({ level: Number.isFinite(normalized.maxNativeZoom) ? 'ok' : 'warning', text: t('basemapCheckNativeZoom'), detail: Number.isFinite(normalized.maxNativeZoom) ? `z=${normalized.maxNativeZoom}` : t('notFilled') });
   checks.push({ level: normalized.maxZoom >= normalized.maxNativeZoom && normalized.maxZoom <= 24 ? 'ok' : 'error', text: t('basemapCheckZoom'), detail: `${normalized.maxNativeZoom} / ${normalized.maxZoom}` });
   checks.push({ level: normalized.maxZoom > normalized.maxNativeZoom ? 'ok' : 'pending', text: t('basemapCheckLocalUpscale'), detail: normalized.maxZoom > normalized.maxNativeZoom ? t('basemapLocalUpscaleReady') : t('basemapLocalUpscaleNotNeeded') });
@@ -894,8 +1027,12 @@ function updateBasemapWorkStatus() {
   const check = state.lastBasemapCheck;
   const checkLevel = check ? check.status : 'pending';
   const layerDiag = typeof getBusinessLayerDiagnostics === 'function' ? getBusinessLayerDiagnostics() : null;
+  const activeKeyRequired = active.keyRequired || active.requiresKey || hasKeyPlaceholder(active.url) || isProviderAuthorizationScoped(active);
+  const activeKeyConfigured = Boolean(active.key || active.token);
   const compactItems = [
     { key: t('basemapStatusName'), value: basemapLabel(active), level: 'ok' },
+    { key: t('basemapSourceLabel'), value: active.sourceLabel || active.provider || '—', level: active.sourceLabel || active.provider ? 'ok' : 'warning' },
+    { key: t('basemapKeyStatus'), value: activeKeyRequired ? (activeKeyConfigured ? t('configured') : t('notFilled')) : t('basemapAuthorizationNotRequired'), level: activeKeyRequired ? (activeKeyConfigured ? 'ok' : 'warning') : 'pending' },
     { key: t('basemapStatusCoord'), value: active.coordSystem, level: active.coordSystem === 'WGS84' ? 'ok' : 'warning' },
     { key: t('basemapStatusZoom'), value: `${state.map?.getZoom?.() ?? '—'} / ${active.maxNativeZoom}/${active.maxZoom}`, level: tile.level },
     { key: t('basemapStatusDisplayMode'), value: tile.localUpscale ? t('basemapStatusClientUpscale') : t('basemapStatusNativeTiles'), level: tile.level },

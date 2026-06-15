@@ -15,6 +15,12 @@ Click `Choose Project Folder`. Select an existing project folder or an empty fol
 - Use add point mode to place a plant point.
 - Select zones or points from the map or lists.
 
+## Basemap Services
+
+Open basemap settings to manage source display names, service keys, attribution, provider terms URLs, and map review or filing numbers. Built-in Amap entries are templates and require an authorized provider key before deployment. The app stores only the configured key text needed by the URL template and does not request map service access unless the selected basemap is loaded.
+
+The status check reports missing source labels, key placeholders, service keys, terms URLs, and review or filing information as warnings so the project remains compatible with offline or custom basemap workflows.
+
 ## Zone Editing
 
 Select a zone, enter zone code, name, and description in the inspector, then apply the changes.

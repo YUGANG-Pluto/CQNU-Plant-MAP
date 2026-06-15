@@ -10,6 +10,13 @@ This project uses third-party packages through the application package manifest 
 | better-sqlite3 | SQLite dependency probe and future local database access | MIT |
 | exifr | Image metadata reading | MIT |
 
+## Browser Runtime Libraries
+
+| Component | Purpose | Upstream License | Source |
+| --- | --- | --- | --- |
+| Leaflet | Interactive map rendering | BSD-2-Clause | `https://unpkg.com/leaflet@1.9.4/` |
+| Leaflet.draw | Drawing and editing map geometry | MIT | `https://unpkg.com/leaflet-draw@1.0.4/` |
+
 ## Development Dependencies
 
 | Package | Purpose | Upstream License |
@@ -24,6 +31,8 @@ This project uses third-party packages through the application package manifest 
 ## Notes
 
 The software itself is not released under these third-party licenses. These notices only identify third-party components used by the project.
+
+Map data, imagery, and tile services are provided by their respective service providers and remain subject to those providers' terms. Built-in Amap entries are configuration templates and require authorized service use by the deployer.
 
 ---
 

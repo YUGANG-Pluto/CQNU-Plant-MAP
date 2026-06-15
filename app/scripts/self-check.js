@@ -1803,8 +1803,31 @@ function testElectronSecurityContract() {
 
 function testRepositoryHygieneContract() {
   const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
-  assert.strictEqual(packageJson.license, 'UNLICENSED');
+  assert.strictEqual(packageJson.license, 'SEE LICENSE IN LICENSE.md');
   assert.strictEqual(packageJson.private, true);
+  assert.ok(readRepositoryFile('LICENSE.md').includes('Private authorization'));
+  const lockJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package-lock.json'), 'utf8'));
+  assert.strictEqual(lockJson.packages?.['']?.license, 'SEE LICENSE IN LICENSE.md');
+  const notice = readRepositoryFile('NOTICE.md');
+  const thirdPartyNotices = readRepositoryFile('THIRD_PARTY_NOTICES.md');
+  const noticeLower = notice.toLowerCase();
+  const thirdPartyLower = thirdPartyNotices.toLowerCase();
+  ['Electron', 'Leaflet', 'Leaflet.draw', 'adm-zip', 'better-sqlite3', 'exifr'].forEach(name => {
+    assert.ok(noticeLower.includes(name.toLowerCase()), `NOTICE.md must mention ${name}`);
+    assert.ok(thirdPartyLower.includes(name.toLowerCase()), `THIRD_PARTY_NOTICES.md must mention ${name}`);
+  });
+  assert.ok(notice.includes('private authorization'), 'NOTICE.md must state the private authorization');
+  assert.ok(thirdPartyNotices.includes('Built-in Amap entries are configuration templates'), 'THIRD_PARTY_NOTICES.md must describe Amap service authorization');
+  const rendererBasemapSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/basemap/index.js'), 'utf8');
+  const mainConstantsSource = fs.readFileSync(path.join(process.cwd(), 'src/main/constants.js'), 'utf8');
+  [rendererBasemapSource, mainConstantsSource].forEach(source => {
+    assert.ok(source.includes('amap-satellite'), 'Amap satellite template must exist');
+    assert.ok(source.includes('&key={key}'), 'Amap templates must use a key placeholder');
+    assert.ok(source.includes('authorizationRequired: true'), 'Amap templates must flag service authorization');
+    assert.ok(source.includes('termsUrl'), 'Basemap templates must carry service terms URLs');
+    assert.ok(source.includes('reviewNumber'), 'Basemap templates must carry review number fields');
+  });
+  assert.ok(rendererBasemapSource.includes('basemapReviewNumberRequired'), 'Basemap checks must ask for review or filing information');
   [
     'check:syntax',
     'check:size',
@@ -1841,6 +1864,7 @@ function testRepositoryHygieneContract() {
     'EULA.md',
     'SCHOOL_USE_LICENSE.md',
     'THIRD_PARTY_NOTICES.md',
+    'NOTICE.md',
     'PRIVACY.md',
     'SECURITY.md',
     'CHANGELOG.md',
@@ -1879,6 +1903,8 @@ function testRepositoryHygieneContract() {
   assert.ok(readWorkspaceDoc('TESTING.md').includes('npm run verify'));
   assert.ok(readWorkspaceDoc('MAINTENANCE.md').includes('Safe mode should remain browse-only'));
   assert.ok(readWorkspaceDoc('RELEASE_CHECKLIST.md').includes('npm run dist'));
+  assert.ok(readWorkspaceDoc('USER_MANUAL.md').includes('Basemap Services'));
+  assert.ok(readRepositoryReadme().includes('authorized key'));
   assert.ok(readWorkspaceDoc('SECURITY_MODEL.md').includes('contextIsolation'));
   assert.ok(readWorkspaceDoc('IPC_CONTRACT.md').includes('window:openExternal'));
   assert.ok(readWorkspaceDoc('IPC_CONTRACT.md').includes('Future Storage Conversion Boundary'));

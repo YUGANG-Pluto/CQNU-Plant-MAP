@@ -1,5 +1,9 @@
 # Proprietary License
 
+Selected license: Private authorization / proprietary school-use license.
+
+This project is not licensed under MIT, Apache-2.0, GPL, or another open-source license. The package metadata points to this file with `SEE LICENSE IN LICENSE.md`, and `private: true` remains set for the application package.
+
 Copyright © 2026 YU GangZuo. All rights reserved.
 
 This software, including source code, packaged binaries, design assets, documentation, project structure, and related materials, is proprietary. Public visibility of this repository does not grant an open-source license.

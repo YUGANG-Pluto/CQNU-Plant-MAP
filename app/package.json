@@ -4,7 +4,7 @@
   "description": "校园植物分区管理系统（支持自定义底图、项目目录持久化、中文/英文界面）",
   "main": "main.js",
   "author": "YUGANG Zuo",
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE.md",
   "private": true,
   "scripts": {
     "start": "electron .",

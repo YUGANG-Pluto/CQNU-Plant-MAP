@@ -191,7 +191,7 @@ The maintenance center supports routine project maintenance:
 
 - 建议在大量编辑、导入、合并或修复前先备份项目。
 - 不建议把真实调查数据、图片、日志或备份压缩包提交到公开仓库。
-- 在线底图加载依赖外部地图服务，若网络或服务不可用，地图显示可能受影响。
+- 在线底图加载依赖外部地图服务，若网络或服务不可用，地图显示可能受影响。使用高德等第三方底图服务前，应在底图设置中配置授权 Key、来源展示、服务条款链接和适用的审图号或备案信息。
 - 物种参考和图像比对依赖外部 API。图像比对只在用户主动选择图片时上传，不会把图片复制到项目目录；若 iNaturalist 要求访问令牌，令牌仅用于本次请求，不会保存。
 - 保守修复不会删除记录、不会自动修改坐标、不会把孤立点位自动归属到某个分区。
 
@@ -199,7 +199,7 @@ The maintenance center supports routine project maintenance:
 
 - Create a backup before large edits, imports, merges, or repairs.
 - Do not commit real survey data, images, logs, or backup archives to a public repository.
-- Online basemaps depend on external map services; map display may be affected by network or service availability.
+- Online basemaps depend on external map services; map display may be affected by network or service availability. Configure the authorized key, source display, provider terms URL, and applicable map review or filing information before using Amap or other third-party basemap services.
 - Species reference and image comparison depend on external APIs. Image comparison uploads an image only after the user chooses it, and the image is not copied into the project folder. If iNaturalist requires an access token, it is used only for the current request and is not saved.
 - Safe repair does not delete records, automatically change coordinates, or assign orphan points to zones.
 

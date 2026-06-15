@@ -142,8 +142,8 @@ function checkPackageMetadata() {
   if (openLicenses.includes(packageJson.license)) {
     fail(`package.json must not declare open license ${packageJson.license}`);
   }
-  if (packageJson.license !== 'UNLICENSED') {
-    fail('package.json license must be UNLICENSED');
+  if (packageJson.license !== 'SEE LICENSE IN LICENSE.md') {
+    fail('package.json license must point to LICENSE.md for the private authorization');
   }
   if (packageJson.private !== true) {
     fail('package.json private must be true');
@@ -166,6 +166,7 @@ function checkRequiredFiles() {
     'EULA.md',
     'SCHOOL_USE_LICENSE.md',
     'THIRD_PARTY_NOTICES.md',
+    'NOTICE.md',
     'PRIVACY.md',
     'SECURITY.md',
     'VERSION_POLICY.md',
@@ -279,6 +280,9 @@ function checkReadmeAndLegalNotes() {
 function checkThirdPartyNotices() {
   const packageJson = readJson(path.join(appRoot, 'package.json'));
   const notices = readFromRoot('THIRD_PARTY_NOTICES.md');
+  const notice = readFromRoot('NOTICE.md');
+  const noticesLower = notices.toLowerCase();
+  const noticeLower = notice.toLowerCase();
   const names = [
     ...Object.keys(packageJson.dependencies || {}),
     ...Object.keys(packageJson.devDependencies || {})
@@ -289,6 +293,20 @@ function checkThirdPartyNotices() {
       fail(`THIRD_PARTY_NOTICES.md missing ${name}`);
     }
   });
+  ['electron', 'leaflet', 'leaflet.draw', 'adm-zip', 'better-sqlite3', 'exifr'].forEach(name => {
+    if (!noticesLower.includes(name)) {
+      fail(`THIRD_PARTY_NOTICES.md missing ${name}`);
+    }
+    if (!noticeLower.includes(name)) {
+      fail(`NOTICE.md missing ${name}`);
+    }
+  });
+  if (!notices.includes('Built-in Amap entries are configuration templates')) {
+    fail('THIRD_PARTY_NOTICES.md missing Amap authorization note');
+  }
+  if (!notice.includes('private authorization')) {
+    fail('NOTICE.md missing private authorization note');
+  }
 }
 
 function checkIgnoreRules() {

@@ -284,11 +284,15 @@
               <input id="bmMaxZoom" class="input" type="number" min="1" max="24" value="22" />
             </div>
             <div class="field"><label data-i18n="basemapProvider">服务商</label><input id="bmProvider" class="input" placeholder="OpenStreetMap / Amap / Custom" /></div>
+            <div class="field"><label data-i18n="basemapSourceLabel">来源展示</label><input id="bmSourceLabel" class="input" placeholder="Amap / AutoNavi" /></div>
+            <div class="field"><label data-i18n="basemapToken">服务 Key</label><input id="bmToken" class="input" type="password" autocomplete="off" placeholder="{key} / {token}" /></div>
             <div class="field"><label data-i18n="tileSize">瓦片尺寸</label><input id="bmTileSize" class="input" type="number" min="128" max="512" value="256" /></div>
             <div class="field"><label data-i18n="zoomOffset">缩放偏移</label><input id="bmZoomOffset" class="input" type="number" min="-2" max="2" value="0" /></div>
             <div class="field"><label data-i18n="basemapCoordHint">内部数据标准</label><div class="path-box nowrap">WGS84</div></div>
             <div class="field field-span-2"><label data-i18n="urlTemplate">URL / 模板</label><input id="bmUrl" class="input mono-input" /></div>
             <div class="field field-span-2"><label data-i18n="attribution">署名</label><input id="bmAttribution" class="input" /></div>
+            <div class="field field-span-2"><label data-i18n="basemapTermsUrl">服务条款链接</label><input id="bmTermsUrl" class="input mono-input" placeholder="https://..." /></div>
+            <div class="field"><label data-i18n="basemapReviewNumber">审图号 / 备案号</label><input id="bmReviewNumber" class="input" /></div>
             <div class="field"><label data-i18n="subdomains">子域名</label><input id="bmSubdomains" class="input" placeholder="abc" /></div>
             <div class="field"><label data-i18n="layers">图层名（WMS）</label><input id="bmLayers" class="input" /></div>
             <div class="field"><label data-i18n="format">格式（WMS）</label><input id="bmFormat" class="input" placeholder="image/png" /></div>
@@ -339,6 +343,7 @@
                 </select>
               </div>
               <div class="field"><label data-i18n="basemapProvider">服务商</label><input id="bmOverlayProvider" class="input" placeholder="Amap / Custom" /></div>
+              <div class="field"><label data-i18n="basemapSourceLabel">来源展示</label><input id="bmOverlaySourceLabel" class="input" placeholder="Amap / AutoNavi" /></div>
               <div class="field">
                 <label data-i18n="basemapCoordSystem">坐标基准</label>
                 <select id="bmOverlayCoordSystem" class="input">
@@ -352,6 +357,8 @@
               <div class="field field-span-2"><label data-i18n="basemapOverlayUrl">覆盖层 API / URL 模板</label><input id="bmOverlayUrl" class="input mono-input" placeholder="https://.../{z}/{x}/{y}.png" /></div>
               <div class="field"><label data-i18n="subdomains">子域名</label><input id="bmOverlaySubdomains" class="input" placeholder="1234 / abc" /></div>
               <div class="field"><label data-i18n="basemapOverlayToken">Token / Key</label><input id="bmOverlayToken" class="input" type="password" autocomplete="off" placeholder="可选，支持 {token}/{key}" /></div>
+              <div class="field field-span-2"><label data-i18n="basemapTermsUrl">服务条款链接</label><input id="bmOverlayTermsUrl" class="input mono-input" placeholder="https://..." /></div>
+              <div class="field"><label data-i18n="basemapReviewNumber">审图号 / 备案号</label><input id="bmOverlayReviewNumber" class="input" /></div>
               <div class="field">
                 <label><span data-i18n="basemapOverlayOpacity">透明度</span><strong id="bmOverlayOpacityValue">100%</strong></label>
                 <input id="bmOverlayOpacity" type="range" min="0" max="1" step="0.05" value="1" />
