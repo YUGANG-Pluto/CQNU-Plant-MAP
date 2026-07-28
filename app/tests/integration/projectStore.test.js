@@ -9,7 +9,9 @@ const pathGuard = require('../../src/main/pathGuard');
 const { ERROR_CODES } = require('../../src/main/errorCodes');
 
 function tempProject() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plant-projectstore-test-'));
+  const root = fs.realpathSync.native(
+    fs.mkdtempSync(path.join(os.tmpdir(), 'plant-projectstore-test-'))
+  );
   const projectDir = path.join(root, 'project');
   fs.mkdirSync(projectDir, { recursive: true });
   pathGuard.trustProjectDirFromDialog(projectDir);

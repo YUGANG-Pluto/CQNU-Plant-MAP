@@ -30,7 +30,9 @@ test('storage conversion source keeps database work behind main-process helpers'
 });
 
 test('storage artifact inventory and guarded cleanup stay project scoped', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plant-storage-artifacts-'));
+  const root = fs.realpathSync.native(
+    fs.mkdtempSync(path.join(os.tmpdir(), 'plant-storage-artifacts-'))
+  );
   const projectDir = path.join(root, 'project');
   const infoDir = path.join(projectDir, 'information');
   fs.mkdirSync(infoDir, { recursive: true });

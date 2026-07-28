@@ -10,7 +10,9 @@ const pathGuard = require('../../src/main/pathGuard');
 const { ERROR_CODES } = require('../../src/main/errorCodes');
 
 function createWorkspace() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'plant-backup-test-'));
+  const root = fs.realpathSync.native(
+    fs.mkdtempSync(path.join(os.tmpdir(), 'plant-backup-test-'))
+  );
   const projectDir = path.join(root, 'project');
   const infoDir = path.join(projectDir, 'information');
   const backupDir = path.join(root, 'backups');

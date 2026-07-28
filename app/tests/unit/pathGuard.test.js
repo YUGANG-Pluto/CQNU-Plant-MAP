@@ -8,7 +8,9 @@ const pathGuard = require('../../src/main/pathGuard');
 const { ERROR_CODES } = require('../../src/main/errorCodes');
 
 function tempRoot() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'plant-pathguard-test-'));
+  return fs.realpathSync.native(
+    fs.mkdtempSync(path.join(os.tmpdir(), 'plant-pathguard-test-'))
+  );
 }
 
 function expectCode(fn, code) {
