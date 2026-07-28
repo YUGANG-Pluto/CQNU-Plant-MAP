@@ -81,11 +81,12 @@ function testPathGuard() {
     '备份目录参数必须是字符串'
   );
 
-  const insideBackupDir = path.join(projectDir, 'backups');
+  const trustedProjectDir = pathGuard.assertTrustedProjectDir(projectDir);
+  const insideBackupDir = path.join(trustedProjectDir, 'backups');
   fs.mkdirSync(insideBackupDir, { recursive: true });
   const trustedInsideBackupDir = pathGuard.trustBackupDirFromDialog(insideBackupDir);
   expectAppError(
-    () => pathGuard.normalizeBackupDir(projectDir, trustedInsideBackupDir),
+    () => pathGuard.normalizeBackupDir(trustedProjectDir, trustedInsideBackupDir),
     ERROR_CODES.INVALID_PATH,
     '备份目录不能位于项目目录内'
   );
