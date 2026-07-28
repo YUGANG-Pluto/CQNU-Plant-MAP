@@ -56,8 +56,11 @@ function testPathGuard() {
     ERROR_CODES.UNTRUSTED_PROJECT_DIR,
     '项目目录必须先由系统目录选择器授信'
   );
-  pathGuard.trustProjectDirFromDialog(untrusted.projectDir);
-  assert.strictEqual(projectStore.loadProject({ projectDir: untrusted.projectDir }).projectDir, untrusted.projectDir);
+  const canonicalProjectDir = pathGuard.trustProjectDirFromDialog(untrusted.projectDir);
+  assert.strictEqual(
+    projectStore.loadProject({ projectDir: untrusted.projectDir }).projectDir,
+    canonicalProjectDir
+  );
   fs.rmSync(untrusted.root, { recursive: true, force: true });
 
   expectAppError(
