@@ -187,8 +187,14 @@ function createWorkspace(options = {}) {
 
   fs.mkdirSync(imagesDir, { recursive: true });
   fs.mkdirSync(backupDir, { recursive: true });
+  const workspace = {
+    root: fs.realpathSync.native(root),
+    projectDir: fs.realpathSync.native(projectDir),
+    imagesDir: fs.realpathSync.native(imagesDir),
+    backupDir: fs.realpathSync.native(backupDir)
+  };
   if (trustProject) {
-    pathGuard.trustProjectDirFromDialog(projectDir);
+    workspace.projectDir = pathGuard.trustProjectDirFromDialog(workspace.projectDir);
   }
-  return { root, projectDir, imagesDir, backupDir };
+  return workspace;
 }
