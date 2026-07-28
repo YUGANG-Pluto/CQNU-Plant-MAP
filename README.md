@@ -1,6 +1,7 @@
 # CQNU Campus Plant Mapping System
 # 重庆师范大学校园植物分区管理系统
 
+> 正式版 `1.0.0` · Release `v1.0.0` · 2026-07-29
 > Copyright © YU GangZuo. All rights reserved.  
 > 本仓库公开可见，仅用于项目展示、学术交流与参考阅读。未经版权所有者书面许可，不得复制、修改、再发布、商用或制作衍生作品。  
 > This repository is publicly visible for project display, academic communication, and reference only. Unless prior written permission is obtained from the copyright holder, no reproduction, modification, redistribution, commercial use, or derivative use is allowed.
@@ -11,11 +12,11 @@
 
 ### 中文
 
-重庆师范大学校园植物分区管理系统是一款本地桌面应用，用于校园植物资源调查、分区绘制、点位记录、图片归档、查询统计和项目维护。软件以“本地项目目录”为核心保存数据，不依赖服务器；底图可使用在线地图服务，避免把底图资源本地化造成空间浪费。
+重庆师范大学校园植物分区管理系统是一款本地桌面应用，用于校园植物资源调查、分区绘制、点位记录、图片归档、查询统计和项目维护。软件以“本地项目目录”为核心保存数据，支持 JSON 与 SQLite 本地存储，不依赖业务服务器；底图可使用在线地图服务，避免把底图资源本地化造成空间浪费。
 
 ### English
 
-CQNU Campus Plant Mapping System is a local desktop application for campus plant surveys, zone drawing, point records, image archiving, query, statistics, and project maintenance. Data is stored in a user-selected local project folder. Online basemap services can be used directly, avoiding large local map assets.
+CQNU Campus Plant Mapping System is a local desktop application for campus plant surveys, zone drawing, point records, image archiving, query, statistics, and project maintenance. Data is stored locally in a user-selected project folder with JSON and SQLite storage options. Online basemap services can be used directly, avoiding large local map assets.
 
 ---
 
@@ -50,7 +51,7 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 - 图片归档：导入图片、归档到项目目录，并支持预览。
 - 查询中心：按名称、分区、生活型、物候状态、来源、调查人、日期和记录完整性筛选，并可从点位结果手动打开物种参考。
 - 物种参考：按当前点位中文名或学名查询 GBIF 与 iNaturalist，可查看来源、图片、分类层级和特征备注；也可由用户主动选择图片进行 iNaturalist 图像比对。建议仅临时显示，由用户选择是否吸收到学名、中文名或物候备注。
-- 统计中心：查看分区、物种、时间和自定义统计图表。
+- 统计中心：查看项目总览、分区组成、多样性指数、相似性矩阵、物候趋势、数据质量和可导出研究图表。
 - 回收站：恢复误删记录或确认彻底删除。
 - 项目备份：手动备份项目，并处理过期备份。
 - 项目合并：辅助合并两个本地项目并提示疑似重合点位。
@@ -67,7 +68,7 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 - Image archive: import images into the project folder and preview them.
 - Query center: filter by name, zone, growth form, phenology state, source, observer, date, and record completeness, with a manual species-reference action on point results.
 - Species reference: query GBIF and iNaturalist by the selected point's common name or scientific name, inspect source links, images, taxonomy, and feature notes, or manually choose an image for iNaturalist image comparison. Suggestions are temporary until the user chooses whether to absorb them into scientific name, common name, or phenology notes.
-- Statistics center: view zone, species, time, and custom statistical charts.
+- Statistics center: review project summaries, zone composition, diversity metrics, similarity matrices, phenology trends, data quality, and exportable research charts.
 - Recycle bin: restore deleted records or permanently delete them.
 - Project backup: create manual backups and handle expired backups.
 - Project merge: merge two local projects and review possible duplicate points.

@@ -17,17 +17,24 @@ CQNU Campus Plant Mapping System is a local-first Electron desktop application. 
 
 ```text
 app/
-  main.js
-  preload.js
+  electron/
+    main/
+    preload/
+    shared/
+  main-dist/                 # generated
+  renderer-dist/             # generated
   index.html
-  src/main/
-  src/renderer/
+  src/
+    main/
+    renderer/
+    renderer-modern/
+    shared/types/
   scripts/
 docs/
 .github/
 ```
 
-`app/index.html` loads Leaflet and local renderer scripts directly. The renderer modules share global state from `src/renderer/state/store.js`.
+`app/package.json` points Electron to the compiled TypeScript main entry under `main-dist/`. The sandboxed preload is bundled as one CommonJS file so it only requires Electron at runtime. `app/index.html` is a minimal host page: it loads the Preact shell, local Leaflet assets, and one compatibility loader. The compatibility loader owns the dependency order for renderer modules that still share state from `src/renderer/state/store.js`.
 
 ## Data Flow
 
@@ -39,7 +46,7 @@ docs/
 
 ## IPC Flow
 
-Renderer code calls `window.plantApp`. Preload maps those calls to named IPC channels. `ipcRegister` wraps handlers in a stable result shape and verifies that calls come from the local application page.
+Renderer code calls `window.plantApp`. `electron/preload/index.ts` maps those calls to the named channels declared in `electron/shared/ipc-contract.ts`. `electron/main/ipc/register.ts` wraps handlers in a stable result shape and verifies that calls come from the local application page.
 
 ## Main Services
 
@@ -50,7 +57,8 @@ Renderer code calls `window.plantApp`. Preload maps those calls to named IPC cha
 - `logger.js`: local application logs and cleanup.
 - `maintenanceService.js`: project image reference checks.
 - `storageConversionService.js`: backup-first JSON to SQLite conversion, SQLite to JSON export, artifact cleanup, and runtime acceptance support.
-- `speciesReferenceService.js`: GBIF and iNaturalist lookup.
+- `speciesReferenceService.js`: GBIF and iNaturalist orchestration.
+- `speciesReference/`: request client, provider normalizers, text utilities, and taxonomy suggestion voting.
 - `pathGuard.js`: directory trust and path safety.
 - `securityPolicy.js`: renderer source validation and external URL control.
 
@@ -67,11 +75,24 @@ Renderer code calls `window.plantApp`. Preload maps those calls to named IPC cha
 - `features/maintenance`: health check, repair, logs, safe mode, diagnostics.
 - `features/theme`: theme, glass, motion, status color settings.
 - `features/speciesReference`: temporary species suggestions and apply flow.
+- `renderer-modern`: Preact shell, modal markup, theme model, and modern chart presentation.
+
+Large renderer domains are split by responsibility. Statistics separates controls, views, exports, workspace summaries, and pure research calculations. Maintenance separates health and repair, logs and settings, and storage conversion. Basemap handling separates configuration, layer rendering, overlays, and diagnostics. Locale dictionaries use the same domain split in Chinese and English.
+
+## Build Flow
+
+1. `npm run build:main` compiles the TypeScript main process.
+2. `npm run build:preload` bundles the sandbox preload into one file.
+3. `npm run build:renderer` builds the Preact shell and design-system styles.
+4. `npm run build` runs all three steps.
+5. `npm start` runs the build before Electron starts.
+
+Generated directories are excluded from source synchronization and recreated locally or in packaging.
 
 ## Security Boundary
 
 The renderer has no Node integration. Preload exposes only business commands. Main-process services validate paths before reading, writing, copying, deleting, or opening external targets.
 
-## Future Direction
+## Migration Boundary
 
-The next architecture work should stay incremental: keep source-link and token validation documented, keep SQLite runtime acceptance passing, and introduce shared type contracts only where they reduce maintenance risk. TypeScript architecture should begin with `checkJs` around storage and IPC contracts before any renderer-wide conversion.
+The modern Preact shell owns markup and theme presentation. Existing renderer business functions remain behind a compatibility loader until each feature can be converted without changing project data behavior. New work should use TypeScript for Electron boundaries and Preact-owned UI, preserve the named IPC contract, and avoid direct Node access in renderer code.

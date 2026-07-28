@@ -9,6 +9,8 @@ This project uses third-party packages through the application package manifest 
 | adm-zip | ZIP archive creation and reading | MIT |
 | better-sqlite3 | SQLite dependency probe and future local database access | MIT |
 | exifr | Image metadata reading | MIT |
+| preact | Component-based renderer shell | MIT |
+| lucide-preact | User-interface icons | ISC |
 
 ## Browser Runtime Libraries
 
@@ -25,8 +27,11 @@ This project uses third-party packages through the application package manifest 
 | electron-builder | Windows installer packaging | MIT |
 | eslint | JavaScript linting | MIT |
 | @types/node | Node.js type declarations for type checking | MIT |
+| @babel/core | JavaScript and JSX transformation support | MIT |
+| @preact/preset-vite | Preact integration for Vite | MIT |
 | prettier | Code formatting | MIT |
-| typescript | Narrow `checkJs` type checking | Apache-2.0 |
+| typescript | TypeScript compilation and `checkJs` type checking | Apache-2.0 |
+| vite | Renderer and preload bundling | MIT |
 
 ## Notes
 
@@ -47,6 +52,8 @@ Map data, imagery, and tile services are provided by their respective service pr
 | adm-zip | ZIP 归档创建与读取 | MIT |
 | better-sqlite3 | SQLite 依赖探针与未来本地数据库访问 | MIT |
 | exifr | 图片元数据读取 | MIT |
+| preact | 组件化渲染器外壳 | MIT |
+| lucide-preact | 用户界面图标 | ISC |
 
 ## 开发依赖
 
@@ -56,8 +63,11 @@ Map data, imagery, and tile services are provided by their respective service pr
 | electron-builder | Windows 安装包构建 | MIT |
 | eslint | JavaScript 检查 | MIT |
 | @types/node | Node.js 类型声明，用于类型检查 | MIT |
+| @babel/core | JavaScript 与 JSX 转换支持 | MIT |
+| @preact/preset-vite | Vite 的 Preact 集成 | MIT |
 | prettier | 代码格式化 | MIT |
-| typescript | 窄范围 `checkJs` 类型检查 | Apache-2.0 |
+| typescript | TypeScript 编译与 `checkJs` 类型检查 | Apache-2.0 |
+| vite | 渲染器与 preload 打包 | MIT |
 
 ## 说明
 

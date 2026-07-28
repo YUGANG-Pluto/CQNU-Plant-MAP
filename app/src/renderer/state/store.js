@@ -133,6 +133,10 @@ const state = {
   lastCoordinateCorrection: null
 };
 
+if (typeof window !== 'undefined') {
+  window.__CQNU_STATE__ = state;
+}
+
 const STANDARD_OPTIONS = {
   habitat: [
     '路旁绿化带', '林下', '灌丛边缘', '荒地', '草坪边缘',

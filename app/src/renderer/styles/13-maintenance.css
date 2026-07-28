@@ -1,0 +1,547 @@
+/* 13. merge / backup */
+.merge-summary-box {
+  min-height: 72px;
+  padding: 12px;
+}
+
+.merge-review-item {
+  align-items: flex-start;
+}
+
+#backupSummary,
+#mergeSummary {
+  white-space: pre-wrap;
+}
+
+/* 14. maintenance center */
+.maintenance-panel {
+  width: min(1080px, calc(100vw - 48px));
+}
+
+.maintenance-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 14px;
+}
+
+.maintenance-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--panel-bg-soft);
+}
+
+.maintenance-card:last-child {
+  grid-column: 1 / -1;
+}
+
+.maintenance-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.maintenance-card-head h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.maintenance-actions {
+  flex-wrap: wrap;
+}
+
+.maintenance-report,
+.maintenance-log-list {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.maintenance-issue,
+.maintenance-log-entry {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.maintenance-log-file {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.maintenance-log-file.is-selected {
+  border-color: color-mix(in srgb, var(--accent) 52%, var(--border-light));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.maintenance-log-file.is-read-selected {
+  background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.68));
+}
+
+.maintenance-log-file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.maintenance-log-file-row input[type="checkbox"] {
+  flex: 0 0 auto;
+}
+
+.maintenance-log-read-target {
+  justify-content: flex-start;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.maintenance-log-preview {
+  max-height: 260px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--text-main);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.maintenance-issue--error,
+.maintenance-log-entry--error {
+  border-color: color-mix(in srgb, var(--danger) 34%, var(--border-light));
+}
+
+.maintenance-issue--warn,
+.maintenance-log-entry--warn {
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--border-light));
+}
+
+.maintenance-badge-ok {
+  color: var(--success);
+}
+
+.maintenance-safe-mode-status {
+  display: inline-flex;
+  margin: 0 0 8px;
+}
+
+.maintenance-safe-mode-status.is-on {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 32%, var(--border-light));
+}
+
+.maintenance-safe-mode .safe-mode-locked-control {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.maintenance-safe-mode input.safe-mode-locked-control,
+.maintenance-safe-mode textarea.safe-mode-locked-control {
+  background: color-mix(in srgb, var(--panel-bg-soft) 76%, transparent);
+}
+
+.maintenance-safe-mode #map {
+  cursor: grab;
+}
+
+.species-reference-panel {
+  width: min(96vw, 920px);
+}
+
+.species-reference-query {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.species-reference-apply-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.taxonomy-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.taxonomy-actions {
+  align-items: center;
+}
+
+.taxonomy-inheritance-note {
+  line-height: 1.5;
+}
+
+.taxonomy-candidate-list {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.taxonomy-candidate-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.taxonomy-candidate-card > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.taxonomy-candidate-card strong,
+.taxonomy-candidate-card span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.species-reference-image-compare {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(180px, 0.75fr);
+  gap: 10px;
+  align-items: end;
+  margin: 0 0 12px;
+}
+
+.species-reference-results {
+  display: grid;
+  gap: 10px;
+  max-height: min(54vh, 560px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.species-reference-card {
+  display: grid;
+  grid-template-columns: auto 92px minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--panel-bg) 88%, transparent);
+  cursor: pointer;
+}
+
+.species-reference-card.is-selected {
+  border-color: color-mix(in srgb, var(--primary) 54%, var(--border-light));
+  box-shadow: 0 10px 24px rgba(30, 38, 55, 0.1);
+}
+
+.species-source-inat {
+  border-left-color: var(--success);
+}
+
+.species-reference-photo {
+  width: 92px;
+  min-height: 82px;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--panel-bg-soft);
+}
+
+.species-reference-photo img,
+.species-reference-photo-empty {
+  width: 100%;
+  height: 100%;
+  min-height: 82px;
+  object-fit: cover;
+}
+
+.species-reference-photo-empty {
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.species-reference-body {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.species-reference-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.species-reference-title strong,
+.species-reference-body p,
+.species-reference-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.species-reference-title span {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--panel-bg-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.species-reference-body p,
+.species-reference-meta {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.species-reference-body a,
+.species-reference-link {
+  color: var(--primary);
+  font-size: 12px;
+}
+
+.species-reference-link {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.species-reference-link:hover,
+.species-reference-link:focus-visible {
+  color: color-mix(in srgb, var(--primary) 76%, var(--text-main));
+}
+
+.species-reference-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 44%, transparent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.species-reference-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.species-reference-token-help {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--panel-bg-soft) 84%, transparent);
+}
+
+.species-reference-token-help ol {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.species-reference-detail {
+  display: grid;
+  gap: 12px;
+  max-height: 320px;
+  overflow: auto;
+  margin-bottom: 10px;
+}
+
+.species-reference-detail.is-empty {
+  display: block;
+}
+
+.species-reference-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.species-reference-detail-head > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.species-reference-detail-head strong,
+.species-reference-detail-head span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.species-reference-detail-section {
+  display: grid;
+  gap: 8px;
+}
+
+.species-reference-detail-section h3 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 13px;
+}
+
+.species-reference-detail-list {
+  display: grid;
+  gap: 6px;
+}
+
+.species-reference-detail-list > div {
+  display: grid;
+  grid-template-columns: minmax(86px, 0.28fr) minmax(0, 1fr);
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.species-reference-detail-list strong {
+  color: var(--text-main);
+}
+
+.species-reference-recommendation {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.species-reference-image-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.species-reference-compared-image-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.species-reference-compared-image-row > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.species-reference-compared-image-row strong,
+.species-reference-compared-image-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.species-reference-thumb {
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: var(--panel-bg-soft);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.species-reference-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.species-reference-credit {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .species-reference-query {
+    grid-template-columns: 1fr;
+  }
+
+  .species-reference-image-compare {
+    grid-template-columns: 1fr;
+  }
+
+  .species-reference-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .species-reference-photo {
+    display: none;
+  }
+}
+
+.maintenance-issue-title,
+.maintenance-log-entry-title {
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.maintenance-issue-meta,
+.maintenance-issue-detail,
+.maintenance-log-entry-message,
+.maintenance-log-entry-meta {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .maintenance-panel {
+    width: min(96vw, 720px);
+  }
+
+  .maintenance-grid {
+    grid-template-columns: 1fr;
+  }
+}

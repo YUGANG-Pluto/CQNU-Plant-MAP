@@ -1,0 +1,150 @@
+/* Global interaction and accessibility motion */
+.motion-hover :where(
+  .card,
+  .btn,
+  .list-item,
+  .basemap-settings-section,
+  .basemap-status-row
+) {
+  transition:
+    transform var(--motion-duration-fast) var(--motion-ease),
+    box-shadow var(--motion-duration) var(--motion-ease),
+    background-color var(--motion-duration) var(--motion-ease),
+    border-color var(--motion-duration) var(--motion-ease);
+}
+
+.motion-hover :where(
+  .card,
+  .list-item,
+  .basemap-settings-section
+):hover {
+  transform: translateY(calc(-1 * var(--motion-hover-lift)));
+}
+
+.motion-hover :where(.btn, .toggle-switch):active {
+  transform: scale(var(--motion-scale-press));
+}
+
+.motion-modal .layer-modal:not(.hidden) > :where(.layer-modal-panel, .confirm-panel),
+.motion-modal .image-modal:not(.hidden) .image-modal-content {
+  animation: uiDialogIn var(--motion-duration-modal) var(--motion-ease) both;
+}
+
+.motion-modal .basemap-settings-panel:not(.hidden),
+.motion-modal .right-inspector-drawer:not(.hidden) .right-inspector-drawer-panel,
+.motion-modal .workspace-utility-drawer:not(.hidden) .workspace-utility-panel {
+  animation: uiPanelIn var(--motion-duration) var(--motion-ease) both;
+}
+
+.motion-modal .layer-modal.is-closing > :where(.layer-modal-panel, .confirm-panel),
+.motion-modal .image-modal.is-closing .image-modal-content {
+  animation: uiDialogOut var(--motion-duration-fast) var(--motion-ease-standard) forwards;
+}
+
+.motion-modal .layer-modal.is-closing .layer-modal-backdrop,
+.motion-modal .image-modal.is-closing .image-modal-backdrop,
+.right-inspector-drawer.is-closing .layer-modal-backdrop,
+.workspace-utility-drawer.is-closing .layer-modal-backdrop {
+  opacity: 0;
+}
+
+.motion-modal :where(
+  .basemap-tab-panel.active,
+  .merge-review-list,
+  .basemap-report-group,
+  .modal-scroll
+) {
+  animation: uiSubpanelIn var(--motion-duration) var(--motion-ease) both;
+}
+
+.right-inspector-drawer.is-closing .right-inspector-drawer-panel,
+.workspace-utility-drawer.is-closing .workspace-utility-panel {
+  animation: uiPanelOut var(--motion-duration-fast) var(--motion-ease-standard) forwards;
+}
+
+.motion-layout :where(.app-shell, .map-shell, .panel),
+.motion-theme body {
+  transition:
+    grid-template-columns var(--motion-duration) var(--motion-ease),
+    width var(--motion-duration) var(--motion-ease),
+    background var(--motion-duration) var(--motion-ease),
+    color var(--motion-duration-fast) var(--motion-ease);
+}
+
+@keyframes uiDialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-dialog-translate-y)) scale(var(--motion-scale-enter));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes uiPanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(var(--motion-panel-translate-x));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes uiDialogOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(calc(var(--motion-dialog-translate-y) * 0.55)) scale(0.985);
+  }
+}
+
+@keyframes uiPanelOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(var(--motion-panel-translate-x));
+  }
+}
+
+@keyframes uiSubpanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(var(--motion-subpanel-translate));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.motion-disabled *,
+.motion-disabled *::before,
+.motion-disabled *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

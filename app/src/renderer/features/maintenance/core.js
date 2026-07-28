@@ -1,0 +1,676 @@
+const MAINTENANCE_SETTINGS_SCHEMA = 'cqnu-plant-ui-settings-v1';
+const MAINTENANCE_DIAGNOSTICS_SCHEMA = 'cqnu-plant-diagnostics-v1';
+const MAINTENANCE_SEVERITY_ORDER = { error: 0, warn: 1, info: 2 };
+const SAFE_MODE_LOCKED_IDS = Object.freeze([
+  'btnSave',
+  'btnModeDrawZone',
+  'btnModeAddPoint',
+  'btnConfirmPoint',
+  'btnCancelPoint',
+  'btnDeleteZone',
+  'btnDeletePoint',
+  'btnApplyZone',
+  'btnApplyPoint',
+  'btnChooseImage',
+  'btnExportCsv',
+  'btnExportGeoJSON',
+  'btnImportCsv',
+  'btnImportGeoJSON',
+  'baseMapSelect',
+  'autoNormalizeBasemapSwitch',
+  'btnBasemapStandardize',
+  'btnCorrectSelectionGcj',
+  'btnCorrectSelectionBd',
+  'btnUndoCoordCorrection',
+  'btnNewBaseMap',
+  'btnSaveBaseMap',
+  'btnDeleteBaseMap',
+  'btnNewOverlay',
+  'btnSaveOverlay',
+  'btnResetBuiltinOverlays',
+  'btnOpenTrash',
+  'btnRestoreTrash',
+  'btnDeleteTrashForever',
+  'btnOpenPointEditor',
+  'btnOpenPointEditorInline',
+  'btnAddPhenology',
+  'btnDeletePhenology',
+  'btnOpenTheme',
+  'btnSaveTheme',
+  'btnResetThemeAll',
+  'btnResetThemeSlot',
+  'btnResetGlassSettings',
+  'btnResetStatusColors',
+  'btnGenerateChartPalette',
+  'btnOpenMerge',
+  'btnChooseMergeBase',
+  'btnChooseMergeOther',
+  'btnRunMerge',
+  'btnMergeReviewApply',
+  'btnBackupProject',
+  'btnChooseBackupTarget',
+  'btnRunManualBackup',
+  'btnRunSafeRepair',
+  'btnCleanupLogs',
+  'btnReadSelectedLog',
+  'btnExportDiagnostics',
+  'btnStoragePreflight',
+  'btnCreateSqliteStorage',
+  'btnExportSqliteJson',
+  'btnLoadSqliteStorage',
+  'btnLoadJsonStorage',
+  'btnRefreshStorageArtifacts',
+  'btnDeleteSelectedStorageArtifacts',
+  'btnInspectSelectedBackup',
+  'btnRestoreSelectedBackup',
+  'btnApplySpeciesReference',
+  'btnExportUiSettings',
+  'btnImportUiSettings'
+]);
+const SAFE_MODE_READONLY_FIELD_IDS = Object.freeze([
+  'zoneId',
+  'zoneName',
+  'zoneDescription',
+  'pointId',
+  'plantNameCn',
+  'plantNameSci',
+  'observer',
+  'surveyDate',
+  'habitat',
+  'abundance',
+  'growthForm',
+  'floweringState',
+  'cultivatedStatus',
+  'plantNote',
+  'bmEditTarget',
+  'bmNameZh',
+  'bmNameEn',
+  'bmType',
+  'bmUrl',
+  'bmAttribution',
+  'bmMaxZoom',
+  'bmMaxNativeZoom',
+  'bmCoordSystem',
+  'bmProvider',
+  'bmTileSize',
+  'bmZoomOffset',
+  'bmSubdomains',
+  'bmLayers',
+  'bmFormat',
+  'bmTransparent',
+  'bmOverlayTarget',
+  'bmOverlayNameZh',
+  'bmOverlayNameEn',
+  'bmOverlayEnabled',
+  'bmOverlayType',
+  'bmOverlayProvider',
+  'bmOverlayUrl',
+  'bmOverlaySubdomains',
+  'bmOverlayCoordSystem',
+  'bmOverlayMaxNativeZoom',
+  'bmOverlayMaxZoom',
+  'bmOverlayOpacity',
+  'bmOverlayZIndex',
+  'bmOverlayAttach',
+  'bmOverlayToken',
+  'bmOverlayNotes',
+  'themeGlassMode',
+  'themeGlassEffectOpacity',
+  'themeGlassEffectBlur',
+  'themeGlassEffectSaturate',
+  'themeGlassEffectHighlight',
+  'themeGlassEffectShadow',
+  'themeGlassEffectBrightness',
+  'progressHeight',
+  'progressMode',
+  'progressShowPercent',
+  'progressShowStage',
+  'progressGlass',
+  'motionMode',
+  'motionSpeedMultiplier',
+  'motionFadeDuration',
+  'motionTransitionDuration',
+  'motionModalDuration',
+  'motionStagger',
+  'motionHoverLift',
+  'motionScaleEnter',
+  'motionScalePress',
+  'motionEasing',
+  'motionHover',
+  'motionModal',
+  'motionLayout',
+  'motionTheme',
+  'motionReduced',
+  'statusColorSuccess',
+  'statusColorDanger',
+  'statusColorWarning',
+  'statusColorUnknown',
+  'statusColorEnabled',
+  'statusColorDisabled',
+  'themeRadius',
+  'themeShadowStrength'
+]);
+const SAFE_MODE_DYNAMIC_LOCKED_SELECTORS = Object.freeze([
+  '[data-safe-mode-locked="1"]',
+  '.img-actions button',
+  '#statsModal .stats-control-card select',
+  '#mergeReviewModal input[type="checkbox"]',
+  '.theme-style-btn',
+  '.theme-layout-btn',
+  '.theme-token-btn',
+  '.preset-swatch',
+  '[data-token]',
+  '[data-glass]',
+  '[data-progress]',
+  '[data-motion]',
+  '[data-status-color]',
+  '.seg-btn[data-lang]'
+]);
+
+let maintenanceLastReport = null;
+let maintenanceLastLogSnapshot = null;
+let maintenanceSelectedLogName = '';
+let maintenanceSelectedLogNames = new Set();
+let maintenanceLastStorageInventory = null;
+const maintenanceSelectedStorageArtifacts = {
+  sqlite: false,
+  json: false,
+  backups: new Set()
+};
+let safeModeLockEventsBound = false;
+
+function cloneMaintenanceJson(value) {
+  return JSON.parse(JSON.stringify(value ?? null));
+}
+
+function maintenanceText(key, fallback = '') {
+  return typeof t === 'function' ? t(key) : fallback || key;
+}
+
+function maintenanceProjectLabel() {
+  if (typeof dirnameLabel === 'function') {
+    return dirnameLabel(state.projectDir);
+  }
+  return state.projectDir || '—';
+}
+
+function setMaintenanceBusy(button, busy) {
+  if (!button) return;
+  button.disabled = !!busy;
+}
+
+function getMaintenanceSafeModeState() {
+  ensureSettingsShape(state.settings || {});
+  const safeMode = state.settings.maintenanceSafeMode || {};
+  return safeMode && typeof safeMode === 'object' ? safeMode : { enabled: false };
+}
+
+function isMaintenanceSafeModeEnabled() {
+  return getMaintenanceSafeModeState().enabled === true;
+}
+
+function isMaintenanceReadOnlyMode() {
+  return isMaintenanceSafeModeEnabled();
+}
+
+function guardMaintenanceReadOnlyAction(scope = 'safe-mode') {
+  if (!isMaintenanceReadOnlyMode()) return false;
+  showAlert(maintenanceText('maintenanceSafeModeReadOnlyBlocked'));
+  window.plantApp?.log?.report?.({
+    level: 'warn',
+    scope: `maintenance:read-only:${scope}`,
+    message: 'Blocked write action while safe mode is enabled'
+  }).catch(() => {});
+  return true;
+}
+
+function setMaintenanceSafeModeState(nextState) {
+  if (!state.settings) return;
+  state.settings.maintenanceSafeMode = {
+    enabled: false,
+    ...nextState
+  };
+}
+
+function setSafeModeLockedElementState(element, locked) {
+  if (!element) return;
+  const tag = element.tagName?.toLowerCase();
+  const isNativeControl = ['button', 'select', 'input', 'textarea'].includes(tag);
+  const hadSafeModeState = Object.prototype.hasOwnProperty.call(element.dataset, 'safeModePrevDisabled')
+    || Object.prototype.hasOwnProperty.call(element.dataset, 'safeModePrevReadonly')
+    || Object.prototype.hasOwnProperty.call(element.dataset, 'safeModePrevTitle')
+    || Object.prototype.hasOwnProperty.call(element.dataset, 'safeModePrevAriaDisabled');
+  element.classList.toggle('safe-mode-locked-control', locked);
+  if (!locked && !hadSafeModeState) return;
+
+  if (locked) {
+    if (!Object.prototype.hasOwnProperty.call(element.dataset, 'safeModePrevTitle')) {
+      element.dataset.safeModePrevTitle = element.title || '';
+    }
+    if (!Object.prototype.hasOwnProperty.call(element.dataset, 'safeModePrevDisabled')) {
+      element.dataset.safeModePrevDisabled = element.disabled ? '1' : '0';
+    }
+    if (!Object.prototype.hasOwnProperty.call(element.dataset, 'safeModePrevReadonly')) {
+      element.dataset.safeModePrevReadonly = element.readOnly ? '1' : '0';
+    }
+    if (!Object.prototype.hasOwnProperty.call(element.dataset, 'safeModePrevAriaDisabled')) {
+      element.dataset.safeModePrevAriaDisabled = element.getAttribute('aria-disabled') || '';
+    }
+    element.setAttribute('aria-disabled', 'true');
+    element.title = maintenanceText('maintenanceSafeModeReadOnlyTitle');
+  } else {
+    element.title = element.dataset.safeModePrevTitle || '';
+    if (element.dataset.safeModePrevAriaDisabled) {
+      element.setAttribute('aria-disabled', element.dataset.safeModePrevAriaDisabled);
+    } else {
+      element.removeAttribute('aria-disabled');
+    }
+  }
+
+  if (tag === 'textarea' || (tag === 'input' && !['checkbox', 'radio', 'range', 'color', 'date'].includes(element.type))) {
+    element.readOnly = locked ? true : element.dataset.safeModePrevReadonly === '1';
+  } else if (isNativeControl) {
+    element.disabled = locked ? true : element.dataset.safeModePrevDisabled === '1';
+  }
+
+  if (!locked) {
+    delete element.dataset.safeModePrevTitle;
+    delete element.dataset.safeModePrevDisabled;
+    delete element.dataset.safeModePrevReadonly;
+    delete element.dataset.safeModePrevAriaDisabled;
+  }
+}
+
+function refreshSafeModeLockedControls() {
+  const locked = isMaintenanceReadOnlyMode();
+  SAFE_MODE_LOCKED_IDS.forEach(id => setSafeModeLockedElementState(document.getElementById(id), locked));
+  SAFE_MODE_READONLY_FIELD_IDS.forEach(id => setSafeModeLockedElementState(document.getElementById(id), locked));
+  SAFE_MODE_DYNAMIC_LOCKED_SELECTORS.forEach(selector => {
+    document.querySelectorAll(selector).forEach(element => setSafeModeLockedElementState(element, locked));
+  });
+
+  if (ui.btnModeBrowse) {
+    ui.btnModeBrowse.disabled = false;
+    ui.btnModeBrowse.classList.remove('safe-mode-locked-control');
+    ui.btnModeBrowse.removeAttribute('aria-disabled');
+  }
+  if (ui.btnOpenMaintenance) {
+    ui.btnOpenMaintenance.disabled = false;
+    ui.btnOpenMaintenance.classList.remove('safe-mode-locked-control');
+  }
+  if (ui.btnRunHealthCheck) ui.btnRunHealthCheck.disabled = false;
+  if (ui.btnRefreshLogs) ui.btnRefreshLogs.disabled = false;
+  if (ui.btnExitSafeMode) ui.btnExitSafeMode.disabled = !locked;
+}
+
+function enforceSafeModeMapBrowseOnly() {
+  if (!isMaintenanceReadOnlyMode()) return;
+  if (state.pendingPoint) {
+    clearPendingPoint();
+  }
+  if (state.currentMode !== 'browse' && typeof setMode === 'function') {
+    setMode('browse');
+  }
+  if (state.map?.dragging?.enable) {
+    state.map.dragging.enable();
+  }
+  if (typeof disableDrawHandler === 'function') {
+    disableDrawHandler();
+  }
+}
+
+function matchesSafeModeLockedTarget(target) {
+  if (!target?.closest) return false;
+  const direct = target.closest(SAFE_MODE_LOCKED_IDS.map(id => `#${id}`).join(','));
+  if (direct) return true;
+  return SAFE_MODE_DYNAMIC_LOCKED_SELECTORS.some(selector => target.closest(selector));
+}
+
+function handleSafeModeLockedDomEvent(event) {
+  if (!isMaintenanceReadOnlyMode()) return;
+  if (!matchesSafeModeLockedTarget(event.target)) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  guardMaintenanceReadOnlyAction(event.type);
+}
+
+function bindSafeModeLockEvents() {
+  if (safeModeLockEventsBound) return;
+  safeModeLockEventsBound = true;
+  ['click', 'change', 'input', 'submit'].forEach(type => {
+    document.addEventListener(type, handleSafeModeLockedDomEvent, true);
+  });
+}
+
+function syncMaintenanceSafeModeUi() {
+  const enabled = isMaintenanceSafeModeEnabled();
+  document.documentElement.classList.toggle('maintenance-safe-mode', enabled);
+  bindSafeModeLockEvents();
+  if (ui.maintenanceSafeModeStatus) {
+    ui.maintenanceSafeModeStatus.textContent = maintenanceText(enabled ? 'maintenanceSafeModeOn' : 'maintenanceSafeModeOff');
+    ui.maintenanceSafeModeStatus.classList.toggle('is-on', enabled);
+  }
+  if (ui.btnApplySafeMode) {
+    ui.btnApplySafeMode.disabled = enabled;
+  }
+  if (ui.btnExitSafeMode) {
+    ui.btnExitSafeMode.disabled = !enabled;
+  }
+  if (ui.maintenanceSettingsSummary) {
+    ui.maintenanceSettingsSummary.textContent = enabled
+      ? maintenanceText('maintenanceSafeModeActiveHint')
+      : maintenanceText('maintenanceSettingsHint');
+  }
+  refreshSafeModeLockedControls();
+  enforceSafeModeMapBrowseOnly();
+}
+
+function addMaintenanceIssue(issues, severity, code, title, detail = '', fixable = false) {
+  issues.push({ severity, code, title, detail, fixable: !!fixable });
+}
+
+function countBySeverity(issues) {
+  return issues.reduce((acc, issue) => {
+    acc[issue.severity] = (acc[issue.severity] || 0) + 1;
+    if (issue.fixable) acc.fixable += 1;
+    return acc;
+  }, { error: 0, warn: 0, info: 0, fixable: 0 });
+}
+
+function summarizeMaintenanceReport(report) {
+  const counts = countBySeverity(report?.issues || []);
+  if (!report) return maintenanceText('maintenanceNotRun');
+  if (!report.issues.length) return maintenanceText('maintenanceHealthy');
+  return `${maintenanceText('maintenanceError')}: ${counts.error} / ${maintenanceText('maintenanceWarn')}: ${counts.warn} / ${maintenanceText('maintenanceInfo')}: ${counts.info}`;
+}
+
+function issueSeverityLabel(severity) {
+  return {
+    error: maintenanceText('maintenanceError'),
+    warn: maintenanceText('maintenanceWarn'),
+    info: maintenanceText('maintenanceInfo')
+  }[severity] || severity;
+}
+
+function collectDuplicateValueIssues(items, valueGetter, label, issues) {
+  const seen = new Map();
+  items.forEach((item, index) => {
+    const value = String(valueGetter(item) || '').trim();
+    if (!value) return;
+    if (!seen.has(value)) {
+      seen.set(value, [index + 1]);
+      return;
+    }
+    seen.get(value).push(index + 1);
+  });
+
+  seen.forEach((positions, value) => {
+    if (positions.length > 1) {
+      addMaintenanceIssue(
+        issues,
+        'warn',
+        `duplicate-${label}`,
+        `${label} 重复：${value}`,
+        `位置：${positions.join(', ')}。此项不自动修复，避免误改用户编号。`
+      );
+    }
+  });
+}
+
+function isValidCoordinate(point) {
+  const lat = Number(point.lat);
+  const lng = Number(point.lng);
+  return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+}
+
+function collectImageRefsWithContext() {
+  const rows = [];
+  state.points.forEach((point, pointIndex) => {
+    getPhenologyEntries(point).forEach((entry, entryIndex) => {
+      normalizeImages(entry.images).forEach(ref => {
+        rows.push({
+          ref,
+          pointLabel: pointDisplayName(point) || `#${pointIndex + 1}`,
+          entryLabel: entry.label || `#${entryIndex + 1}`
+        });
+      });
+    });
+  });
+  return rows;
+}
+
+async function collectImageFileIssues() {
+  if (!state.projectDir || !window.plantApp?.maintenance?.checkImageRefs) return [];
+  const imageRefs = collectImageRefsWithContext();
+  if (!imageRefs.length) return [];
+
+  const refs = [...new Set(imageRefs.map(item => item.ref))];
+  const result = await callIpc(window.plantApp.maintenance.checkImageRefs({
+    projectDir: state.projectDir,
+    refs
+  }));
+  const missing = new Map((result.items || []).filter(item => !item.exists).map(item => [item.ref, item]));
+
+  return imageRefs
+    .filter(item => missing.has(item.ref))
+    .map(item => ({
+      severity: 'warn',
+      code: 'missing-image',
+      title: `图片引用不可用：${item.ref}`,
+      detail: `${item.pointLabel} / ${item.entryLabel}。${missing.get(item.ref).code || ''}`,
+      fixable: false
+    }));
+}
+
+function collectProjectDataIssues(extraIssues = []) {
+  const issues = [...extraIssues];
+  const zones = Array.isArray(state.zones) ? state.zones : [];
+  const points = Array.isArray(state.points) ? state.points : [];
+  const zoneInternalIds = new Set(zones.map(zone => zone.id).filter(Boolean));
+
+  if (!state.projectDir) {
+    addMaintenanceIssue(issues, 'warn', 'no-project', maintenanceText('maintenanceNoProject'), '', false);
+  }
+
+  zones.forEach((zone, index) => {
+    const label = zoneDisplayName(zone) || `#${index + 1}`;
+    if (!zone.id) {
+      addMaintenanceIssue(issues, 'warn', 'missing-zone-id', `分区缺少内部 ID：${label}`, '可生成内部 ID，不改变显示名称。', true);
+    }
+    if (!String(zone.zoneId || '').trim()) {
+      addMaintenanceIssue(issues, 'warn', 'missing-zone-code', `分区缺少编号：${label}`, '可按顺序补齐 Z 编号。', true);
+    }
+    if (!zone.geometry?.type) {
+      addMaintenanceIssue(issues, 'info', 'missing-zone-geometry', `分区没有几何边界：${label}`, '允许存在文字分区，但地图边界不会显示。');
+    }
+  });
+
+  collectDuplicateValueIssues(zones, zone => zone.id, '分区内部 ID', issues);
+  collectDuplicateValueIssues(zones, zone => zone.zoneId, '分区编号', issues);
+
+  points.forEach((point, index) => {
+    const label = pointDisplayName(point) || `#${index + 1}`;
+    if (!point.id) {
+      addMaintenanceIssue(issues, 'warn', 'missing-point-id', `点位缺少内部 ID：${label}`, '可生成内部 ID，不改变植物信息。', true);
+    }
+    if (!String(point.pointId || '').trim()) {
+      addMaintenanceIssue(issues, 'warn', 'missing-point-code', `点位缺少编号：${label}`, '可按顺序补齐 P 编号。', true);
+    }
+    if (!point.zoneRef || !zoneInternalIds.has(point.zoneRef)) {
+      addMaintenanceIssue(issues, 'error', 'orphan-point', `点位未绑定有效分区：${label}`, '此项需要用户判断归属分区，不自动处理。');
+    }
+    if (!isValidCoordinate(point)) {
+      addMaintenanceIssue(issues, 'error', 'invalid-coordinate', `点位坐标异常：${label}`, `lat=${point.lat}, lng=${point.lng}`);
+    }
+    if (!String(point.plantNameCn || '').trim() && !String(point.plantNameSci || '').trim()) {
+      addMaintenanceIssue(issues, 'warn', 'missing-plant-name', `点位缺少植物名称：${label}`, '建议补充中文名或学名。');
+    }
+
+    const entries = getPhenologyEntries(point);
+    if (!entries.length) {
+      addMaintenanceIssue(issues, 'warn', 'missing-phenology', `点位缺少物候记录：${label}`, '可恢复一条空白物候记录。', true);
+    }
+    entries.forEach(entry => {
+      const images = normalizeImages(entry.images);
+      if (images.length !== new Set(images).size) {
+        addMaintenanceIssue(issues, 'warn', 'duplicate-entry-images', `物候图片重复：${label}`, entry.label || '', true);
+      }
+    });
+  });
+
+  collectDuplicateValueIssues(points, point => point.id, '点位内部 ID', issues);
+  collectDuplicateValueIssues(points, point => point.pointId, '点位编号', issues);
+
+  issues.sort((a, b) => {
+    const severityDelta = MAINTENANCE_SEVERITY_ORDER[a.severity] - MAINTENANCE_SEVERITY_ORDER[b.severity];
+    return severityDelta || String(a.code).localeCompare(String(b.code));
+  });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    projectDir: state.projectDir || '',
+    counts: {
+      zones: zones.length,
+      points: points.length,
+      images: collectImageRefsWithContext().length
+    },
+    issues
+  };
+}
+
+function renderMaintenanceReport(report) {
+  if (!ui.maintenanceHealthReport) return;
+  clearNode(ui.maintenanceHealthReport);
+  ui.maintenanceHealthSummary.textContent = summarizeMaintenanceReport(report);
+  ui.maintenanceHealthSummary.classList.toggle('maintenance-badge-ok', !!report && !report.issues.length);
+  ui.btnRunSafeRepair.disabled = !report || !report.issues.some(issue => issue.fixable);
+
+  if (!report) {
+    ui.maintenanceHealthReport.appendChild(listTextItem(maintenanceText('maintenanceReportEmpty')));
+    return;
+  }
+  if (!report.issues.length) {
+    ui.maintenanceHealthReport.appendChild(listTextItem(maintenanceText('maintenanceHealthy'), `${report.counts.zones} zones / ${report.counts.points} points`));
+    return;
+  }
+
+  report.issues.forEach(issue => {
+    const item = el('div', {
+      className: `maintenance-issue maintenance-issue--${issue.severity}`
+    }, [
+      el('div', { className: 'maintenance-issue-title', text: issue.title }),
+      el('div', { className: 'maintenance-issue-meta', text: `${issueSeverityLabel(issue.severity)} / ${issue.code}${issue.fixable ? ` / ${maintenanceText('maintenanceFixable')}` : ''}` })
+    ]);
+    if (issue.detail) {
+      item.appendChild(el('div', { className: 'maintenance-issue-detail', text: issue.detail }));
+    }
+    ui.maintenanceHealthReport.appendChild(item);
+  });
+}
+
+async function runMaintenanceHealthCheck(options = {}) {
+  try {
+    setMaintenanceBusy(ui.btnRunHealthCheck, true);
+    ui.maintenanceProjectPath.textContent = maintenanceProjectLabel();
+    const imageIssues = state.projectDir ? await collectImageFileIssues() : [];
+    maintenanceLastReport = collectProjectDataIssues(imageIssues);
+    renderMaintenanceReport(maintenanceLastReport);
+    if (!options.silent && !isMaintenanceSafeModeEnabled()) {
+      ui.maintenanceSettingsSummary.textContent = maintenanceText('maintenanceCheckFinished');
+    }
+    syncMaintenanceSafeModeUi();
+    return maintenanceLastReport;
+  } catch (error) {
+    handleUiError(error, 'maintenance:health-check', {
+      title: maintenanceText('maintenanceCheckFailed')
+    });
+    return null;
+  } finally {
+    setMaintenanceBusy(ui.btnRunHealthCheck, false);
+  }
+}
+
+function dedupeEntryImages(entry) {
+  const before = normalizeImages(entry.images);
+  const after = [...new Set(before)];
+  entry.images = after;
+  return before.length !== after.length;
+}
+
+function applyConservativeProjectRepair() {
+  const changes = [];
+  state.zones = state.zones.map((zone, index) => {
+    const next = normalizeZoneRecord({ ...zone });
+    if (!next.id) {
+      next.id = makeUid('zone');
+      changes.push(`zone:${index + 1}:id`);
+    }
+    if (!String(next.zoneId || '').trim()) {
+      next.zoneId = `Z${String(index + 1).padStart(2, '0')}`;
+      changes.push(`zone:${index + 1}:zoneId`);
+    }
+    return next;
+  });
+
+  state.points = state.points.map((point, index) => {
+    const raw = { ...point };
+    if (!raw.id) {
+      raw.id = makeUid('point');
+      changes.push(`point:${index + 1}:id`);
+    }
+    if (!String(raw.pointId || '').trim()) {
+      raw.pointId = `P${String(index + 1).padStart(3, '0')}`;
+      changes.push(`point:${index + 1}:pointId`);
+    }
+    const next = normalizePointRecord(raw);
+    getPhenologyEntries(next).forEach(entry => {
+      if (dedupeEntryImages(entry)) {
+        changes.push(`point:${index + 1}:images`);
+      }
+    });
+    syncPointSummary(next);
+    return next;
+  });
+
+  return changes;
+}
+
+async function runMaintenanceSafeRepair() {
+  if (guardMaintenanceReadOnlyAction('safe-repair')) return;
+  if (!requireProject()) return;
+  const report = maintenanceLastReport || await runMaintenanceHealthCheck({ silent: true });
+  const fixableCount = (report?.issues || []).filter(issue => issue.fixable).length;
+  if (!fixableCount) {
+    showAlert(maintenanceText('maintenanceNoFixableIssue'));
+    return;
+  }
+
+  const confirmed = await openConfirmDialog({
+    title: maintenanceText('maintenanceSafeRepair'),
+    message: `${maintenanceText('maintenanceSafeRepairConfirm')}\n${maintenanceText('maintenanceSafeRepairScope')}`,
+    acceptLabel: maintenanceText('maintenanceSafeRepair'),
+    cancelLabel: maintenanceText('cancelAction')
+  });
+  if (!confirmed) return;
+
+  try {
+    const result = await withProgressTask({ type: 'maintenance', title: maintenanceText('maintenanceSafeRepair'), stage: maintenanceText('progressBackup') }, async task => {
+      task.update({ percent: 10, stage: maintenanceText('progressBackup') });
+      const backupFile = await createBackupZip(state.projectDir, '', 'maintenance');
+      task.update({ percent: 45, stage: maintenanceText('maintenanceRepairing') });
+      await yieldToUi();
+      const changes = applyConservativeProjectRepair();
+      task.update({ percent: 72, stage: maintenanceText('progressWriting') });
+      await persistProject();
+      renderAllDerived();
+      task.update({ percent: 92, stage: maintenanceText('maintenanceRunCheck') });
+      return { backupFile, changes };
+    });
+    await runMaintenanceHealthCheck({ silent: true });
+    showAlert(`${maintenanceText('maintenanceRepairDone')} ${result.changes.length}\n${maintenanceText('backupSuccess')} ${result.backupFile}`);
+  } catch (error) {
+    handleUiError(error, 'maintenance:safe-repair', {
+      title: maintenanceText('maintenanceRepairFailed')
+    });
+  }
+}

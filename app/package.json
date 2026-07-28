@@ -1,23 +1,36 @@
 {
   "name": "campus-plant-zone-manager",
-  "version": "9.0.1",
-  "description": "校园植物分区管理系统（支持自定义底图、项目目录持久化、中文/英文界面）",
-  "main": "main.js",
+  "version": "1.0.0",
+  "description": "校园植物分区管理系统，支持本地项目、植物记录、物候归档与研究统计。",
+  "main": "main-dist/main/index.js",
   "author": "YUGANG Zuo",
   "license": "SEE LICENSE IN LICENSE.md",
   "private": true,
   "scripts": {
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:preload": "vite build --config vite.preload.config.ts",
+    "build:electron": "npm run build:main && npm run build:preload",
+    "build:renderer": "vite build",
+    "build": "npm run build:electron && npm run build:renderer",
+    "presmoke:renderer": "npm run build",
+    "smoke:renderer": "electron scripts/renderer-smoke.js",
+    "prestart": "npm run build",
     "start": "electron .",
+    "predist": "npm run build",
     "dist": "electron-builder --win nsis",
     "lint": "eslint .",
-    "format": "prettier --write \"**/*.{js,css,html,json}\"",
+    "format": "prettier --write \"**/*.{js,ts,tsx,css,html,json,md,yml,yaml}\"",
+    "preself-check": "npm run build:main",
     "self-check": "node scripts/self-check.js",
+    "self-check:core": "node scripts/self-check.js",
     "check:size": "node scripts/check-file-size.js",
     "check:syntax": "node scripts/check-js-syntax.js",
     "check:repo": "node scripts/check-repo-hygiene.js",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck:electron": "tsc -p tsconfig.electron.json --noEmit",
+    "typecheck:renderer": "tsc -p tsconfig.renderer.json",
+    "typecheck": "tsc -p tsconfig.json && npm run typecheck:electron && npm run typecheck:renderer",
     "ci:install": "npm ci --ignore-scripts --no-audit --fund=false",
-    "verify": "npm run check:repo && npm run check:syntax && npm run typecheck && npm run check:size && npm run self-check",
+    "verify": "npm run check:repo && npm run check:syntax && npm run typecheck && npm run build && npm run check:size && npm run self-check:core",
     "install:electron": "node node_modules/electron/install.js",
     "rebuild:electron": "electron-builder install-app-deps",
     "prepare:electron": "npm run install:electron && npm run rebuild:electron",
@@ -34,12 +47,15 @@
     "db:test-runtime": "electron scripts/test-sqlite-runtime-acceptance.js"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@preact/preset-vite": "^2.10.6",
     "@types/node": "^20.19.41",
     "electron": "^31.7.7",
     "electron-builder": "^24.13.3",
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5"
   },
   "build": {
     "appId": "com.cqnu.plantmap",
@@ -48,10 +64,10 @@
       "output": "dist"
     },
     "files": [
-      "main.js",
-      "preload.js",
+      "main-dist/**/*",
       "index.html",
       "style.css",
+      "renderer-dist/**/*",
       "src/**/*",
       "scripts/**/*",
       "build/**/*"
@@ -85,6 +101,10 @@
   "dependencies": {
     "adm-zip": "^0.5.16",
     "better-sqlite3": "^12.10.0",
-    "exifr": "^7.1.3"
+    "exifr": "^7.1.3",
+    "leaflet": "^1.9.4",
+    "leaflet-draw": "^1.0.4",
+    "lucide-preact": "^1.27.0",
+    "preact": "^10.29.7"
   }
 }

@@ -18,17 +18,24 @@ Use `npm install` only when dependencies change and `package-lock.json` needs to
 
 | Path | Purpose |
 | --- | --- |
-| `app/main.js` | Electron application bootstrap. |
-| `app/preload.js` | Preload API bridge. |
-| `app/index.html` | Renderer shell, script order, and UI markup. |
+| `app/electron/main` | TypeScript application lifecycle, window policy, and IPC registration. |
+| `app/electron/preload` | TypeScript preload API bridge. |
+| `app/electron/shared` | IPC channel and response contracts. |
+| `app/index.html` | Minimal renderer host page. |
 | `app/src/main` | Main-process services and security boundary. |
-| `app/src/renderer` | UI, map, state, import/export, and feature modules. |
+| `app/src/renderer-modern` | Preact shell, modal markup, themes, and presentation styles. |
+| `app/src/renderer` | Compatibility business features, map, state, and import/export. |
+| `app/src/renderer/legacy-loader.js` | Ordered compatibility module manifest. |
 | `app/scripts` | Repository and runtime checks. |
 | `docs` | Product, engineering, testing, security, release, and maintenance references. |
 
 ## Script Order
 
-`index.html` loads renderer scripts in dependency order. Keep shared state, DOM registry, utilities, i18n, normalizers, map modules, feature modules, then `app.js`.
+`index.html` loads only the modern shell, local Leaflet assets, and `legacy-loader.js`. Keep compatibility dependency order in the loader manifest: shared state, DOM registry, utilities, locale fragments, normalizers, map modules, feature modules, shell coordination, then `app.js`.
+
+## Build Outputs
+
+`main-dist/` and `renderer-dist/` are generated and ignored by source control. `npm start` rebuilds both automatically. Do not copy generated output into the synchronization repository.
 
 ## Data Safety
 
@@ -48,9 +55,10 @@ When dependencies change:
 ```bash
 npm run check:repo
 npm run check:syntax
+npm run typecheck
+npm run build
 npm run self-check
 npm run verify
 ```
 
 Run `npm run lint` when `node_modules` is installed.
-

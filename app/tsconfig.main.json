@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.electron.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": "electron",
+    "outDir": "main-dist"
+  },
+  "include": [
+    "electron/main/**/*.ts",
+    "electron/shared/**/*.ts"
+  ]
+}

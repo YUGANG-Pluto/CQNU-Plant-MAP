@@ -5,6 +5,17 @@
 
 ## Unreleased
 
+- No unreleased changes.
+
+## 1.0.0 - 2026-07-29
+
+- 发布首个正式维护版本，统一应用版本、界面标识、安装包与 Git 标签为 `1.0.0` / `v1.0.0`。
+- 建立 TypeScript Electron 主进程、preload 与 IPC 契约分层，并保留 context isolation、sandbox、路径校验和受控外部链接边界。
+- 使用 Preact、Vite 与 TypeScript 建立现代界面宿主，将大型 HTML 缩减为轻量入口，并通过兼容加载层保留既有业务功能。
+- 提供科研白底与液态玻璃两套界面主题、响应式布局、适度动效和可访问性降级。
+- 将统计、底图、维护、物种参考、国际化、样式和自检逻辑拆分为可独立维护的模块。
+- 完成 JSON 与 SQLite 双格式读取、受控转换、转换前备份、日志诊断和源格式清理，旧项目无需强制迁移。
+- 精简重复检查并完善 CI、本地验证、单元测试、集成测试、隐藏界面冒烟检查和 Windows 安装包构建链路。
 - Refined the statistics center layout so wide screens use available space more effectively while narrow screens collapse to a single column.
 - Added session-based chart display controls, fullscreen chart review, warm/default heatmap palettes, long zone-name truncation, and localized export labels for the statistics center.
 

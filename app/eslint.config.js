@@ -22,7 +22,7 @@ const nodeGlobals = {
 
 module.exports = [
   {
-    ignores: ['dist/**', 'node_modules/**']
+    ignores: ['dist/**', 'main-dist/**', 'renderer-dist/**', 'node_modules/**']
   },
   {
     files: ['**/*.js'],

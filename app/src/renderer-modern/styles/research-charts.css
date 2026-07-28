@@ -1,0 +1,293 @@
+:root {
+  --research-line: color-mix(in srgb, var(--text-secondary) 18%, transparent);
+  --research-line-strong: color-mix(in srgb, var(--text-secondary) 28%, transparent);
+  --research-surface: color-mix(in srgb, var(--primary) 3%, var(--panel-bg));
+  --research-focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+:root.theme-scientific-white body,
+:root.theme-liquid-glass body {
+  background: var(--app-bg);
+  background-image: none;
+}
+
+:root.theme-scientific-white .app-topbar,
+:root.theme-scientific-white .panel,
+:root.theme-scientific-white .map-shell,
+:root.theme-scientific-white .map-workbar,
+:root.theme-scientific-white .card,
+:root.theme-scientific-white .chart-card,
+:root.theme-scientific-white .stats-control-card,
+:root.theme-scientific-white .layer-modal-panel,
+:root.theme-scientific-white .confirm-panel {
+  background: var(--panel-bg);
+  border-color: var(--research-line);
+  border-radius: 8px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+:root.theme-liquid-glass .app-topbar,
+:root.theme-liquid-glass .panel,
+:root.theme-liquid-glass .map-shell,
+:root.theme-liquid-glass .map-workbar,
+:root.theme-liquid-glass .card,
+:root.theme-liquid-glass .chart-card,
+:root.theme-liquid-glass .stats-control-card,
+:root.theme-liquid-glass .layer-modal-panel,
+:root.theme-liquid-glass .confirm-panel {
+  border-color: var(--glass-border);
+  border-radius: 8px;
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+}
+
+:root.theme-scientific-white :where(.btn, .input, select, textarea),
+:root.theme-liquid-glass :where(.btn, .input, select, textarea) {
+  border-radius: 8px;
+}
+
+:root.theme-scientific-white .btn:not(.btn-primary):not(.btn-danger):not(.btn-danger-soft):not(.active) {
+  background: var(--panel-bg);
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+:root.theme-scientific-white .btn.btn-primary,
+:root.theme-scientific-white .seg-btn.active,
+:root.theme-scientific-white .btn.mode-btn.active {
+  color: var(--primary-contrast);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+:root.theme-scientific-white :where(.input, select, textarea):focus,
+:root.theme-liquid-glass :where(.input, select, textarea):focus {
+  border-color: var(--primary);
+  box-shadow: var(--research-focus-ring);
+}
+
+.chart-card,
+.stats-control-card,
+.summary-box,
+.quick-actions-card,
+.merge-summary-box,
+.maintenance-card,
+.basemap-settings-section {
+  border-color: var(--research-line);
+}
+
+#statsModal .modal-scroll {
+  padding: 18px;
+  scrollbar-gutter: stable;
+}
+
+#statsModal .stats-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 10px;
+}
+
+#statsModal .stat-chip {
+  min-width: 0;
+  border: 1px solid var(--research-line);
+  border-radius: 8px;
+  background: var(--research-surface);
+  box-shadow: none;
+}
+
+#statsModal .stat-chip strong {
+  color: var(--primary);
+  letter-spacing: 0;
+}
+
+#statsModal .stats-control-card,
+#statsModal .chart-card {
+  min-width: 0;
+  border: 1px solid var(--research-line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-bg) 94%, transparent);
+  box-shadow: none;
+}
+
+#statsModal .stats-chart-head {
+  align-items: flex-start;
+  gap: 12px;
+}
+
+#statsModal .stats-chart-caption {
+  max-width: 72ch;
+  line-height: 1.55;
+}
+
+.chart-scroll-area {
+  overflow: auto hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--primary) 36%, transparent) transparent;
+}
+
+.chart-scroll-area::-webkit-scrollbar {
+  height: 8px;
+}
+
+.chart-scroll-area::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 36%, transparent);
+}
+
+.chart-scroll-inner {
+  min-width: max-content;
+}
+
+.chart-legend-inline,
+.legend-grid {
+  gap: 8px;
+}
+
+.chart-legend-inline span,
+.legend-item {
+  min-width: 0;
+  border: 1px solid var(--research-line);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel-bg) 92%, transparent);
+}
+
+.legend-item span:nth-child(2) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.axis-tick-label,
+.axis-label,
+.chart-value,
+.chart-line-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-empty-state {
+  min-height: 168px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  border: 1px dashed var(--research-line-strong);
+  border-radius: 8px;
+  background: var(--panel-bg-soft);
+}
+
+.chart-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.combo-chart-svg,
+.donut-svg {
+  overflow: visible;
+}
+
+.chart-bar-group,
+.chart-combo-category,
+.chart-line-point-group,
+.donut-slice {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform var(--motion-duration-fast) var(--motion-ease),
+    opacity var(--motion-duration-fast) var(--motion-ease),
+    filter var(--motion-duration-fast) var(--motion-ease);
+}
+
+.chart-bar-depth {
+  fill: rgba(31, 52, 47, 0.1);
+  opacity: 0.66;
+  pointer-events: none;
+}
+
+.chart-bar-rect {
+  filter: url(#chartSoftShadow);
+}
+
+.chart-combo-category:hover .chart-bar-group,
+.chart-bar-group:hover {
+  transform: translateY(-2px);
+}
+
+.chart-combo-category:hover .chart-line-point-group,
+.chart-line-point-group:hover {
+  transform: scale(1.06);
+}
+
+.donut-depth-ring {
+  pointer-events: none;
+}
+
+.donut-center-plate {
+  fill: color-mix(in srgb, var(--panel-bg) 88%, white);
+  filter: drop-shadow(0 5px 10px rgba(31, 52, 47, 0.08));
+}
+
+.donut-slice:hover {
+  opacity: 0.88;
+  stroke: rgba(255, 255, 255, 0.5);
+}
+
+.pie-chart-stage {
+  display: grid;
+  place-items: center;
+}
+
+.motion-hover .btn:hover:not(:disabled) {
+  transform: translateY(calc(var(--motion-hover-lift) * -1));
+}
+
+.motion-hover #statsModal :where(.chart-card, .stats-control-card):hover {
+  transform: none;
+}
+
+.motion-mode-standard #statsModal:not(.hidden) :where(.stats-control-card, .chart-card) {
+  animation: researchContentIn var(--motion-duration) var(--motion-ease) both;
+}
+
+.motion-disabled :where(
+  .btn,
+  .chart-card,
+  .stats-control-card,
+  .chart-bar-group,
+  .chart-combo-category,
+  .chart-line-point-group,
+  .donut-slice
+) {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+@keyframes researchContentIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 720px) {
+  #statsModal .modal-scroll {
+    padding: 12px;
+  }
+
+  #statsModal .stats-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

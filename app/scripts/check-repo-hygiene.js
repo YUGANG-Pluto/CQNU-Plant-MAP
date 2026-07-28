@@ -39,6 +39,8 @@ const skippedDirs = new Set([
   '.git',
   'node_modules',
   'dist',
+  'main-dist',
+  'renderer-dist',
   'release',
   'out',
   'coverage',
@@ -149,7 +151,31 @@ function checkPackageMetadata() {
     fail('package.json private must be true');
   }
 
-  ['check:syntax', 'check:size', 'check:repo', 'self-check', 'typecheck', 'ci:install', 'verify', 'install:electron', 'rebuild:electron', 'prepare:electron', 'db:check-schema', 'db:test-conversion', 'db:test-storage-conversion', 'db:test-runtime'].forEach(scriptName => {
+  [
+    'build',
+    'build:main',
+    'build:preload',
+    'build:electron',
+    'build:renderer',
+    'smoke:renderer',
+    'check:syntax',
+    'check:size',
+    'check:repo',
+    'self-check',
+    'self-check:core',
+    'typecheck',
+    'typecheck:electron',
+    'typecheck:renderer',
+    'ci:install',
+    'verify',
+    'install:electron',
+    'rebuild:electron',
+    'prepare:electron',
+    'db:check-schema',
+    'db:test-conversion',
+    'db:test-storage-conversion',
+    'db:test-runtime'
+  ].forEach(scriptName => {
     if (!packageJson.scripts || !packageJson.scripts[scriptName]) {
       fail(`package.json missing script ${scriptName}`);
     }
@@ -211,6 +237,17 @@ function checkRequiredFiles() {
     '.github/ISSUE_TEMPLATE/config.yml',
     'app/package-lock.json',
     'app/tsconfig.json',
+    'app/tsconfig.electron.json',
+    'app/tsconfig.main.json',
+    'app/tsconfig.renderer.json',
+    'app/vite.config.ts',
+    'app/vite.preload.config.ts',
+    'app/electron/main/index.ts',
+    'app/electron/main/windowManager.ts',
+    'app/electron/main/ipc/register.ts',
+    'app/electron/preload/index.ts',
+    'app/electron/shared/ipc-contract.ts',
+    'app/src/renderer/legacy-loader.js',
     'app/scripts/check-file-size.js',
     'app/scripts/check-js-syntax.js',
     'app/scripts/check-repo-hygiene.js',

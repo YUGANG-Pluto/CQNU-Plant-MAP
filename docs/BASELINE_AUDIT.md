@@ -1,16 +1,16 @@
 # Baseline Audit
 
-Audit date: 2026-05-19
+Audit date: 2026-07-29
 
 ## Current Application Baseline
 
 - Desktop runtime: Electron 31.7.7.
-- Application package version: 9.0.1.
-- Main entry: `app/main.js`.
-- Preload entry: `app/preload.js`.
-- Renderer entry: `app/index.html`.
-- Primary project storage remains JSON-based under a user-selected local project folder.
-- Current project files remain `settings.json`, `zones.json`, `points.json`, and `images/`.
+- Application package version: 1.0.0.
+- Main entry: `app/main-dist/main/index.js`, compiled from `app/electron/main/index.ts`.
+- Preload entry: `app/main-dist/preload/index.js`, bundled from `app/electron/preload/index.ts`.
+- Renderer entry: the Preact shell built from `app/src/renderer-modern/`, with `app/index.html` as a minimal host.
+- Project storage supports JSON and SQLite under a user-selected local project folder.
+- JSON compatibility remains available for `settings.json`, `zones.json`, `points.json`, and `images/`.
 
 ## Current Engineering State
 
@@ -19,6 +19,8 @@ Audit date: 2026-05-19
 - Repository hygiene check is available through `npm run check:repo`.
 - Source file size governance is available through `npm run check:size`.
 - Combined local verification is available through `npm run verify`.
+- Electron and renderer TypeScript contracts are checked through `npm run typecheck`.
+- Hidden renderer smoke coverage is available through `npm run smoke:renderer`.
 - The Windows installer command remains `npm run dist`.
 
 ## Authorization And Repository Hygiene
@@ -30,18 +32,15 @@ Audit date: 2026-05-19
 
 ## Data And Runtime Impact
 
-- No business data format was changed in this baseline step.
-- Optional taxonomy fields are documented for compatibility with current point records.
-- No project migration was introduced.
-- No IPC channel or Electron security boundary was changed.
-- No user operation workflow was changed.
-- SQLite readiness is tracked as documentation and verification state only; no runtime database feature is enabled.
-- An in-memory JSON/table-model round-trip check exists for future SQLite preparation.
-- A data-only conversion report and backup preflight plan exist for future SQLite preparation.
-- SQLite dependency and IPC boundary decisions are documented; `better-sqlite3` is installed for dependency probing only.
+- Existing JSON projects remain readable without forced migration.
+- Optional taxonomy fields remain compatible with current point records.
+- JSON and SQLite conversion is user-triggered, backup-first, logged, and handled only in the main process.
+- Unknown project fields are preserved through conversion compatibility payloads.
+- Renderer code has no direct filesystem, database, path, or child-process access.
+- IPC source validation, preload whitelisting, project-directory trust, and path guards remain enforced.
 
 ## Known Follow-Up Items
 
-- Add neutral engineering documents for release, testing, and maintenance if team workflows expand.
-- Consider continuous integration after local verification scripts remain stable.
-- Keep SQLite planning documents synchronized before any runtime conversion work is introduced.
+- Continue migrating compatibility-layer renderer features to typed Preact modules only when the change reduces maintenance cost.
+- Keep release, testing, security, and storage documentation synchronized with future tagged releases.
+- Require backup and round-trip validation for any future project data format change.

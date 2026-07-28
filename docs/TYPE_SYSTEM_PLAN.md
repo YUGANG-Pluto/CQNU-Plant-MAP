@@ -2,9 +2,13 @@
 
 ## Current Position
 
-The application currently uses JavaScript with JSDoc typedefs and a narrow TypeScript `checkJs` gate. This remains the active implementation style while shared contracts are stabilized before any `.ts` conversion.
+The Electron application boundary and modern renderer shell now use TypeScript. Existing storage services and compatibility renderer features remain JavaScript with a focused `checkJs` gate.
 
-SQLite explicit runtime storage is now part of the storage contract. TypeScript architecture work can start after the SQLite runtime acceptance gate passes together with backup restore, conversion, verification, and packaging checks.
+- `electron/main/`: application lifecycle, window policy, and IPC registration.
+- `electron/preload/`: typed `window.plantApp` bridge.
+- `electron/shared/`: stable IPC channel contract.
+- `src/renderer-modern/`: Preact components, theme model, and presentation runtime.
+- `src/shared/types/`: project and storage declarations used by checked JavaScript.
 
 ## Principles
 
@@ -14,21 +18,26 @@ SQLite explicit runtime storage is now part of the storage contract. TypeScript 
 - Keep the active typecheck command narrow and expand it only after each included area passes locally.
 - Keep JSON project compatibility as the primary storage contract.
 
-## Recommended Sequence
+## Implemented Sequence
 
-1. Stabilize JSDoc typedefs for zones, points, images, phenology entries, species reference summaries, statistics rows, and export rows.
-2. Add a small shared contract module for storage and IPC payload shapes.
-3. Keep `tsconfig.json` with `checkJs` for a narrow include list.
-4. Expand `npm run typecheck` only after each included area passes locally.
-5. Convert files to TypeScript only when the conversion reduces maintenance risk.
+1. Stabilized shared project and storage declarations.
+2. Added a typed IPC channel contract.
+3. Migrated the main lifecycle, window policy, IPC registration, and preload bridge.
+4. Added strict typechecking for Preact renderer components.
+5. Kept storage services under `checkJs` while preserving JSON and SQLite compatibility.
 
 ## Current Typecheck Scope
 
 `npm run typecheck` is active and included in `npm run verify`.
 
-The current checked scope is intentionally narrow:
+The current checked scope has three gates:
 
-- `preload.js`
+- `tsconfig.json`: checked JavaScript storage and backup services.
+- `tsconfig.electron.json`: strict Electron main, preload, and IPC TypeScript.
+- `tsconfig.renderer.json`: strict Preact renderer and Vite configuration.
+
+The checked JavaScript scope includes:
+
 - `src/main/projectStore.js`
 - `src/main/storageConversionService.js`
 - `src/main/backupService.js`
@@ -37,11 +46,11 @@ The current checked scope is intentionally narrow:
 - `src/main/sqliteSchemaService.js`
 - `src/shared/types/**/*.d.ts`
 
-This scope covers project loading/saving, explicit SQLite runtime behavior, storage conversion, guarded backup restore, SQLite table-model/schema/conversion contracts, and preload IPC shape. It does not check the full renderer yet.
+The combined `npm run typecheck` command covers these three gates.
 
 ## Expansion Gate
 
-Expand TypeScript architecture work only when all of these pass in one local verification pass:
+Convert another compatibility feature only when all of these pass in one local verification pass:
 
 - `npm run verify`, including `npm run typecheck`
 - `npm run test --if-present`
@@ -49,7 +58,7 @@ Expand TypeScript architecture work only when all of these pass in one local ver
 - `npm run db:test-runtime`
 - `npm run dist`
 
-The next TypeScript change should add one bounded area at a time, preferably maintenance storage UI contracts, species reference provider contracts, or the first pure-model `.ts` conversion. Do not start with renderer-wide conversion.
+The next conversion should remain bounded to one feature and preserve its current global compatibility API until all callers move to explicit imports.
 
 ## Initial Contract Targets
 
@@ -78,10 +87,10 @@ The repository now includes minimal declaration files under `app/src/shared/type
 | `project.d.ts` | `JsonProjectSnapshot` |
 | `sqlite-exchange.d.ts` | `SqliteTableModel`, `ConversionReport`, `BackupPreflightPlan` |
 
-`tsconfig.json` and `npm run typecheck` are active. These declarations are the baseline for gradual checking and later file conversion.
+These declarations remain the compatibility baseline for storage and project records.
 
 ## Non-Goals
 
-- No full-application rewrite.
+- No single-pass conversion of all compatibility renderer features.
 - No database migration as part of type-system work.
 - No change to Electron security boundaries.

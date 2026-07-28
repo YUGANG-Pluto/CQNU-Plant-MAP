@@ -1,0 +1,259 @@
+/* Basemap workspace modal */
+.basemap-workspace-panel {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: min(1080px, calc(100vw - 48px));
+  height: min(760px, calc(100vh - 56px));
+  max-height: min(760px, calc(100vh - 56px));
+  padding: 0;
+  margin: 28px auto;
+  overflow: hidden;
+}
+
+.basemap-modal-header,
+.basemap-modal-tabs,
+.basemap-modal-footer {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.basemap-modal-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.85fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+
+.basemap-modal-title,
+.basemap-modal-title h2,
+.basemap-modal-title p {
+  min-width: 0;
+}
+
+.basemap-modal-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 10px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--panel-bg-soft);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.basemap-modal-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.basemap-modal-tabs .seg-btn {
+  min-height: 34px;
+  padding: 7px 12px;
+}
+
+.basemap-workspace-panel .basemap-settings-panel {
+  min-height: 0;
+  padding: 16px 18px;
+  margin: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.basemap-tab-panel {
+  display: none;
+}
+
+.basemap-tab-panel.active {
+  display: grid;
+}
+
+.basemap-source-grid,
+.basemap-protocol-grid,
+.coord-rule-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.field-span-2 {
+  grid-column: 1 / -1;
+}
+
+.mono-input {
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  white-space: nowrap;
+}
+
+.info-tile {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  background: var(--panel-bg-soft);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.info-tile strong {
+  color: var(--text-main);
+  font-size: 13px;
+}
+
+.info-tile span {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.basemap-source-actions,
+.basemap-modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.basemap-modal-footer {
+  background: color-mix(in srgb, var(--panel-bg) 86%, transparent);
+  border-top: 1px solid var(--border-light);
+  border-bottom: 0;
+}
+
+.basemap-report-panel {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.basemap-report-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  color: var(--text-secondary);
+  background: var(--panel-bg-soft);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.basemap-report-group {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.basemap-report-group summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 10px;
+  color: var(--text-main);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.basemap-report-group .basemap-check-list {
+  max-height: 240px;
+  padding: 0 10px 10px;
+}
+
+.basemap-detail-summary span,
+.basemap-status-row span,
+.basemap-check-row span {
+  min-width: 0;
+}
+
+.basemap-check-row strong,
+.basemap-status-row strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.campus-basemap-tile {
+  image-rendering: auto;
+}
+
+@media (max-width: 1280px) {
+  .map-basemap-toolbar {
+    grid-template-columns: auto minmax(160px, 1fr) auto;
+  }
+
+  .map-basemap-toolbar .basemap-quick-summary {
+    grid-column: 1 / -1;
+  }
+
+  .basemap-state-strip {
+    grid-template-columns: repeat(3, minmax(90px, 1fr));
+  }
+}
+
+@media (max-width: 1040px) {
+  .map-workbar-status,
+  .map-basemap-toolbar,
+  .basemap-state-strip {
+    grid-template-columns: 1fr;
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .basemap-workspace-panel {
+    width: min(calc(100vw - 24px), 760px);
+    height: min(820px, calc(100vh - 24px));
+    max-height: calc(100vh - 24px);
+    margin: 12px auto;
+  }
+
+  .basemap-modal-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .basemap-modal-summary {
+    grid-column: 1 / -1;
+  }
+
+  .basemap-source-grid,
+  .basemap-protocol-grid,
+  .coord-rule-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .workspace-mini-chart {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-donut {
+    width: 56px;
+    height: 56px;
+  }
+
+  .basemap-modal-tabs {
+    max-height: 84px;
+    overflow: auto;
+  }
+
+  .basemap-report-head,
+  .basemap-check-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

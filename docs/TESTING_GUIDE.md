@@ -29,9 +29,9 @@ npm run verify
 | `ci:install` | CI dependency installation using `npm ci --ignore-scripts` so native modules do not compile against Node before the Electron rebuild step. |
 | `check:repo` | Required files, license metadata, ignored files, restricted repository artifacts. |
 | `check:syntax` | JavaScript syntax with `node --check`. |
-| `typecheck` | Narrow TypeScript `checkJs` gate for storage, backup restore, preload IPC, and shared declarations. |
-| `check:size` | Source file size thresholds and large-file allowlist reasons. |
-| `self-check` | Runtime contracts for path guards, project storage, backup, logging, UI wiring, security, and selected feature contracts. |
+| `typecheck` | Checked JavaScript storage services plus strict Electron and Preact TypeScript gates. |
+| `check:size` | Source file warning and split-review thresholds. No large-file exceptions are currently required. |
+| `self-check` | Modular runtime contracts for path guards, project storage, backup, logging, UI wiring, security, and selected feature contracts. |
 | `prepare:electron` | Installs the Electron runtime after script-free CI installation and rebuilds native dependencies against the Electron runtime ABI. |
 | `test:unit` | Node test runner unit tests for pure models and path guards. |
 | `test:integration` | Node test runner integration tests using system temporary directories. |
@@ -49,12 +49,12 @@ npm run verify
 
 | Layer | Location | Purpose |
 | --- | --- | --- |
-| Structural contracts | `scripts/self-check.js` | Application wiring, security boundaries, required files, documentation contracts, and broad feature contracts. |
+| Structural contracts | `scripts/self-check.js`, `scripts/self-check/` | Small runner plus domain suites for data, operations, renderer, features, and platform security. |
 | Unit tests | `tests/unit/` | Pure model behavior and focused service contracts. |
 | Integration tests | `tests/integration/` | Main-process services that need temporary directories or zip files. |
 | Fixtures | `tests/fixtures/` | Synthetic JSON project data only. No real survey records or private images. |
 
-`npm run verify` intentionally remains a structural gate and does not force the full test suite yet. It includes the narrow `typecheck` gate. CI and local release checks should still run `npm run test --if-present`.
+`npm run verify` builds the Electron and renderer outputs after repository, syntax, and type checks, then runs size and structural checks. CI and local release checks should still run `npm run test --if-present`.
 
 GitHub CI uses Node 20 LTS and runs the structural checks as separate steps: repository hygiene, syntax, typecheck, file size policy, self-check, unit/integration tests, and SQLite runtime acceptance. Keeping these steps separate makes GitHub failures point to the exact gate instead of hiding them inside one combined command. CI sets `ELECTRON_MIRROR` and `npm_config_registry` so Electron binary installation uses the same mirror strategy as local setup when the default download path is unstable. CI runs `npm run ci:install` so install-time native scripts are skipped, then runs `npm run prepare:electron` so the Electron runtime is installed and native SQLite bindings are compiled for Electron before runtime checks.
 

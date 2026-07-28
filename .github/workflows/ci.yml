@@ -49,7 +49,7 @@ jobs:
       - name: Check JavaScript syntax
         run: npm run check:syntax
 
-      - name: Typecheck storage and IPC contracts
+      - name: Typecheck storage, Electron, and renderer contracts
         run: npm run typecheck
 
       - name: Check file size policy

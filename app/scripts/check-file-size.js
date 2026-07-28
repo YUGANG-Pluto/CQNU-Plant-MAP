@@ -12,30 +12,16 @@ const skippedDirs = new Set([
   '.git',
   'node_modules',
   'dist',
+  'main-dist',
+  'renderer-dist',
   'release',
   'out',
   'coverage',
   '.nyc_output'
 ]);
-const checkedExtensions = new Set(['.js', '.css', '.html', '.mjs', '.cjs']);
+const checkedExtensions = new Set(['.js', '.css', '.html', '.mjs', '.cjs', '.ts', '.tsx']);
 
-const splitReviewNotes = {
-  'app/index.html': 'Single-window Electron shell; split only with a renderer component extraction.',
-  'app/scripts/self-check.js': 'Central contract harness; split after stable domain test groups are defined.',
-  'app/src/main/speciesReferenceService.js': 'Reference lookup service with provider normalization; split by provider after interface contracts stabilize.',
-  'app/src/renderer/app.js': 'Renderer coordinator with feature binding; split after module event boundaries are stable.',
-  'app/src/renderer/features/basemap/index.js': 'Basemap workflow module with UI wiring and provider rules.',
-  'app/src/renderer/features/maintenance/index.js': 'Maintenance workflow module with diagnostics and repair actions.',
-  'app/src/renderer/features/stats/index.js': 'Statistics center UI module scheduled for gradual section extraction.',
-  'app/src/renderer/features/stats/statsResearch.js': 'Pure statistics and export helpers kept together for formula consistency.',
-  'app/src/renderer/features/theme/index.js': 'Theme editor workflow module with preview and persistence wiring.',
-  'app/src/renderer/i18n/en.js': 'English UI dictionary; split by feature after key ownership is stabilized.',
-  'app/src/renderer/i18n/zh.js': 'Chinese UI dictionary; split by feature after key ownership is stabilized.',
-  'app/src/renderer/styles/10-core-components.css': 'Shared component CSS bundle; split with design token stabilization.',
-  'app/src/renderer/styles/20-theme-layouts.css': 'Theme and layout CSS bundle; split after theme token names stabilize.',
-  'app/src/renderer/styles/40-workspace-basemap.css': 'Workspace and basemap CSS bundle; split with renderer view extraction.',
-  'app/src/renderer/styles/70-vibeui-design-md.css': 'Design adaptation CSS bundle; split after the adapted pattern set is stable.'
-};
+const splitReviewNotes = {};
 
 function normalizeRelative(filePath) {
   return path.relative(repoRoot, filePath).replace(/\\/g, '/');

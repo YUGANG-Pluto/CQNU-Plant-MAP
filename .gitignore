@@ -1,6 +1,8 @@
 # Node / Electron
 node_modules/
 dist/
+app/renderer-dist/
+app/main-dist/
 release/
 out/
 /build/

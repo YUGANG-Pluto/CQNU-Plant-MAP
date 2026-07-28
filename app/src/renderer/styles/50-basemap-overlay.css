@@ -1,0 +1,70 @@
+﻿/* Basemap overlay configuration */
+.basemap-overlay-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.45fr);
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.basemap-overlay-side,
+.basemap-overlay-form-grid,
+.basemap-overlay-status-panel {
+  min-width: 0;
+}
+
+.basemap-overlay-side {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.basemap-overlay-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.basemap-overlay-status-panel {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--panel-bg-soft);
+  overflow: hidden;
+}
+
+.basemap-overlay-status-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.basemap-overlay-status-head span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.compact-textarea {
+  min-height: 58px;
+  max-height: 96px;
+  resize: vertical;
+}
+
+.campus-overlay-tile {
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .basemap-overlay-layout,
+  .basemap-overlay-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

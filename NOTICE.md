@@ -23,6 +23,9 @@ Key components currently used by the application include:
 | adm-zip | ZIP archive creation and reading | MIT |
 | better-sqlite3 | Local SQLite runtime access | MIT |
 | exifr | Image metadata parsing | MIT |
+| Preact | Component-based renderer shell | MIT |
+| Lucide Preact | User-interface icons | ISC |
+| Vite | Renderer and preload bundling | MIT |
 
 ## Map Service Notice
 
