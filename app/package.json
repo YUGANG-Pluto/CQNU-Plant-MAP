@@ -17,7 +17,7 @@
     "prestart": "npm run build",
     "start": "electron .",
     "predist": "npm run build",
-    "dist": "electron-builder --win nsis",
+    "dist": "electron-builder --win nsis --config.electronDist=node_modules/electron/dist",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,ts,tsx,css,html,json,md,yml,yaml}\"",
     "preself-check": "npm run build:main",
@@ -47,12 +47,12 @@
     "db:test-runtime": "electron scripts/test-sqlite-runtime-acceptance.js"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.5",
+    "@babel/core": "^7.29.7",
     "@preact/preset-vite": "^2.10.6",
     "@types/node": "^24.13.3",
     "electron": "^41.10.3",
-    "electron-builder": "^26.11.1",
-    "eslint": "^9.0.0",
+    "electron-builder": "^26.15.3",
+    "eslint": "^9.39.5",
     "prettier": "^3.0.0",
     "typescript": "^5.9.3",
     "vite": "^8.1.5"
