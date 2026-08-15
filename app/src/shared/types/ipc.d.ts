@@ -1,3 +1,11 @@
+import type {
+  SpeciesReferenceImageCompareInput,
+  SpeciesReferenceQueryInput,
+  SpeciesReferenceResult,
+  TaxonomyReferenceInput,
+  TaxonomyReferenceResult
+} from './species-reference';
+
 export interface IpcSuccess<T = unknown> {
   ok: true;
   data: T;
@@ -120,6 +128,10 @@ export interface PlantAppApi {
     createSqliteFromJson: IpcCommand<StorageConversionPayload, StorageConversionReport>;
     exportSqliteToJson: IpcCommand<StorageConversionPayload, StorageConversionReport>;
   };
-  species: Record<string, IpcCommand>;
+  species: {
+    referenceQuery: IpcCommand<SpeciesReferenceQueryInput, SpeciesReferenceResult>;
+    suggestTaxonomy: IpcCommand<TaxonomyReferenceInput, TaxonomyReferenceResult>;
+    imageCompare: IpcCommand<SpeciesReferenceImageCompareInput, SpeciesReferenceResult>;
+  };
   window: Record<string, IpcCommand | IpcNoPayloadCommand>;
 }

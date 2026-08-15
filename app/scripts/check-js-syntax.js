@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
 const ignoredDirs = new Set([
@@ -35,16 +35,13 @@ const files = collectJavaScriptFiles(root);
 let failed = false;
 
 for (const file of files) {
-  const result = spawnSync(process.execPath, ['--check', file], {
-    cwd: root,
-    encoding: 'utf8'
-  });
-
-  if (result.status !== 0) {
+  try {
+    const source = fs.readFileSync(file, 'utf8');
+    new vm.Script(source, { filename: file, displayErrors: true });
+  } catch (error) {
     failed = true;
     console.error(`Syntax check failed: ${path.relative(root, file)}`);
-    if (result.stdout) console.error(result.stdout.trim());
-    if (result.stderr) console.error(result.stderr.trim());
+    console.error(error.stack || error.message);
   }
 }
 

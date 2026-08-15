@@ -9,12 +9,7 @@ function testMaintenanceCenterContract() {
     'src/renderer/shell/eventBindings.js',
     'src/renderer/app.js'
   ]);
-  const maintenanceSource = readAppSources([
-    'src/renderer/features/maintenance/core.js',
-    'src/renderer/features/maintenance/logsSettings.js',
-    'src/renderer/features/maintenance/storage.js',
-    'src/renderer/features/maintenance/index.js'
-  ]);
+  const maintenanceSource = readMaintenanceRuntimeSource();
   const cssSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/13-maintenance.css'), 'utf8');
   const mapSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/map/map.js'), 'utf8');
   const pointMapSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/map/points.js'), 'utf8');
@@ -51,7 +46,7 @@ function testMaintenanceCenterContract() {
     'btnExportUiSettings',
     'btnImportUiSettings'
   ].forEach(id => {
-    assert.ok(html.includes(`id="${id}"`), `${id} must exist in maintenance UI`);
+    assert.ok(rendererMarkupHasId(html, id), `${id} must exist in maintenance UI`);
     assert.ok(elementsSource.includes(`'${id}'`), `${id} must be registered`);
   });
   assert.ok(loaderSource.indexOf('./src/renderer/features/project/index.js') < loaderSource.indexOf('./src/renderer/features/maintenance/index.js'));
@@ -188,7 +183,7 @@ function testSpeciesReferenceContract() {
     'src/main/speciesReference/taxonomySuggestion.js',
     'src/main/speciesReferenceService.js'
   ]);
-  const rendererSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/speciesReference/index.js'), 'utf8');
+  const rendererSource = readSpeciesReferenceRuntimeSource();
   const querySource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/query/index.js'), 'utf8');
   const projectSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/project/index.js'), 'utf8');
   const elementsSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/dom/elements.js'), 'utf8');
@@ -197,12 +192,8 @@ function testSpeciesReferenceContract() {
     'src/renderer/app.js'
   ]);
   const stateSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/state/store.js'), 'utf8');
-  const maintenanceSource = readAppSources([
-    'src/renderer/features/maintenance/core.js',
-    'src/renderer/features/maintenance/logsSettings.js',
-    'src/renderer/features/maintenance/storage.js',
-    'src/renderer/features/maintenance/index.js'
-  ]);
+  const maintenanceSource = readMaintenanceRuntimeSource();
+  const phenologySource = readPhenologyRuntimeSource();
   const cssSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/13-maintenance.css'), 'utf8');
 
   [
@@ -223,7 +214,7 @@ function testSpeciesReferenceContract() {
     'btnDiscardSpeciesReference',
     'btnApplySpeciesReference'
   ].forEach(id => {
-    assert.ok(html.includes(`id="${id}"`), `${id} must exist in species reference UI`);
+    assert.ok(rendererMarkupHasId(html, id), `${id} must exist in species reference UI`);
     assert.ok(elementsSource.includes(`'${id}'`), `${id} must be registered`);
   });
 
@@ -239,14 +230,14 @@ function testSpeciesReferenceContract() {
     'btnDoubtfulTaxonomy',
     'taxonomyCandidateList'
   ].forEach(id => {
-    assert.ok(html.includes(`id="${id}"`), `${id} must exist in taxonomy point UI`);
+    assert.ok(rendererMarkupHasId(html, id), `${id} must exist in taxonomy point UI`);
     assert.ok(elementsSource.includes(`'${id}'`), `${id} must be registered`);
   });
 
   assert.ok(loaderSource.indexOf('./src/renderer/features/phenology/index.js') < loaderSource.indexOf('./src/renderer/features/speciesReference/index.js'));
   assert.ok(loaderSource.indexOf('./src/renderer/features/speciesReference/index.js') < loaderSource.indexOf('./src/renderer/app.js'));
   assert.ok(appSource.includes('bindSpeciesReferenceEvents'));
-  assert.ok(appSource.includes('bindTaxonomyEvents'));
+  assert.ok(phenologySource.includes('bindTaxonomyEvents'));
   assert.ok(preloadSource.includes('referenceQuery: payload => invoke(IPC_CHANNELS.species.referenceQuery'));
   assert.ok(preloadSource.includes('suggestTaxonomy: payload => invoke(IPC_CHANNELS.species.suggestTaxonomy'));
   assert.ok(preloadSource.includes('imageCompare: payload => invoke(IPC_CHANNELS.species.imageCompare'));
@@ -288,7 +279,7 @@ function testSpeciesReferenceContract() {
   assert.ok(rendererSource.includes('speciesReferenceImageTokenInput'));
   assert.ok(rendererSource.includes('species-reference-compared-thumb'));
   assert.ok(rendererSource.includes('speciesReferenceApplyTaxonomy'));
-  assert.ok(fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/phenology/index.js'), 'utf8').includes('applyTaxonomyFieldsToPoint'));
+  assert.ok(phenologySource.includes('applyTaxonomyFieldsToPoint'));
   assert.ok(projectSource.includes('data-i18n-placeholder'));
   assert.ok(rendererSource.includes('await persistProject()'), 'reference suggestions may persist only after user apply');
   assert.ok(!rendererSource.includes('localStorage'));

@@ -14,9 +14,8 @@
 }
 
 .motion-hover :where(
-  .card,
-  .list-item,
-  .basemap-settings-section
+  .ui-command-button:not(.ui-module-button),
+  .modern-theme-choice
 ):hover {
   transform: translateY(calc(-1 * var(--motion-hover-lift)));
 }
@@ -143,8 +142,7 @@
   *::before,
   *::after {
     scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition: none !important;
   }
 }

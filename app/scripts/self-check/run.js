@@ -13,6 +13,12 @@ async function main() {
   testEngineeringSplitContract();
   testModernVisualSystemContract();
   testModernMotionContract();
+  testModalWorkflowContract();
+  testObjectWorkflowContract();
+  testCommandPaletteContract();
+  testProjectEditHistoryContract();
+  testResearchReviewWorkbenchContract();
+  testRendererDomainModuleArchitectureContract();
   testCssStructureGuards();
   testLegacyThemeCssRemoved();
   testThemeSettingsProgressiveDisclosure();

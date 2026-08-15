@@ -4,10 +4,11 @@ export function SystemDialogs() {
   return (
     <>
       <div id="progressDock" class="progress-dock" aria-live="polite" />
+      <div id="toastRegion" class="ui-toast-region" role="status" aria-live="polite" aria-atomic="true" />
 
-      <div id="confirmModal" class="layer-modal hidden">
-        <div class="layer-modal-backdrop" />
-        <section class="confirm-panel glass" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div id="confirmModal" class="layer-modal hidden" aria-hidden="true">
+        <div class="layer-modal-backdrop" aria-hidden="true" />
+        <section class="confirm-panel glass" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" tabIndex={-1}>
           <h3 id="confirmTitle">确认操作</h3>
           <p id="confirmMessage" class="subtle" />
           <div class="toolbar-inline">
@@ -17,9 +18,9 @@ export function SystemDialogs() {
         </section>
       </div>
 
-      <div id="alertModal" class="layer-modal hidden">
-        <div class="layer-modal-backdrop" />
-        <section class="confirm-panel glass alert-panel" role="alertdialog" aria-modal="true" aria-labelledby="alertTitle">
+      <div id="alertModal" class="layer-modal hidden" aria-hidden="true">
+        <div class="layer-modal-backdrop" aria-hidden="true" />
+        <section class="confirm-panel glass alert-panel" role="alertdialog" aria-modal="true" aria-labelledby="alertTitle" tabIndex={-1}>
           <h3 id="alertTitle">提示</h3>
           <p id="alertMessage" class="subtle" />
           <p id="alertDetail" class="subtle alert-detail" />
@@ -29,14 +30,17 @@ export function SystemDialogs() {
         </section>
       </div>
 
-      <div id="imagePreviewModal" class="image-modal hidden">
-        <div class="image-modal-backdrop" />
-        <section class="image-modal-content glass" role="dialog" aria-modal="true">
+      <div id="imagePreviewModal" class="image-modal hidden" aria-hidden="true">
+        <div class="image-modal-backdrop" aria-hidden="true" />
+        <section class="image-modal-content glass" role="dialog" aria-modal="true" tabIndex={-1}>
           <button
             id="btnCloseImageModal"
             class="btn btn-soft image-modal-close modern-icon-button"
             type="button"
             aria-label="关闭"
+            title="关闭"
+            data-i18n-aria-label="closePanel"
+            data-i18n-title="closePanel"
           >
             <X size={18} aria-hidden="true" />
           </button>

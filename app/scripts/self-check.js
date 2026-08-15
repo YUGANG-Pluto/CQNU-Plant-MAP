@@ -8,6 +8,7 @@ const suiteFiles = [
   'data-contracts.js',
   'operations-contracts.js',
   'renderer-contracts.js',
+  'interaction-contracts.js',
   'feature-contracts.js',
   'platform-contracts.js',
   'run.js'

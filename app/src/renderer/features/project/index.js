@@ -1,23 +1,30 @@
 async function persistProject() {
   if (!state.projectDir || !state.settings) return;
+  if (typeof prepareProjectEditHistoryForSave === 'function') prepareProjectEditHistoryForSave();
+  if (typeof notifyProjectSaveStarted === 'function') notifyProjectSaveStarted();
+  try {
+    const center = displayLatLngToStorageLatLng(state.map.getCenter());
+    state.settings.mapCenter = [center.lat, center.lng];
+    state.settings.mapCenterCoordSystem = 'WGS84';
+    state.settings.mapZoom = state.map.getZoom();
 
-  const center = displayLatLngToStorageLatLng(state.map.getCenter());
-  state.settings.mapCenter = [center.lat, center.lng];
-  state.settings.mapCenterCoordSystem = 'WGS84';
-  state.settings.mapZoom = state.map.getZoom();
-
-  const data = await callIpc(window.plantApp.project.save({
+    const data = await callIpc(window.plantApp.project.save({
       projectDir: state.projectDir,
       storageFormat: state.storageFormat || 'json',
       settings: state.settings,
       zones: state.zones,
       points: state.points
-  }));
+    }));
 
-  state.projectModifiedTime = data.projectModifiedTime || Date.now();
-  state.storageFormat = data.storageFormat || state.storageFormat || 'json';
-  state.jsonFilesExist = Boolean(data.jsonFilesExist);
-  state.sqliteDatabaseExists = Boolean(data.sqliteDatabaseExists);
+    state.projectModifiedTime = data.projectModifiedTime || Date.now();
+    state.storageFormat = data.storageFormat || state.storageFormat || 'json';
+    state.jsonFilesExist = Boolean(data.jsonFilesExist);
+    state.sqliteDatabaseExists = Boolean(data.sqliteDatabaseExists);
+    if (typeof notifyProjectSaveSucceeded === 'function') notifyProjectSaveSucceeded(state.projectModifiedTime);
+  } catch (error) {
+    if (typeof notifyProjectSaveFailed === 'function') notifyProjectSaveFailed();
+    throw error;
+  }
 }
 
 async function loadProjectIntoRenderer(projectDir, options = {}) {
@@ -43,6 +50,9 @@ async function loadProjectIntoRenderer(projectDir, options = {}) {
     cultivatedStatus: '',
     ...point
   }));
+  if (typeof resetProjectEditHistory === 'function') {
+    resetProjectEditHistory({ lastSavedAt: state.projectModifiedTime });
+  }
 
   ui.projectPath.textContent = data.projectDir;
   clearAllLayers();
@@ -85,6 +95,12 @@ function applyI18n() {
   document.querySelectorAll('[data-i18n-placeholder]').forEach(node => {
     node.placeholder = t(node.getAttribute('data-i18n-placeholder'));
   });
+  document.querySelectorAll('[data-i18n-aria-label]').forEach(node => {
+    node.setAttribute('aria-label', t(node.getAttribute('data-i18n-aria-label')));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(node => {
+    node.title = t(node.getAttribute('data-i18n-title'));
+  });
 
   if (ui.queryText) ui.queryText.placeholder = t('searchPlaceholder');
   document.querySelectorAll('.seg-btn[data-lang]').forEach(button => {
@@ -94,7 +110,13 @@ function applyI18n() {
   renderBaseMapSelect();
   renderBasemapEditTargetSelect();
   renderAllDerived();
+  if (typeof syncObjectSelectionUi === 'function') syncObjectSelectionUi('language-change');
+  if (typeof refreshCommandPaletteI18n === 'function') refreshCommandPaletteI18n();
+  if (typeof setObjectWorkflowFeedback === 'function') {
+    setObjectWorkflowFeedback('objectWorkflowHint', 'neutral', { restore: false });
+  }
   if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
+  if (typeof syncProjectHistoryUi === 'function') syncProjectHistoryUi();
 }
 
 function ensureZoneForImport(zoneId, zoneName = '') {

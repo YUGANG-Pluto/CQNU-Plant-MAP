@@ -30,27 +30,32 @@ function renderLists() {
   if (!ui.zoneListPanel || !ui.pointListPanel) return;
   ui.btnTabZones?.classList.toggle('active', state.activeListTab === 'zones');
   ui.btnTabPoints?.classList.toggle('active', state.activeListTab === 'points');
+  ui.btnTabZones?.setAttribute('aria-selected', state.activeListTab === 'zones' ? 'true' : 'false');
+  ui.btnTabPoints?.setAttribute('aria-selected', state.activeListTab === 'points' ? 'true' : 'false');
+  ui.btnTabZones && (ui.btnTabZones.tabIndex = state.activeListTab === 'zones' ? 0 : -1);
+  ui.btnTabPoints && (ui.btnTabPoints.tabIndex = state.activeListTab === 'points' ? 0 : -1);
   ui.zoneListPanel.classList.toggle('hidden', state.activeListTab !== 'zones');
   ui.pointListPanel.classList.toggle('hidden', state.activeListTab !== 'points');
   clearNode(ui.zoneListPanel);
   clearNode(ui.pointListPanel);
   ui.listSummaryCount && (ui.listSummaryCount.textContent = String(state.activeListTab === 'zones' ? state.zones.length : state.points.length));
-  state.zones.forEach(zone => {
-    const card = listTextItem(zoneDisplayName(zone), zone.zoneId || '');
-    card.addEventListener('click', () => {
-      selectZone(zone.id);
-      focusZoneOnMap(zone.id);
-    });
-    ui.zoneListPanel.appendChild(card);
+  if (!state.zones.length) renderObjectListEmpty(ui.zoneListPanel, 'objectListEmptyZones', 'objectWorkflowNoObjects');
+  else state.zones.forEach(zone => {
+    ui.zoneListPanel.appendChild(createObjectListButton(
+      zoneDisplayName(zone),
+      zone.zoneId || '',
+      { type: 'zone', id: zone.id }
+    ));
   });
-  state.points.forEach(point => {
-    const card = listTextItem(pointDisplayName(point), pointMeta(point) || point.pointId || '');
-    card.addEventListener('click', () => {
-      selectPoint(point.id);
-      focusPointOnMap(point.id);
-    });
-    ui.pointListPanel.appendChild(card);
+  if (!state.points.length) renderObjectListEmpty(ui.pointListPanel, 'objectListEmptyPoints', 'objectWorkflowNoObjects');
+  else state.points.forEach(point => {
+    ui.pointListPanel.appendChild(createObjectListButton(
+      pointDisplayName(point),
+      pointMeta(point) || point.pointId || '',
+      { type: 'point', id: point.id }
+    ));
   });
+  syncObjectSelectionUi('workspace-list-render');
 }
 
 function renderAllDerived() {
@@ -67,6 +72,7 @@ function renderAllDerived() {
   if (typeof updateBasemapWorkStatus === 'function') updateBasemapWorkStatus();
   if (typeof refreshRightPanelDisplayMode === 'function') refreshRightPanelDisplayMode('derived-render');
   if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
+  if (typeof refreshReviewWorkbench === 'function') refreshReviewWorkbench();
 }
 
 function removePointLayer(pointId) {

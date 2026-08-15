@@ -1,9 +1,9 @@
-function pointStyle(selected = false, pending = false) {
+function pointStyle(selected = false, pending = false, hovered = false) {
   return {
-    radius: pending ? 10 : (selected ? 9 : 7),
+    radius: pending ? 10 : (selected ? 10 : (hovered ? 8.5 : 7)),
     color: '#ffffff',
-    weight: 2,
-    fillColor: pending ? '#ffb147' : (selected ? '#ff5e80' : '#30b7a0'),
+    weight: selected ? 3 : (hovered ? 2.5 : 2),
+    fillColor: pending ? '#ffb147' : (selected ? '#ff5e80' : (hovered ? '#16877d' : '#30b7a0')),
     fillOpacity: 0.96
   };
 }
@@ -110,7 +110,7 @@ function addPointLayer(point, options = {}) {
   const displayLatLng = storagePointToDisplayLatLng(point);
   const marker = L.circleMarker(
     displayLatLng,
-    pointStyle(point.id === state.selectedPointId, false)
+    pointStyle(point.id === state.selectedPointId, false, point.id === state.hoveredPointId)
   );
 
   marker._pointId = point.id;
@@ -129,6 +129,17 @@ function addPointLayer(point, options = {}) {
 
   if (typeof registerBusinessLayer === 'function') registerBusinessLayer(`point:${point.id}`, marker, 'points', token);
   else marker.addTo(state.map);
+  if (typeof configureMapObjectLayer === 'function') {
+    configureMapObjectLayer(marker, {
+      type: 'point',
+      id: point.id,
+      label: pointDisplayName(point),
+      onActivate: () => {
+        selectPoint(point.id);
+        marker.openPopup();
+      }
+    });
+  }
   if (marker.bringToFront) marker.bringToFront();
   state.pointLayers.set(point.id, marker);
   return marker;
@@ -148,7 +159,14 @@ function handlePointLayerClick(event, point, marker) {
 function refreshPointStyles() {
   state.points.forEach(point => {
     const marker = state.pointLayers.get(point.id);
-    if (marker) marker.setStyle(pointStyle(point.id === state.selectedPointId, false));
+    if (marker) {
+      const selected = point.id === state.selectedPointId;
+      const hovered = point.id === state.hoveredPointId;
+      marker.setStyle(pointStyle(selected, false, hovered));
+      if (typeof syncMapObjectLayerState === 'function') {
+        syncMapObjectLayerState(marker, 'point', point.id, selected, hovered);
+      }
+    }
   });
 }
 
@@ -185,6 +203,9 @@ function selectPoint(pointId) {
 
   const marker = point ? state.pointLayers.get(point.id) : null;
   if (marker?.openPopup) marker.openPopup();
+  if (typeof syncObjectSelectionUi === 'function') {
+    syncObjectSelectionUi('point-select', { announce: true });
+  }
   if (typeof scheduleRightPanelDisplayMode === 'function') scheduleRightPanelDisplayMode('point-change');
 }
 
@@ -192,6 +213,7 @@ function showPendingControls(show) {
   ui.btnConfirmPoint.classList.toggle('hidden', !show);
   ui.btnCancelPoint.classList.toggle('hidden', !show);
   ui.pendingPointHint.classList.toggle('hidden', !show);
+  if (typeof syncProjectHistoryUi === 'function') syncProjectHistoryUi();
 }
 
 function clearPendingPoint() {
@@ -251,6 +273,7 @@ function createPendingPointAt(latlng) {
   clearPointForm();
   showPendingControls(true);
   updateStatusBar();
+  if (typeof syncObjectSelectionUi === 'function') syncObjectSelectionUi('pending-point');
   toast(t('pendingPointHint'));
 }
 
@@ -258,6 +281,7 @@ async function confirmPendingPoint() {
   if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('confirm-point')) return;
   if (!state.pendingPoint) return;
 
+  const edit = typeof beginProjectEdit === 'function' ? beginProjectEdit('historyCreatePoint') : null;
   const pending = { ...state.pendingPoint };
   const point = normalizePointRecord({
     id: makeUid('point'),
@@ -275,6 +299,7 @@ async function confirmPendingPoint() {
   addPointLayer(point);
   selectPoint(point.id);
   setMode('browse');
+  if (typeof commitProjectEdit === 'function') commitProjectEdit(edit);
   await persistProject();
   renderAllDerived();
 
@@ -291,9 +316,11 @@ function cancelPendingPoint() {
 
 function focusPointOnMap(pointId) {
   const point = state.points.find(item => item.id === pointId);
-  if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return;
+  if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng) || !state.map) return false;
   const displayLatLng = storagePointToDisplayLatLng(point);
   state.map.setView(displayLatLng, Math.max(state.map.getZoom(), MAP_FOCUS_ZOOM), {
-    animate: true
+    animate: true,
+    duration: 0.36
   });
+  return true;
 }

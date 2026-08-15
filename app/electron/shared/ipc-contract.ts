@@ -1,3 +1,11 @@
+import type {
+  SpeciesReferenceImageCompareInput,
+  SpeciesReferenceQueryInput,
+  SpeciesReferenceResult,
+  TaxonomyReferenceInput,
+  TaxonomyReferenceResult
+} from '../../src/shared/types/species-reference';
+
 export const IPC_CHANNELS = {
   project: {
     chooseDir: 'project:chooseDir',
@@ -80,6 +88,7 @@ export interface IpcFailure {
 
 export type IpcResponse<T = unknown> = IpcSuccess<T> | IpcFailure;
 export type IpcCommand<TResult = unknown> = (payload?: unknown) => Promise<IpcResponse<TResult>>;
+export type IpcPayloadCommand<TPayload, TResult = unknown> = (payload: TPayload) => Promise<IpcResponse<TResult>>;
 export type IpcNoPayloadCommand<TResult = unknown> = () => Promise<IpcResponse<TResult>>;
 
 export interface PlantAppApi {
@@ -133,9 +142,9 @@ export interface PlantAppApi {
     exportSqliteToJson: IpcCommand;
   };
   species: {
-    referenceQuery: IpcCommand;
-    suggestTaxonomy: IpcCommand;
-    imageCompare: IpcCommand;
+    referenceQuery: IpcPayloadCommand<SpeciesReferenceQueryInput, SpeciesReferenceResult>;
+    suggestTaxonomy: IpcPayloadCommand<TaxonomyReferenceInput, TaxonomyReferenceResult>;
+    imageCompare: IpcPayloadCommand<SpeciesReferenceImageCompareInput, SpeciesReferenceResult>;
   };
   window: {
     toggleFullscreen: IpcNoPayloadCommand;

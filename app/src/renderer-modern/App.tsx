@@ -6,6 +6,8 @@ import { DialogSupport } from './features/phenology/DialogSupport';
 import { ProjectOperationModals } from './features/project/ProjectOperationModals';
 import { QueryModal } from './features/query/QueryModal';
 import { RecycleBinModal } from './features/recycle-bin/RecycleBinModal';
+import { ReviewWorkbenchModal } from './features/review/ReviewWorkbenchModal';
+import { CommandPalette } from './features/shell/CommandPalette';
 import { UtilityDrawers } from './features/shell/UtilityDrawers';
 import { WorkspaceShell } from './features/shell/WorkspaceShell';
 import { SpeciesReferenceModal } from './features/species-reference/SpeciesReferenceModal';
@@ -16,6 +18,7 @@ export function App() {
   return (
     <>
       <WorkspaceShell />
+      <CommandPalette />
       <UtilityDrawers />
       <BasemapWorkspaceModal />
       <PointEditorModal />
@@ -24,6 +27,7 @@ export function App() {
       <StatsModalShell />
       <QueryModal />
       <RecycleBinModal />
+      <ReviewWorkbenchModal />
       <ThemeSettingsModal />
       <ProjectOperationModals />
       <MaintenanceModal />

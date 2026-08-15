@@ -2,13 +2,36 @@ const elementGroups = {
   project: [
     'btnChooseDir',
     'btnSave',
+    'projectHistoryControls',
+    'btnUndoProjectEdit',
+    'btnRedoProjectEdit',
+    'projectSaveStatus',
+    'projectSaveStatusText',
+    'projectSaveTimestamp',
+    'btnOpenCommandPalette',
     'btnOpenWorkspaceDrawer',
     'workspaceUtilityDrawer',
     'btnCloseWorkspaceDrawer',
     'projectPath',
     'currentModeText',
     'selectedZoneText',
-    'selectedPointText'
+    'selectedPointText',
+    'mapSelectionAnnouncer',
+    'objectSelectionSummary',
+    'objectWorkflowFeedback',
+    'btnPreviousObject',
+    'btnFocusSelection',
+    'btnNextObject'
+  ],
+  commandPalette: [
+    'commandPaletteModal',
+    'btnCloseCommandPalette',
+    'commandPaletteInput',
+    'commandPaletteModeLabel',
+    'commandPaletteResultCount',
+    'commandPaletteResults',
+    'commandPaletteAnnouncer',
+    'btnCommandPaletteHelp'
   ],
   map: [
     'btnModeBrowse',
@@ -178,6 +201,31 @@ const elementGroups = {
     'queryResults',
     'queryResultCount'
   ],
+  review: [
+    'btnOpenReviewWorkbench',
+    'reviewWorkbenchModal',
+    'btnCloseReviewWorkbench',
+    'reviewTotalPoints',
+    'reviewReadyPoints',
+    'reviewPendingPoints',
+    'reviewOpenIssueCount',
+    'reviewProgressTrack',
+    'reviewProgressBar',
+    'reviewProgressPercent',
+    'reviewIssueFilter',
+    'reviewZoneFilter',
+    'reviewSeverityFilter',
+    'reviewSearch',
+    'btnResetReviewFilters',
+    'reviewVisibleCount',
+    'reviewTaskList',
+    'reviewSelectionPosition',
+    'btnPreviousReviewTask',
+    'btnNextReviewTask',
+    'reviewTaskDetail',
+    'btnLocateReviewTask',
+    'btnEditReviewTask'
+  ],
   trash: [
     'btnOpenTrash',
     'trashModal',
@@ -278,7 +326,8 @@ const elementGroups = {
     'smallPromptTitle',
     'smallPromptInput',
     'btnSmallPromptCancel',
-    'btnSmallPromptAccept'
+    'btnSmallPromptAccept',
+    'toastRegion'
   ],
   imagePreview: [
     'btnChooseImage',
@@ -312,6 +361,7 @@ const elementGroups = {
     'btnClearTaxonomySuggestion',
     'taxonomySuggestionSummary',
     'taxonomyCandidateList',
+    'pointEditorSaveState',
     'pointSummaryBox',
     'habitatOptions',
     'abundanceOptions',

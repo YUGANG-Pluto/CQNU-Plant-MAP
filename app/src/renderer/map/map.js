@@ -233,11 +233,13 @@ function startDrawZoneMode() {
   state.drawHandler.enable();
   state.map.once(L.Draw.Event.CREATED, async event => {
     if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('draw-zone-created')) return;
+    const edit = typeof beginProjectEdit === 'function' ? beginProjectEdit('historyCreateZone') : null;
     const zone = createZoneFromDraw(event.layer);
     state.zones.push(zone);
     addZoneLayer(zone);
     selectZone(zone.id);
     setMode('browse');
+    if (typeof commitProjectEdit === 'function') commitProjectEdit(edit);
     await persistProject();
     renderAllDerived();
     toast(t('zoneCreated'));
@@ -258,6 +260,7 @@ function setMode(mode) {
   if (mode === 'drawZone') {
     startDrawZoneMode();
   }
+  if (typeof syncProjectHistoryUi === 'function') syncProjectHistoryUi();
 }
 
 function clearAllLayers() {

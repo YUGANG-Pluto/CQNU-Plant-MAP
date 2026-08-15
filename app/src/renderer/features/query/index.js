@@ -53,21 +53,18 @@ function renderZonePointList(){
   const zone=getSelectedZone();
   clearNode(ui.zonePointList);
   if(!zone){
+    renderObjectListEmpty(ui.zonePointList, 'objectSelectZonePrompt', 'objectListKeyboardHint');
     if (typeof scheduleRightPanelDisplayMode === 'function') scheduleRightPanelDisplayMode('zone-list-empty-zone');
+    syncObjectSelectionUi('zone-list-empty-zone');
     return;
   }
   const pts=state.points.filter(p=>p.zoneRef===zone.id);
   ui.zonePointList.classList.toggle('zone-point-list--dense', pts.length > 10);
   ui.rightModuleListCard?.classList.toggle('right-plant-module-dense', pts.length > 10);
   if(!pts.length){
-    const title = el('div', {
-      className: 'title zone-plant-name',
-      text: t('resultsEmpty'),
-      title: t('resultsEmpty')
-    });
-    const card = el('div', { className: 'list-item empty zone-plant-item' }, [title]);
-    ui.zonePointList.appendChild(card);
+    renderObjectListEmpty(ui.zonePointList, 'objectZoneHasNoPoints', 'objectWorkflowHint');
     if (typeof scheduleRightPanelDisplayMode === 'function') scheduleRightPanelDisplayMode('zone-list-empty');
+    syncObjectSelectionUi('zone-list-empty');
     return;
   }
   pts.forEach(p=>{
@@ -83,19 +80,36 @@ function renderZonePointList(){
       el('div', { className: 'title zone-plant-name', text: name, title: name }),
       sci ? el('div', { className: 'zone-plant-sci', text: sci, title: sci }) : null
     ]);
-    const card = el('div', { className: 'list-item zone-plant-item' }, [
+    const card = el('button', { className: 'list-item zone-plant-item object-list-item' }, [
       nameRow,
       el('div', { className: 'meta zone-plant-meta', text: metaText, title: metaText })
     ]);
+    card.type = 'button';
     card.title = [name, sci, meta].filter(Boolean).join('\n');
-    card.addEventListener('click',()=>{ selectPoint(p.id); focusPointOnMap(p.id); });
+    configureObjectListItem(card, {
+      type: 'point',
+      id: p.id,
+      label: name,
+      meta: metaText
+    });
     ui.zonePointList.appendChild(card);
   });
+  syncObjectSelectionUi('zone-list-render');
   if (typeof scheduleRightPanelDisplayMode === 'function') scheduleRightPanelDisplayMode('zone-list-render');
 }
 
 function renderCounters(){ ui.zoneCount.textContent=String(state.zones.length); ui.pointCount.textContent=String(state.points.length); }
-function updateStatusBar(){ ui.currentModeText.textContent = t(state.currentMode==='browse'?'browse':state.currentMode==='drawZone'?'drawZone':'addPoint'); ui.selectedZoneText.textContent = getSelectedZone() ? zoneDisplayName(getSelectedZone()) : '-'; ui.selectedPointText.textContent = getSelectedPoint() ? pointDisplayName(getSelectedPoint()) : '-'; }
+function updateStatusBar(){
+  const modeText = t(state.currentMode==='browse'?'browse':state.currentMode==='drawZone'?'drawZone':'addPoint');
+  const zoneText = getSelectedZone() ? zoneDisplayName(getSelectedZone()) : '-';
+  const pointText = getSelectedPoint() ? pointDisplayName(getSelectedPoint()) : '-';
+  ui.currentModeText.textContent = modeText;
+  ui.currentModeText.title = modeText;
+  ui.selectedZoneText.textContent = zoneText;
+  ui.selectedZoneText.title = zoneText;
+  ui.selectedPointText.textContent = pointText;
+  ui.selectedPointText.title = pointText;
+}
 function populateQueryFilters(){
   const current = ui.queryZone?.value || '';
   if(!ui.queryZone) return;
@@ -193,20 +207,13 @@ function renderQueryFlags(flags) {
 }
 
 function focusQueryResult(item) {
-  if(item.type==='zone'){
-    selectZone(item.id);
-    focusZoneOnMap(item.id);
-  } else {
-    selectPoint(item.id);
-    focusPointOnMap(item.id);
-  }
+  activateObjectSelection(item.type, item.id, { focusMap: true, source: 'query' });
 }
 
 function openReferenceFromQueryResult(item, event) {
   event.stopPropagation();
   if (item.type !== 'point') return;
-  selectPoint(item.id);
-  focusPointOnMap(item.id);
+  activateObjectSelection('point', item.id, { focusMap: true, source: 'query-reference' });
   closeLayerModal(ui.queryModal);
   openSpeciesReferenceCenter();
 }
@@ -221,9 +228,15 @@ function renderQueryResultCard(item) {
     ? el('button', { className: 'btn btn-soft query-reference-btn', text: t('openSpeciesReference') })
     : null;
   const card = el('div', { className: 'list-item query-result-item' }, [body, actions]);
-  card.addEventListener('click', ()=> {
-    focusQueryResult(item);
-    closeLayerModal(ui.queryModal);
+  configureObjectListItem(card, {
+    type: item.type,
+    id: item.id,
+    label: item.title,
+    meta: item.meta,
+    onActivate: () => {
+      focusQueryResult(item);
+      closeLayerModal(ui.queryModal);
+    }
   });
   actions?.addEventListener('click', event => openReferenceFromQueryResult(item, event));
   return card;
@@ -235,10 +248,11 @@ function renderQueryResults(){
   clearNode(ui.queryResults);
   ui.queryResultCount.textContent = String(items.length);
   if(!items.length){
-    ui.queryResults.appendChild(listTextItem(t('resultsEmpty')));
+    renderObjectListEmpty(ui.queryResults, 'resultsEmpty', 'objectWorkflowHint');
     return;
   }
   items.forEach(item => {
     ui.queryResults.appendChild(renderQueryResultCard(item));
   });
+  syncObjectSelectionUi('query-results-render');
 }

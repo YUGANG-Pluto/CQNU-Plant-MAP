@@ -80,10 +80,59 @@ function readRendererMarkup() {
   return files.map(filePath => fs.readFileSync(filePath, 'utf8')).join('\n');
 }
 
+function rendererMarkupHasId(source, id) {
+  const escapedId = String(id).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return source.includes(`id="${id}"`)
+    || source.includes(`id='${id}'`)
+    || new RegExp(`\\bid\\s*:\\s*['"]${escapedId}['"]`).test(source);
+}
+
 function readAppSources(relativePaths) {
   return relativePaths
     .map(relativePath => fs.readFileSync(path.join(process.cwd(), relativePath), 'utf8'))
     .join('\n');
+}
+
+const PHENOLOGY_RUNTIME_FILES = Object.freeze([
+  'src/renderer/features/phenology/draftState.js',
+  'src/renderer/features/phenology/taxonomy.js',
+  'src/renderer/features/phenology/form.js',
+  'src/renderer/features/phenology/actions.js',
+  'src/renderer/features/phenology/index.js'
+]);
+
+const MAINTENANCE_RUNTIME_FILES = Object.freeze([
+  'src/renderer/features/maintenance/core.js',
+  'src/renderer/features/maintenance/safeMode.js',
+  'src/renderer/features/maintenance/diagnostics.js',
+  'src/renderer/features/maintenance/repair.js',
+  'src/renderer/features/maintenance/logs.js',
+  'src/renderer/features/maintenance/settings.js',
+  'src/renderer/features/maintenance/diagnosticsExport.js',
+  'src/renderer/features/maintenance/storageView.js',
+  'src/renderer/features/maintenance/storageActions.js',
+  'src/renderer/features/maintenance/index.js'
+]);
+
+const SPECIES_REFERENCE_RUNTIME_FILES = Object.freeze([
+  'src/renderer/features/speciesReference/state.js',
+  'src/renderer/features/speciesReference/links.js',
+  'src/renderer/features/speciesReference/view.js',
+  'src/renderer/features/speciesReference/queries.js',
+  'src/renderer/features/speciesReference/actions.js',
+  'src/renderer/features/speciesReference/index.js'
+]);
+
+function readPhenologyRuntimeSource() {
+  return readAppSources(PHENOLOGY_RUNTIME_FILES);
+}
+
+function readMaintenanceRuntimeSource() {
+  return readAppSources(MAINTENANCE_RUNTIME_FILES);
+}
+
+function readSpeciesReferenceRuntimeSource() {
+  return readAppSources(SPECIES_REFERENCE_RUNTIME_FILES);
 }
 
 function readLocaleSource(fileName) {

@@ -235,10 +235,10 @@ export const MOTION_MODE_PRESETS: Readonly<Record<MotionMode, Omit<MotionSetting
     },
     minimal: {
       speedMultiplier: 1,
-      fadeDuration: 100,
-      transitionDuration: 130,
-      modalDuration: 140,
-      stagger: 8,
+      fadeDuration: 260,
+      transitionDuration: 300,
+      modalDuration: 340,
+      stagger: 36,
       scaleEnter: 0.995,
       scalePress: 0.99,
       hoverLift: 1,
@@ -250,10 +250,10 @@ export const MOTION_MODE_PRESETS: Readonly<Record<MotionMode, Omit<MotionSetting
     },
     standard: {
       speedMultiplier: 1,
-      fadeDuration: 160,
-      transitionDuration: 190,
-      modalDuration: 220,
-      stagger: 20,
+      fadeDuration: 300,
+      transitionDuration: 360,
+      modalDuration: 440,
+      stagger: 48,
       scaleEnter: 0.985,
       scalePress: 0.975,
       hoverLift: 2,
@@ -329,12 +329,13 @@ export function normalizeMotionSettings(value: Record<string, unknown> = {}): Mo
     : 'standard';
   const preset = MOTION_MODE_PRESETS[mode];
   const reduced = booleanValue(value.reduced, false);
+  const durationFloor = mode === 'off' ? 0 : 260;
   return {
     mode,
     speedMultiplier: finiteNumber(value.speedMultiplier, preset.speedMultiplier, 0.5, 1.5),
-    fadeDuration: finiteNumber(value.fadeDuration, preset.fadeDuration, 0, 360),
-    transitionDuration: finiteNumber(value.transitionDuration, preset.transitionDuration, 0, 420),
-    modalDuration: finiteNumber(value.modalDuration, preset.modalDuration, 0, 480),
+    fadeDuration: mode === 'off' ? 0 : finiteNumber(value.fadeDuration, preset.fadeDuration, durationFloor, 480),
+    transitionDuration: mode === 'off' ? 0 : finiteNumber(value.transitionDuration, preset.transitionDuration, durationFloor, 560),
+    modalDuration: mode === 'off' ? 0 : finiteNumber(value.modalDuration, preset.modalDuration, durationFloor, 640),
     stagger: finiteNumber(value.stagger, preset.stagger, 0, 120),
     scaleEnter: finiteNumber(value.scaleEnter, preset.scaleEnter, 0.94, 1),
     scalePress: finiteNumber(value.scalePress, preset.scalePress, 0.94, 1),

@@ -69,3 +69,24 @@ test('invalid values fall back without leaking display strings', () => {
   assert.match(value.tokens.primary, /^#[0-9A-F]{6}$/);
   assert.equal(value.motion.mode, 'standard');
 });
+
+test('enabled motion presets keep perceptible durations at or above 260ms', () => {
+  ['minimal', 'standard'].forEach(mode => {
+    const motion = theme.createMotionSettings(mode);
+    assert.ok(motion.fadeDuration >= 260, `${mode} fade duration must be at least 260ms`);
+    assert.ok(motion.transitionDuration >= 260, `${mode} transition duration must be at least 260ms`);
+    assert.ok(motion.modalDuration >= 260, `${mode} modal duration must be at least 260ms`);
+  });
+});
+
+test('legacy custom motion durations are raised to the maintained minimum', () => {
+  const motion = theme.normalizeMotionSettings({
+    mode: 'standard',
+    fadeDuration: 80,
+    transitionDuration: 120,
+    modalDuration: 180
+  });
+  assert.equal(motion.fadeDuration, 260);
+  assert.equal(motion.transitionDuration, 260);
+  assert.equal(motion.modalDuration, 260);
+});

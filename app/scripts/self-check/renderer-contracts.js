@@ -35,7 +35,8 @@ function testEngineeringSplitContract() {
     '41-basemap-workspace.css',
     '42-utility-drawer.css',
     '50-basemap-overlay.css',
-    '51-right-inspector.css'
+    '51-right-inspector.css',
+    '52-object-workflow.css'
   ].forEach(name => {
     assert.ok(appCss.includes(`./${name}`), `${name} must be imported by app.css`);
     assert.ok(fs.existsSync(path.join(styleDir, name)), `${name} must exist`);
@@ -108,6 +109,107 @@ function testModernMotionContract() {
   assert.ok(chartSource.includes('--chart-index'));
   assert.ok(chartSource.includes('--slice-index'));
   assert.ok(chartSource.includes('--legend-index'));
+}
+
+function testModalWorkflowContract() {
+  const modernRoot = path.join(process.cwd(), 'src/renderer-modern');
+  const layerSource = fs.readFileSync(path.join(modernRoot, 'components/LayerModal.tsx'), 'utf8');
+  const primitiveSource = fs.readFileSync(path.join(modernRoot, 'components/ui/ModalPrimitives.tsx'), 'utf8');
+  const modalStyles = fs.readFileSync(path.join(modernRoot, 'styles/modal-primitives.css'), 'utf8');
+  const querySource = fs.readFileSync(path.join(modernRoot, 'features/query/QueryModal.tsx'), 'utf8');
+  const speciesSource = fs.readFileSync(path.join(modernRoot, 'features/species-reference/SpeciesReferenceModal.tsx'), 'utf8');
+  const pointSource = fs.readFileSync(path.join(modernRoot, 'features/phenology/PointEditorModal.tsx'), 'utf8');
+  const dialogRuntime = fs.readFileSync(path.join(process.cwd(), 'src/renderer/utils/dialogs.js'), 'utf8');
+  const eventRuntime = fs.readFileSync(path.join(process.cwd(), 'src/renderer/shell/eventBindings.js'), 'utf8');
+  const phenologyRuntime = readPhenologyRuntimeSource();
+
+  ['ModalBody', 'ModalCommandBar', 'FormSection', 'FeedbackState'].forEach(name => {
+    assert.ok(primitiveSource.includes(`function ${name}`), `${name} must stay in the modal primitive layer`);
+  });
+  assert.ok(layerSource.includes('contentClass?: string'));
+  assert.ok(layerSource.includes('aria-hidden="true"'));
+  assert.ok(layerSource.includes('data-i18n-aria-label="closePanel"'));
+  [querySource, speciesSource, pointSource].forEach(source => {
+    assert.ok(source.includes('contentClass="modal-workflow-content'), 'target workflows must use the structured modal frame');
+    assert.ok(source.includes('<ModalBody>'), 'target workflows must use ModalBody');
+  });
+  assert.ok(querySource.includes('<ModalCommandBar'));
+  assert.ok(layerSource.includes('footer?: ComponentChildren'));
+  assert.ok(speciesSource.includes('footer={('));
+  assert.ok(pointSource.includes('footer={('));
+  assert.ok(pointSource.includes('id="pointEditorSaveState"'));
+  assert.ok(dialogRuntime.includes('function trapLayerModalFocus'));
+  assert.ok(dialogRuntime.includes('layerReturnFocusTargets'));
+  assert.ok(dialogRuntime.includes("getMotionDurationMs('--motion-duration-fast', 300)"));
+  assert.ok(eventRuntime.includes('getTopLayerModal()'));
+  assert.ok(!eventRuntime.includes("if (!ui.queryModal.classList.contains('hidden')) closeLayerModal(ui.queryModal)"));
+  assert.ok(phenologyRuntime.includes('function pointEditorHasUnsavedChanges'));
+  assert.ok(phenologyRuntime.includes('pointEditorUnsavedPrompt'));
+  assert.ok(modalStyles.includes('.ui-toast-region'));
+  assert.ok(modalStyles.includes('900ms linear infinite'));
+  assert.ok(modalStyles.includes('@media (prefers-reduced-motion: reduce)'));
+  ['zh.js', 'en.js'].forEach(name => {
+    const source = readLocaleSource(name);
+    [
+      'queryFilterRegion',
+      'speciesReferenceSearchRegion',
+      'pointEditorStateDirty',
+      'pointEditorUnsavedPrompt'
+    ].forEach(key => assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`));
+  });
+}
+
+function testObjectWorkflowContract() {
+  const modernRoot = path.join(process.cwd(), 'src/renderer-modern');
+  const commandSource = fs.readFileSync(path.join(modernRoot, 'features/shell/ObjectCommandBar.tsx'), 'utf8');
+  const inspectorSource = fs.readFileSync(path.join(modernRoot, 'features/shell/ContextInspector.tsx'), 'utf8');
+  const drawerSource = fs.readFileSync(path.join(modernRoot, 'features/shell/UtilityDrawers.tsx'), 'utf8');
+  const workflowSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/shell/objectWorkflow.js'), 'utf8');
+  const loaderSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/legacy-loader.js'), 'utf8');
+  const pointSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/map/points.js'), 'utf8');
+  const zoneSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/map/zones.js'), 'utf8');
+  const styleSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/52-object-workflow.css'), 'utf8');
+
+  ['btnPreviousObject', 'btnFocusSelection', 'btnNextObject', 'objectWorkflowFeedback'].forEach(id => {
+    assert.ok(commandSource.includes(`id="${id}"`), `${id} must stay in the contextual command bar`);
+  });
+  assert.ok(inspectorSource.includes('<ObjectCommandBar />'));
+  assert.ok(drawerSource.includes('role="tablist"'));
+  assert.ok(drawerSource.includes('role="listbox"'));
+  [
+    'function configureObjectListItem',
+    'function configureMapObjectLayer',
+    'function syncObjectSelectionUi',
+    'function activateObjectSelection',
+    'function navigateObjectSelection',
+    'function renderObjectListEmpty',
+    "node.setAttribute('aria-selected'",
+    "event.key === 'ArrowDown'",
+    "event.key === 'Enter'"
+  ].forEach(fragment => assert.ok(workflowSource.includes(fragment), `object workflow missing ${fragment}`));
+  assert.ok(loaderSource.includes('./src/renderer/shell/objectWorkflow.js'));
+  assert.ok(loaderSource.indexOf('./src/renderer/shell/objectWorkflow.js') < loaderSource.indexOf('./src/renderer/map/zones.js'));
+  assert.ok(pointSource.includes('configureMapObjectLayer(marker'));
+  assert.ok(zoneSource.includes('configureMapObjectLayer(layer'));
+  assert.ok(pointSource.includes('duration: 0.36'));
+  assert.ok(zoneSource.includes('duration: 0.36'));
+  ['.object-command-center', '.object-list-item.is-selected', '.object-empty-state', '#map .leaflet-interactive:focus-visible'].forEach(selector => {
+    assert.ok(styleSource.includes(selector), `${selector} must stay in the object workflow styles`);
+  });
+  ['320ms', '420ms', '900ms'].forEach(duration => {
+    assert.ok(styleSource.includes(duration) || workflowSource.includes(duration), `${duration} must stay represented in the interaction timing`);
+  });
+  assert.ok(workflowSource.includes('OBJECT_FOCUS_FEEDBACK_MS = 360'));
+  assert.ok(styleSource.includes('@media (prefers-reduced-motion: reduce)'));
+  ['zh.js', 'en.js'].forEach(name => {
+    const source = readLocaleSource(name);
+    [
+      'objectSelectionLabel',
+      'objectWorkflowLocated',
+      'objectWorkflowNoGeometry',
+      'objectListKeyboardHint'
+    ].forEach(key => assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`));
+  });
 }
 
 function testCssStructureGuards() {
@@ -202,7 +304,7 @@ function testThemeSettingsProgressiveDisclosure() {
     'brandIconLightness',
     'btnResetBrandIcon'
   ].forEach(id => {
-    assert.ok(!html.includes(`id="${id}"`), `${id} should not remain as a visible UI control`);
+    assert.ok(!rendererMarkupHasId(html, id), `${id} should not remain as a visible UI control`);
     assert.ok(!elementsSource.includes(`'${id}'`), `${id} should not remain in the DOM registry`);
   });
   [
@@ -464,12 +566,7 @@ function testResearchStatsFormulaContract() {
 function testReducedInnerHtmlSurface() {
   const querySource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/query/index.js'), 'utf8');
   const recycleSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/recycleBin/index.js'), 'utf8');
-  const maintenanceSource = readAppSources([
-    'src/renderer/features/maintenance/core.js',
-    'src/renderer/features/maintenance/logsSettings.js',
-    'src/renderer/features/maintenance/storage.js',
-    'src/renderer/features/maintenance/index.js'
-  ]);
+  const maintenanceSource = readMaintenanceRuntimeSource();
   assert.ok(!querySource.includes('innerHTML'));
   assert.ok(!recycleSource.includes('innerHTML'));
   assert.ok(!maintenanceSource.includes('innerHTML'));

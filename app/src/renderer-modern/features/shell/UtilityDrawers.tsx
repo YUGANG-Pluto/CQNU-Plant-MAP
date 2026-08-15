@@ -84,12 +84,33 @@ export function UtilityDrawers() {
                 <h2 data-i18n="listPanelTitle">分区与点位列表</h2>
                 <span class="pill" id="listSummaryCount">0</span>
               </div>
-              <div class="two-col list-tabs">
-                <button id="btnTabZones" class="btn mode-btn active" data-i18n="zoneList">分区列表</button>
-                <button id="btnTabPoints" class="btn mode-btn" data-i18n="pointList">点位列表</button>
+              <div class="two-col list-tabs" role="tablist" data-i18n-aria-label="objectListTabsLabel" aria-label="分区与点位列表">
+                <button
+                  id="btnTabZones"
+                  class="btn mode-btn active"
+                  role="tab"
+                  aria-selected="true"
+                  aria-controls="zoneListPanel"
+                  data-i18n="zoneList"
+                >
+                  分区列表
+                </button>
+                <button
+                  id="btnTabPoints"
+                  class="btn mode-btn"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="pointListPanel"
+                  data-i18n="pointList"
+                >
+                  点位列表
+                </button>
               </div>
-              <div id="zoneListPanel" class="list" />
-              <div id="pointListPanel" class="list hidden" />
+              <p class="object-list-keyboard-hint subtle" data-i18n="objectListKeyboardHint">
+                使用上下方向键浏览，Enter 定位所选对象。
+              </p>
+              <div id="zoneListPanel" class="list object-list" role="listbox" aria-labelledby="btnTabZones" />
+              <div id="pointListPanel" class="list object-list hidden" role="listbox" aria-labelledby="btnTabPoints" />
             </section>
 
             <section class="card workspace-stats-card workspace-drawer-only">

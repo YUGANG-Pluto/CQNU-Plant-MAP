@@ -93,6 +93,8 @@ const state = {
   selectedZoneId: null,
   selectedPointId: null,
   selectedPhenologyId: '',
+  hoveredZoneId: null,
+  hoveredPointId: null,
   map: null,
   currentBaseLayer: null,
   currentOverlayLayers: [],

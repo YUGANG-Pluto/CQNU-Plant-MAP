@@ -105,13 +105,20 @@ function bindBasemapEvents() {
 }
 
 function bindListEvents() {
-  ui.btnTabZones.addEventListener('click', () => {
-    state.activeListTab = 'zones';
+  const activateTab = (tab, focusTab = false) => {
+    state.activeListTab = tab;
     renderLists();
-  });
-  ui.btnTabPoints.addEventListener('click', () => {
-    state.activeListTab = 'points';
-    renderLists();
+    if (focusTab) (tab === 'zones' ? ui.btnTabZones : ui.btnTabPoints)?.focus();
+  };
+  ui.btnTabZones.addEventListener('click', () => activateTab('zones'));
+  ui.btnTabPoints.addEventListener('click', () => activateTab('points'));
+  [ui.btnTabZones, ui.btnTabPoints].forEach(button => {
+    button?.addEventListener('keydown', event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const nextTab = event.key === 'ArrowLeft' || event.key === 'Home' ? 'zones' : 'points';
+      activateTab(nextTab, true);
+    });
   });
 }
 
@@ -142,8 +149,7 @@ function bindQueryEvents() {
   ui.btnOpenQuery.addEventListener('click', () => {
     populateQueryFilters();
     renderQueryResults();
-    openLayerModal(ui.queryModal);
-    ui.queryText.focus();
+    openLayerModal(ui.queryModal, { focusTarget: ui.queryText });
   });
 
   ui.btnCloseQueryModal.addEventListener('click', () => closeLayerModal(ui.queryModal));
@@ -193,14 +199,7 @@ function bindRecycleAndEditorEvents() {
     .addEventListener('click', () => closeLayerModal(ui.trashModal));
   ui.btnRestoreTrash.addEventListener('click', restoreSelectedTrash);
   ui.btnDeleteTrashForever.addEventListener('click', deleteTrashForever);
-
-  ui.btnOpenPointEditor?.addEventListener('click', openPointEditor);
-  ui.btnOpenPointEditorInline?.addEventListener('click', openPointEditor);
-  ui.btnClosePointEditorModal?.addEventListener('click', closePointEditor);
-  ui.pointEditorModal?.querySelector('.layer-modal-backdrop')?.addEventListener('click', closePointEditor);
-  ui.btnAddPhenology?.addEventListener('click', addPhenologyEntry);
-  ui.btnDeletePhenology?.addEventListener('click', deletePhenologyEntry);
-  if (typeof bindTaxonomyEvents === 'function') bindTaxonomyEvents();
+  if (typeof bindPhenologyFeatureEvents === 'function') bindPhenologyFeatureEvents();
 }
 
 function bindThemeEvents() {
@@ -298,8 +297,11 @@ function handleDocumentImageClick(event) {
 
 function bindKeyboardEvents() {
   document.addEventListener('keydown', event => {
+    if (typeof handleProjectHistoryShortcut === 'function' && handleProjectHistoryShortcut(event)) return;
+    if (typeof handleCommandPaletteShortcut === 'function' && handleCommandPaletteShortcut(event)) return;
     if (handleFullscreenShortcut(event)) return;
-    handleImagePreviewKey(event);
+    if (handleImagePreviewKey(event)) return;
+    if (typeof trapLayerModalFocus === 'function' && trapLayerModalFocus(event)) return;
     handleModalEscapeKey(event);
   });
 }
@@ -327,7 +329,7 @@ async function toggleFullscreenMode() {
       if (typeof renderWorkspaceStatsSummary === 'function') renderWorkspaceStatsSummary();
       if (typeof scheduleRightPanelDisplayMode === 'function') scheduleRightPanelDisplayMode('fullscreen-toggle');
       if (!ui.statsModal?.classList.contains('hidden')) renderStatsModal();
-    }, 180);
+    }, 300);
   } catch (error) {
     handleUiError(error, 'window:toggleFullscreen', {
       title: '窗口切换失败'
@@ -336,39 +338,55 @@ async function toggleFullscreenMode() {
 }
 
 function handleImagePreviewKey(event) {
-  if (ui.imagePreviewModal.classList.contains('hidden')) return;
+  if (ui.imagePreviewModal.classList.contains('hidden')) return false;
+  if (!['Escape', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return false;
+  event.preventDefault();
   if (event.key === 'Escape') closeImagePreview();
   if (event.key === 'ArrowLeft') showPreviousPreviewImage();
   if (event.key === 'ArrowRight') showNextPreviewImage();
+  return true;
 }
 
 function handleModalEscapeKey(event) {
   if (event.key !== 'Escape') return;
+  const topModal = typeof getTopLayerModal === 'function' ? getTopLayerModal() : null;
+  if (topModal) {
+    event.preventDefault();
+    if (topModal === ui.confirmModal) return settleConfirmDialog(false);
+    if (topModal === ui.smallPromptModal) return settleSmallPrompt('');
+    if (topModal === ui.commandPaletteModal && typeof closeCommandPalette === 'function') return closeCommandPalette();
+    if (topModal === ui.speciesReferenceModal) return closeSpeciesReferenceCenter();
+    if (topModal === ui.pointEditorModal) return closePointEditor();
+    if (topModal === ui.basemapWorkspaceModal) return closeBasemapWorkspacePanel();
+    if (topModal === ui.mergeReviewModal && typeof settleMergeReview === 'function') return settleMergeReview(null);
+    closeLayerModal(topModal);
+    return;
+  }
 
-  if (!ui.queryModal.classList.contains('hidden')) closeLayerModal(ui.queryModal);
-  if (!ui.statsModal.classList.contains('hidden')) closeLayerModal(ui.statsModal);
-  if (!ui.trashModal.classList.contains('hidden')) closeLayerModal(ui.trashModal);
-  if (ui.themeModal && !ui.themeModal.classList.contains('hidden')) closeLayerModal(ui.themeModal);
-  if (ui.maintenanceModal && !ui.maintenanceModal.classList.contains('hidden')) closeLayerModal(ui.maintenanceModal);
-  if (ui.workspaceUtilityDrawer && !ui.workspaceUtilityDrawer.classList.contains('hidden')) closeWorkspaceUtilityDrawer();
-  if (ui.rightInspectorDrawer && !ui.rightInspectorDrawer.classList.contains('hidden')) closeRightInspectorDrawer();
-  if (ui.basemapWorkspaceModal && !ui.basemapWorkspaceModal.classList.contains('hidden')) closeBasemapWorkspacePanel();
-  if (ui.pointEditorModal && !ui.pointEditorModal.classList.contains('hidden')) closePointEditor();
-  if (ui.speciesReferenceModal && !ui.speciesReferenceModal.classList.contains('hidden')) closeSpeciesReferenceCenter();
-  if (ui.smallPromptModal && !ui.smallPromptModal.classList.contains('hidden')) settleSmallPrompt('');
-  if (ui.alertModal && !ui.alertModal.classList.contains('hidden')) closeLayerModal(ui.alertModal);
-  if (!ui.confirmModal.classList.contains('hidden')) settleConfirmDialog(false);
+  if (ui.rightInspectorDrawer && !ui.rightInspectorDrawer.classList.contains('hidden')) {
+    event.preventDefault();
+    closeRightInspectorDrawer();
+    return;
+  }
+  if (ui.workspaceUtilityDrawer && !ui.workspaceUtilityDrawer.classList.contains('hidden')) {
+    event.preventDefault();
+    closeWorkspaceUtilityDrawer();
+  }
 }
 
 function bindEvents() {
   bindProjectEvents();
+  if (typeof bindProjectHistoryEvents === 'function') bindProjectHistoryEvents();
+  if (typeof bindCommandPaletteEvents === 'function') bindCommandPaletteEvents();
   bindWorkspaceDrawerEvents();
   bindRightPanelEvents();
+  bindObjectWorkflowEvents();
   bindMapEvents();
   bindBasemapEvents();
   bindListEvents();
   bindStatsEvents();
   bindQueryEvents();
+  if (typeof bindReviewWorkbenchEvents === 'function') bindReviewWorkbenchEvents();
   bindRecycleAndEditorEvents();
   bindThemeEvents();
   bindMergeEvents();

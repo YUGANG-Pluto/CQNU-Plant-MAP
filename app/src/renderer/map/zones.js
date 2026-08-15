@@ -1,9 +1,9 @@
-function zoneStyle(selected = false) {
+function zoneStyle(selected = false, hovered = false) {
   return {
-    color: selected ? '#4b6bff' : '#6e8cff',
-    weight: selected ? 3 : 2,
-    fillColor: selected ? '#5b7dff' : '#92a6ff',
-    fillOpacity: selected ? 0.26 : 0.16
+    color: selected ? '#4b6bff' : (hovered ? '#5579e8' : '#6e8cff'),
+    weight: selected ? 3.5 : (hovered ? 3 : 2),
+    fillColor: selected ? '#5b7dff' : (hovered ? '#7892f4' : '#92a6ff'),
+    fillOpacity: selected ? 0.28 : (hovered ? 0.22 : 0.16)
   };
 }
 
@@ -55,12 +55,18 @@ function zoneBounds(zone) {
 
 function focusZoneOnMap(zoneId) {
   const zone = state.zones.find(item => item.id === zoneId);
-  if (!zone) return;
+  if (!zone || !state.map) return false;
 
   const bounds = zoneBounds(zone);
   if (bounds && bounds.isValid()) {
-    state.map.fitBounds(bounds.pad(0.18), { animate: true, maxZoom: MAP_FOCUS_ZOOM });
+    state.map.fitBounds(bounds.pad(0.18), {
+      animate: true,
+      duration: 0.36,
+      maxZoom: MAP_FOCUS_ZOOM
+    });
+    return true;
   }
+  return false;
 }
 
 function addZoneLayer(zone, options = {}) {
@@ -73,7 +79,7 @@ function addZoneLayer(zone, options = {}) {
 
   const layer = L.polygon(
     geometryToLatLngs(zone.geometry),
-    zoneStyle(zone.id === state.selectedZoneId)
+    zoneStyle(zone.id === state.selectedZoneId, zone.id === state.hoveredZoneId)
   );
 
   layer._zoneId = zone.id;
@@ -89,6 +95,14 @@ function addZoneLayer(zone, options = {}) {
 
   if (typeof registerBusinessLayer === 'function') registerBusinessLayer(`zone:${zone.id}`, layer, 'zones', token);
   else layer.addTo(state.map);
+  if (typeof configureMapObjectLayer === 'function') {
+    configureMapObjectLayer(layer, {
+      type: 'zone',
+      id: zone.id,
+      label: zoneDisplayName(zone),
+      onActivate: () => selectZone(zone.id)
+    });
+  }
   state.zoneLayers.set(zone.id, layer);
   return layer;
 }
@@ -111,7 +125,15 @@ function handleZoneLayerClick(event, zone) {
 function refreshZoneStyles() {
   state.zones.forEach(zone => {
     const layer = state.zoneLayers.get(zone.id);
-    if (layer) layer.setStyle(zoneStyle(zone.id === state.selectedZoneId));
+    if (layer) {
+      const selected = zone.id === state.selectedZoneId && !state.selectedPointId;
+      const contextual = zone.id === state.selectedZoneId && Boolean(state.selectedPointId);
+      const hovered = zone.id === state.hoveredZoneId;
+      layer.setStyle(zoneStyle(selected, hovered || contextual));
+      if (typeof syncMapObjectLayerState === 'function') {
+        syncMapObjectLayerState(layer, 'zone', zone.id, selected, hovered || contextual);
+      }
+    }
   });
 }
 
@@ -136,6 +158,9 @@ function selectZone(zoneId) {
   updateStatusBar();
   state.map.closePopup();
   updatePointSummaryBox();
+  if (typeof syncObjectSelectionUi === 'function') {
+    syncObjectSelectionUi('zone-select', { announce: true });
+  }
   if (typeof scheduleRightPanelDisplayMode === 'function') scheduleRightPanelDisplayMode('zone-change');
 }
 
