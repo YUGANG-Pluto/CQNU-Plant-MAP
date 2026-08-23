@@ -6,9 +6,15 @@ async function testTaxonomySuggestionRuntimeContract() {
 }
 
 function testSqliteExchangeModelContract() {
-  const source = fs.readFileSync(path.join(process.cwd(), 'src/main/sqliteExchangeModel.js'), 'utf8');
-  assert.ok(!source.includes("require('fs')"), 'SQLite exchange phase 1 must not write files');
-  assert.ok(!source.includes('better-sqlite3'), 'SQLite exchange phase 1 must not add runtime database dependency');
+  const exchangeFiles = [
+    path.join(process.cwd(), 'src/main/sqliteExchangeModel.js'),
+    ...fs.readdirSync(path.join(process.cwd(), 'src/main/sqliteExchange'))
+      .filter(name => name.endsWith('.js'))
+      .map(name => path.join(process.cwd(), 'src/main/sqliteExchange', name))
+  ];
+  const source = exchangeFiles.map(file => fs.readFileSync(file, 'utf8')).join('\n');
+  assert.ok(!source.includes("require('fs')"), 'SQLite exchange model must not write files');
+  assert.ok(!source.includes('better-sqlite3'), 'SQLite exchange model must not own database access');
   const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
   assert.ok(packageJson.dependencies?.['better-sqlite3'], 'SQLite dependency probe uses better-sqlite3');
   ['sqlite3', 'sql.js'].forEach(name => {
@@ -82,6 +88,15 @@ function testSqliteExchangeModelContract() {
   assert.strictEqual(sqliteExchangeModel.validateSqliteExchangeModel(model).ok, true);
   assert.ok(typeof sqliteExchangeModel.buildConversionReport === 'function');
   assert.ok(typeof sqliteExchangeModel.buildBackupPreflightPlan === 'function');
+
+  const duplicateIdModel = sqliteExchangeModel.buildSqliteModelFromJsonProject({
+    settings: {},
+    zones: [{ id: 'zone' }, { id: 'zone' }],
+    points: [{ id: 'point' }, { id: 'point' }]
+  });
+  assert.strictEqual(sqliteExchangeModel.validateSqliteExchangeModel(duplicateIdModel).ok, true);
+  assert.strictEqual(new Set(duplicateIdModel.tables.zones.map(row => row.internalKey)).size, 2);
+  assert.strictEqual(new Set(duplicateIdModel.tables.points.map(row => row.internalKey)).size, 2);
 }
 
 function testElectronSecurityContract() {

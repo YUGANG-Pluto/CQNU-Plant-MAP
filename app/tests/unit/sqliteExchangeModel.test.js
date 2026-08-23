@@ -92,3 +92,86 @@ test('invalid sqlite exchange model is blocked', () => {
   assert.equal(report.status, 'blocked');
   assert.ok(report.warnings.length > 0);
 });
+
+test('exchange rows remain unique when source records reuse business identifiers', () => {
+  const project = {
+    settings: {},
+    zones: [
+      { id: 'duplicate-zone', name: 'Zone A' },
+      { id: 'duplicate-zone', name: 'Zone B' }
+    ],
+    points: [
+      {
+        id: 'duplicate-point',
+        plantNameCn: 'Plant A',
+        phenologyEntries: [{ id: 'duplicate-entry', label: 'Flowering' }]
+      },
+      {
+        id: 'duplicate-point',
+        plantNameCn: 'Plant B',
+        phenologyEntries: [{ id: 'duplicate-entry', label: 'Fruiting' }]
+      }
+    ]
+  };
+
+  const model = sqliteExchangeModel.buildSqliteModelFromJsonProject(project);
+
+  assert.equal(new Set(model.tables.zones.map(row => row.internalKey)).size, 2);
+  assert.equal(new Set(model.tables.points.map(row => row.internalKey)).size, 2);
+  assert.equal(new Set(model.tables.phenology_entries.map(row => row.internalKey)).size, 2);
+  assert.equal(sqliteExchangeModel.validateSqliteExchangeModel(model).ok, true);
+  assert.deepEqual(sqliteExchangeModel.buildJsonProjectFromSqliteModel(model), project);
+});
+
+test('validation blocks duplicate internal keys and dangling child references', () => {
+  const model = sqliteExchangeModel.buildSqliteModelFromJsonProject({
+    settings: {},
+    zones: [],
+    points: [
+      { id: 'point-a', phenologyEntries: [{ id: 'entry-a' }] },
+      { id: 'point-b' }
+    ]
+  });
+  model.tables.points[1].internalKey = model.tables.points[0].internalKey;
+  model.tables.phenology_entries[0].pointInternalKey = 'missing-point';
+
+  const validation = sqliteExchangeModel.validateSqliteExchangeModel(model);
+
+  assert.equal(validation.ok, false);
+  assert.ok(validation.errors.some(message => message.includes('duplicate internal key in points')));
+  assert.ok(validation.errors.some(message => message.includes('invalid point reference')));
+});
+
+test('conversion reporting remains stable when a table payload has the wrong shape', () => {
+  const malformed = {
+    version: sqliteExchangeModel.MODEL_VERSION,
+    tables: {
+      project_settings: [],
+      zones: {},
+      points: [],
+      phenology_entries: [],
+      images: [],
+      taxonomy_candidates: []
+    }
+  };
+
+  const report = sqliteExchangeModel.buildConversionReport(malformed);
+
+  assert.equal(report.status, 'blocked');
+  assert.equal(report.counts.zones, 0);
+  assert.ok(report.warnings.some(message => message.includes('missing table model: zones')));
+});
+
+test('deserialization preserves table arrays and tolerates malformed compatibility JSON', () => {
+  const project = readFixture('json-project-basic');
+  const model = sqliteExchangeModel.buildSqliteModelFromJsonProject(project);
+  model.tables.points.reverse();
+  model.tables.phenology_entries.reverse();
+  const tableSnapshot = JSON.stringify(model.tables);
+  model.tables.zones[0].compatJson = '{invalid';
+
+  const restored = sqliteExchangeModel.buildJsonProjectFromSqliteModel(model);
+
+  assert.equal(restored.zones[0].id, project.zones[0].id);
+  assert.equal(JSON.stringify(model.tables).replace('{invalid', '{}'), tableSnapshot.replace('{invalid', '{}'));
+});

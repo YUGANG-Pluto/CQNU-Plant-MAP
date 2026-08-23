@@ -1,7 +1,7 @@
 # CQNU Campus Plant Mapping System
 # 重庆师范大学校园植物分区管理系统
 
-> 正式版 `1.0.0` · Release `v1.0.0` · 2026-07-29
+> 当前测试版 `1.1.0-beta.1` · Tag `v1.1.0-beta.1` · 稳定基线 `1.0.0` · 2026-08-23
 > Copyright © YU GangZuo. All rights reserved.  
 > 本仓库公开可见，仅用于项目展示、学术交流与参考阅读。未经版权所有者书面许可，不得复制、修改、再发布、商用或制作衍生作品。  
 > This repository is publicly visible for project display, academic communication, and reference only. Unless prior written permission is obtained from the copyright holder, no reproduction, modification, redistribution, commercial use, or derivative use is allowed.

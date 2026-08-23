@@ -1,7 +1,8 @@
 CQNU Campus Plant Mapping System / 重庆师范大学校园植物分区管理系统
 
-Version: 1.0.0
-Release tag: v1.0.0
+Version: 1.1.0-beta.1
+Release tag: v1.1.0-beta.1
+Release channel: Beta
 Author: YUGANG Zuo
 Copyright © YU GangZuo. All rights reserved.
 

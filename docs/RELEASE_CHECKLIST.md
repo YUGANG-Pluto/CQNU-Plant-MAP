@@ -5,6 +5,8 @@ Use this checklist before preparing a local installer or a tagged release.
 ## Version And Scope
 
 - Confirm the intended version number and tag name.
+- Use `vX.Y.Z-beta.N` for a test release and `vX.Y.Z` for a stable release.
+- Confirm `app/package.json`, `site/package.json`, and both lock files use the same version.
 - Confirm the release scope in `CHANGELOG.md`.
 - Confirm no unrelated work is mixed into the release commit.
 - Confirm no project data, logs, backups, tokens, diagnostics, or temporary exports are staged.
@@ -15,6 +17,7 @@ Run from the application folder:
 
 ```bash
 cd app
+npm run check:version
 npm run verify
 ```
 
@@ -54,7 +57,7 @@ Confirm `app/package.json` remains:
 
 ```json
 {
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE.md",
   "private": true
 }
 ```
@@ -86,6 +89,8 @@ Release notes should include:
 - known limitations;
 - verification commands that passed;
 - packaging status.
+
+Mark Beta tags as GitHub prereleases. Only stable `vX.Y.Z` releases may be designated as the latest stable release.
 
 Do not include private project data, local machine paths, credentials, or temporary files in release notes.
 

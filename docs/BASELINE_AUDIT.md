@@ -1,11 +1,12 @@
 # Baseline Audit
 
-Audit date: 2026-07-29
+Audit date: 2026-08-23
 
 ## Current Application Baseline
 
-- Desktop runtime: Electron 31.7.7.
-- Application package version: 1.0.0.
+- Desktop runtime: Electron 41.10.3.
+- Application package version: 1.1.0-beta.1.
+- Stable release baseline: 1.0.0.
 - Main entry: `app/main-dist/main/index.js`, compiled from `app/electron/main/index.ts`.
 - Preload entry: `app/main-dist/preload/index.js`, bundled from `app/electron/preload/index.ts`.
 - Renderer entry: the Preact shell built from `app/src/renderer-modern/`, with `app/index.html` as a minimal host.
@@ -25,7 +26,7 @@ Audit date: 2026-07-29
 
 ## Authorization And Repository Hygiene
 
-- The application package is marked `UNLICENSED` and private to avoid accidental open licensing.
+- The application package points to `LICENSE.md` and is marked private to avoid accidental package publication or open-license claims.
 - Formal license, school-use, privacy, security, and third-party notice files are present at the repository root.
 - The package lock file is required for reproducible dependency installation.
 - The installer icon path `app/build/icon.ico` is kept trackable.
