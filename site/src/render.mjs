@@ -104,7 +104,7 @@ function homePage() {
           <p>面向校园植物资源动态更新、定点记录、物候追踪、图片证据归档、分区比较与可视化管理研究。</p>
           <div class="hero-actions">
             <a class="button button-primary" href="${siteMeta.releasesUrl}" target="_blank" rel="noreferrer">查看 Beta 版本</a>
-            <a class="button button-secondary" href="/workspace">打开只读工作区</a>
+            <a class="button button-secondary" href="/workspace">打开本地工作区</a>
           </div>
           <p class="hero-note">Windows 桌面端 · 本地优先 · 用户主动触发网络查询</p>
         </div>
@@ -181,88 +181,12 @@ function webPage() {
       <section class="content-band band-soft"><div class="content-wrap architecture-grid">${layers}</div></section>
       <section class="content-band band-white"><div class="content-wrap comparison" data-reveal>
         <div><span>可直接共用</span><h2>界面、统计与领域模型</h2><p>组件、主题、动画、统计计算、图表数据、表格和导出内容生成保持同源。</p></div>
-        <div><span>按平台实现</span><h2>存储、系统与网络边界</h2><p>桌面端使用白名单 IPC；当前浏览器工作区仅使用文件选择、内存解析与下载，后续受控编辑再评估授权存储。</p></div>
+        <div><span>按平台实现</span><h2>存储、系统与网络边界</h2><p>桌面端使用白名单 IPC；浏览器端使用用户授权目录、OPFS、SQLite WASM 与受控下载，不访问任意本地路径。</p></div>
       </div></section>
       <section class="content-band band-plain"><div class="content-wrap roadmap" data-reveal>
-        <span>实施顺序</span><h2>先只读展示，再受控编辑，最后评估完整 Web 工作区</h2>
-        <ol><li>发布文档与版本站</li><li>本地文件只读研究工作区</li><li>浏览器授权存储与受控编辑</li><li>跨平台一致性和数据回归验证</li></ol>
+        <span>实施顺序</span><h2>共享应用界面，按平台收束系统能力</h2>
+        <ol><li>发布文档与版本站</li><li>浏览器授权目录与 OPFS 主库</li><li>本地编辑、备份和研究导出</li><li>跨平台一致性和数据回归验证</li></ol>
       </div></section>`
-  });
-}
-
-function workspacePage() {
-  return layout({
-    activePath: '/workspace',
-    title: '浏览器只读工作区',
-    description: '在浏览器本地内存中读取 CQNU Plant MAP JSON、CSV 或 GeoJSON，并生成只读研究概览。',
-    body: `
-      <section class="page-hero workspace-hero"><div class="content-wrap" data-reveal>
-        <span>READ-ONLY WEB WORKSPACE</span>
-        <h1>浏览器只读研究工作区</h1>
-        <p>选择本地项目文件后，在当前标签页内存中核对分区、点位、物种与字段完整性。文件不会上传到站点。</p>
-      </div></section>
-      <section class="content-band band-plain"><div class="content-wrap web-workspace" data-web-workspace>
-        <section class="workspace-intake" data-reveal>
-          <div>
-            <span class="workspace-step">01 · 本地选择</span>
-            <h2>打开项目数据</h2>
-            <p>可同时选择 <code>settings.json</code>、<code>zones.json</code>、<code>points.json</code>，也可选择单个项目 JSON、记录 CSV 或点位 GeoJSON。</p>
-          </div>
-          <div class="workspace-dropzone" data-workspace-dropzone>
-            <input id="workspaceFiles" type="file" multiple accept=".json,.geojson,.csv,application/json,text/csv,application/geo+json" />
-            <strong>将文件拖到这里，或使用文件选择器</strong>
-            <span>数据只在本机内存中处理，不保存文件权限。</span>
-            <button class="button button-primary" type="button" data-workspace-select>选择本地文件</button>
-          </div>
-          <div class="workspace-actions">
-            <button class="button button-secondary" type="button" data-workspace-export disabled>下载只读摘要</button>
-            <button class="text-button" type="button" data-workspace-clear disabled>清空会话</button>
-          </div>
-          <p class="workspace-status" role="status" aria-live="polite" data-workspace-status>尚未选择文件。</p>
-        </section>
-
-        <section class="workspace-results" data-workspace-results hidden>
-          <div class="workspace-result-heading">
-            <div><span class="workspace-step">02 · 只读核对</span><h2 data-workspace-title>本地项目</h2></div>
-            <span class="privacy-chip">LOCAL MEMORY ONLY</span>
-          </div>
-          <div class="workspace-metrics" aria-label="项目概览">
-            <article><span>分区</span><strong data-metric="zones">0</strong></article>
-            <article><span>点位</span><strong data-metric="points">0</strong></article>
-            <article><span>有效物种</span><strong data-metric="species">0</strong></article>
-            <article><span>科 / 属</span><strong data-metric="taxonomy">0 / 0</strong></article>
-            <article><span>坐标完整率</span><strong data-metric="coordinates">0.0%</strong></article>
-            <article><span>人工核验科属</span><strong data-metric="verified">0</strong></article>
-          </div>
-
-          <div class="workspace-analysis-grid">
-            <article class="workspace-analysis-panel">
-              <span class="workspace-step">数据诊断</span>
-              <h3>记录完整性</h3>
-              <ul class="quality-list" data-workspace-quality></ul>
-            </article>
-            <article class="workspace-analysis-panel">
-              <span class="workspace-step">使用边界</span>
-              <h3>当前会话能力</h3>
-              <ul class="capability-list">
-                <li><strong>可用</strong><span>项目概览、分区比较、缺失项核对、摘要下载</span></li>
-                <li><strong>桌面端</strong><span>项目保存、SQLite、备份恢复、图片管理、物种参考查询</span></li>
-              </ul>
-            </article>
-          </div>
-
-          <section class="workspace-table-panel">
-            <div><span class="workspace-step">分区摘要</span><h3>分区记录与物种数</h3></div>
-            <div class="workspace-table-scroll">
-              <table>
-                <thead><tr><th>分区</th><th>点位数</th><th>有效物种数</th><th>缺学名</th><th>缺坐标</th></tr></thead>
-                <tbody data-workspace-zones></tbody>
-              </table>
-            </div>
-          </section>
-        </section>
-      </div></section>
-      <script type="module" src="/assets/workspace.js"></script>`
   });
 }
 
@@ -296,10 +220,11 @@ function privacyPage() {
   });
 }
 
-export function renderPages() {
+export function renderPages({ workspaceHtml = '' } = {}) {
+  if (!workspaceHtml) throw new Error('A complete browser workspace document is required.');
   return Object.freeze({
     '/': homePage(),
-    '/workspace': workspacePage(),
+    '/workspace': workspaceHtml,
     '/docs': docsPage(),
     '/web': webPage(),
     '/release': releasePage(),

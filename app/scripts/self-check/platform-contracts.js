@@ -182,3 +182,25 @@ function testElectronSecurityContract() {
     });
   });
 }
+
+function testWebPlatformSecurityContract() {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
+  const webRoot = path.join(process.cwd(), 'src/renderer-modern/platform');
+  const webFiles = [
+    path.join(webRoot, 'webAdapter.ts'),
+    ...fs.readdirSync(path.join(webRoot, 'web'))
+      .filter(name => name.endsWith('.ts'))
+      .map(name => path.join(webRoot, 'web', name))
+  ];
+  const source = webFiles.map(file => fs.readFileSync(file, 'utf8')).join('\n');
+  assert.strictEqual(packageJson.dependencies?.['@sqlite.org/sqlite-wasm'], '3.53.0-build1');
+  ["from 'node:fs'", "from 'node:path'", "from 'node:child_process'", 'require(\'fs\')', 'ipcRenderer']
+    .forEach(fragment => assert.ok(!source.includes(fragment), `Web adapter must not use ${fragment}`));
+  assert.ok(source.includes('installOpfsSAHPoolVfs'));
+  assert.ok(source.includes('navigator as Navigator'));
+  assert.ok(source.includes('showDirectoryPicker'));
+  assert.ok(source.includes('Cache Storage') || source.includes('caches.open'));
+  assert.ok(source.includes('scientificName'));
+  assert.ok(source.includes('commonName'));
+  assert.ok(!source.includes('localStorage.setItem(\'token'));
+}

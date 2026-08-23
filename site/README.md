@@ -1,6 +1,6 @@
 # CQNU Plant MAP Site
 
-The site is the restricted-access release, documentation, and read-only browser surface for the desktop application. It is intentionally isolated from Electron main-process capabilities. The read-only workspace can parse files explicitly selected by the user, but keeps those records in browser memory and never receives a local project path or opens a SQLite database.
+The site is the restricted-access release, documentation, and browser application surface for CQNU Plant MAP. It remains isolated from Electron main-process capabilities. The browser workspace uses explicit directory or file selection, OPFS, SQLite Wasm, Cache Storage, and controlled downloads; project data remains on the user's device.
 
 ## Commands
 
@@ -13,7 +13,9 @@ The build produces a self-contained Sites Worker package under `dist/`. The sour
 ## Publishing boundary
 
 - Desktop installers and source releases remain on GitHub Releases.
-- This site serves documentation, release navigation, a product preview, and a local-memory read-only workspace.
-- User-selected JSON, CSV, or GeoJSON files remain in the active browser session and are not uploaded by the site.
+- This site keeps the documentation homepage and serves the full browser application from `/workspace`.
+- User-selected project directories, JSON, CSV, GeoJSON, and images remain on the user's device and are not uploaded by the site.
 - Project records, local paths, service tokens, coordinates, and user images are not bundled with the published site.
-- Project writes, SQLite, backups, image management, and third-party species queries remain desktop-only capabilities.
+- Browser project writes use an OPFS SQLite primary copy and, when granted, a compatible JSON directory mirror.
+- Third-party species and image-reference queries run only after an explicit user action and send only the selected query name or image required for that request.
+- The site service worker caches application resources for resilience but does not cache third-party requests or project data.

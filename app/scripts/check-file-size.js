@@ -15,9 +15,11 @@ const skippedDirs = new Set([
   'main-dist',
   'renderer-dist',
   'release',
+  'logs',
   'out',
   'coverage',
-  '.nyc_output'
+  '.nyc_output',
+  '.npm-cache'
 ]);
 const checkedExtensions = new Set(['.js', '.css', '.html', '.mjs', '.cjs', '.ts', '.tsx']);
 
@@ -31,7 +33,8 @@ function walk(dir, files = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (!skippedDirs.has(entry.name)) {
+      const generatedDistribution = entry.name === 'dist' || entry.name.startsWith('dist-');
+      if (!skippedDirs.has(entry.name) && !generatedDistribution) {
         walk(fullPath, files);
       }
       continue;

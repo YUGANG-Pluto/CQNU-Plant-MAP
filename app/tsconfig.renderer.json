@@ -13,7 +13,7 @@
     "allowJs": false,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["node"]
+    "types": ["node", "vite/client"]
   },
   "include": [
     "src/renderer-modern/**/*.ts",

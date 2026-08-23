@@ -58,7 +58,7 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 - 维护中心：执行项目健康检查、保守修复、日志查看、诊断导出、设置导入导出和安全模式。
 - 界面设置：切换主题、布局、玻璃效果、动效和状态颜色。
 - 中英双语：支持中文和 English 界面切换。
-- 浏览器只读工作区：在受限发布站中由用户主动选择 JSON、CSV 或 GeoJSON，仅在当前浏览器内存中生成项目概览、分区摘要与缺失项诊断；不写回项目、不读取 SQLite，也不上传文件。
+- 浏览器本地工作区：完整界面位于 `/workspace`，由用户主动授权项目目录或选择文件；项目主副本保存在浏览器 OPFS SQLite 中，有目录权限时同步兼容 JSON 与图片归档，项目数据不上传到站点服务端。
 
 ### English
 
@@ -76,7 +76,7 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 - Maintenance center: run health checks, safe repairs, log review, diagnostic export, settings import/export, and safe mode.
 - UI settings: switch themes, layouts, glass effects, motion, and status colors.
 - Bilingual UI: Chinese and English interface switching.
-- Read-only browser workspace: users can explicitly select JSON, CSV, or GeoJSON in the restricted release site to generate project summaries, zone summaries, and missing-field diagnostics in browser memory only. It does not write project data, open SQLite, or upload files.
+- Browser-local workspace: the complete interface is available at `/workspace`. Users explicitly authorize a project directory or select files; the primary copy is stored in OPFS SQLite, with compatible JSON and image mirroring when directory permission is available. Project data is not uploaded to the site server.
 
 ---
 
@@ -84,11 +84,11 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 
 ### 中文
 
-renderer 通过统一的平台适配器调用项目读取、导出、窗口和网络能力。桌面端适配器只委托现有 Electron preload 白名单；浏览器端只开放本地文件选择、内存只读解析、受控下载和 HTTP/HTTPS 外链。项目保存、SQLite、备份恢复、日志诊断、图片管理和物种参考查询仍由桌面端提供。
+renderer 通过统一的平台适配器调用项目、导出、图片、备份、日志、窗口和网络能力。桌面端适配器只委托现有 Electron preload 白名单；浏览器端只使用用户授权目录、OPFS SQLite、Cache Storage、受控下载和 HTTP/HTTPS 外链。两端共享领域模型与界面，但不会互相绕过各自的平台安全边界。
 
 ### English
 
-The renderer reaches project, export, window, and network capabilities through a single platform adapter. The desktop adapter delegates only to the existing Electron preload allowlist. The browser adapter exposes local file selection, in-memory read-only parsing, controlled downloads, and HTTP/HTTPS external links. Project writes, SQLite, backup and restore, diagnostics, image management, and species-reference queries remain desktop capabilities.
+The renderer reaches project, export, image, backup, diagnostics, window, and network capabilities through a single platform adapter. The desktop adapter delegates only to the existing Electron preload allowlist. The browser adapter uses explicitly authorized directories, OPFS SQLite, Cache Storage, controlled downloads, and HTTP/HTTPS links. Both runtimes share domain models and UI without bypassing their platform-specific security boundaries.
 
 ---
 

@@ -4,7 +4,14 @@ import preact from '@preact/preset-vite';
 
 export default defineConfig({
   plugins: [preact()],
+  optimizeDeps: {
+    exclude: ['@sqlite.org/sqlite-wasm']
+  },
+  worker: {
+    format: 'es'
+  },
   build: {
+    assetsInlineLimit: 0,
     emptyOutDir: true,
     outDir: resolve(__dirname, 'renderer-dist'),
     cssCodeSplit: false,

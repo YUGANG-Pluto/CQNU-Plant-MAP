@@ -33,6 +33,7 @@ testPlatformAdapterContract();
   testSqliteExchangeModelContract();
 
   testElectronSecurityContract();
+  testWebPlatformSecurityContract();
 
   await testExportWritesAtomicallyAndValidatesContent();
   await testImageImportDoesNotOverwriteExistingArchive();

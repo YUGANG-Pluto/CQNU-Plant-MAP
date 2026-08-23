@@ -42,9 +42,11 @@ const skippedDirs = new Set([
   'main-dist',
   'renderer-dist',
   'release',
+  'logs',
   'out',
   'coverage',
-  '.nyc_output'
+  '.nyc_output',
+  '.npm-cache'
 ]);
 const skippedContentNames = new Set(['package-lock.json']);
 const textExtensions = new Set([
@@ -90,7 +92,8 @@ function isTermMatch(term, text) {
 function walkFiles(dir, files = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory()) {
-      if (!skippedDirs.has(entry.name)) {
+      const generatedDistribution = entry.name === 'dist' || entry.name.startsWith('dist-');
+      if (!skippedDirs.has(entry.name) && !generatedDistribution) {
         walkFiles(path.join(dir, entry.name), files);
       }
       continue;

@@ -24,7 +24,7 @@ test('web project reader combines settings, zones, and points without local path
   assert.equal(session.zones[0].unknownZone, 1);
   assert.equal(session.points[0].plantNameSci, 'Ginkgo biloba');
   assert.equal(session.modifiedAt, 2000);
-  assert.match(session.projectDir, /^web:\/\/local\//);
+  assert.match(session.projectDir, /^web:\/\/project\//);
   assert.doesNotMatch(session.projectDir, /[A-Za-z]:\\/);
 });
 

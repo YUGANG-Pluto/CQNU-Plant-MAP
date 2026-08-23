@@ -1,12 +1,20 @@
 type UnknownRecord = Record<string, unknown>;
 
 export interface WebProjectSession {
+  projectId: string;
   projectDir: string;
   label: string;
   modifiedAt: number;
+  sourceKind: 'opfs' | 'directory' | 'import';
   settings: UnknownRecord;
   zones: UnknownRecord[];
   points: UnknownRecord[];
+}
+
+export interface WebProjectSessionOptions {
+  projectId?: string;
+  label?: string;
+  sourceKind?: WebProjectSession['sourceKind'];
 }
 
 interface BrowserFileHandle {
@@ -85,7 +93,7 @@ function finiteNumber(value: unknown): number | null {
   return Number.isFinite(number) ? number : null;
 }
 
-function defaultSettings(): UnknownRecord {
+export function createDefaultWebSettings(): UnknownRecord {
   return {
     language: 'zh',
     mapCenter: [29.6088, 106.3088],
@@ -181,7 +189,7 @@ function projectFromCsv(source: string): Pick<WebProjectSession, 'settings' | 'z
   });
 
   return {
-    settings: defaultSettings(),
+    settings: createDefaultWebSettings(),
     zones: [...zoneByKey.values()],
     points
   };
@@ -221,7 +229,7 @@ function projectFromGeoJson(value: unknown): Pick<WebProjectSession, 'settings' 
     const key = cleanText(point.zoneId) || cleanText(point.zoneName);
     return { ...point, zoneRef: cleanText(zoneByKey.get(key)?.id) };
   });
-  return { settings: defaultSettings(), zones: [...zoneByKey.values()], points };
+  return { settings: createDefaultWebSettings(), zones: [...zoneByKey.values()], points };
 }
 
 function applyJsonProjectPart(
@@ -271,10 +279,31 @@ function projectLabel(files: readonly File[]): string {
   return '本地项目文件组';
 }
 
-export async function createWebProjectSession(files: readonly File[]): Promise<WebProjectSession> {
+export function webProjectDir(projectId: string): string {
+  return `web://project/${encodeURIComponent(projectId)}`;
+}
+
+export function createEmptyWebProjectSession(options: WebProjectSessionOptions = {}): WebProjectSession {
+  const projectId = options.projectId || crypto.randomUUID();
+  return {
+    projectId,
+    projectDir: webProjectDir(projectId),
+    label: options.label?.trim() || '浏览器本地项目',
+    modifiedAt: Date.now(),
+    sourceKind: options.sourceKind || 'opfs',
+    settings: createDefaultWebSettings(),
+    zones: [],
+    points: []
+  };
+}
+
+export async function createWebProjectSession(
+  files: readonly File[],
+  options: WebProjectSessionOptions = {}
+): Promise<WebProjectSession> {
   if (!files.length) throw new Error('未选择项目文件。');
   const project = {
-    settings: defaultSettings(),
+    settings: createDefaultWebSettings(),
     zones: [] as UnknownRecord[],
     points: [] as UnknownRecord[]
   };
@@ -296,13 +325,16 @@ export async function createWebProjectSession(files: readonly File[]): Promise<W
     throw new Error('请选择 settings.json、zones.json、points.json、项目 JSON、CSV 或 GeoJSON。');
   }
 
-  const label = projectLabel(files);
+  const label = options.label?.trim() || projectLabel(files);
+  const projectId = options.projectId || crypto.randomUUID();
   const fileModifiedAt = Math.max(0, ...files.map(file => file.lastModified || 0));
   const modifiedAt = fileModifiedAt || Date.now();
   return {
-    projectDir: `web://local/${encodeURIComponent(label)}`,
+    projectId,
+    projectDir: webProjectDir(projectId),
     label,
     modifiedAt,
+    sourceKind: options.sourceKind || 'import',
     settings: project.settings,
     zones: project.zones,
     points: project.points

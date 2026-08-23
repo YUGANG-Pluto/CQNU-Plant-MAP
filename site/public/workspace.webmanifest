@@ -1,0 +1,19 @@
+{
+  "name": "CQNU Plant MAP · 校园植物分区管理系统",
+  "short_name": "CQNU Plant MAP",
+  "description": "本地优先的校园植物记录、物候管理与研究统计工作区。",
+  "lang": "zh-CN",
+  "start_url": "/workspace",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7fbf8",
+  "theme_color": "#f7fbf8",
+  "icons": [
+    {
+      "src": "/assets/cqnu-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

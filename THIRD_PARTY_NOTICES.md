@@ -7,7 +7,8 @@ This project uses third-party packages through the application package manifest 
 | Package | Purpose | Upstream License |
 | --- | --- | --- |
 | adm-zip | ZIP archive creation and reading | MIT |
-| better-sqlite3 | SQLite dependency probe and future local database access | MIT |
+| better-sqlite3 | Desktop SQLite project storage and conversion | MIT |
+| @sqlite.org/sqlite-wasm | Browser SQLite runtime backed by OPFS | Apache-2.0 |
 | exifr | Image metadata reading | MIT |
 | preact | Component-based renderer shell | MIT |
 | lucide-preact | User-interface icons | ISC |
@@ -18,6 +19,7 @@ This project uses third-party packages through the application package manifest 
 | --- | --- | --- | --- |
 | Leaflet | Interactive map rendering | BSD-2-Clause | `https://unpkg.com/leaflet@1.9.4/` |
 | Leaflet.draw | Drawing and editing map geometry | MIT | `https://unpkg.com/leaflet-draw@1.0.4/` |
+| SQLite Wasm | Browser-local SQL database and OPFS VFS | Apache-2.0 | `https://www.npmjs.com/package/@sqlite.org/sqlite-wasm` |
 
 ## Development Dependencies
 
@@ -50,7 +52,8 @@ Map data, imagery, and tile services are provided by their respective service pr
 | 包 | 用途 | 上游许可证 |
 | --- | --- | --- |
 | adm-zip | ZIP 归档创建与读取 | MIT |
-| better-sqlite3 | SQLite 依赖探针与未来本地数据库访问 | MIT |
+| better-sqlite3 | 桌面端 SQLite 项目存储与数据转换 | MIT |
+| @sqlite.org/sqlite-wasm | 基于 OPFS 的浏览器 SQLite 运行时 | Apache-2.0 |
 | exifr | 图片元数据读取 | MIT |
 | preact | 组件化渲染器外壳 | MIT |
 | lucide-preact | 用户界面图标 | ISC |

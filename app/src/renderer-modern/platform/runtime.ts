@@ -29,5 +29,8 @@ export function installPlatformAdapter(): PlatformAdapter {
   });
   document.documentElement.dataset.platformRuntime = adapter.runtime;
   document.documentElement.classList.toggle('platform-read-only', adapter.capabilities.readOnly);
+  if (adapter.runtime === 'web' && 'serviceWorker' in navigator && /^https?:$/.test(window.location.protocol)) {
+    void navigator.serviceWorker.register('/workspace-service-worker.js', { scope: '/' }).catch(() => undefined);
+  }
   return adapter;
 }

@@ -15,7 +15,7 @@ export const siteMeta = Object.freeze({
 
 export const navigation = Object.freeze([
   { href: '/', label: '产品' },
-  { href: '/workspace', label: '只读工作区' },
+  { href: '/workspace', label: '本地工作区' },
   { href: '/docs', label: '使用文档' },
   { href: '/web', label: 'Web 架构' },
   { href: '/release', label: '版本 1.1 Beta' }
@@ -64,8 +64,8 @@ export const architectureLayers = Object.freeze([
   },
   {
     title: '浏览器能力适配器',
-    state: '只读 Beta',
-    detail: '浏览器版本仅在用户主动选择文件后读取 JSON、CSV 或 GeoJSON，并在内存中生成只读研究概览。'
+    state: '本地编辑 Beta',
+    detail: '浏览器版本使用用户授权目录、OPFS 与 SQLite WASM 保存项目；项目数据保留在本机，不进入站点服务端。'
   },
   {
     title: '发布与文档站',
@@ -86,11 +86,13 @@ export const docsSections = Object.freeze([
   },
   {
     id: 'web-workspace',
-    title: '浏览器只读工作区',
+    title: '浏览器本地工作区',
     items: [
-      '只读工作区接受用户主动选择的 settings.json、zones.json、points.json、项目 JSON、CSV 或 GeoJSON。',
-      '文件只在当前浏览器标签页内存中解析，不会上传到发布站；刷新或清空后会话数据即被移除。',
-      '浏览器端只提供概览、分区摘要、数据质量提示和摘要下载；项目编辑、SQLite、备份与第三方物种查询仍在桌面端完成。'
+      '本地工作区仅在用户主动选择项目目录或文件后读取 settings.json、zones.json、points.json、CSV 或 GeoJSON。',
+      '项目主副本保存在浏览器 OPFS 的 SQLite 数据库中；获得目录权限时，同时写入兼容 JSON 镜像。',
+      '站点服务端不接收项目文件、图片、坐标或本地路径；清除浏览器站点数据会删除未另行导出的 OPFS 数据。',
+      '同一时间只允许一个标签页持有浏览器数据库写锁；如提示已占用，请关闭其他工作区标签页。',
+      '浏览器 OPFS 数据库与桌面 data.db 为独立运行时格式，跨端交换使用兼容 JSON 文件。'
     ]
   },
   {

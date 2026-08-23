@@ -1,4 +1,4 @@
-import { FolderOpen, Save, Search, ShieldCheck } from 'lucide-preact';
+import { BookOpen, FolderOpen, Home, Save, Search, ShieldCheck } from 'lucide-preact';
 import {
   CommandButton,
   SegmentedControl,
@@ -24,12 +24,24 @@ export function WorkspaceHeader() {
           {isWebRuntime ? (
             <span class="web-runtime-badge">
               <ShieldCheck size={14} aria-hidden="true" />
-              <span data-i18n="webReadOnlyBadge">浏览器只读 · 数据仅在本机内存中处理</span>
+              <span data-i18n="webReadOnlyBadge">浏览器本地 · OPFS 与授权目录保存</span>
             </span>
           ) : null}
         </div>
       </div>
       <div class="app-topbar-actions ui-command-bar">
+        {isWebRuntime ? (
+          <nav class="web-site-links" aria-label="站点导航">
+            <a class="btn btn-soft web-site-link" href="/" title="站点首页">
+              <Home size={WORKSPACE_ICON_SIZE} aria-hidden="true" />
+              <span data-i18n="webSiteHome">站点首页</span>
+            </a>
+            <a class="btn btn-soft web-site-link" href="/docs" title="使用文档">
+              <BookOpen size={WORKSPACE_ICON_SIZE} aria-hidden="true" />
+              <span data-i18n="webSiteDocs">使用文档</span>
+            </a>
+          </nav>
+        ) : null}
         <CommandButton
           id="btnOpenCommandPalette"
           icon={<Search size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
@@ -38,7 +50,7 @@ export function WorkspaceHeader() {
           className="btn-soft command-palette-trigger"
           shortcut="Ctrl K"
         />
-        {isWebRuntime ? null : <ProjectHistoryControls />}
+        <ProjectHistoryControls />
         <SegmentedControl
           className="lang-toggle"
           ariaLabel="界面语言 / Interface language"
@@ -51,19 +63,17 @@ export function WorkspaceHeader() {
         <CommandButton
           id="btnChooseDir"
           icon={<FolderOpen size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
-          label={isWebRuntime ? '打开本地数据' : '选择项目目录'}
+          label={isWebRuntime ? '打开本地项目' : '选择项目目录'}
           i18nKey={isWebRuntime ? 'webOpenLocalData' : 'chooseProject'}
           className="btn-primary"
         />
-        {isWebRuntime ? null : (
-          <CommandButton
-            id="btnSave"
-            icon={<Save size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
-            label="保存项目"
-            i18nKey="saveProject"
-            className="btn-primary"
-          />
-        )}
+        <CommandButton
+          id="btnSave"
+          icon={<Save size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
+          label="保存项目"
+          i18nKey="saveProject"
+          className="btn-primary"
+        />
       </div>
     </header>
   );

@@ -57,6 +57,11 @@ function renderPopupRows(rows) {
 
 // 图片在项目目录内以相对路径保存，预览时才转换为本地 file URL。
 function toFileUrl(relativePath) {
+  if (window.platformAdapter?.runtime === 'web') {
+    return typeof window.resolveWebImageUrl === 'function'
+      ? window.resolveWebImageUrl(relativePath)
+      : String(relativePath || '');
+  }
   if (!state.projectDir) return relativePath;
   const normalized = `${state.projectDir}/${relativePath}`.replaceAll('\\', '/');
   return `file:///${normalized}`;
