@@ -29,21 +29,33 @@ Do not use a plain `vX.Y` tag for maintained releases. Do not mark a Beta releas
 
 ### `main`
 
-- Holds the integrated desktop application, release site, documentation, and release history.
+- Holds reviewed integration commits, documentation, and release history.
 - Must remain buildable and pass the repository checks.
-- Stable and Beta tags are created only from reviewed commits on this branch.
+- Stable and Beta tags are created only from reviewed commits merged to this branch.
 
-### `dev`
+### `desktop/main`
 
-- Optional integration branch for work that is not ready to tag.
-- Create it only when multiple changes need to progress in parallel.
-- Merge it back only after desktop and site checks pass together.
+- Maintains the Electron desktop application and desktop-specific adapters.
+- Desktop storage, preload, IPC, packaging, and installer changes are developed here.
+- Shared domain changes must remain compatible with `web/main` before integration.
+
+### `web/main`
+
+- Maintains the browser application, PWA runtime, and release site deployment.
+- The documentation homepage remains the public entry point; the full browser application is served from `/workspace`.
+- Browser persistence and file access use browser capabilities and must not depend on Electron APIs.
+
+### `admin/foundation`
+
+- Holds future management-system contracts, authorization boundaries, and threat-model documentation.
+- It does not store or read project records, images, coordinates, or local file handles unless a separately reviewed product phase explicitly adds that capability.
+- Identity, tenant, and hosted-data implementations are not enabled on this branch by default.
 
 ### Short-Lived Work Branches
 
-Use `app/<topic>` and `site/<topic>` only when desktop and site work genuinely need separate review. These branches are temporary and must converge through the integration branch before release. They must not establish independent product versions or incompatible shared behavior.
+Use `desktop/<topic>`, `web/<topic>`, `admin/<topic>`, or `shared/<topic>` for focused review. These branches are temporary and must converge through their corresponding maintained branch and then `main` before release. They must not establish independent product versions or incompatible shared behavior.
 
-For a single coordinated change, keep one branch and update both directories together. This is the default because it makes version and capability drift visible in one review.
+Cross-platform behavior belongs in shared modules. Platform-specific code belongs behind the platform adapter boundary. A change that affects both desktop and browser behavior must be validated on both maintained branches before it reaches `main`.
 
 ## Tag Rules
 
@@ -58,10 +70,11 @@ The earlier `v8.0` and `v9.0.1-beta.1` tags are legacy archive markers from the 
 ## Release Flow
 
 1. Select the next stable target and Beta sequence.
-2. Update application and site package versions together.
-3. Record user-visible changes and compatibility notes in `CHANGELOG.md`.
-4. Run the desktop, site, test, storage, and repository checks.
-5. Commit and push the integrated source.
-6. Create the matching annotated tag.
-7. Mark Beta releases as prereleases; mark only accepted `vX.Y.Z` releases as stable.
-8. Keep the previous stable tag and rollback notes available.
+2. Integrate reviewed `desktop/main` and `web/main` changes into `main`.
+3. Update application and site package versions together.
+4. Record user-visible changes and compatibility notes in `CHANGELOG.md`.
+5. Run the desktop, site, test, storage, and repository checks.
+6. Commit and push the integrated source.
+7. Create the matching annotated tag.
+8. Mark Beta releases as prereleases; mark only accepted `vX.Y.Z` releases as stable.
+9. Keep the previous stable tag and rollback notes available.
