@@ -1,4 +1,5 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { stripTypeScriptTypes } from 'node:module';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { siteMeta } from '../src/content.mjs';
@@ -11,9 +12,11 @@ if (!distRelative || distRelative.startsWith('..') || distRelative.includes(':')
   throw new Error('Refusing to clean a dist path outside the site workspace.');
 }
 
-const [styles, client, logo, preview, hostingConfig] = await Promise.all([
+const [styles, client, workspaceClient, webProjectTypeScript, logo, preview, hostingConfig] = await Promise.all([
   readFile(resolve(projectRoot, 'src/styles.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/client.js'), 'utf8'),
+  readFile(resolve(projectRoot, 'src/workspace.js'), 'utf8'),
+  readFile(resolve(projectRoot, 'src/webProject.ts'), 'utf8'),
   readFile(resolve(projectRoot, 'public/cqnu-logo.svg'), 'utf8'),
   readFile(resolve(projectRoot, 'public/app-preview.png')),
   readFile(resolve(projectRoot, '.openai/hosting.json'), 'utf8')
@@ -21,9 +24,15 @@ const [styles, client, logo, preview, hostingConfig] = await Promise.all([
 
 JSON.parse(hostingConfig);
 const pages = renderPages();
+const webProjectModule = stripTypeScriptTypes(webProjectTypeScript, {
+  mode: 'transform',
+  sourceMap: false
+});
 const workerSource = `const PAGES = ${JSON.stringify(pages)};
 const STYLES = ${JSON.stringify(styles)};
 const CLIENT = ${JSON.stringify(client)};
+const WORKSPACE_CLIENT = ${JSON.stringify(workspaceClient)};
+const WEB_PROJECT_MODULE = ${JSON.stringify(webProjectModule)};
 const LOGO = ${JSON.stringify(logo)};
 const PREVIEW = ${JSON.stringify(preview.toString('base64'))};
 const SITE_VERSION = ${JSON.stringify(siteMeta.version)};
@@ -53,6 +62,8 @@ export default {
     if (path === '/robots.txt') return response('User-agent: *\\nAllow: /\\n', 'text/plain; charset=utf-8');
     if (path === '/assets/styles.css') return response(STYLES, 'text/css; charset=utf-8', 200, 'public, max-age=86400');
     if (path === '/assets/client.js') return response(CLIENT, 'text/javascript; charset=utf-8', 200, 'public, max-age=86400');
+    if (path === '/assets/workspace.js') return response(WORKSPACE_CLIENT, 'text/javascript; charset=utf-8', 200, 'public, max-age=86400');
+    if (path === '/assets/web-project.js') return response(WEB_PROJECT_MODULE, 'text/javascript; charset=utf-8', 200, 'public, max-age=86400');
     if (path === '/assets/cqnu-logo.svg') return response(LOGO, 'image/svg+xml; charset=utf-8', 200, 'public, max-age=86400');
     if (path === '/assets/app-preview.png') return response(binaryFromBase64(PREVIEW), 'image/png', 200, 'public, max-age=86400');
     const page = PAGES[path];

@@ -15,6 +15,7 @@ export const siteMeta = Object.freeze({
 
 export const navigation = Object.freeze([
   { href: '/', label: '产品' },
+  { href: '/workspace', label: '只读工作区' },
   { href: '/docs', label: '使用文档' },
   { href: '/web', label: 'Web 架构' },
   { href: '/release', label: '版本 1.1 Beta' }
@@ -63,8 +64,8 @@ export const architectureLayers = Object.freeze([
   },
   {
     title: '浏览器能力适配器',
-    state: '规划中',
-    detail: '浏览器版本使用用户授权的文件句柄或浏览器存储，不直接模拟本地路径和主进程权限。'
+    state: '只读 Beta',
+    detail: '浏览器版本仅在用户主动选择文件后读取 JSON、CSV 或 GeoJSON，并在内存中生成只读研究概览。'
   },
   {
     title: '发布与文档站',
@@ -81,6 +82,15 @@ export const docsSections = Object.freeze([
       '从 GitHub Releases 获取 Windows 安装程序或便携发布包。',
       '首次启动后选择或创建项目目录；应用不会自动扫描其他文件夹。',
       '源代码开发环境在 app 目录运行 npm start，启动前会完成本地构建。'
+    ]
+  },
+  {
+    id: 'web-workspace',
+    title: '浏览器只读工作区',
+    items: [
+      '只读工作区接受用户主动选择的 settings.json、zones.json、points.json、项目 JSON、CSV 或 GeoJSON。',
+      '文件只在当前浏览器标签页内存中解析，不会上传到发布站；刷新或清空后会话数据即被移除。',
+      '浏览器端只提供概览、分区摘要、数据质量提示和摘要下载；项目编辑、SQLite、备份与第三方物种查询仍在桌面端完成。'
     ]
   },
   {
