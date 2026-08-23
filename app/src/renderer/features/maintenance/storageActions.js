@@ -37,7 +37,7 @@ async function deleteSelectedStorageArtifacts() {
   try {
     const didRequestSqliteDelete = maintenanceSelectedStorageArtifacts.sqlite;
     const didRequestJsonDelete = maintenanceSelectedStorageArtifacts.json;
-    const result = await callIpc(window.plantApp.storage.deleteArtifacts({
+  const result = await callIpc(window.platformAdapter.storage.deleteArtifacts({
       projectDir: state.projectDir,
       backupDir: state.backupTargetDir || '',
       deleteSqliteDatabase: didRequestSqliteDelete,
@@ -75,7 +75,7 @@ async function inspectSelectedBackupRestore() {
   const backupName = getSingleSelectedBackupName();
   if (!backupName) return null;
   try {
-    const plan = await callIpc(window.plantApp.backup.inspectRestore({
+  const plan = await callIpc(window.platformAdapter.backup.inspectRestore({
       projectDir: state.projectDir,
       backupDir: state.backupTargetDir || '',
       backupName
@@ -124,7 +124,7 @@ async function restoreSelectedBackup() {
     const result = await withProgressTask({ type: 'maintenance', title: maintenanceText('maintenanceBackupRestoreSelected'), stage: maintenanceText('progressBackup') }, async task => {
       task.update({ percent: 15, stage: maintenanceText('progressBackup') });
       await yieldToUi();
-      const restored = await callIpc(window.plantApp.backup.restore({
+  const restored = await callIpc(window.platformAdapter.backup.restore({
         projectDir: state.projectDir,
         backupDir: state.backupTargetDir || '',
         backupName,
@@ -164,7 +164,7 @@ async function runStoragePreflight() {
   if (!requireProject()) return null;
   try {
     setMaintenanceBusy(ui.btnStoragePreflight, true);
-    const report = await callIpc(window.plantApp.storage.conversionPreflight({
+  const report = await callIpc(window.platformAdapter.storage.conversionPreflight({
       projectDir: state.projectDir
     }));
     renderStorageReport(report);
@@ -201,7 +201,7 @@ async function createSqliteStorage() {
       await persistProject();
       task.update({ percent: 28, stage: maintenanceText('progressBackup') });
       await yieldToUi();
-      const result = await callIpc(window.plantApp.storage.createSqliteFromJson({
+  const result = await callIpc(window.platformAdapter.storage.createSqliteFromJson({
         projectDir: state.projectDir,
         backupDir: state.backupTargetDir || ''
       }));
@@ -239,7 +239,7 @@ async function exportSqliteJson() {
     const report = await withProgressTask({ type: 'maintenance', title: maintenanceText('maintenanceStorageExportJson'), stage: maintenanceText('progressBackup') }, async task => {
       task.update({ percent: 15, stage: maintenanceText('progressBackup') });
       await yieldToUi();
-      const result = await callIpc(window.plantApp.storage.exportSqliteToJson({
+  const result = await callIpc(window.platformAdapter.storage.exportSqliteToJson({
         projectDir: state.projectDir,
         backupDir: state.backupTargetDir || ''
       }));

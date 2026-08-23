@@ -246,35 +246,35 @@ async function exportStatsByKey(key, format) {
     const ext = targetFormat || format;
     if (ext === 'csv') {
       payload = { defaultPath: engine.buildExportFileName(`heatmap_${metric}`, 'csv'), content: engine.matrixToCsv(matrix) };
-      api = window.plantApp.project.exportCsv;
+      api = window.platformAdapter.project.exportCsv;
     } else if (ext === 'json') {
       payload = { title: statsUi('statsExportHeatmapJsonTitle', 'Export heatmap JSON'), defaultPath: engine.buildExportFileName(`heatmap_${metric}`, 'json'), content: engine.matrixToJson(matrix) };
-      api = window.plantApp.settings.exportJson;
+      api = window.platformAdapter.settings.exportJson;
     } else if (ext === 'md') {
       payload = { defaultPath: engine.buildExportFileName(`heatmap_${metric}`, 'md'), content: engine.matrixToMarkdown(matrix) };
-      api = window.plantApp.project.exportMarkdown;
+      api = window.platformAdapter.project.exportMarkdown;
     } else {
       payload = { defaultPath: engine.buildExportFileName(`heatmap_${metric}`, 'svg'), content: engine.renderHeatmapSvg(matrix, { palette: statsHeatPalette }) };
-      api = window.plantApp.project.exportSvg;
+      api = window.platformAdapter.project.exportSvg;
     }
   } else if (key === 'statistics_full') {
     payload = { title: statsUi('statsExportFullJsonTitle', 'Export statistics JSON'), defaultPath: engine.buildExportFileName('statistics_full', 'json'), content: engine.statisticsFullJson(stats) };
-    api = window.plantApp.settings.exportJson;
+      api = window.platformAdapter.settings.exportJson;
   } else if (key === 'statistics_summary') {
     payload = { defaultPath: engine.buildExportFileName('statistics_summary', 'md'), content: engine.statisticsSummaryMarkdown(stats) };
-    api = window.plantApp.project.exportMarkdown;
+      api = window.platformAdapter.project.exportMarkdown;
   } else if (key === 'zone_jaccard_matrix') {
     payload = { defaultPath: engine.buildExportFileName('zone_jaccard_matrix', 'csv'), content: engine.matrixToCsv(stats.heatmapMatrices.jaccard) };
-    api = window.plantApp.project.exportCsv;
+      api = window.platformAdapter.project.exportCsv;
   } else if (key === 'zone_sorensen_matrix') {
     payload = { defaultPath: engine.buildExportFileName('zone_sorensen_matrix', 'csv'), content: engine.matrixToCsv(stats.heatmapMatrices.sorensen) };
-    api = window.plantApp.project.exportCsv;
+      api = window.platformAdapter.project.exportCsv;
   } else if (key === 'zone_bray_curtis_matrix') {
     payload = { defaultPath: engine.buildExportFileName('zone_bray_curtis_matrix', 'csv'), content: engine.matrixToCsv(stats.heatmapMatrices.brayCurtis) };
-    api = window.plantApp.project.exportCsv;
+      api = window.platformAdapter.project.exportCsv;
   } else {
     payload = exportRowsForKey(stats, key);
-    api = window.plantApp.project.exportCsv;
+      api = window.platformAdapter.project.exportCsv;
   }
   if (!payload || !api) return showAlert(statsUi('statsExportUnavailable', 'This export item is unavailable.'));
   const result = await api(payload);

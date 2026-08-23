@@ -1,6 +1,7 @@
 import { render } from 'preact';
 import { App } from './App';
 import { installRendererDomainBridge } from './domain/runtime';
+import { installPlatformAdapter } from './platform/runtime';
 import { installProjectEditHistoryBridge } from './features/history/runtime';
 import { installResearchReviewBridge } from './features/review/runtime';
 import { installRendererStateFacade } from './features/state/runtime';
@@ -13,6 +14,7 @@ import './styles/command-palette.css';
 import './styles/project-history.css';
 import './styles/review-workbench.css';
 
+installPlatformAdapter();
 installLegacyThemeBridge();
 installRendererDomainBridge();
 installRendererStateFacade();

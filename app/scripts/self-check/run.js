@@ -26,8 +26,9 @@ async function main() {
   testStatisticsChartVisualContract();
   testResearchStatsFormulaContract();
   testReducedInnerHtmlSurface();
-  testMaintenanceCenterContract();
-  testSpeciesReferenceContract();
+testMaintenanceCenterContract();
+testSpeciesReferenceContract();
+testPlatformAdapterContract();
   await testTaxonomySuggestionRuntimeContract();
   testSqliteExchangeModelContract();
 

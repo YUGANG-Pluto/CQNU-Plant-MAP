@@ -80,7 +80,7 @@ async function chooseAndImportImage() {
   const entry = getSelectedPhenologyEntry(point);
   if (!entry) return showAlert(t('noPhenologySelected'));
 
-  const imported = await callIpc(window.plantApp.image.import({ projectDir: state.projectDir }));
+  const imported = await callIpc(window.platformAdapter.image.import({ projectDir: state.projectDir }));
   if (imported.canceled) return;
 
   entry.images = entry.images || [];

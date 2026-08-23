@@ -35,7 +35,7 @@ async function exportDiagnostics() {
   try {
     const report = maintenanceLastReport || await runMaintenanceHealthCheck({ silent: true });
     const logs = maintenanceLastLogSnapshot || await refreshMaintenanceLogs();
-    const result = await callIpc(window.plantApp.log.exportDiagnostics({
+  const result = await callIpc(window.platformAdapter.log.exportDiagnostics({
       title: maintenanceText('maintenanceExportDiagnostics'),
       defaultPath: 'plant_diagnostics.json',
       content: JSON.stringify(buildDiagnosticsPayload(report, logs), null, 2)

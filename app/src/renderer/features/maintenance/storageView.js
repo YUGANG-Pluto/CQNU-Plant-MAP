@@ -220,7 +220,7 @@ async function refreshStorageArtifacts() {
   if (!requireProject()) return null;
   try {
     setMaintenanceBusy(ui.btnRefreshStorageArtifacts, true);
-    maintenanceLastStorageInventory = await callIpc(window.plantApp.storage.listArtifacts({
+  maintenanceLastStorageInventory = await callIpc(window.platformAdapter.storage.listArtifacts({
       projectDir: state.projectDir,
       backupDir: state.backupTargetDir || ''
     }));

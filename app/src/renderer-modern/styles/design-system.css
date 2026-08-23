@@ -13,6 +13,25 @@
   gap: 7px;
 }
 
+.web-runtime-badge {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  padding: 4px 8px;
+  color: var(--primary, #2f6f62);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.25;
+  border: 1px solid color-mix(in srgb, var(--primary, #2f6f62) 24%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary-soft, #e4f0ed) 76%, transparent);
+  transition:
+    background-color 300ms var(--motion-ease, ease),
+    border-color 300ms var(--motion-ease, ease);
+}
+
 .modern-theme-panel {
   width: min(920px, calc(100vw - 40px));
   max-height: min(860px, calc(100vh - 40px));

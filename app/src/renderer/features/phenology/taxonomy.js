@@ -215,12 +215,12 @@ async function runTaxonomySuggestion() {
   const scientificName = String(ui.plantNameSci?.value || point.plantNameSci || '').trim();
   const chineseName = String(ui.plantNameCn?.value || point.plantNameCn || '').trim();
   if (!scientificName && !chineseName) return showAlert(t('taxonomySuggestionNeedName'));
-  if (!window.plantApp?.species?.suggestTaxonomy) return showAlert(t('taxonomySuggestionUnavailable'));
+  if (!window.platformAdapter?.capabilities?.speciesReference) return showAlert(t('taxonomySuggestionUnavailable'));
 
   setTaxonomyBusy(true);
   setTaxonomySuggestionSummary(t('taxonomySuggestionRunning'));
   try {
-    const result = await callIpc(window.plantApp.species.suggestTaxonomy({
+  const result = await callIpc(window.platformAdapter.species.suggestTaxonomy({
       scientificName,
       chineseName,
       existingFamily: String(ui.familyInput?.value || point.family || '').trim(),

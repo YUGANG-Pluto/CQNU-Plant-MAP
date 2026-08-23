@@ -270,7 +270,7 @@ function testSpeciesReferenceContract() {
   assert.ok(rendererSource.includes('https://www.inaturalist.org/users/api_token'));
   assert.ok(rendererSource.includes('externalLinkHtml'));
   assert.ok(rendererSource.includes('class="species-reference-link"'));
-  assert.ok(rendererSource.includes('window.plantApp.window.openExternal'));
+  assert.ok(rendererSource.includes('window.platformAdapter.window.openExternal'));
   assert.ok(rendererSource.includes('data-external-url'));
   assert.ok(rendererSource.includes('event.stopPropagation()'));
   assert.ok(rendererSource.includes('function selectSpeciesReferenceSuggestion'));
@@ -405,4 +405,56 @@ function testSpeciesReferenceContract() {
   assert.ok(querySource.includes('openSpeciesReferenceCenter()'));
   assert.ok(querySource.includes('query-reference-btn'));
   assert.ok(appSource.includes('ui.queryCompleteness'));
+}
+
+function testPlatformAdapterContract() {
+  const platformTypeSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/shared/types/platform.ts'),
+    'utf8'
+  );
+  const runtimeSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/renderer-modern/platform/runtime.ts'),
+    'utf8'
+  );
+  const electronSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/renderer-modern/platform/electronAdapter.ts'),
+    'utf8'
+  );
+  const webSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/renderer-modern/platform/webAdapter.ts'),
+    'utf8'
+  );
+  const webProjectSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/renderer-modern/platform/webProject.ts'),
+    'utf8'
+  );
+  const rendererFiles = [];
+  const collectRendererScripts = directory => {
+    fs.readdirSync(directory, { withFileTypes: true }).forEach(entry => {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) collectRendererScripts(entryPath);
+      else if (entry.isFile() && entry.name.endsWith('.js')) rendererFiles.push(entryPath);
+    });
+  };
+  collectRendererScripts(path.join(process.cwd(), 'src/renderer'));
+  const rendererSource = rendererFiles
+    .map(filePath => fs.readFileSync(filePath, 'utf8'))
+    .join('\n');
+
+  assert.ok(platformTypeSource.includes('export interface PlatformAdapter'));
+  assert.ok(platformTypeSource.includes("export type PlatformRuntime = 'electron' | 'web'"));
+  assert.ok(runtimeSource.includes('createPlatformAdapter(window.plantApp)'));
+  assert.ok(runtimeSource.includes('createElectronPlatformAdapter(services)'));
+  assert.ok(runtimeSource.includes('createWebPlatformAdapter()'));
+  assert.ok(electronSource.includes('writeProject: true'));
+  assert.ok(webSource.includes("runtime: 'web'"));
+  assert.ok(webSource.includes('writeProject: false'));
+  assert.ok(webSource.includes('sqliteStorage: false'));
+  assert.ok(webSource.includes('backups: false'));
+  assert.ok(webSource.includes('speciesReference: false'));
+  assert.ok(webProjectSource.includes('selectWebProjectFiles'));
+  assert.ok(webProjectSource.includes('createWebProjectSession'));
+  assert.ok(webProjectSource.includes("input.accept = '.json,.geojson,.csv"));
+  assert.ok(!rendererSource.includes('window.plantApp'));
+  assert.ok(rendererSource.includes('window.platformAdapter'));
 }

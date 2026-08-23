@@ -51,7 +51,7 @@ async function exportUiSettings() {
   if (guardMaintenanceReadOnlyAction('export-ui-settings')) return;
   if (!requireProject()) return;
   try {
-    const result = await callIpc(window.plantApp.settings.exportJson({
+  const result = await callIpc(window.platformAdapter.settings.exportJson({
       title: maintenanceText('maintenanceExportSettings'),
       defaultPath: 'plant_ui_settings.json',
       content: JSON.stringify(buildSettingsBundle(), null, 2)
@@ -68,7 +68,7 @@ async function importUiSettings() {
   if (guardMaintenanceReadOnlyAction('import-ui-settings')) return;
   if (!requireProject()) return;
   try {
-    const result = await callIpc(window.plantApp.settings.importJson({
+  const result = await callIpc(window.platformAdapter.settings.importJson({
       title: maintenanceText('maintenanceImportSettings')
     }));
     if (result.canceled) return;

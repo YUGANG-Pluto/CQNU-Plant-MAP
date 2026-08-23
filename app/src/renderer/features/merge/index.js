@@ -56,12 +56,12 @@ function nextPointIdFactory(points) {
 }
 
 async function getProjectMtime(projectDir) {
-  const data = await callIpc(window.plantApp.project.getModifiedTime({ projectDir }));
+  const data = await callIpc(window.platformAdapter.project.getModifiedTime({ projectDir }));
   return data.modifiedTime || Date.now();
 }
 
 async function chooseProjectDirectoryForMerge() {
-  const result = await callIpc(window.plantApp.project.chooseMergeDir());
+  const result = await callIpc(window.platformAdapter.project.chooseMergeDir());
   return result.canceled ? '' : result.projectDir;
 }
 
@@ -323,7 +323,7 @@ async function performProjectMerge(baseDir, otherDir, task = null) {
   task?.update({ percent: 8, stage: t('progressBackup') });
   await autoBackupProjects([baseDir, otherDir], 'merge');
   task?.update({ percent: 26, stage: t('progressReading') });
-  const other = await callIpc(window.plantApp.project.load({ projectDir: otherDir }));
+  const other = await callIpc(window.platformAdapter.project.load({ projectDir: otherDir }));
   const otherPoints = normalizeOtherPoints(other);
 
   const context = {

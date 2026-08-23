@@ -1,4 +1,4 @@
-import { FolderOpen, Save, Search } from 'lucide-preact';
+import { FolderOpen, Save, Search, ShieldCheck } from 'lucide-preact';
 import {
   CommandButton,
   SegmentedControl,
@@ -7,6 +7,7 @@ import {
 import { ProjectHistoryControls } from '../history/ProjectHistoryControls';
 
 export function WorkspaceHeader() {
+  const isWebRuntime = window.platformAdapter?.runtime === 'web';
   return (
     <header class="app-topbar glass">
       <div class="app-brand-block app-brand">
@@ -17,9 +18,15 @@ export function WorkspaceHeader() {
           aria-hidden="true"
         />
         <div class="app-brand__text">
-          <span class="app-kicker">CQNU · V1.0.0</span>
+          <span class="app-kicker">CQNU · V1.1 BETA</span>
           <h1 data-i18n="appTitle">校园植物分区管理系统</h1>
           <p class="subtle" data-i18n="appSubtitle">分区绘制、点位管理、植物信息与图片归档</p>
+          {isWebRuntime ? (
+            <span class="web-runtime-badge">
+              <ShieldCheck size={14} aria-hidden="true" />
+              <span data-i18n="webReadOnlyBadge">浏览器只读 · 数据仅在本机内存中处理</span>
+            </span>
+          ) : null}
         </div>
       </div>
       <div class="app-topbar-actions ui-command-bar">
@@ -31,7 +38,7 @@ export function WorkspaceHeader() {
           className="btn-soft command-palette-trigger"
           shortcut="Ctrl K"
         />
-        <ProjectHistoryControls />
+        {isWebRuntime ? null : <ProjectHistoryControls />}
         <SegmentedControl
           className="lang-toggle"
           ariaLabel="界面语言 / Interface language"
@@ -44,17 +51,19 @@ export function WorkspaceHeader() {
         <CommandButton
           id="btnChooseDir"
           icon={<FolderOpen size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
-          label="选择项目目录"
-          i18nKey="chooseProject"
+          label={isWebRuntime ? '打开本地数据' : '选择项目目录'}
+          i18nKey={isWebRuntime ? 'webOpenLocalData' : 'chooseProject'}
           className="btn-primary"
         />
-        <CommandButton
-          id="btnSave"
-          icon={<Save size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
-          label="保存项目"
-          i18nKey="saveProject"
-          className="btn-primary"
-        />
+        {isWebRuntime ? null : (
+          <CommandButton
+            id="btnSave"
+            icon={<Save size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
+            label="保存项目"
+            i18nKey="saveProject"
+            className="btn-primary"
+          />
+        )}
       </div>
     </header>
   );

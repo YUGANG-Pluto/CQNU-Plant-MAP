@@ -21,7 +21,7 @@ function reportRendererError(scope, error, details = {}) {
     url: window.location.href
   };
 
-  window.plantApp?.log?.report(payload).catch(logError => {
+  window.platformAdapter?.log?.report(payload).catch(logError => {
     console.error('[logger] renderer report failed', logError);
   });
 }

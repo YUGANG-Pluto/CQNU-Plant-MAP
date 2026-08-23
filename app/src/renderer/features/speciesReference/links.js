@@ -29,7 +29,7 @@ async function openReferenceExternalUrl(value) {
   const url = safeExternalUrl(value);
   if (!url) return;
   try {
-    await callIpc(window.plantApp.window.openExternal({ url }));
+  await callIpc(window.platformAdapter.window.openExternal({ url }));
   } catch (error) {
     handleUiError(error, 'species-reference:open-external', {
       title: t('operationFailed')

@@ -118,7 +118,7 @@ async function applySpeciesReferenceSuggestion() {
   await persistProject();
   if (typeof setPointEditorDraftBaseline === 'function') setPointEditorDraftBaseline();
   toast(t('speciesReferenceApplied'));
-  window.plantApp?.log?.report?.({
+  window.platformAdapter?.log?.report?.({
     level: 'info',
     scope: 'species-reference:apply',
     message: 'Species reference applied by user',

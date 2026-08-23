@@ -3,7 +3,7 @@ function dirnameLabel(dir) {
 }
 
 async function createBackupZip(projectDir, backupDir, label) {
-  const data = await callIpc(window.plantApp.backup.create({
+  const data = await callIpc(window.platformAdapter.backup.create({
     projectDir,
     backupDir,
     label
@@ -28,7 +28,7 @@ async function maybeHandleExpiredBackups(projectDir) {
     return;
   }
 
-  const result = await callIpc(window.plantApp.backup.listExpired({
+    const result = await callIpc(window.platformAdapter.backup.listExpired({
     projectDir,
     days: BACKUP_EXPIRE_DAYS
   }));
@@ -47,11 +47,11 @@ async function maybeHandleExpiredBackups(projectDir) {
 
   const paths = result.items.map(item => item.path);
   if (del) {
-    await callIpc(window.plantApp.backup.deleteExpired({ projectDir, paths }));
+        await callIpc(window.platformAdapter.backup.deleteExpired({ projectDir, paths }));
     return;
   }
 
-  await callIpc(window.plantApp.backup.keepExpired({ projectDir, paths }));
+        await callIpc(window.platformAdapter.backup.keepExpired({ projectDir, paths }));
 }
 
 function updateBackupPaths() {
@@ -72,7 +72,7 @@ function openBackupCenter() {
 }
 
 async function chooseBackupDirectory() {
-  const result = await callIpc(window.plantApp.backup.chooseDir());
+  const result = await callIpc(window.platformAdapter.backup.chooseDir());
   return result.canceled ? '' : result.backupDir;
 }
 

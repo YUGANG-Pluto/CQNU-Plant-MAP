@@ -8,7 +8,7 @@ async function persistProject() {
     state.settings.mapCenterCoordSystem = 'WGS84';
     state.settings.mapZoom = state.map.getZoom();
 
-    const data = await callIpc(window.plantApp.project.save({
+    const data = await callIpc(window.platformAdapter.project.save({
       projectDir: state.projectDir,
       storageFormat: state.storageFormat || 'json',
       settings: state.settings,
@@ -28,7 +28,7 @@ async function persistProject() {
 }
 
 async function loadProjectIntoRenderer(projectDir, options = {}) {
-  const data = await callIpc(window.plantApp.project.load({
+  const data = await callIpc(window.platformAdapter.project.load({
     projectDir,
     storageFormat: options.storageFormat || 'auto'
   }));
@@ -78,7 +78,7 @@ async function loadProjectIntoRenderer(projectDir, options = {}) {
   });
 
   await maybeHandleExpiredBackups(data.projectDir);
-  toast(t('projectCreated'));
+  toast(t(window.platformAdapter?.runtime === 'web' ? 'webProjectLoaded' : 'projectCreated'));
 }
 
 function applyI18n() {
@@ -299,7 +299,7 @@ async function importRecordsCSV() {
 
   await withProgressTask({ type: 'import', title: t('importCsv'), stage: t('progressReading') }, async task => {
     task.update({ percent: 5, stage: t('progressReading') });
-    const result = await callIpc(window.plantApp.project.importCsv());
+    const result = await callIpc(window.platformAdapter.project.importCsv());
     if (result.canceled) return false;
     task.update({ percent: 30, stage: t('progressParsing') });
     const records = normalizeCsvImportRows(result.content);
@@ -319,7 +319,7 @@ async function importGeoJSON() {
 
   await withProgressTask({ type: 'import', title: t('importGeoJSON'), stage: t('progressReading') }, async task => {
     task.update({ percent: 5, stage: t('progressReading') });
-    const result = await callIpc(window.plantApp.project.importGeoJson());
+    const result = await callIpc(window.platformAdapter.project.importGeoJson());
     if (result.canceled) return false;
     task.update({ percent: 30, stage: t('progressParsing') });
     const geo = JSON.parse(result.content);
@@ -402,7 +402,7 @@ async function exportRecordsCSV() {
   await withProgressTask({ type: 'export', title: t('exportCsv'), stage: t('progressWriting') }, async task => {
     const content = await buildCsvStringWithProgress(task);
     task.update({ percent: 82, stage: t('progressWriting') });
-    const result = await callIpc(window.plantApp.project.exportCsv({
+    const result = await callIpc(window.platformAdapter.project.exportCsv({
       defaultPath: 'plant_records.csv',
       content: `\uFEFF${content}`
     }));
@@ -419,7 +419,7 @@ async function exportGeoJSON() {
   await withProgressTask({ type: 'export', title: t('exportGeoJSON'), stage: t('progressWriting') }, async task => {
     const content = await buildGeoJSONStringWithProgress(task);
     task.update({ percent: 82, stage: t('progressWriting') });
-    const result = await callIpc(window.plantApp.project.exportGeoJson({
+    const result = await callIpc(window.platformAdapter.project.exportGeoJson({
       defaultPath: 'plant_points.geojson',
       content
     }));

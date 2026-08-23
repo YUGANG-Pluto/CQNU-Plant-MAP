@@ -1,7 +1,7 @@
 # CQNU Campus Plant Mapping System
 # 重庆师范大学校园植物分区管理系统
 
-> 当前测试版 `1.1.0-beta.1` · Tag `v1.1.0-beta.1` · 稳定基线 `1.0.0` · 2026-08-23
+> 当前测试版 `1.1.0-beta.2` · Tag `v1.1.0-beta.2` · 稳定基线 `1.0.0` · 2026-08-23
 > Copyright © YU GangZuo. All rights reserved.  
 > 本仓库公开可见，仅用于项目展示、学术交流与参考阅读。未经版权所有者书面许可，不得复制、修改、再发布、商用或制作衍生作品。  
 > This repository is publicly visible for project display, academic communication, and reference only. Unless prior written permission is obtained from the copyright holder, no reproduction, modification, redistribution, commercial use, or derivative use is allowed.
@@ -58,6 +58,7 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 - 维护中心：执行项目健康检查、保守修复、日志查看、诊断导出、设置导入导出和安全模式。
 - 界面设置：切换主题、布局、玻璃效果、动效和状态颜色。
 - 中英双语：支持中文和 English 界面切换。
+- 浏览器只读工作区：在受限发布站中由用户主动选择 JSON、CSV 或 GeoJSON，仅在当前浏览器内存中生成项目概览、分区摘要与缺失项诊断；不写回项目、不读取 SQLite，也不上传文件。
 
 ### English
 
@@ -75,6 +76,19 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 - Maintenance center: run health checks, safe repairs, log review, diagnostic export, settings import/export, and safe mode.
 - UI settings: switch themes, layouts, glass effects, motion, and status colors.
 - Bilingual UI: Chinese and English interface switching.
+- Read-only browser workspace: users can explicitly select JSON, CSV, or GeoJSON in the restricted release site to generate project summaries, zone summaries, and missing-field diagnostics in browser memory only. It does not write project data, open SQLite, or upload files.
+
+---
+
+## 平台边界 | Platform Boundary
+
+### 中文
+
+renderer 通过统一的平台适配器调用项目读取、导出、窗口和网络能力。桌面端适配器只委托现有 Electron preload 白名单；浏览器端只开放本地文件选择、内存只读解析、受控下载和 HTTP/HTTPS 外链。项目保存、SQLite、备份恢复、日志诊断、图片管理和物种参考查询仍由桌面端提供。
+
+### English
+
+The renderer reaches project, export, window, and network capabilities through a single platform adapter. The desktop adapter delegates only to the existing Electron preload allowlist. The browser adapter exposes local file selection, in-memory read-only parsing, controlled downloads, and HTTP/HTTPS external links. Project writes, SQLite, backup and restore, diagnostics, image management, and species-reference queries remain desktop capabilities.
 
 ---
 

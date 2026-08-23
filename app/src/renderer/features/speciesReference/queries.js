@@ -8,13 +8,13 @@ async function runSpeciesReferenceQuery() {
   clearSpeciesReferenceCache();
   setSpeciesReferenceBusy(true);
   try {
-    const result = await callIpc(window.plantApp.species.referenceQuery({
+  const result = await callIpc(window.platformAdapter.species.referenceQuery({
       scientificName,
       commonName,
       locale: speciesReferenceLocale()
     }));
     renderSpeciesReferenceResults(result);
-    window.plantApp?.log?.report?.({
+    window.platformAdapter?.log?.report?.({
       level: 'info',
       scope: 'species-reference:query',
       message: 'Species reference queried',
@@ -40,7 +40,7 @@ async function runSpeciesImageCompare() {
     ui.speciesReferenceImageCompareStatus.textContent = t('speciesReferenceImageCompareRunning');
   }
   try {
-    const result = await callIpc(window.plantApp.species.imageCompare({
+  const result = await callIpc(window.platformAdapter.species.imageCompare({
       locale: speciesReferenceLocale(),
       token: String(ui.speciesReferenceImageTokenInput?.value || '').trim()
     }));
@@ -54,7 +54,7 @@ async function runSpeciesImageCompare() {
     if (ui.speciesReferenceImageCompareStatus) {
       ui.speciesReferenceImageCompareStatus.textContent = `${t('speciesReferenceImageCompareDone')} ${result.suggestions?.length || 0}`;
     }
-    window.plantApp?.log?.report?.({
+    window.platformAdapter?.log?.report?.({
       level: 'info',
       scope: 'species-reference:image-compare',
       message: 'Species image comparison completed',

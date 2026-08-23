@@ -3,7 +3,7 @@
 ## Current Line
 
 - Stable baseline: `1.0.0`, tag `v1.0.0`.
-- Current test release: `1.1.0-beta.1`, tag `v1.1.0-beta.1`.
+- Current test release: `1.1.0-beta.2`, tag `v1.1.0-beta.2`.
 - Desktop application and release site use the same version number.
 
 ## Version Numbers

@@ -189,7 +189,7 @@ async function deleteTrashForever() {
   const ok = await openConfirmDialog({ title: t('confirmDeleteForeverTitle'), message: t('deleteForeverSelected') });
   if (!ok) return;
   if (item.type === 'image' && item.payload?.relativePath) {
-    await callIpc(window.plantApp.image.delete({
+    await callIpc(window.platformAdapter.image.delete({
       projectDir: state.projectDir,
       relativePath: item.payload.relativePath
     }));

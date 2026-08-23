@@ -2,7 +2,7 @@ let workspaceDrawerCloseTimer = null;
 
 async function chooseAndLoadProject() {
   if (typeof confirmDiscardProjectDraft === 'function' && !await confirmDiscardProjectDraft()) return;
-  const result = await callIpc(window.plantApp.project.chooseDir());
+  const result = await callIpc(window.platformAdapter.project.chooseDir());
   if (result.canceled) return;
   await loadProjectIntoRenderer(result.projectDir);
 }

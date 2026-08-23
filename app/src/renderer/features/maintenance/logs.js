@@ -97,7 +97,7 @@ async function readSelectedMaintenanceLog() {
     return;
   }
   try {
-    const result = await callIpc(window.plantApp.log.readLog({
+  const result = await callIpc(window.platformAdapter.log.readLog({
       name: maintenanceSelectedLogName
     }));
     if (ui.maintenanceLogPreview) {
@@ -117,7 +117,7 @@ async function readSelectedMaintenanceLog() {
 async function refreshMaintenanceLogs() {
   try {
     setMaintenanceBusy(ui.btnRefreshLogs, true);
-    maintenanceLastLogSnapshot = await callIpc(window.plantApp.log.listRecent({ limit: 80 }));
+  maintenanceLastLogSnapshot = await callIpc(window.platformAdapter.log.listRecent({ limit: 80 }));
     renderMaintenanceLogs(maintenanceLastLogSnapshot);
     return maintenanceLastLogSnapshot;
   } catch (error) {
@@ -145,7 +145,7 @@ async function cleanupMaintenanceLogs() {
   });
   if (!confirmed) return;
   try {
-    const result = await callIpc(window.plantApp.log.deleteLogs({
+  const result = await callIpc(window.platformAdapter.log.deleteLogs({
       names: selectedNames
     }));
     if (maintenanceSelectedLogNames.has(maintenanceSelectedLogName)) {

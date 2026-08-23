@@ -1,6 +1,6 @@
 function bindProjectEvents() {
   ui.btnChooseDir.addEventListener('click', chooseAndLoadProject);
-  ui.btnSave.addEventListener('click', async () => {
+  ui.btnSave?.addEventListener('click', async () => {
     if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('save-project')) return;
     await persistProject();
     showAlert(t('saveSuccess'));
@@ -322,8 +322,8 @@ function handleFullscreenShortcut(event) {
 
 async function toggleFullscreenMode() {
   try {
-    if (!window.plantApp?.window?.toggleFullscreen) return;
-    await callIpc(window.plantApp.window.toggleFullscreen());
+  if (!window.platformAdapter?.window?.toggleFullscreen) return;
+    await callIpc(window.platformAdapter.window.toggleFullscreen());
     setTimeout(() => {
       if (typeof scheduleMapResize === 'function') scheduleMapResize();
       if (typeof renderWorkspaceStatsSummary === 'function') renderWorkspaceStatsSummary();

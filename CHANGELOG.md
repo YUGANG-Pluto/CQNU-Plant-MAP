@@ -6,6 +6,34 @@ Maintained releases follow `VERSION_POLICY.md`. Stable releases use `vX.Y.Z`; te
 
 - No unreleased changes.
 
+## 1.1.0-beta.2 - 2026-08-23
+
+### Added
+
+- Added a typed renderer platform adapter with Electron and browser capability profiles.
+- Added local-memory read-only project parsing for separated project JSON, consolidated JSON, CSV, and GeoJSON files.
+- Added a restricted `/workspace` site route with project overview, zone summaries, missing-field diagnostics, and read-only summary download.
+- Added a loopback-only browser preview command for validating the shared renderer without exposing main-process files or write services.
+
+### Changed
+
+- Routed renderer project, export, storage, backup, diagnostics, species-reference, external-link, and window operations through the platform adapter.
+- Updated compatible development-tool transitive packages to patched releases without changing direct dependency ranges.
+- Updated Web architecture and privacy documentation to distinguish local browser-memory processing from desktop-only capabilities.
+
+### Fixed
+
+- Removed the remaining renderer dependency on direct `window.plantApp` access outside the adapter installation boundary.
+- Preserved selected local-file modification times in browser read-only sessions.
+- Cleared all currently reported npm audit findings in both production and development dependency trees.
+
+### Compatibility
+
+- Existing JSON and SQLite project structures are unchanged and require no migration.
+- Electron preload channels, IPC handlers, path validation, SQLite services, and desktop save behavior are unchanged.
+- Browser mode cannot save projects, open SQLite, manage backups, read desktop logs, upload images, or query third-party species services.
+- `1.0.0` remains the stable baseline while the 1.1 line remains in Beta acceptance.
+
 ## 1.1.0-beta.1 - 2026-08-23
 
 ### Added

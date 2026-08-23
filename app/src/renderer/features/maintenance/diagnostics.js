@@ -83,12 +83,12 @@ function collectImageRefsWithContext() {
 }
 
 async function collectImageFileIssues() {
-  if (!state.projectDir || !window.plantApp?.maintenance?.checkImageRefs) return [];
+  if (!state.projectDir || !window.platformAdapter?.maintenance?.checkImageRefs) return [];
   const imageRefs = collectImageRefsWithContext();
   if (!imageRefs.length) return [];
 
   const refs = [...new Set(imageRefs.map(item => item.ref))];
-  const result = await callIpc(window.plantApp.maintenance.checkImageRefs({
+  const result = await callIpc(window.platformAdapter.maintenance.checkImageRefs({
     projectDir: state.projectDir,
     refs
   }));

@@ -166,6 +166,16 @@ const SAFE_MODE_DYNAMIC_LOCKED_SELECTORS = Object.freeze([
   '.seg-btn[data-lang]'
 ]);
 
+const PLATFORM_READ_ONLY_ALLOWED_IDS = Object.freeze([
+  'btnExportCsv',
+  'btnExportGeoJSON'
+]);
+
+const PLATFORM_READ_ONLY_ALLOWED_SCOPES = Object.freeze([
+  'export-csv',
+  'export-geojson'
+]);
+
 let safeModeLockEventsBound = false;
 
 function getMaintenanceSafeModeState() {
@@ -178,14 +188,23 @@ function isMaintenanceSafeModeEnabled() {
   return getMaintenanceSafeModeState().enabled === true;
 }
 
+function isPlatformReadOnlyMode() {
+  return window.platformAdapter?.capabilities?.readOnly === true;
+}
+
 function isMaintenanceReadOnlyMode() {
-  return isMaintenanceSafeModeEnabled();
+  return isMaintenanceSafeModeEnabled() || isPlatformReadOnlyMode();
 }
 
 function guardMaintenanceReadOnlyAction(scope = 'safe-mode') {
+  if (
+    isPlatformReadOnlyMode()
+    && !isMaintenanceSafeModeEnabled()
+    && PLATFORM_READ_ONLY_ALLOWED_SCOPES.includes(scope)
+  ) return false;
   if (!isMaintenanceReadOnlyMode()) return false;
   showAlert(maintenanceText('maintenanceSafeModeReadOnlyBlocked'));
-  window.plantApp?.log?.report?.({
+  window.platformAdapter?.log?.report?.({
     level: 'warn',
     scope: `maintenance:read-only:${scope}`,
     message: 'Blocked write action while safe mode is enabled'
@@ -252,7 +271,11 @@ function setSafeModeLockedElementState(element, locked) {
 
 function refreshSafeModeLockedControls() {
   const locked = isMaintenanceReadOnlyMode();
-  SAFE_MODE_LOCKED_IDS.forEach(id => setSafeModeLockedElementState(document.getElementById(id), locked));
+  const platformOnly = isPlatformReadOnlyMode() && !isMaintenanceSafeModeEnabled();
+  SAFE_MODE_LOCKED_IDS.forEach(id => {
+    const allowPlatformExport = platformOnly && PLATFORM_READ_ONLY_ALLOWED_IDS.includes(id);
+    setSafeModeLockedElementState(document.getElementById(id), locked && !allowPlatformExport);
+  });
   SAFE_MODE_READONLY_FIELD_IDS.forEach(id => setSafeModeLockedElementState(document.getElementById(id), locked));
   SAFE_MODE_DYNAMIC_LOCKED_SELECTORS.forEach(selector => {
     document.querySelectorAll(selector).forEach(element => setSafeModeLockedElementState(element, locked));
@@ -313,6 +336,7 @@ function bindSafeModeLockEvents() {
 
 function syncMaintenanceSafeModeUi() {
   const enabled = isMaintenanceSafeModeEnabled();
+  document.documentElement.classList.toggle('platform-read-only', isPlatformReadOnlyMode());
   document.documentElement.classList.toggle('maintenance-safe-mode', enabled);
   bindSafeModeLockEvents();
   if (ui.maintenanceSafeModeStatus) {
