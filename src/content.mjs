@@ -1,16 +1,23 @@
+import { readFile } from 'node:fs/promises';
+
+const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+
 export const siteMeta = Object.freeze({
   title: 'CQNU Plant MAP',
   description: '面向校园植物资源记录、物候归档、分区比较与研究统计的本地优先桌面工具。',
   repositoryUrl: 'https://github.com/YUGANG-Pluto/CQNU-Plant-MAP',
   releasesUrl: 'https://github.com/YUGANG-Pluto/CQNU-Plant-MAP/releases',
-  version: '1.0.0'
+  version: packageJson.version,
+  releaseTag: `v${packageJson.version}`,
+  releaseChannelLabel: 'Beta 测试版',
+  stableVersion: '1.0.0'
 });
 
 export const navigation = Object.freeze([
   { href: '/', label: '产品' },
   { href: '/docs', label: '使用文档' },
   { href: '/web', label: 'Web 架构' },
-  { href: '/release', label: '版本 1.0' }
+  { href: '/release', label: '版本 1.1 Beta' }
 ]);
 
 export const capabilities = Object.freeze([
@@ -60,9 +67,9 @@ export const architectureLayers = Object.freeze([
     detail: '浏览器版本使用用户授权的文件句柄或浏览器存储，不直接模拟本地路径和主进程权限。'
   },
   {
-    title: '公开发布站',
-    state: '只读',
-    detail: '当前站点只发布文档、版本信息和产品预览，不包含任何用户项目数据。'
+    title: '发布与文档站',
+    state: '受限访问',
+    detail: '当前站点仅向所有者开放，只发布文档、版本信息和产品预览，不包含任何用户项目数据。'
   }
 ]);
 

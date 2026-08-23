@@ -68,9 +68,10 @@ function layout({ activePath, title, description, body }) {
 }
 
 function metricStrip() {
+  const releaseFamily = siteMeta.version.split('-')[0].split('.').slice(0, 2).join('.');
   return `
     <div class="metric-strip" aria-label="版本能力摘要" data-reveal>
-      <div><strong>1.0</strong><span>正式版本</span></div>
+      <div><strong>${escapeHtml(releaseFamily)}</strong><span>${escapeHtml(siteMeta.releaseChannelLabel)}</span></div>
       <div><strong>Local</strong><span>项目数据优先保存在本地</span></div>
       <div><strong>5</strong><span>研究型相似性与质量矩阵</span></div>
       <div><strong>4</strong><span>CSV / JSON / Markdown / SVG</span></div>
@@ -102,7 +103,7 @@ function homePage() {
           <h1>CQNU Plant MAP</h1>
           <p>面向校园植物资源动态更新、定点记录、物候追踪、图片证据归档、分区比较与可视化管理研究。</p>
           <div class="hero-actions">
-            <a class="button button-primary" href="${siteMeta.releasesUrl}" target="_blank" rel="noreferrer">获取正式版</a>
+            <a class="button button-primary" href="${siteMeta.releasesUrl}" target="_blank" rel="noreferrer">查看 Beta 版本</a>
             <a class="button button-secondary" href="/docs">阅读使用文档</a>
           </div>
           <p class="hero-note">Windows 桌面端 · 本地优先 · 用户主动触发网络查询</p>
@@ -194,14 +195,14 @@ function releasePage() {
     activePath: '/release',
     title: `版本 ${siteMeta.version}`,
     body: `
-      <section class="page-hero release-hero"><div class="content-wrap" data-reveal><span>STABLE RELEASE</span><h1>Version ${siteMeta.version}</h1><p>形成可本地运行、可验证、可维护和可发布的校园植物研究桌面工具。</p><a class="button button-primary" href="${siteMeta.releasesUrl}" target="_blank" rel="noreferrer">打开发布页</a></div></section>
+      <section class="page-hero release-hero"><div class="content-wrap" data-reveal><span>BETA RELEASE</span><h1>Version ${siteMeta.version}</h1><p>当前测试版用于验证桌面端、发布站和模块化存储能力的一致性，稳定基线仍为 ${siteMeta.stableVersion}。</p><a class="button button-primary" href="${siteMeta.releasesUrl}" target="_blank" rel="noreferrer">打开发布页</a></div></section>
       <section class="content-band band-plain"><div class="content-wrap release-grid">
         <article data-reveal><span>数据工作流</span><h2>受控 JSON / SQLite 互换</h2><p>转换前备份、转换日志、数据源选择、数据库清理确认和兼容字段保留形成完整闭环。</p></article>
         <article data-reveal><span>研究能力</span><h2>模块化统计中心</h2><p>覆盖分区、分类组成、多样性、相似性、物候、趋势、数据质量与多格式导出。</p></article>
         <article data-reveal><span>工程质量</span><h2>TypeScript 与运行边界</h2><p>主进程、preload、IPC 契约、renderer 领域模型和自动检查逐步形成可维护结构。</p></article>
         <article data-reveal><span>交互体验</span><h2>科研白底与液态玻璃</h2><p>统一控件、模态层级、图表全屏、动效节奏、响应式布局和可访问状态反馈。</p></article>
       </div></section>
-      <section class="content-band band-soft"><div class="content-wrap release-note" data-reveal><h2>发布说明</h2><p>Windows 安装程序如未完成个人代码签名，系统可能显示未知发布者提示。请仅从项目官方发布页获取文件，并核对版本与校验信息。</p></div></section>`
+      <section class="content-band band-soft"><div class="content-wrap release-note" data-reveal><h2>发布说明</h2><p>${siteMeta.releaseTag} 为 Beta 测试标签，不替代 ${siteMeta.stableVersion} 稳定版。Windows 安装程序如未完成个人代码签名，系统可能显示未知发布者提示；请仅从项目官方发布页获取文件，并核对版本与校验信息。</p></div></section>`
   });
 }
 
@@ -210,7 +211,7 @@ function privacyPage() {
     activePath: '',
     title: '隐私与网络',
     body: `
-      <section class="page-hero"><div class="content-wrap" data-reveal><span>PRIVACY & NETWORK</span><h1>本地优先，网络请求由用户触发</h1><p>公开站点不接收桌面项目数据，桌面端也不会自动上传完整项目。</p></div></section>
+      <section class="page-hero"><div class="content-wrap" data-reveal><span>PRIVACY & NETWORK</span><h1>本地优先，网络请求由用户触发</h1><p>发布站点不接收桌面项目数据，桌面端也不会自动上传完整项目。</p></div></section>
       <section class="content-band band-plain"><div class="content-wrap policy-grid">
         <article data-reveal><h2>保留在本地</h2><p>项目记录、SQLite、JSON、备份、日志、本地路径、坐标和用户图片。</p></article>
         <article data-reveal><h2>按需发送</h2><p>用户主动查询物种参考时，仅发送必要的中文名或学名；地图服务按用户配置访问。</p></article>

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { siteMeta } from '../src/content.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const workerPath = resolve(projectRoot, 'dist/server/index.js');
@@ -20,7 +21,7 @@ for (const route of ['/', '/docs', '/web', '/release', '/privacy']) {
 }
 
 const health = await worker.fetch(new Request('https://example.test/health'));
-assert.deepEqual(await health.json(), { ok: true, version: '1.0.0' });
+assert.deepEqual(await health.json(), { ok: true, version: siteMeta.version });
 const preview = await worker.fetch(new Request('https://example.test/assets/app-preview.png'));
 assert.equal(preview.status, 200);
 assert.match(preview.headers.get('content-type') || '', /image\/png/);

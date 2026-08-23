@@ -1,6 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { siteMeta } from '../src/content.mjs';
 import { renderPages } from '../src/render.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -25,6 +26,7 @@ const STYLES = ${JSON.stringify(styles)};
 const CLIENT = ${JSON.stringify(client)};
 const LOGO = ${JSON.stringify(logo)};
 const PREVIEW = ${JSON.stringify(preview.toString('base64'))};
+const SITE_VERSION = ${JSON.stringify(siteMeta.version)};
 
 const securityHeaders = {
   'content-security-policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none'",
@@ -47,7 +49,7 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname.length > 1 ? url.pathname.replace(/\\/$/, '') : '/';
     if (request.method !== 'GET' && request.method !== 'HEAD') return response('Method not allowed', 'text/plain; charset=utf-8', 405, 'no-store');
-    if (path === '/health') return response(JSON.stringify({ ok: true, version: '1.0.0' }), 'application/json; charset=utf-8', 200, 'no-store');
+    if (path === '/health') return response(JSON.stringify({ ok: true, version: SITE_VERSION }), 'application/json; charset=utf-8', 200, 'no-store');
     if (path === '/robots.txt') return response('User-agent: *\\nAllow: /\\n', 'text/plain; charset=utf-8');
     if (path === '/assets/styles.css') return response(STYLES, 'text/css; charset=utf-8', 200, 'public, max-age=86400');
     if (path === '/assets/client.js') return response(CLIENT, 'text/javascript; charset=utf-8', 200, 'public, max-age=86400');
