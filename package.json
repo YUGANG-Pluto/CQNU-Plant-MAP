@@ -1,0 +1,14 @@
+{
+  "name": "cqnu-plant-map-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "validate": "node scripts/validate.mjs",
+    "check": "npm run build && npm run validate",
+    "prestart": "npm run build",
+    "start": "node scripts/serve.mjs",
+    "test": "node --test tests/*.test.mjs"
+  }
+}
