@@ -4,13 +4,17 @@ on:
   push:
     branches:
       - main
-      - dev
+      - desktop/main
+      - web/main
+      - admin/foundation
     tags:
       - 'v*'
   pull_request:
     branches:
       - main
-      - dev
+      - desktop/main
+      - web/main
+      - admin/foundation
   workflow_dispatch:
 
 permissions:
@@ -20,6 +24,7 @@ jobs:
   verify:
     name: Windows verification
     runs-on: windows-latest
+    if: github.ref_name != 'admin/foundation' && github.base_ref != 'admin/foundation'
 
     defaults:
       run:
@@ -69,9 +74,16 @@ jobs:
       - name: Run SQLite runtime acceptance
         run: npm run db:test-runtime
 
+      - name: Build browser workspace site bundle
+        run: npm --prefix ../site run build
+
+      - name: Run hidden browser workspace acceptance
+        run: npm run smoke:web
+
   site:
     name: Site verification
     runs-on: ubuntu-latest
+    if: github.ref_name != 'admin/foundation' && github.base_ref != 'admin/foundation'
 
     defaults:
       run:
@@ -86,7 +98,17 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: site/package-lock.json
+          cache-dependency-path: |
+            app/package-lock.json
+            site/package-lock.json
+
+      - name: Install browser renderer dependencies
+        working-directory: app
+        run: npm run ci:install
+
+      - name: Build shared browser renderer
+        working-directory: app
+        run: npm run build:renderer
 
       - name: Install site dependencies
         run: npm ci --ignore-scripts --no-audit --fund=false
@@ -96,3 +118,29 @@ jobs:
 
       - name: Run site tests
         run: npm test
+
+  admin:
+    name: Management foundation verification
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'admin/foundation' || github.base_ref == 'admin/foundation'
+
+    defaults:
+      run:
+        working-directory: admin
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Install management contract dependencies
+        run: npm ci --ignore-scripts --no-audit --fund=false
+
+      - name: Check owner-only authorization contracts
+        run: npm run check
