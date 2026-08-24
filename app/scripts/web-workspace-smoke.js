@@ -195,6 +195,13 @@ async function run() {
         backupCapability: window.platformAdapter.capabilities.backups,
         diagnosticsCapability: window.platformAdapter.capabilities.diagnostics,
         speciesCapability: window.platformAdapter.capabilities.speciesReference,
+        externalBackupCapability: window.platformAdapter.capabilities.externalBackupImport,
+        capabilityMode: window.platformAdapter.web?.capabilityReport?.mode || '',
+        missingCapabilities: window.platformAdapter.web?.capabilityReport?.missingRequired || [],
+        externalBackupApi: typeof window.platformAdapter.backup.importArchive === 'function'
+          && typeof window.platformAdapter.backup.restoreImported === 'function',
+        externalBackupControls: Boolean(document.getElementById('btnImportExternalBackup'))
+          && Boolean(document.getElementById('btnRestoreImportedBackup')),
         mapReady: Boolean(window.__CQNU_STATE__?.map),
         runtimeStatus: document.documentElement.dataset.runtimeStatus,
         siteHomeLink: Boolean(document.querySelector('.web-site-link[href="/"]'))
@@ -253,6 +260,12 @@ async function run() {
     if (!result.backupCapability || !result.diagnosticsCapability || !result.speciesCapability) {
       failures.push('web platform capabilities are incomplete');
     }
+    if (!result.externalBackupCapability || !result.externalBackupApi || !result.externalBackupControls) {
+      failures.push('external web backup import contract is incomplete');
+    }
+    if (!['full', 'portable'].includes(result.capabilityMode) || result.missingCapabilities.length) {
+      failures.push(`browser capability assessment: ${result.capabilityMode} / ${result.missingCapabilities.join(', ')}`);
+    }
     if (result.storageMode !== 'opfs-sahpool') failures.push(`storage mode: ${result.storageMode}`);
     if (result.zoneCount !== 1 || result.pointCount !== 1) {
       failures.push(`project round trip: ${result.zoneCount} zones / ${result.pointCount} points`);
@@ -269,7 +282,7 @@ async function run() {
     if (!primaryAfterLock?.ok) failures.push('primary tab stopped working after secondary lock rejection');
     failures.push(...errors.filter(message => !message.includes('Failed to load resource')));
     if (failures.length) throw new Error(failures.join('\n'));
-    process.stdout.write('web workspace smoke passed (OPFS SQLite, image backup restore, multi-tab lock, log, and capability contracts)\n');
+    process.stdout.write('web workspace smoke passed (OPFS SQLite, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n');
   } finally {
     window.destroy();
     await isolatedSession.clearStorageData();

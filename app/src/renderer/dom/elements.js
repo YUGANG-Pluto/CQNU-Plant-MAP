@@ -303,6 +303,8 @@ const elementGroups = {
     'btnDeleteSelectedStorageArtifacts',
     'btnInspectSelectedBackup',
     'btnRestoreSelectedBackup',
+    'btnImportExternalBackup',
+    'btnRestoreImportedBackup',
     'maintenanceStorageArtifactList',
     'maintenanceSettingsSummary',
     'maintenanceSafeModeStatus',

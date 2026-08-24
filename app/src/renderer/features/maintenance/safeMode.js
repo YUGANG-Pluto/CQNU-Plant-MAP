@@ -60,6 +60,8 @@ const SAFE_MODE_LOCKED_IDS = Object.freeze([
   'btnDeleteSelectedStorageArtifacts',
   'btnInspectSelectedBackup',
   'btnRestoreSelectedBackup',
+  'btnImportExternalBackup',
+  'btnRestoreImportedBackup',
   'btnApplySpeciesReference',
   'btnExportUiSettings',
   'btnImportUiSettings'

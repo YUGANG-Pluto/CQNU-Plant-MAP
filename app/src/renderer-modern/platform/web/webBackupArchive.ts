@@ -1,6 +1,7 @@
 import { strToU8, zipSync } from 'fflate';
 import type { WebBackupRecord, WebProjectRecord } from './webDatabaseProtocol';
 import type { WebBackupImageAsset } from './webImageStore';
+import { WEB_BACKUP_DATA_FILES } from './webBackupZip.ts';
 
 export const WEB_BACKUP_ARCHIVE_FORMAT = 'cqnu-plant-map-web-backup';
 export const WEB_BACKUP_ARCHIVE_VERSION = 1;
@@ -47,19 +48,15 @@ export async function buildWebBackupArchive(input: WebBackupArchiveInput): Promi
     projectLabel: String(project.label || ''),
     backupName: input.backup.name,
     backupLabel: input.backup.label,
-    dataFiles: [
-      'information/settings.json',
-      'information/zones.json',
-      'information/points.json'
-    ],
+    dataFiles: [...WEB_BACKUP_DATA_FILES],
     imageEntries,
     missingImageReferences: [...input.missingImageReferences]
   };
   const files: Record<string, Uint8Array> = {
     'backup-manifest.json': jsonBytes(manifest),
-    'information/settings.json': jsonBytes(settings),
-    'information/zones.json': jsonBytes(zones),
-    'information/points.json': jsonBytes(points)
+    [WEB_BACKUP_DATA_FILES[0]]: jsonBytes(settings),
+    [WEB_BACKUP_DATA_FILES[1]]: jsonBytes(zones),
+    [WEB_BACKUP_DATA_FILES[2]]: jsonBytes(points)
   };
   for (const image of input.images) {
     files[image.archivePath] = new Uint8Array(await image.blob.arrayBuffer());

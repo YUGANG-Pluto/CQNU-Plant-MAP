@@ -39,6 +39,8 @@ Publishing a new version does not remove older saved versions. Rollback redeploy
 - User-selected project directories, JSON, CSV, GeoJSON, and images remain on the user's device and are not uploaded by the site.
 - Project records, local paths, service tokens, coordinates, and user images are not bundled with the published site.
 - Browser project writes use an OPFS SQLite primary copy and, when granted, a compatible JSON directory mirror.
+- The workspace reports detected browser capabilities. Missing directory-picker support falls back to explicit file selection and downloads; missing critical OPFS database capabilities blocks writes with a readable explanation.
+- External browser backup ZIP files are inspected for format, safe paths, encryption, entry and expansion limits, JSON shape, bitmap signatures, and CRC integrity before a restore token is issued.
 - Browser backups preserve compatible JSON records and referenced image bytes; manual downloads are standard ZIP files.
 - A previously selected directory handle is recovered when the browser still grants permission. If permission was revoked, the user must explicitly select the directory again.
 - Only one `/workspace` tab may own the OPFS database write lock at a time; documentation routes remain available.

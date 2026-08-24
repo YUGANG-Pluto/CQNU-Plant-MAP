@@ -36,13 +36,37 @@ import {
   type UnknownRecord
 } from './web/webPlatformSupport';
 import { createWebStorageMaintenance } from './web/webStorageMaintenance';
+import {
+  selectAndInspectWebBackupArchive,
+  type ImportedWebBackupArchive
+} from './web/webBackupImport';
+import {
+  assessWebRuntimeCapabilities,
+  webRuntimeUnavailableMessage
+} from './web/webCapabilities';
 
 const repository = new WebProjectRepository();
 const diagnostics = createWebDiagnostics(repository);
 const storageMaintenance = createWebStorageMaintenance(repository);
+const webCapabilityReport = Object.freeze(assessWebRuntimeCapabilities());
+const EXTERNAL_BACKUP_IMPORT_TTL = 15 * 60 * 1000;
+
+let pendingExternalBackup: {
+  token: string;
+  projectDir: string;
+  expiresAt: number;
+  archive: ImportedWebBackupArchive;
+} | null = null;
+
+function requireWebWorkspace(): void {
+  if (!webCapabilityReport.workspaceReady) {
+    throw new Error(webRuntimeUnavailableMessage(webCapabilityReport));
+  }
+}
 
 async function chooseProject(): Promise<PlatformResponse<UnknownRecord>> {
   try {
+    requireWebWorkspace();
     const session = await repository.choose(true);
     if (!session) return success({ canceled: true });
     return success({
@@ -61,6 +85,7 @@ async function chooseProject(): Promise<PlatformResponse<UnknownRecord>> {
 
 async function chooseMergeProject(): Promise<PlatformResponse<UnknownRecord>> {
   try {
+    requireWebWorkspace();
     const session = await repository.choose(false);
     if (!session) return success({ canceled: true });
     return success({ canceled: false, projectDir: session.projectDir, label: session.label });
@@ -79,6 +104,7 @@ async function loadProject(payload?: unknown): Promise<PlatformResponse<UnknownR
     ? String(source.storageFormat) as 'sqlite' | 'json'
     : 'auto';
   try {
+    requireWebWorkspace();
     const session = await repository.load(requestedDir, requestedFormat);
     if (!session) {
       return failure('WEB_PROJECT_NOT_SELECTED', '请先选择浏览器本地项目或可写项目目录。');
@@ -121,6 +147,7 @@ async function loadProject(payload?: unknown): Promise<PlatformResponse<UnknownR
 async function saveProject(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
   const source = asRecord(payload);
   try {
+    requireWebWorkspace();
     const result = await repository.save({
       projectDir: String(source.projectDir || ''),
       settings: asRecord(source.settings),
@@ -192,6 +219,7 @@ async function createBackup(payload?: unknown): Promise<PlatformResponse<Unknown
   const projectDir = String(source.projectDir || '');
   const label = String(source.label || 'manual');
   try {
+    requireWebWorkspace();
     const backup = await repository.createBackup(projectDir, label);
     let filePath = backup.name;
     if (String(source.backupDir || '') === 'web://downloads') {
@@ -244,6 +272,72 @@ async function restoreBackup(payload?: unknown): Promise<PlatformResponse<Unknow
     ));
   } catch (error) {
     return failureFromError(error, 'WEB_BACKUP_RESTORE_FAILED', '浏览器备份无法恢复。');
+  }
+}
+
+async function importExternalBackup(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
+  try {
+    requireWebWorkspace();
+    const projectDir = String(asRecord(payload).projectDir || '');
+    if (!projectDir || repository.activeContext()?.session.projectDir !== projectDir) {
+      return failure('WEB_PROJECT_NOT_SELECTED', '请先打开当前项目，再导入外部备份。');
+    }
+    const archive = await selectAndInspectWebBackupArchive();
+    if (!archive) return success({ canceled: true });
+    const token = crypto.randomUUID();
+    pendingExternalBackup = {
+      token,
+      projectDir,
+      expiresAt: Date.now() + EXTERNAL_BACKUP_IMPORT_TTL,
+      archive
+    };
+    const snapshot = asRecord(archive.snapshot);
+    return success({
+      canceled: false,
+      ok: true,
+      importToken: token,
+      backupName: archive.fileName,
+      sourceProjectLabel: archive.manifest.projectLabel,
+      sourceGeneratedAt: archive.manifest.generatedAt,
+      archiveBytes: archive.archiveBytes,
+      uncompressedBytes: archive.uncompressedBytes,
+      restoreFileCount: 3 + archive.images.length,
+      imageCount: archive.images.length,
+      missingImageCount: archive.manifest.missingImageReferences.length,
+      zoneCount: Array.isArray(snapshot.zones) ? snapshot.zones.length : 0,
+      pointCount: Array.isArray(snapshot.points) ? snapshot.points.length : 0,
+      hasSqliteStorage: true,
+      hasJsonStorage: true,
+      skippedBackupEntries: archive.manifest.missingImageReferences.length,
+      createsSafetyBackup: true,
+      warnings: archive.warnings
+    });
+  } catch (error) {
+    pendingExternalBackup = null;
+    return failureFromError(error, 'WEB_BACKUP_IMPORT_FAILED', '外部浏览器备份无法读取。');
+  }
+}
+
+async function restoreImportedBackup(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
+  const source = asRecord(payload);
+  if (source.confirmRestore !== true) {
+    return failure('WEB_BACKUP_CONFIRM_REQUIRED', '恢复外部备份需要明确确认。');
+  }
+  const pending = pendingExternalBackup;
+  if (!pending
+    || pending.token !== String(source.importToken || '')
+    || pending.projectDir !== String(source.projectDir || '')
+    || pending.expiresAt <= Date.now()) {
+    pendingExternalBackup = null;
+    return failure('WEB_BACKUP_IMPORT_EXPIRED', '外部备份预览已失效，请重新选择并检测 ZIP。');
+  }
+  try {
+    requireWebWorkspace();
+    const result = await repository.restoreImportedBackup(pending.projectDir, pending.archive);
+    pendingExternalBackup = null;
+    return success(result);
+  } catch (error) {
+    return failureFromError(error, 'WEB_BACKUP_IMPORT_RESTORE_FAILED', '外部浏览器备份无法恢复。');
   }
 }
 
@@ -347,18 +441,21 @@ export function createWebPlatformAdapter(): PlatformAdapter {
   return Object.freeze({
     runtime: 'web' as const,
     capabilities: Object.freeze({
-      readProject: true,
-      writeProject: true,
-      importRecords: true,
-      exportFiles: true,
-      sqliteStorage: true,
-      backups: true,
-      diagnostics: true,
+      readProject: webCapabilityReport.workspaceReady,
+      writeProject: webCapabilityReport.workspaceReady,
+      importRecords: webCapabilityReport.workspaceReady,
+      exportFiles: webCapabilityReport.portableBackupAvailable,
+      sqliteStorage: webCapabilityReport.workspaceReady,
+      backups: webCapabilityReport.workspaceReady,
+      diagnostics: webCapabilityReport.workspaceReady,
       speciesReference: true,
       externalLinks: true,
       nativeWindow: false,
-      readOnly: false
+      readOnly: !webCapabilityReport.workspaceReady,
+      externalBackupImport: webCapabilityReport.portableBackupAvailable,
+      directoryMirror: webCapabilityReport.directoryMirrorAvailable
     }),
+    web: Object.freeze({ capabilityReport: webCapabilityReport }),
     project: Object.freeze({
       chooseDir: chooseProject,
       chooseMergeDir: chooseMergeProject,
@@ -382,6 +479,8 @@ export function createWebPlatformAdapter(): PlatformAdapter {
       create: createBackup,
       inspectRestore: inspectBackup,
       restore: restoreBackup,
+      importArchive: importExternalBackup,
+      restoreImported: restoreImportedBackup,
       listExpired: listExpiredBackups,
       keepExpired: keepExpiredBackups,
       deleteExpired: deleteExpiredBackups

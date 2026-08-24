@@ -1,10 +1,11 @@
-import { BookOpen, FolderOpen, Home, Save, Search, ShieldCheck } from 'lucide-preact';
+import { BookOpen, FolderOpen, Home, Save, Search } from 'lucide-preact';
 import {
   CommandButton,
   SegmentedControl,
   WORKSPACE_ICON_SIZE
 } from '../../components/ui/WorkspacePrimitives';
 import { ProjectHistoryControls } from '../history/ProjectHistoryControls';
+import { WebCapabilityDisclosure } from './WebCapabilityDisclosure';
 
 export function WorkspaceHeader() {
   const isWebRuntime = window.platformAdapter?.runtime === 'web';
@@ -22,10 +23,7 @@ export function WorkspaceHeader() {
           <h1 data-i18n="appTitle">校园植物分区管理系统</h1>
           <p class="subtle" data-i18n="appSubtitle">分区绘制、点位管理、植物信息与图片归档</p>
           {isWebRuntime ? (
-            <span class="web-runtime-badge">
-              <ShieldCheck size={14} aria-hidden="true" />
-              <span data-i18n="webReadOnlyBadge">浏览器本地 · OPFS 与授权目录保存</span>
-            </span>
+            <WebCapabilityDisclosure />
           ) : null}
         </div>
       </div>
@@ -66,6 +64,7 @@ export function WorkspaceHeader() {
           label={isWebRuntime ? '打开本地项目' : '选择项目目录'}
           i18nKey={isWebRuntime ? 'webOpenLocalData' : 'chooseProject'}
           className="btn-primary"
+          disabled={isWebRuntime && window.platformAdapter?.capabilities.readProject !== true}
         />
         <CommandButton
           id="btnSave"
@@ -73,6 +72,7 @@ export function WorkspaceHeader() {
           label="保存项目"
           i18nKey="saveProject"
           className="btn-primary"
+          disabled={isWebRuntime && window.platformAdapter?.capabilities.writeProject !== true}
         />
       </div>
     </header>
