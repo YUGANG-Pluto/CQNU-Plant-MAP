@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest an application improvement.
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe the user workflow and maintenance impact. Avoid attaching real project data or private images.
+  - type: textarea
+    id: need
+    attributes:
+      label: User need
+      description: What campus plant survey or maintenance task should this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Proposed workflow
+      description: How should a user complete the task?
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: Data impact
+      description: Does this change project JSON, images, exports, backups, privacy, or network use?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: textarea
+    id: verification
+    attributes:
+      label: Suggested verification
+      description: How should this be tested?
+    validations:
+      required: false

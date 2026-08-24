@@ -1,0 +1,79 @@
+/* Shared SVG chart presentation */
+.chart-card {
+  position: relative;
+}
+
+.chart-bar-rect {
+  filter: drop-shadow(0 4px 8px rgba(31, 52, 47, 0.05));
+}
+
+.chart-bar-highlight {
+  fill: rgba(255, 255, 255, 0.32);
+  pointer-events: none;
+}
+
+.chart-line-path {
+  fill: none;
+  stroke: var(--theme-accent-ui);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 5px 8px rgba(31, 52, 47, 0.05));
+}
+
+.chart-line-area {
+  fill: url("#lineAreaGrad");
+}
+
+.chart-line-point {
+  fill: var(--theme-accent-ui);
+  stroke: var(--panel-bg);
+  stroke-width: 2;
+}
+
+.chart-line-point-halo {
+  fill: var(--theme-accent-ui-soft);
+  opacity: 0.7;
+}
+
+.donut-slice {
+  stroke: rgba(255, 255, 255, 0.34);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.donut-highlight {
+  fill: rgba(255, 255, 255, 0.22);
+  pointer-events: none;
+}
+
+.chart-value-deferred,
+.chart-line-value.chart-value-deferred {
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast) var(--motion-ease);
+}
+
+.chart-bar-group:hover .chart-value-deferred,
+.chart-line-point-group:hover .chart-value-deferred {
+  opacity: 1;
+}
+
+.chart-value-merged {
+  fill: var(--chart-label);
+  font-weight: 750;
+}
+
+.chart-hover-band {
+  fill: transparent;
+  pointer-events: all;
+}
+
+.chart-combo-category:hover .chart-hover-band {
+  fill: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.chart-scroll-inner svg {
+  transform-origin: 0 0;
+  transition:
+    width var(--motion-duration-fast) var(--motion-ease),
+    height var(--motion-duration-fast) var(--motion-ease);
+}

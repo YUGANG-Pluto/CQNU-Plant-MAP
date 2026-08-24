@@ -1,0 +1,64 @@
+name: Bug report
+description: Report a reproducible application problem.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not include real survey data, private images, tokens, logs with sensitive content, or local credentials.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Application version or commit if known.
+    validations:
+      required: false
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest steps that reproduce the issue.
+      placeholder: |
+        1. Open a local test project.
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, installer or source run, and any relevant local setup.
+    validations:
+      required: false
+  - type: textarea
+    id: checks
+    attributes:
+      label: Checks already run
+      description: List local checks or manual tests already completed.
+      placeholder: |
+        npm run verify
+        Manual smoke test:
+    validations:
+      required: false

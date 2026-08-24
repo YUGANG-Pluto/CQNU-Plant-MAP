@@ -1,0 +1,112 @@
+/* Secondary workspace drawer */
+.workspace-utility-drawer {
+  display: grid;
+  place-items: stretch end;
+  pointer-events: auto;
+}
+
+.workspace-utility-drawer .layer-modal-backdrop {
+  background: rgba(31, 52, 47, 0.2);
+  backdrop-filter: blur(6px);
+}
+
+.workspace-utility-panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(560px, calc(100vw - 28px));
+  height: min(calc(100vh - 28px), 920px);
+  margin: 14px;
+  overflow: hidden;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-float);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  transform-origin: right center;
+}
+
+.workspace-utility-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.workspace-utility-header h2,
+.workspace-utility-header p {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.workspace-utility-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 18px 18px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.workspace-utility-body .card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.workspace-utility-body .list {
+  max-height: min(360px, 42vh);
+  overflow: auto;
+}
+
+.workspace-utility-body :where(
+  .path-box,
+  .list-item,
+  .workspace-bar-row span,
+  .workspace-chart-legend-item span
+) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-utility-body .export-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workspace-utility-body .workspace-mini-chart,
+.workspace-utility-body .workspace-mini-bars {
+  max-width: 100%;
+}
+
+@media (max-width: 820px) {
+  .workspace-utility-drawer {
+    place-items: end stretch;
+  }
+
+  .workspace-utility-panel {
+    width: auto;
+    height: min(88vh, 760px);
+    margin: 10px;
+  }
+}
+
+@media (max-width: 560px) {
+  .workspace-utility-body .export-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-utility-header {
+    padding: 14px;
+  }
+
+  .workspace-utility-body {
+    padding: 12px 14px 14px;
+  }
+}

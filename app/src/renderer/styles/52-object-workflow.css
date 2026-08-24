@@ -1,0 +1,293 @@
+/* Synchronized map, list, and inspector object workflow */
+.object-command-center {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  background: color-mix(in srgb, var(--panel-bg) 92%, var(--primary-soft));
+  border: 1px solid color-mix(in srgb, var(--primary) 14%, var(--border-light));
+  border-radius: 8px;
+  box-shadow: var(--shadow-soft);
+}
+
+.object-command-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.object-command-eyebrow {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.object-command-summary strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.object-command-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.object-command-actions .ui-command-button {
+  min-height: 38px;
+  padding: 8px;
+}
+
+.object-command-actions .ui-command-button__label {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.object-workflow-feedback {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  transition:
+    color 320ms var(--motion-ease, ease),
+    background 320ms var(--motion-ease, ease),
+    border-color 320ms var(--motion-ease, ease);
+}
+
+.object-workflow-feedback::before {
+  width: 7px;
+  height: 7px;
+  content: "";
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition:
+    background 320ms var(--motion-ease, ease),
+    transform 320ms var(--motion-ease, ease);
+}
+
+.object-workflow-feedback.is-busy::before {
+  background: transparent;
+  border: 2px solid color-mix(in srgb, var(--primary) 24%, transparent);
+  border-top-color: var(--primary);
+  animation: objectWorkflowSpin 900ms linear infinite;
+}
+
+.object-workflow-feedback.is-success {
+  color: var(--success);
+}
+
+.object-workflow-feedback.is-success::before {
+  background: var(--success);
+  transform: scale(1.14);
+}
+
+.object-workflow-feedback.is-warning {
+  color: var(--warning-strong, var(--warning));
+}
+
+.object-workflow-feedback.is-warning::before {
+  background: var(--warning);
+}
+
+.object-workflow-feedback.is-error {
+  color: var(--danger);
+}
+
+.object-workflow-feedback.is-error::before {
+  background: var(--danger);
+}
+
+.object-list-keyboard-hint {
+  margin: 0;
+  font-size: 12px;
+}
+
+.object-list {
+  min-width: 0;
+}
+
+.object-list-item {
+  width: 100%;
+  min-width: 0;
+  appearance: none;
+  color: var(--text-main);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  box-shadow: inset 0 0 0 0 transparent;
+  transition:
+    background 320ms var(--motion-ease, ease),
+    border-color 320ms var(--motion-ease, ease),
+    box-shadow 320ms var(--motion-ease, ease),
+    transform 320ms var(--motion-ease, ease);
+}
+
+.object-list-item > :where(.title, .meta) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.object-list-item:hover,
+.object-list-item.is-linked-hover {
+  background: color-mix(in srgb, var(--panel-bg) 86%, var(--primary-soft));
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--border));
+}
+
+.object-list-item.is-context {
+  background: color-mix(in srgb, var(--panel-bg) 92%, var(--secondary-soft));
+  border-color: color-mix(in srgb, var(--secondary) 22%, var(--border));
+}
+
+.object-list-item.is-selected,
+.object-list-item[aria-selected="true"] {
+  background: color-mix(in srgb, var(--panel-bg) 74%, var(--primary-soft));
+  border-color: color-mix(in srgb, var(--primary) 54%, var(--border));
+  box-shadow: inset 3px 0 0 var(--primary), 0 8px 20px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.object-list-item:focus-visible {
+  border-color: var(--primary);
+  box-shadow: inset 3px 0 0 var(--primary), 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.zone-plant-item.object-list-item {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.object-empty-state {
+  display: grid;
+  gap: 4px;
+  min-height: 88px;
+  place-content: center;
+  padding: 16px;
+  color: var(--text-muted);
+  text-align: center;
+  background: color-mix(in srgb, var(--panel-bg) 82%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--text-muted) 24%, var(--border-light));
+  border-radius: 8px;
+}
+
+.object-empty-state strong {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.object-empty-state span {
+  max-width: 30ch;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.map-canvas-wrap .status-bar {
+  align-items: center;
+  gap: 8px;
+}
+
+.map-selection-announcer {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-main);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-status-chip.is-updated {
+  animation: objectSelectionPulse 420ms var(--motion-ease, ease) both;
+}
+
+#map .leaflet-interactive {
+  transition:
+    fill 320ms var(--motion-ease, ease),
+    fill-opacity 320ms var(--motion-ease, ease),
+    stroke 320ms var(--motion-ease, ease),
+    stroke-width 320ms var(--motion-ease, ease),
+    filter 320ms var(--motion-ease, ease);
+}
+
+#map .leaflet-interactive.is-object-hovered {
+  filter: drop-shadow(0 3px 6px color-mix(in srgb, var(--primary) 34%, transparent));
+}
+
+#map .leaflet-interactive.is-object-selected {
+  filter: drop-shadow(0 4px 8px color-mix(in srgb, var(--primary) 42%, transparent));
+}
+
+#map .leaflet-interactive:focus-visible {
+  outline: none;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--primary) 68%, transparent));
+}
+
+.theme-liquid-glass .object-command-center {
+  background: color-mix(in srgb, var(--glass-bg-strong) 90%, transparent);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+}
+
+@keyframes objectWorkflowSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes objectSelectionPulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 24%, transparent); }
+  100% { box-shadow: 0 0 0 8px transparent; }
+}
+
+@media (max-width: 1180px) {
+  .object-command-actions .ui-command-button__label {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 720px) {
+  .object-command-actions {
+    grid-template-columns: 1fr 1.3fr 1fr;
+  }
+
+  .map-canvas-wrap .status-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .map-selection-announcer {
+    max-width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .object-workflow-feedback,
+  .object-workflow-feedback::before,
+  .object-list-item,
+  .ui-status-chip,
+  #map .leaflet-interactive {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.motion-disabled :where(
+  .object-workflow-feedback,
+  .object-workflow-feedback::before,
+  .object-list-item,
+  .ui-status-chip,
+  #map .leaflet-interactive
+) {
+  animation: none !important;
+  transition: none !important;
+}

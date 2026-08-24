@@ -1,0 +1,108 @@
+/* Configurable glass scopes */
+:root {
+  --glass-effect-shadow-alpha: 0.08;
+  --glass-brightness: 0%;
+}
+
+:root.glass-mode-off {
+  --glass-bg: var(--panel-bg);
+  --glass-bg-strong: var(--panel-bg);
+  --glass-border: var(--border-light);
+  --glass-border-soft: var(--border-light);
+  --glass-blur: 0px;
+  --glass-opacity: 1;
+  --glass-saturation: 100%;
+  --glass-shadow: var(--shadow-soft);
+}
+
+:root.glass-mode-liquid {
+  --glass-inner-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.66),
+    inset 0 -1px 1px rgba(47, 111, 98, 0.12);
+}
+
+:root.glass-apply-modules :where(
+  .card,
+  .quick-actions-card,
+  .species-summary-card,
+  .summary-box,
+  .hint-box,
+  .merge-summary-box,
+  .inspector-panel,
+  .panel-left
+) {
+  background: linear-gradient(145deg, var(--glass-bg-strong), var(--glass-bg));
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner-shadow);
+  backdrop-filter:
+    blur(var(--glass-blur))
+    saturate(var(--glass-saturation))
+    brightness(calc(100% + var(--glass-brightness)));
+}
+
+:root.glass-apply-controls :where(
+  .btn:not(.btn-primary):not(.btn-danger):not(.btn-danger-soft),
+  .input,
+  select,
+  textarea,
+  .seg-btn,
+  .pill,
+  .modern-segmented button,
+  .modern-theme-choice
+) {
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border);
+  box-shadow: 0 10px 24px rgba(31, 52, 47, var(--glass-effect-shadow-alpha));
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.65)) saturate(var(--glass-saturation));
+}
+
+:root.glass-apply-controls :where(.seg-btn.active, .mode-btn.active) {
+  color: var(--primary-contrast);
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+:root.glass-apply-mapBadges :where(
+  .map-workbar,
+  .map-status-hint,
+  .leaflet-popup-content-wrapper,
+  .leaflet-control-layers,
+  .leaflet-control-zoom a,
+  .map-badge,
+  .point-label
+) {
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border);
+  box-shadow: 0 12px 30px rgba(31, 52, 47, var(--glass-effect-shadow-alpha));
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(var(--glass-saturation));
+}
+
+:root.glass-apply-charts :where(
+  .chart-card,
+  .stats-control-card,
+  .chart-legend-inline,
+  .legend-grid
+) {
+  background: linear-gradient(180deg, var(--glass-bg-strong), var(--glass-bg));
+  border-color: var(--glass-border-soft);
+  box-shadow: var(--glass-shadow), var(--glass-inner-shadow);
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.55)) saturate(var(--glass-saturation));
+}
+
+:root.glass-apply-settings :where(
+  .modern-theme-panel,
+  .modern-theme-section,
+  .modern-theme-preview,
+  .layer-modal-panel
+) {
+  background: linear-gradient(145deg, var(--glass-bg-strong), var(--glass-bg));
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+}
+
+.btn-danger,
+.btn-danger-soft {
+  backdrop-filter: none;
+}

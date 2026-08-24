@@ -1,2 +1,59 @@
+# Node / Electron
+node_modules/
 dist/
-*.tar.gz
+app/renderer-dist/
+app/main-dist/
+release/
+out/
+/build/
+app/build/*
+!app/build/icon.ico
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Runtime / temp
+tmp/
+temp/
+cache/
+*.tmp
+
+# Environment / secrets
+.env
+.env.*
+*.secret
+*.key
+
+# Local project data (real user data should not be committed)
+information/
+information_backup*/
+uploads/
+images_runtime/
+
+# Local database
+*.db
+*.sqlite
+*.sqlite3
+
+# Packaged files
+*.exe
+*.msi
+*.7z
+*.rar
+
+# Coverage / test
+coverage/
+.nyc_output/
+
+# Misc
+*.bak
+*.swp

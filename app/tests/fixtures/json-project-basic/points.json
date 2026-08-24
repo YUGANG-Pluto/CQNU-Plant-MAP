@@ -1,0 +1,25 @@
+[
+  {
+    "id": "point-1",
+    "pointId": "P-001",
+    "zoneRef": "zone-1",
+    "lat": 29.61,
+    "lng": 106.31,
+    "plantNameCn": "桂花",
+    "plantNameSci": "Osmanthus fragrans",
+    "family": "Oleaceae",
+    "genus": "Osmanthus",
+    "taxonomySource": "GBIF",
+    "taxonomyVerificationStatus": "suggested",
+    "images": ["information/images/osmanthus.jpg"],
+    "phenologyEntries": [
+      {
+        "id": "phenology-1",
+        "label": "盛花期",
+        "surveyDate": "2026-05-01",
+        "floweringState": "盛花期",
+        "images": ["information/images/osmanthus-flower.jpg"]
+      }
+    ]
+  }
+]

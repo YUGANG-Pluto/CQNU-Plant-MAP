@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "strict": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/shared/types/**/*.d.ts",
+    "src/main/projectStore.js",
+    "src/main/storageConversionService.js",
+    "src/main/backupService.js",
+    "src/main/sqliteExchangeModel.js",
+    "src/main/sqliteConversionService.js",
+    "src/main/sqliteSchemaService.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "logs"
+  ]
+}
