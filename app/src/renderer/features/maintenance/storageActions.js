@@ -96,6 +96,22 @@ async function inspectSelectedBackupRestore() {
   }
 }
 
+async function confirmBackupRestore(backupName, imported = false) {
+  const confirmed = await openConfirmDialog({
+    title: maintenanceText(imported ? 'maintenanceBackupRestoreImported' : 'maintenanceBackupRestoreSelected'),
+    message: `${maintenanceText(imported ? 'maintenanceBackupRestoreImportedConfirm' : 'maintenanceBackupRestoreConfirm')}\n${backupName}`,
+    acceptLabel: maintenanceText(imported ? 'maintenanceBackupRestoreImported' : 'maintenanceBackupRestoreSelected'),
+    cancelLabel: maintenanceText('cancelAction')
+  });
+  if (!confirmed) return false;
+  return openConfirmDialog({
+    title: maintenanceText('maintenanceBackupRestoreHighRiskTitle'),
+    message: maintenanceText('maintenanceBackupRestoreHighRiskConfirm'),
+    acceptLabel: maintenanceText(imported ? 'maintenanceBackupRestoreImported' : 'maintenanceBackupRestoreSelected'),
+    cancelLabel: maintenanceText('cancelAction')
+  });
+}
+
 async function restoreSelectedBackup() {
   if (guardMaintenanceReadOnlyAction('backup-restore')) return;
   if (!requireProject()) return;
@@ -104,21 +120,7 @@ async function restoreSelectedBackup() {
   const plan = await inspectSelectedBackupRestore();
   if (!plan?.ok) return;
 
-  const confirmed = await openConfirmDialog({
-    title: maintenanceText('maintenanceBackupRestoreSelected'),
-    message: `${maintenanceText('maintenanceBackupRestoreConfirm')}\n${backupName}`,
-    acceptLabel: maintenanceText('maintenanceBackupRestoreSelected'),
-    cancelLabel: maintenanceText('cancelAction')
-  });
-  if (!confirmed) return;
-
-  const secondConfirmed = await openConfirmDialog({
-    title: maintenanceText('maintenanceBackupRestoreHighRiskTitle'),
-    message: maintenanceText('maintenanceBackupRestoreHighRiskConfirm'),
-    acceptLabel: maintenanceText('maintenanceBackupRestoreSelected'),
-    cancelLabel: maintenanceText('cancelAction')
-  });
-  if (!secondConfirmed) return;
+  if (!await confirmBackupRestore(backupName)) return;
 
   try {
     const result = await withProgressTask({ type: 'maintenance', title: maintenanceText('maintenanceBackupRestoreSelected'), stage: maintenanceText('progressBackup') }, async task => {
@@ -156,6 +158,84 @@ async function restoreSelectedBackup() {
     handleUiError(error, 'maintenance:backup-restore', {
       title: maintenanceText('maintenanceBackupRestoreFailed'),
       message: `${maintenanceText('maintenanceBackupRestoreFailed')}\n${maintenanceText('maintenanceBackupRestoreFailureHint')}`
+    });
+  }
+}
+
+async function importExternalBackupArchive() {
+  if (guardMaintenanceReadOnlyAction('backup-import-external')) return;
+  if (!requireProject()) return;
+  const importArchive = window.platformAdapter.backup.importArchive;
+  if (typeof importArchive !== 'function') {
+    showAlert(maintenanceText('maintenanceBackupImportUnavailable'));
+    return;
+  }
+  try {
+    setMaintenanceBusy(ui.btnImportExternalBackup, true);
+    const plan = await callIpc(importArchive({ projectDir: state.projectDir }));
+    if (plan.canceled) return;
+    setImportedBackupPlan(plan);
+    renderBackupRestorePlan(plan);
+    if (ui.maintenanceStorageSummary) {
+      ui.maintenanceStorageSummary.textContent = maintenanceText('maintenanceBackupImportReady');
+    }
+  } catch (error) {
+    setImportedBackupPlan(null);
+    handleUiError(error, 'maintenance:backup-import-external', {
+      title: maintenanceText('maintenanceBackupImportFailed')
+    });
+  } finally {
+    setMaintenanceBusy(ui.btnImportExternalBackup, false);
+  }
+}
+
+async function restoreImportedBackupArchive() {
+  if (guardMaintenanceReadOnlyAction('backup-restore-imported')) return;
+  if (!requireProject()) return;
+  const plan = maintenanceImportedBackupPlan;
+  const restoreImported = window.platformAdapter.backup.restoreImported;
+  if (!plan?.importToken || typeof restoreImported !== 'function') {
+    showAlert(maintenanceText('maintenanceBackupImportSelectFirst'));
+    return;
+  }
+  if (!await confirmBackupRestore(plan.backupName || '', true)) return;
+
+  try {
+    const result = await withProgressTask({
+      type: 'maintenance',
+      title: maintenanceText('maintenanceBackupRestoreImported'),
+      stage: maintenanceText('progressBackup')
+    }, async task => {
+      task.update({ percent: 15, stage: maintenanceText('progressBackup') });
+      await yieldToUi();
+      const restored = await callIpc(restoreImported({
+        projectDir: state.projectDir,
+        importToken: plan.importToken,
+        confirmRestore: true
+      }));
+      task.update({ percent: 75, stage: maintenanceText('progressReloading') });
+      await loadProjectIntoRenderer(state.projectDir, { storageFormat: 'auto' });
+      task.update({ percent: 92, stage: maintenanceText('maintenanceStorageVerifying') });
+      await yieldToUi();
+      return restored;
+    });
+    setImportedBackupPlan(null);
+    await refreshStorageArtifacts();
+    renderBackupRestorePlan({
+      ok: true,
+      backupName: result.backupName,
+      restoreFileCount: result.restoredFileCount,
+      hasSqliteStorage: result.hasSqliteStorage,
+      hasJsonStorage: result.hasJsonStorage,
+      skippedBackupEntries: result.skippedBackupEntries,
+      createsSafetyBackup: true,
+      warnings: result.warnings || []
+    });
+    showAlert(`${maintenanceText('maintenanceBackupRestoreDone')}\n${maintenanceText('maintenanceBackupRestoreSafetyBackup')}: ${result.safetyBackupFile || ''}`);
+  } catch (error) {
+    handleUiError(error, 'maintenance:backup-restore-imported', {
+      title: maintenanceText('maintenanceBackupRestoreFailed'),
+      message: maintenanceText('maintenanceBackupImportRetryHint')
     });
   }
 }

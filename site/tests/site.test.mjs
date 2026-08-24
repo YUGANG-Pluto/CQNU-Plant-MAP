@@ -36,3 +36,10 @@ test('workspace service worker caches only same-origin application resources', a
   assert.match(source, /_cqnu-local-image/);
   assert.doesNotMatch(source, /api\.gbif|api\.inaturalist|fetch\(['"]https:/);
 });
+
+test('documentation states browser degradation and external ZIP safety boundaries', () => {
+  const docs = renderPages({ workspaceHtml })['/docs'];
+  assert.match(docs, /Chromium、Firefox 与 Safari/);
+  assert.match(docs, /路径、加密、条目数量、解压体积、JSON 结构、图片类型与 CRC 校验/);
+  assert.match(docs, /不会静默改用远程存储/);
+});

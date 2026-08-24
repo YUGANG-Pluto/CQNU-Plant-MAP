@@ -14,9 +14,21 @@ The site server does not receive project records, coordinates, images, local dir
 
 ## Browser Permissions
 
-Chromium-based browsers can grant read/write access to a selected project directory. A directory handle is remembered by the browser, but permission can be revoked by the browser or operating system. When directory access is unavailable, users can import project files and continue in the OPFS copy.
+The workspace reports detected capabilities instead of assuming support from the browser name. The current hidden acceptance target is Chromium. Chromium, Firefox, and Safari use the same checks for WebAssembly, Worker, OPFS, Web Locks, IndexedDB, Cache Storage, secure identifiers, file selection, downloads, and optional directory selection.
+
+When all required capabilities are present, the workspace edits the OPFS SQLite copy. Directory selection enables the additional JSON mirror; without it, the workspace falls back to explicit file selection and downloads. Missing critical local database capabilities blocks writes with a readable explanation and never falls back to remote storage.
+
+A directory handle is remembered by the browser, but permission can be revoked by the browser or operating system. When directory access is unavailable, users can import project files and continue in the OPFS copy.
 
 Only one tab can hold the browser database writer lock. If another workspace tab already owns the lock, close it before opening the project in a second tab.
+
+## Portable Backup ZIP
+
+- Manual browser backups can be downloaded as ZIP files containing the manifest, `settings.json`, `zones.json`, `points.json`, and readable raster image bytes.
+- External ZIP files are inspected before decompression and restore. The inspection rejects path traversal, absolute paths, encrypted or split archives, Zip64, unsupported compression, duplicate paths, excessive entry counts, and configured size or expansion limits.
+- After decompression, the workspace validates UTF-8 JSON shapes, the exact backup format and version, image allowlists and raster signatures, manifest consistency, and CRC integrity.
+- A successful inspection creates a short-lived in-memory restore token. The ZIP is not uploaded or persisted by the site.
+- Restore requires two confirmations and creates a `pre_restore` internal safety backup before replacing the active browser project. Unknown project record fields are preserved.
 
 ## Desktop Interchange
 

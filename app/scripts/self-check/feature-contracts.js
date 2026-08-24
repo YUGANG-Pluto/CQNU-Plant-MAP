@@ -448,12 +448,12 @@ function testPlatformAdapterContract() {
   assert.ok(runtimeSource.includes('createWebPlatformAdapter()'));
   assert.ok(electronSource.includes('writeProject: true'));
   assert.ok(webSource.includes("runtime: 'web'"));
-  assert.ok(webSource.includes('writeProject: true'));
-  assert.ok(webSource.includes('sqliteStorage: true'));
-  assert.ok(webSource.includes('backups: true'));
-  assert.ok(webSource.includes('diagnostics: true'));
+  assert.ok(webSource.includes('assessWebRuntimeCapabilities'));
+  assert.ok(webSource.includes('writeProject: webCapabilityReport.workspaceReady'));
+  assert.ok(webSource.includes('sqliteStorage: webCapabilityReport.workspaceReady'));
+  assert.ok(webSource.includes('externalBackupImport: webCapabilityReport.portableBackupAvailable'));
   assert.ok(webSource.includes('speciesReference: true'));
-  assert.ok(webSource.includes('readOnly: false'));
+  assert.ok(webSource.includes('readOnly: !webCapabilityReport.workspaceReady'));
   assert.ok(webProjectSource.includes('selectWebProjectFiles'));
   assert.ok(webProjectSource.includes('createWebProjectSession'));
   assert.ok(webProjectSource.includes("input.accept = '.json,.geojson,.csv"));

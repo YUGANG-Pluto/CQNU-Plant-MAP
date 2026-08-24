@@ -377,6 +377,13 @@ export async function restoreWebImageBackup(
   directoryHandle?: PermissionDirectoryHandle
 ): Promise<WebBackupImageRestore> {
   const assets = await readWebImageBackup(backupId);
+  return restoreWebImageAssets(assets, directoryHandle);
+}
+
+export async function restoreWebImageAssets(
+  assets: WebBackupImageAsset[],
+  directoryHandle?: PermissionDirectoryHandle
+): Promise<WebBackupImageRestore> {
   let restored = 0;
   let skipped = 0;
   const imageCache = await caches.open(IMAGE_CACHE);

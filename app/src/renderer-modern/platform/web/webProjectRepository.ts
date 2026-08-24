@@ -18,9 +18,14 @@ import {
   hydrateWebImages,
   inspectWebImageBackup,
   readWebImageBackup,
+  restoreWebImageAssets,
   restoreWebImageBackup
 } from './webImageStore';
-import { buildWebBackupArchive, webBackupArchiveName } from './webBackupArchive';
+import {
+  buildWebBackupArchive,
+  webBackupArchiveName
+} from './webBackupArchive';
+import type { ImportedWebBackupArchive } from './webBackupImport';
 import { webProjectDir, type WebProjectSession } from '../webProject';
 
 interface ProjectContext {
@@ -325,14 +330,19 @@ export class WebProjectRepository {
     };
   }
 
-  async restoreBackup(projectDir: string, name: string): Promise<WebProjectRecord> {
-    const backup = await this.inspectBackup(projectDir, name);
-    const snapshot = backup?.snapshot;
-    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
-      throw new Error('所选浏览器备份无法读取。');
-    }
-    const source = snapshot as WebProjectRecord;
+  async #restoreSnapshot(
+    projectDir: string,
+    name: string,
+    source: WebProjectRecord,
+    restoreImages: (directoryHandle?: PermissionDirectoryHandle) => Promise<{
+      restored: number;
+      skipped: number;
+      entries: number;
+    }>,
+    missingImageReferences: string[]
+  ): Promise<WebProjectRecord> {
     const projectId = projectIdFromDir(projectDir);
+    if (!projectId) throw new Error('浏览器项目标识无效。');
     const safetyBackup = await this.createBackup(projectDir, 'pre_restore');
     const sourceKind = ['directory', 'import', 'opfs'].includes(String(source.sourceKind || ''))
       ? source.sourceKind as StoredWebProject['sourceKind']
@@ -369,14 +379,10 @@ export class WebProjectRepository {
         this.#contexts.set(projectId, { session, directoryPermissionStatus: 'denied' });
       }
     }
-    const imageSummary = await inspectWebImageBackup(String(backup.id || ''));
-    const imageRestore = await restoreWebImageBackup(
-      String(backup.id || ''),
-      restoredDirectoryHandle
-    );
+    const imageRestore = await restoreImages(restoredDirectoryHandle);
     await hydrateWebImages(collectWebImageReferences(restored.points), restoredDirectoryHandle);
-    if (imageSummary.missingReferences.length) {
-      warnings.push(`创建备份时有 ${imageSummary.missingReferences.length} 个图片引用无法读取。`);
+    if (missingImageReferences.length) {
+      warnings.push(`创建备份时有 ${missingImageReferences.length} 个图片引用无法读取。`);
     }
     if (imageRestore.skipped) {
       warnings.push(`有 ${imageRestore.skipped} 张目录图片因目录权限不可用而未写回。`);
@@ -387,9 +393,39 @@ export class WebProjectRepository {
       hasSqliteStorage: true,
       hasJsonStorage,
       restoredImageCount: imageRestore.restored,
-      skippedBackupEntries: imageRestore.skipped + imageSummary.missingReferences.length,
+      skippedBackupEntries: imageRestore.skipped + missingImageReferences.length,
       safetyBackupFile: safetyBackup.name,
       warnings
     };
+  }
+
+  async restoreBackup(projectDir: string, name: string): Promise<WebProjectRecord> {
+    const backup = await this.inspectBackup(projectDir, name);
+    const snapshot = backup?.snapshot;
+    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+      throw new Error('所选浏览器备份无法读取。');
+    }
+    const backupId = String(backup.id || '');
+    const imageSummary = await inspectWebImageBackup(backupId);
+    return this.#restoreSnapshot(
+      projectDir,
+      name,
+      snapshot as WebProjectRecord,
+      directoryHandle => restoreWebImageBackup(backupId, directoryHandle),
+      imageSummary.missingReferences
+    );
+  }
+
+  async restoreImportedBackup(
+    projectDir: string,
+    archive: ImportedWebBackupArchive
+  ): Promise<WebProjectRecord> {
+    return this.#restoreSnapshot(
+      projectDir,
+      archive.fileName,
+      archive.snapshot,
+      directoryHandle => restoreWebImageAssets(archive.images, directoryHandle),
+      archive.manifest.missingImageReferences
+    );
   }
 }

@@ -4,6 +4,7 @@ function openMaintenanceCenter() {
   renderMaintenanceReport(maintenanceLastReport);
   renderStorageReport(null);
   renderStorageArtifacts(null);
+  setImportedBackupPlan(maintenanceImportedBackupPlan);
   openLayerModal(ui.maintenanceModal);
   refreshMaintenanceLogs();
   refreshStorageArtifacts();
@@ -29,6 +30,8 @@ function bindMaintenanceEvents() {
   ui.btnDeleteSelectedStorageArtifacts?.addEventListener('click', deleteSelectedStorageArtifacts);
   ui.btnInspectSelectedBackup?.addEventListener('click', inspectSelectedBackupRestore);
   ui.btnRestoreSelectedBackup?.addEventListener('click', restoreSelectedBackup);
+  ui.btnImportExternalBackup?.addEventListener('click', importExternalBackupArchive);
+  ui.btnRestoreImportedBackup?.addEventListener('click', restoreImportedBackupArchive);
   ui.btnApplySafeMode?.addEventListener('click', applySafeModeSettings);
   ui.btnExitSafeMode?.addEventListener('click', exitSafeModeSettings);
   ui.btnExportUiSettings?.addEventListener('click', exportUiSettings);

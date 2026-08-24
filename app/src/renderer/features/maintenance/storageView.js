@@ -1,4 +1,5 @@
 let maintenanceLastStorageInventory = null;
+let maintenanceImportedBackupPlan = null;
 const maintenanceSelectedStorageArtifacts = {
   sqlite: false,
   json: false,
@@ -129,7 +130,7 @@ function renderBackupRestorePlan(plan) {
     ui.maintenanceStorageReport.appendChild(listTextItem(maintenanceText('maintenanceBackupNoRestorePlan')));
     return;
   }
-  [
+  const rows = [
     [maintenanceText('maintenanceStorageStatus'), plan.ok ? maintenanceText('maintenanceStorageStatusReady') : maintenanceText('maintenanceStorageStatusBlocked')],
     [maintenanceText('maintenanceStorageBackup'), plan.backupName || ''],
     [maintenanceText('maintenanceBackupRestoreFiles'), String(plan.restoreFileCount || 0)],
@@ -139,9 +140,32 @@ function renderBackupRestorePlan(plan) {
     ].filter(Boolean).join(' / ') || maintenanceText('maintenanceStorageNoReadableFormat')],
     [maintenanceText('maintenanceBackupRestoreSafety'), plan.createsSafetyBackup ? maintenanceText('yes') : maintenanceText('no')],
     [maintenanceText('maintenanceBackupRestoreSkipped'), String(plan.skippedBackupEntries || 0)]
-  ].forEach(([label, value]) => ui.maintenanceStorageReport.appendChild(listTextItem(label, value)));
+  ];
+  if (plan.sourceProjectLabel) {
+    rows.push([maintenanceText('maintenanceBackupSourceProject'), plan.sourceProjectLabel]);
+  }
+  if (plan.sourceGeneratedAt) {
+    rows.push([maintenanceText('maintenanceBackupSourceTime'), plan.sourceGeneratedAt]);
+  }
+  if (plan.archiveBytes !== undefined) {
+    rows.push([maintenanceText('maintenanceBackupArchiveSize'), `${plan.archiveBytes} bytes`]);
+  }
+  if (plan.zoneCount !== undefined || plan.pointCount !== undefined || plan.imageCount !== undefined) {
+    rows.push([
+      maintenanceText('maintenanceBackupContentCounts'),
+      `${maintenanceText('maintenanceStorageZones')}: ${plan.zoneCount || 0} / ${maintenanceText('maintenanceStoragePoints')}: ${plan.pointCount || 0} / ${maintenanceText('maintenanceStorageImages')}: ${plan.imageCount || 0}`
+    ]);
+  }
+  rows.forEach(([label, value]) => ui.maintenanceStorageReport.appendChild(listTextItem(label, value)));
   if (plan.warnings?.length) {
     ui.maintenanceStorageReport.appendChild(listTextItem(maintenanceText('maintenanceWarn'), plan.warnings.join('; ')));
+  }
+}
+
+function setImportedBackupPlan(plan) {
+  maintenanceImportedBackupPlan = plan?.importToken ? plan : null;
+  if (ui.btnRestoreImportedBackup) {
+    ui.btnRestoreImportedBackup.disabled = !maintenanceImportedBackupPlan;
   }
 }
 

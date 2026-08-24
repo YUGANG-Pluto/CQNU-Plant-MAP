@@ -53,6 +53,8 @@ export interface PlatformServiceApi {
     create: PlatformCommand;
     inspectRestore: PlatformCommand;
     restore: PlatformCommand;
+    importArchive?: PlatformCommand;
+    restoreImported?: PlatformCommand;
     listExpired: PlatformCommand;
     keepExpired: PlatformCommand;
     deleteExpired: PlatformCommand;
@@ -101,9 +103,27 @@ export interface PlatformCapabilities {
   externalLinks: boolean;
   nativeWindow: boolean;
   readOnly: boolean;
+  externalBackupImport?: boolean;
+  directoryMirror?: boolean;
+}
+
+export interface PlatformWebCapabilityReport {
+  mode: 'full' | 'portable' | 'blocked';
+  workspaceReady: boolean;
+  directoryMirrorAvailable: boolean;
+  portableBackupAvailable: boolean;
+  missingRequired: string[];
+  items: Array<{
+    id: string;
+    available: boolean;
+    required: boolean;
+  }>;
 }
 
 export interface PlatformAdapter extends PlatformServiceApi {
   runtime: PlatformRuntime;
   capabilities: Readonly<PlatformCapabilities>;
+  web?: {
+    capabilityReport: Readonly<PlatformWebCapabilityReport>;
+  };
 }

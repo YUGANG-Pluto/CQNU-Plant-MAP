@@ -11,6 +11,7 @@ interface CommandButtonProps {
   className?: string;
   moduleAction?: boolean;
   shortcut?: string;
+  disabled?: boolean;
 }
 
 export function CommandButton({
@@ -20,7 +21,8 @@ export function CommandButton({
   i18nKey,
   className = '',
   moduleAction = false,
-  shortcut
+  shortcut,
+  disabled = false
 }: CommandButtonProps) {
   const classes = [
     'btn',
@@ -30,7 +32,7 @@ export function CommandButton({
   ].filter(Boolean).join(' ');
 
   return (
-    <button id={id} class={classes} type="button">
+    <button id={id} class={classes} type="button" disabled={disabled}>
       {icon ? <span class="ui-command-button__icon">{icon}</span> : null}
       <span class="ui-command-button__label" data-i18n={i18nKey}>{label}</span>
       {shortcut ? <kbd class="ui-command-shortcut">{shortcut}</kbd> : null}

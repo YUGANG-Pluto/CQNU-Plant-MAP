@@ -1,6 +1,7 @@
 import { LayerModal } from '../../components/LayerModal';
 
 export function MaintenanceModal() {
+  const canImportExternalBackup = window.platformAdapter?.capabilities.externalBackupImport === true;
   return (
     <LayerModal
       id="maintenanceModal"
@@ -79,6 +80,12 @@ export function MaintenanceModal() {
             </button>
             <button id="btnRestoreSelectedBackup" class="btn btn-soft" data-i18n="maintenanceBackupRestoreSelected">
               恢复选中备份
+            </button>
+            <button id="btnImportExternalBackup" class="btn btn-soft web-runtime-only" data-i18n="maintenanceBackupImportExternal" disabled={!canImportExternalBackup}>
+              导入外部备份 ZIP
+            </button>
+            <button id="btnRestoreImportedBackup" class="btn btn-soft web-runtime-only" data-i18n="maintenanceBackupRestoreImported" disabled>
+              恢复已检测的外部备份
             </button>
           </div>
           <div id="maintenanceStorageReport" class="maintenance-report" />
