@@ -20,7 +20,7 @@ The Worker remains small because renderer bundles, SQLite Wasm, maps, styles, an
 npm run package:sites
 ```
 
-This validates the build and creates an ignored deployment archive under `.sites-artifacts/`. The archive contains the contents of `dist/`, not source code, local project data, dependencies, or desktop packages.
+This validates the build and creates an ignored deployment archive under `.sites-artifacts/`. The archive contains the `dist/` directory, not source code, local project data, dependencies, or desktop packages.
 
 ## Private deployment and rollback
 

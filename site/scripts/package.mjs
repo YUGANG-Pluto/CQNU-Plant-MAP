@@ -18,7 +18,7 @@ await mkdir(artifactsRoot, { recursive: true });
 await rm(archivePath, { force: true });
 
 await new Promise((resolveRun, rejectRun) => {
-  const child = spawn('tar', ['-czf', archivePath, '-C', distRoot, '.'], {
+  const child = spawn('tar', ['-czf', archivePath, '-C', siteRoot, 'dist'], {
     cwd: siteRoot,
     stdio: 'inherit',
     windowsHide: true
