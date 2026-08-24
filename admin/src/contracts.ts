@@ -11,37 +11,58 @@ export const ADMIN_CAPABILITIES = [
 ] as const;
 
 export type AdminCapability = typeof ADMIN_CAPABILITIES[number];
-export type AdminRole = 'owner' | 'maintainer' | 'reviewer' | 'viewer';
+export type AdminRole = 'owner' | 'editor' | 'viewer';
+export type AdminAuthenticationMethod = 'platform-owner-gate' | 'oidc' | 'webauthn';
+export type AdminAuditAction = AdminCapability
+  | 'session.create'
+  | 'session.rotate'
+  | 'session.revoke'
+  | 'session.revoke_all';
 
 export interface AdminPrincipal {
   id: string;
+  providerSubject: string;
   displayName: string;
   role: AdminRole;
   enabled: boolean;
 }
 
-export interface AdminSession {
+export interface AdminSessionRecord {
   id: string;
+  tokenDigest: string;
+  csrfDigest: string;
   principalId: string;
   role: AdminRole;
   createdAt: string;
+  rotatedAt: string;
+  lastSeenAt: string;
   expiresAt: string;
-  authenticationMethod: 'platform-owner-gate' | 'oidc' | 'webauthn';
+  absoluteExpiresAt: string;
+  authenticationMethod: AdminAuthenticationMethod;
+  rotationCounter: number;
   elevatedAt?: string;
+  revokedAt?: string;
 }
+
+export type AdminSession = Omit<AdminSessionRecord, 'tokenDigest' | 'csrfDigest'>;
 
 export interface AdminAuditEvent {
   id: string;
   occurredAt: string;
   principalId: string;
-  action: AdminCapability | 'session.create' | 'session.revoke';
+  action: AdminAuditAction;
   outcome: 'allowed' | 'denied' | 'failed';
   requestId: string;
   metadata: Record<string, string | number | boolean>;
 }
 
-export interface IdentityProvider {
-  resolveOwner(request: { requestId: string }): Promise<AdminPrincipal | null>;
+export interface IdentityAdapterContext {
+  requestId: string;
+  now: string;
+}
+
+export interface IdentityAdapter {
+  verify(assertion: unknown, context: IdentityAdapterContext): Promise<AdminPrincipal | null>;
 }
 
 export interface AuditSink {
@@ -49,7 +70,9 @@ export interface AuditSink {
 }
 
 export interface SessionStore {
-  get(sessionId: string): Promise<AdminSession | null>;
-  put(session: AdminSession): Promise<void>;
-  revoke(sessionId: string): Promise<void>;
+  getByTokenDigest(tokenDigest: string): Promise<AdminSessionRecord | null>;
+  put(session: AdminSessionRecord): Promise<void>;
+  replace(expectedTokenDigest: string, session: AdminSessionRecord): Promise<boolean>;
+  revoke(sessionId: string, revokedAt: string): Promise<boolean>;
+  revokePrincipal(principalId: string, revokedAt: string): Promise<number>;
 }

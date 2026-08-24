@@ -1,45 +1,57 @@
 import {
   ADMIN_CAPABILITIES,
   ADMIN_MODE,
-  type AdminAuditEvent,
   type AdminCapability,
-  type AdminSession
+  type AdminRole,
+  type AdminSessionRecord
 } from './contracts.js';
 
-const blockedMetadataKey = /(password|secret|token|cookie|authorization|project|point|zone|coordinate|latitude|longitude|image|file|path|directory)/i;
+const ROLE_CAPABILITIES = Object.freeze({
+  owner: ADMIN_CAPABILITIES,
+  editor: [
+    'site.read',
+    'site.publish',
+    'release.read',
+    'release.manage',
+    'audit.read'
+  ] as const,
+  viewer: ['site.read', 'release.read', 'audit.read'] as const
+}) satisfies Readonly<Record<AdminRole, readonly AdminCapability[]>>;
 
-export function isSessionActive(session: AdminSession | null, now = new Date()): session is AdminSession {
-  if (!session || session.role !== 'owner') return false;
+export function isSessionActive(
+  session: AdminSessionRecord | null,
+  now = new Date()
+): boolean {
+  if (!session || session.revokedAt) return false;
   const expiresAt = Date.parse(session.expiresAt);
-  return Number.isFinite(expiresAt) && expiresAt > now.getTime();
+  const absoluteExpiresAt = Date.parse(session.absoluteExpiresAt);
+  return Number.isFinite(expiresAt)
+    && Number.isFinite(absoluteExpiresAt)
+    && expiresAt > now.getTime()
+    && absoluteExpiresAt > now.getTime();
+}
+
+export function roleAllows(role: AdminRole, capability: AdminCapability): boolean {
+  const capabilities: readonly AdminCapability[] = ROLE_CAPABILITIES[role];
+  return capabilities.includes(capability);
 }
 
 export function can(
-  session: AdminSession | null,
+  session: AdminSessionRecord | null,
   capability: AdminCapability,
   now = new Date()
 ): boolean {
+  if (!session || session.role !== 'owner') return false;
   return ADMIN_MODE === 'owner-only'
     && ADMIN_CAPABILITIES.includes(capability)
-    && isSessionActive(session, now);
+    && isSessionActive(session, now)
+    && roleAllows(session.role, capability);
 }
 
 export function requireCapability(
-  session: AdminSession | null,
+  session: AdminSessionRecord | null,
   capability: AdminCapability,
   now = new Date()
 ): void {
-  if (!can(session, capability, now)) {
-    throw new Error('ADMIN_ACCESS_DENIED');
-  }
-}
-
-export function sanitizeAuditMetadata(
-  value: Record<string, unknown>
-): AdminAuditEvent['metadata'] {
-  return Object.fromEntries(Object.entries(value)
-    .filter(([key, item]) => !blockedMetadataKey.test(key)
-      && ['string', 'number', 'boolean'].includes(typeof item))
-    .slice(0, 24)
-    .map(([key, item]) => [key, typeof item === 'string' ? item.slice(0, 240) : item])) as AdminAuditEvent['metadata'];
+  if (!can(session, capability, now)) throw new Error('ADMIN_ACCESS_DENIED');
 }
