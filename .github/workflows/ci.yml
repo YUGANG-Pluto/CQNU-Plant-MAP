@@ -74,6 +74,9 @@ jobs:
       - name: Run SQLite runtime acceptance
         run: npm run db:test-runtime
 
+      - name: Build shared browser renderer
+        run: npm run build:renderer
+
       - name: Build browser workspace site bundle
         run: npm --prefix ../site run build
 
