@@ -1,6 +1,7 @@
 import exifr from 'exifr';
 import {
   deleteWebProjectImage,
+  writeWebProjectImageReference,
   writeWebProjectImage,
   type PermissionDirectoryHandle
 } from './webFileSystem';
@@ -14,8 +15,33 @@ declare global {
 }
 
 const IMAGE_CACHE = 'cqnu-plant-map-web-images-v1';
+const BACKUP_IMAGE_CACHE = 'cqnu-plant-map-web-backup-images-v1';
 const LOCAL_IMAGE_PREFIX = '/_cqnu-local-image/';
+const BACKUP_IMAGE_PREFIX = '/_cqnu-backup-image/';
 const objectUrls = new Map<string, string>();
+
+export interface WebBackupImageEntry {
+  reference: string;
+  fileName: string;
+  mediaType: string;
+  size: number;
+  archivePath: string;
+}
+
+export interface WebBackupImageAsset extends WebBackupImageEntry {
+  blob: Blob;
+}
+
+export interface WebBackupImageCapture {
+  entries: WebBackupImageEntry[];
+  missingReferences: string[];
+}
+
+export interface WebBackupImageRestore {
+  restored: number;
+  skipped: number;
+  entries: number;
+}
 
 function projectIdFromDir(projectDir: string): string {
   const prefix = 'web://project/';
@@ -55,6 +81,40 @@ function stableImageUrl(projectId: string, fileName: string): string {
 function requestForReference(reference: string): Request | null {
   if (!reference.startsWith(LOCAL_IMAGE_PREFIX)) return null;
   return new Request(new URL(reference, window.location.origin).href);
+}
+
+function backupRequest(backupId: string, index: number): Request {
+  const path = `${BACKUP_IMAGE_PREFIX}${encodeURIComponent(backupId)}/${index}`;
+  return new Request(new URL(path, window.location.origin).href);
+}
+
+function backupManifestRequest(backupId: string): Request {
+  const path = `${BACKUP_IMAGE_PREFIX}${encodeURIComponent(backupId)}/manifest`;
+  return new Request(new URL(path, window.location.origin).href);
+}
+
+function decodeHeader(value: string | null): string {
+  if (!value) return '';
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return '';
+  }
+}
+
+function fileNameForReference(reference: string, preferredName = ''): string {
+  const raw = preferredName || reference.replaceAll('\\', '/').split('/').pop() || 'image';
+  let decoded = raw;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    // Keep the original name when it is not URI encoded.
+  }
+  const safe = decoded
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_')
+    .replace(/^\.+/, '')
+    .slice(0, 100);
+  return safe || 'image';
 }
 
 function rememberObjectUrl(reference: string, blob: Blob): string {
@@ -107,17 +167,40 @@ async function readDirectoryImage(
   reference: string
 ): Promise<File | null> {
   if (!root) return null;
-  const segments = reference.replaceAll('\\', '/').split('/').filter(Boolean);
-  if (!segments.length || segments.some(segment => segment === '.' || segment === '..')) return null;
+  const match = /^information\/images\/([^/]+)$/.exec(reference.replaceAll('\\', '/'));
+  if (!match || match[1] === '.' || match[1] === '..') return null;
   try {
-    let directory: FileSystemDirectoryHandle = root;
-    for (const segment of segments.slice(0, -1)) {
-      directory = await directory.getDirectoryHandle(segment);
-    }
-    return await directory.getFileHandle(segments.at(-1) || '').then(handle => handle.getFile());
+    const information = await root.getDirectoryHandle('information');
+    const images = await information.getDirectoryHandle('images');
+    return await images.getFileHandle(match[1]).then(handle => handle.getFile());
   } catch {
     return null;
   }
+}
+
+async function readImageSource(
+  reference: string,
+  directoryHandle?: PermissionDirectoryHandle
+): Promise<{ blob: Blob; fileName: string; mediaType: string } | null> {
+  const request = requestForReference(reference);
+  if (request) {
+    const response = await (await caches.open(IMAGE_CACHE)).match(request);
+    if (!response) return null;
+    const blob = await response.blob();
+    return {
+      blob,
+      fileName: fileNameForReference(reference, decodeHeader(response.headers.get('x-cqnu-file-name'))),
+      mediaType: blob.type || response.headers.get('content-type') || 'application/octet-stream'
+    };
+  }
+  const file = await readDirectoryImage(directoryHandle, reference);
+  return file
+    ? {
+      blob: file,
+      fileName: fileNameForReference(reference, file.name),
+      mediaType: file.type || 'application/octet-stream'
+    }
+    : null;
 }
 
 export function installWebImageResolver(): void {
@@ -173,6 +256,157 @@ export async function hydrateWebImages(
   }));
 }
 
+export async function deleteWebImageBackup(backupId: string): Promise<number> {
+  if (!backupId) return 0;
+  const cache = await caches.open(BACKUP_IMAGE_CACHE);
+  const prefix = new URL(
+    `${BACKUP_IMAGE_PREFIX}${encodeURIComponent(backupId)}/`,
+    window.location.origin
+  ).href;
+  const requests = (await cache.keys()).filter(request => request.url.startsWith(prefix));
+  const results = await Promise.all(requests.map(request => cache.delete(request)));
+  return results.filter(Boolean).length;
+}
+
+export async function captureWebImageBackup(
+  backupId: string,
+  references: string[],
+  directoryHandle?: PermissionDirectoryHandle
+): Promise<WebBackupImageCapture> {
+  await deleteWebImageBackup(backupId);
+  const cache = await caches.open(BACKUP_IMAGE_CACHE);
+  const entries: WebBackupImageEntry[] = [];
+  const missingReferences: string[] = [];
+  const uniqueReferences = [...new Set(references.map(String).map(item => item.trim()).filter(Boolean))];
+
+  try {
+    for (const [index, reference] of uniqueReferences.entries()) {
+      const source = await readImageSource(reference, directoryHandle);
+      if (!source) {
+        missingReferences.push(reference);
+        continue;
+      }
+      const archivePath = `information/images/${String(index + 1).padStart(4, '0')}_${source.fileName}`;
+      const entry: WebBackupImageEntry = {
+        reference,
+        fileName: source.fileName,
+        mediaType: source.mediaType,
+        size: source.blob.size,
+        archivePath
+      };
+      await cache.put(backupRequest(backupId, index), new Response(source.blob, {
+        headers: {
+          'content-type': source.mediaType,
+          'x-cqnu-reference': encodeURIComponent(reference),
+          'x-cqnu-file-name': encodeURIComponent(source.fileName),
+          'x-cqnu-archive-path': encodeURIComponent(archivePath)
+        }
+      }));
+      entries.push(entry);
+    }
+    await cache.put(backupManifestRequest(backupId), new Response(JSON.stringify({
+      entries,
+      missingReferences
+    }), {
+      headers: { 'content-type': 'application/json;charset=utf-8' }
+    }));
+  } catch (error) {
+    await deleteWebImageBackup(backupId);
+    throw error;
+  }
+
+  return { entries, missingReferences };
+}
+
+export async function inspectWebImageBackup(backupId: string): Promise<WebBackupImageCapture> {
+  if (!backupId) return { entries: [], missingReferences: [] };
+  const response = await (await caches.open(BACKUP_IMAGE_CACHE)).match(backupManifestRequest(backupId));
+  if (!response) {
+    const assets = await readWebImageBackup(backupId);
+    return {
+      entries: assets.map(({ blob: _blob, ...entry }) => entry),
+      missingReferences: []
+    };
+  }
+  try {
+    const value = await response.json() as Partial<WebBackupImageCapture>;
+    return {
+      entries: Array.isArray(value.entries) ? value.entries : [],
+      missingReferences: Array.isArray(value.missingReferences)
+        ? value.missingReferences.map(String)
+        : []
+    };
+  } catch {
+    return { entries: [], missingReferences: [] };
+  }
+}
+
+export async function readWebImageBackup(backupId: string): Promise<WebBackupImageAsset[]> {
+  if (!backupId) return [];
+  const cache = await caches.open(BACKUP_IMAGE_CACHE);
+  const prefix = new URL(
+    `${BACKUP_IMAGE_PREFIX}${encodeURIComponent(backupId)}/`,
+    window.location.origin
+  ).href;
+  const requests = (await cache.keys())
+    .filter(request => request.url.startsWith(prefix))
+    .sort((left, right) => left.url.localeCompare(right.url, undefined, { numeric: true }));
+  const assets: WebBackupImageAsset[] = [];
+  for (const request of requests) {
+    const response = await cache.match(request);
+    if (!response) continue;
+    const blob = await response.blob();
+    const reference = decodeHeader(response.headers.get('x-cqnu-reference'));
+    if (!reference) continue;
+    const fileName = fileNameForReference(reference, decodeHeader(response.headers.get('x-cqnu-file-name')));
+    assets.push({
+      reference,
+      fileName,
+      mediaType: blob.type || response.headers.get('content-type') || 'application/octet-stream',
+      size: blob.size,
+      archivePath: decodeHeader(response.headers.get('x-cqnu-archive-path'))
+        || `information/images/${String(assets.length + 1).padStart(4, '0')}_${fileName}`,
+      blob
+    });
+  }
+  return assets;
+}
+
+export async function restoreWebImageBackup(
+  backupId: string,
+  directoryHandle?: PermissionDirectoryHandle
+): Promise<WebBackupImageRestore> {
+  const assets = await readWebImageBackup(backupId);
+  let restored = 0;
+  let skipped = 0;
+  const imageCache = await caches.open(IMAGE_CACHE);
+  for (const asset of assets) {
+    try {
+      const request = requestForReference(asset.reference);
+      if (request) {
+        await imageCache.put(request, new Response(asset.blob, {
+          headers: {
+            'content-type': asset.mediaType,
+            'x-cqnu-file-name': encodeURIComponent(asset.fileName)
+          }
+        }));
+        rememberObjectUrl(asset.reference, asset.blob);
+        restored += 1;
+        continue;
+      }
+      if (directoryHandle && await writeWebProjectImageReference(directoryHandle, asset.reference, asset.blob)) {
+        rememberObjectUrl(asset.reference, asset.blob);
+        restored += 1;
+        continue;
+      }
+    } catch {
+      // Continue restoring remaining images when directory permission or quota changes.
+    }
+    skipped += 1;
+  }
+  return { restored, skipped, entries: assets.length };
+}
+
 export async function deleteWebImage(
   reference: string,
   directoryHandle?: PermissionDirectoryHandle
@@ -185,12 +419,17 @@ export async function deleteWebImage(
   return (await caches.open(IMAGE_CACHE)).delete(request);
 }
 
-export async function inspectWebImageReferences(references: string[]): Promise<UnknownRecord[]> {
+export async function inspectWebImageReferences(
+  references: string[],
+  directoryHandle?: PermissionDirectoryHandle
+): Promise<UnknownRecord[]> {
   const cache = await caches.open(IMAGE_CACHE);
   return Promise.all(references.map(async reference => {
     if (objectUrls.has(reference)) return { ref: reference, exists: true, code: '' };
     const request = requestForReference(reference);
-    const exists = Boolean(request && await cache.match(request));
+    const exists = request
+      ? Boolean(await cache.match(request))
+      : Boolean(await readDirectoryImage(directoryHandle, reference));
     return { ref: reference, exists, code: exists ? '' : 'WEB_IMAGE_NOT_AVAILABLE' };
   }));
 }

@@ -78,7 +78,13 @@ async function loadProjectIntoRenderer(projectDir, options = {}) {
   });
 
   await maybeHandleExpiredBackups(data.projectDir);
-  toast(t(window.platformAdapter?.runtime === 'web' ? 'webProjectLoaded' : 'projectCreated'));
+  toast(t(
+    data.webDirectoryReconnectRequired
+      ? 'webDirectoryReconnectRequired'
+      : window.platformAdapter?.runtime === 'web'
+        ? 'webProjectLoaded'
+        : 'projectCreated'
+  ));
 }
 
 function applyI18n() {

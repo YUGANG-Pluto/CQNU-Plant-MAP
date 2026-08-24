@@ -10,6 +10,7 @@ This project uses third-party packages through the application package manifest 
 | better-sqlite3 | Desktop SQLite project storage and conversion | MIT |
 | @sqlite.org/sqlite-wasm | Browser SQLite runtime backed by OPFS | Apache-2.0 |
 | exifr | Image metadata reading | MIT |
+| fflate | Browser backup ZIP creation | MIT |
 | preact | Component-based renderer shell | MIT |
 | lucide-preact | User-interface icons | ISC |
 
@@ -55,6 +56,7 @@ Map data, imagery, and tile services are provided by their respective service pr
 | better-sqlite3 | 桌面端 SQLite 项目存储与数据转换 | MIT |
 | @sqlite.org/sqlite-wasm | 基于 OPFS 的浏览器 SQLite 运行时 | Apache-2.0 |
 | exifr | 图片元数据读取 | MIT |
+| fflate | 浏览器备份 ZIP 创建 | MIT |
 | preact | 组件化渲染器外壳 | MIT |
 | lucide-preact | 用户界面图标 | ISC |
 

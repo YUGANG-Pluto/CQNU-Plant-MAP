@@ -1,23 +1,23 @@
-const { readFile } = require('node:fs/promises');
 const http = require('node:http');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 const { app, BrowserWindow, session } = require('electron');
 
-const siteWorkerPath = path.resolve(__dirname, '../../site/dist/server/index.js');
+const siteRuntimePath = path.resolve(__dirname, '../../site/scripts/local-runtime.mjs');
 const host = '127.0.0.1';
 
 async function createSiteServer() {
-  const source = await readFile(siteWorkerPath, 'utf8');
-  const workerUrl = `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
-  const worker = (await import(workerUrl)).default;
+  const { createLocalSiteRuntime } = await import(pathToFileURL(siteRuntimePath).href);
+  const { worker, env } = await createLocalSiteRuntime();
   const server = http.createServer(async (request, response) => {
     try {
       const address = server.address();
       const port = typeof address === 'object' && address ? address.port : 0;
       const target = new URL(request.url || '/', `http://${host}:${port}`);
-      const siteResponse = await worker.fetch(new Request(target, {
-        method: request.method || 'GET'
-      }));
+      const siteResponse = await worker.fetch(
+        new Request(target, { method: request.method || 'GET' }),
+        env
+      );
       response.writeHead(siteResponse.status, Object.fromEntries(siteResponse.headers));
       response.end(Buffer.from(await siteResponse.arrayBuffer()));
     } catch {
@@ -80,18 +80,66 @@ async function run() {
     await waitForRuntime(window);
     const result = await window.webContents.executeJavaScript(`(async () => {
       const projectDir = 'web://project/web-workspace-smoke';
+      const imageReference = '/_cqnu-local-image/web-workspace-smoke/smoke/image.txt';
+      const imageRequest = new Request(new URL(imageReference, window.location.origin).href);
+      const imageCache = await caches.open('cqnu-plant-map-web-images-v1');
+      await imageCache.put(imageRequest, new Response(new Blob(['smoke-image-bytes'], {
+        type: 'application/octet-stream'
+      }), {
+        headers: { 'x-cqnu-file-name': encodeURIComponent('smoke-image.bin') }
+      }));
       const saved = await window.platformAdapter.project.save({
         projectDir,
         settings: { projectName: 'Web workspace smoke' },
         zones: [{ id: 'zone-smoke', name: 'Smoke Zone' }],
-        points: [{ id: 'point-smoke', zoneId: 'zone-smoke', plantNameSci: 'Planta test' }]
+        points: [{
+          id: 'point-smoke',
+          zoneId: 'zone-smoke',
+          plantNameSci: 'Planta test',
+          images: [imageReference]
+        }]
       });
+      const opfsRoot = await navigator.storage.getDirectory();
+      await new Promise((resolve, reject) => {
+        const request = indexedDB.open('cqnu-plant-map-web-handles', 1);
+        request.onupgradeneeded = () => {
+          if (!request.result.objectStoreNames.contains('directories')) {
+            request.result.createObjectStore('directories', { keyPath: 'projectId' });
+          }
+        };
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const database = request.result;
+          const transaction = database.transaction('directories', 'readwrite');
+          transaction.objectStore('directories').put({
+            projectId: 'web-workspace-smoke',
+            name: 'OPFS smoke mirror',
+            handle: opfsRoot,
+            updatedAt: Date.now()
+          });
+          transaction.oncomplete = () => {
+            database.close();
+            resolve();
+          };
+          transaction.onerror = () => reject(transaction.error);
+        };
+      });
+      const recoveredDirectory = await window.platformAdapter.project.load({ projectDir });
       const backup = await window.platformAdapter.backup.create({ projectDir, label: 'smoke' });
+      const inspected = backup.ok
+        ? await window.platformAdapter.backup.inspectRestore({ projectDir, backupName: backup.data.name })
+        : { ok: false };
+      await imageCache.delete(imageRequest);
       const changed = await window.platformAdapter.project.save({
         projectDir,
         settings: { projectName: 'Changed after backup' },
         zones: [{ id: 'zone-smoke', name: 'Smoke Zone' }],
-        points: [{ id: 'point-smoke', zoneId: 'zone-smoke', plantNameSci: 'Planta test' }]
+        points: [{
+          id: 'point-smoke',
+          zoneId: 'zone-smoke',
+          plantNameSci: 'Planta test',
+          images: [imageReference]
+        }]
       });
       const restored = backup.ok
         ? await window.platformAdapter.backup.restore({
@@ -101,6 +149,10 @@ async function run() {
         })
         : { ok: false };
       const loaded = await window.platformAdapter.project.load({ projectDir });
+      const mirrorInformation = await opfsRoot.getDirectoryHandle('information');
+      const mirrorSettings = await mirrorInformation.getFileHandle('settings.json').then(handle => handle.getFile());
+      const restoredImage = await imageCache.match(imageRequest);
+      const restoredImageText = restoredImage ? await restoredImage.text() : '';
       const logged = await window.platformAdapter.log.report({
         level: 'info',
         scope: 'web-workspace-smoke',
@@ -112,13 +164,24 @@ async function run() {
         runtime: window.platformAdapter.runtime,
         readOnly: window.platformAdapter.capabilities.readOnly,
         writeProject: window.platformAdapter.capabilities.writeProject,
+        directoryPermissionStatus: recoveredDirectory.ok
+          ? recoveredDirectory.data.webDirectoryPermissionStatus
+          : '',
+        directoryReconnectRequired: recoveredDirectory.ok
+          ? recoveredDirectory.data.webDirectoryReconnectRequired
+          : true,
+        directoryMirrorWritten: mirrorSettings.size > 0,
         storageMode: loaded.ok ? loaded.data.webStorageMode : '',
         zoneCount: loaded.ok ? loaded.data.zones.length : -1,
         pointCount: loaded.ok ? loaded.data.points.length : -1,
         saved: saved.ok,
         changed: changed.ok,
         backupCreated: backup.ok,
+        backupImageCount: backup.ok ? backup.data.imageCount : -1,
+        inspectedImageCount: inspected.ok ? inspected.data.imageCount : -1,
         backupRestored: restored.ok,
+        restoredImageCount: restored.ok ? restored.data.restoredImageCount : -1,
+        restoredImageText,
         restoredProjectName: loaded.ok ? loaded.data.settings.projectName : '',
         saveError: saved.ok ? '' : saved.error.message.slice(0, 400),
         backupError: backup.ok ? '' : backup.error.message.slice(0, 400),
@@ -138,12 +201,49 @@ async function run() {
       };
     })()`, true);
 
+    const secondWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+        session: isolatedSession
+      }
+    });
+    let lockResult;
+    try {
+      await secondWindow.loadURL(url);
+      await waitForRuntime(secondWindow);
+      lockResult = await secondWindow.webContents.executeJavaScript(`window.platformAdapter.project.save({
+        projectDir: 'web://project/web-workspace-smoke-secondary',
+        settings: { projectName: 'Secondary tab must not write' },
+        zones: [],
+        points: []
+      })`, true);
+    } finally {
+      secondWindow.destroy();
+    }
+    const primaryAfterLock = await window.webContents.executeJavaScript(
+      `window.platformAdapter.project.load({ projectDir: 'web://project/web-workspace-smoke' })`,
+      true
+    );
+
     const failures = [];
     if (result.runtime !== 'web') failures.push(`runtime: ${result.runtime}`);
     if (result.readOnly) failures.push('web adapter is still read-only');
     if (!result.writeProject || !result.saved) failures.push(`web project save is unavailable: ${result.saveError}`);
+    if (result.directoryPermissionStatus !== 'granted' || result.directoryReconnectRequired) {
+      failures.push(`directory handle recovery: ${result.directoryPermissionStatus} / ${result.directoryReconnectRequired}`);
+    }
+    if (!result.directoryMirrorWritten) failures.push('recovered directory handle did not receive the JSON mirror');
     if (!result.changed || !result.backupCreated || !result.backupRestored) {
       failures.push(`web backup create/restore is unavailable: ${result.backupError || result.restoreError}`);
+    }
+    if (result.backupImageCount !== 1 || result.inspectedImageCount !== 1) {
+      failures.push(`web backup image capture: ${result.backupImageCount} / ${result.inspectedImageCount}`);
+    }
+    if (result.restoredImageCount !== 1 || result.restoredImageText !== 'smoke-image-bytes') {
+      failures.push(`web backup image restore: ${result.restoredImageCount} / ${result.restoredImageText}`);
     }
     if (result.restoredProjectName !== 'Web workspace smoke') {
       failures.push(`backup restore value: ${result.restoredProjectName}`);
@@ -160,9 +260,16 @@ async function run() {
     if (!result.mapReady) failures.push('Leaflet map did not initialize');
     if (result.runtimeStatus !== 'ready') failures.push(`runtime status: ${result.runtimeStatus}`);
     if (!result.siteHomeLink) failures.push('site homepage link is missing');
+    if (lockResult?.ok !== false || lockResult?.error?.code !== 'WEB_DATABASE_LOCKED') {
+      failures.push(`secondary tab lock contract: ${JSON.stringify(lockResult)}`);
+    }
+    if (!String(lockResult?.error?.message || '').includes('工作区标签页')) {
+      failures.push(`secondary tab lock message: ${lockResult?.error?.message || ''}`);
+    }
+    if (!primaryAfterLock?.ok) failures.push('primary tab stopped working after secondary lock rejection');
     failures.push(...errors.filter(message => !message.includes('Failed to load resource')));
     if (failures.length) throw new Error(failures.join('\n'));
-    process.stdout.write('web workspace smoke passed (OPFS SQLite, backup, log, and capability contracts)\n');
+    process.stdout.write('web workspace smoke passed (OPFS SQLite, image backup restore, multi-tab lock, log, and capability contracts)\n');
   } finally {
     window.destroy();
     await isolatedSession.clearStorageData();

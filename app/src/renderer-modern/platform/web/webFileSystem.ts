@@ -29,6 +29,14 @@ interface StoredDirectoryHandle {
   updatedAt: number;
 }
 
+export type WebDirectoryPermissionStatus = 'granted' | 'prompt' | 'denied' | 'missing' | 'unsupported';
+
+export interface WebDirectoryHandleRecovery {
+  directoryHandle?: PermissionDirectoryHandle;
+  name: string;
+  status: WebDirectoryPermissionStatus;
+}
+
 export interface WebDirectorySelection {
   session: WebProjectSession;
   directoryHandle: PermissionDirectoryHandle;
@@ -81,6 +89,16 @@ async function persistHandle(record: StoredDirectoryHandle): Promise<void> {
   }
 }
 
+async function storedHandleForProject(projectId: string): Promise<StoredDirectoryHandle | null> {
+  if (!projectId) return null;
+  try {
+    const records = await readStoredHandles();
+    return records.find(item => item.projectId === projectId) || null;
+  } catch {
+    return null;
+  }
+}
+
 async function directoryProjectId(handle: PermissionDirectoryHandle): Promise<string> {
   try {
     const stored = await readStoredHandles();
@@ -107,6 +125,31 @@ export async function ensureReadWritePermission(handle: PermissionDirectoryHandl
     : false;
 }
 
+export async function recoverWebDirectoryHandle(
+  projectId: string,
+  requestPermission = false
+): Promise<WebDirectoryHandleRecovery> {
+  const stored = await storedHandleForProject(projectId);
+  if (!stored?.handle) return { name: '', status: 'missing' };
+  const descriptor = { mode: 'readwrite' as const };
+  let status: PermissionState;
+  try {
+    status = stored.handle.queryPermission
+      ? await stored.handle.queryPermission(descriptor)
+      : 'granted';
+    if (status !== 'granted' && requestPermission && stored.handle.requestPermission) {
+      status = await stored.handle.requestPermission(descriptor);
+    }
+  } catch {
+    return { name: stored.name, status: 'denied' };
+  }
+  if (status === 'granted') {
+    await persistHandle({ ...stored, updatedAt: Date.now() });
+    return { directoryHandle: stored.handle, name: stored.name, status };
+  }
+  return { name: stored.name, status };
+}
+
 function safeImageExtension(fileName: string): string {
   const match = /\.(jpe?g|png|webp|gif|bmp)$/i.exec(fileName);
   return match ? `.${match[1].toLowerCase().replace('jpeg', 'jpg')}` : '.jpg';
@@ -130,6 +173,35 @@ export async function writeWebProjectImage(
     await writable.close();
   }
   return `information/images/${name}`;
+}
+
+function imageNameFromReference(reference: string): string {
+  const normalized = reference.replaceAll('\\', '/');
+  const match = /^information\/images\/([^/]+)$/.exec(normalized);
+  if (!match || match[1] === '.' || match[1] === '..') return '';
+  return match[1];
+}
+
+export async function writeWebProjectImageReference(
+  handle: PermissionDirectoryHandle,
+  reference: string,
+  blob: Blob
+): Promise<boolean> {
+  const name = imageNameFromReference(reference);
+  if (!name) return false;
+  if (!await ensureReadWritePermission(handle)) {
+    throw new Error('未获得所选项目目录的写入权限。');
+  }
+  const information = await handle.getDirectoryHandle('information', { create: true });
+  const images = await information.getDirectoryHandle('images', { create: true });
+  const fileHandle = await images.getFileHandle(name, { create: true }) as WritableFileHandle;
+  const writable = await fileHandle.createWritable();
+  try {
+    await writable.write(blob);
+  } finally {
+    await writable.close();
+  }
+  return true;
 }
 
 export async function deleteWebProjectImage(

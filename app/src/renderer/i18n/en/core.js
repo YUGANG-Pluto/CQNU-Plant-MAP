@@ -7,6 +7,7 @@ const I18N_EN_CORE = {
   "webSiteHome": "Site home",
   "webSiteDocs": "Documentation",
   "webProjectLoaded": "Browser-local project loaded and ready for local editing.",
+  "webDirectoryReconnectRequired": "The project was loaded from browser storage. Select Open Local Project to reconnect the original folder.",
   "confirmCreatePoint": "Confirm Point",
   "cancelCreatePoint": "Cancel Point",
   "cancelAction": "Cancel",

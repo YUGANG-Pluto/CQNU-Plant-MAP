@@ -1,19 +1,17 @@
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { createLocalSiteRuntime } from './local-runtime.mjs';
 
-const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const source = await readFile(resolve(projectRoot, 'dist/server/index.js'), 'utf8');
-const workerUrl = `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
-const worker = (await import(workerUrl)).default;
+const { worker, env } = await createLocalSiteRuntime();
 const host = '127.0.0.1';
 const port = Number(process.env.PORT || 4173);
 
 const server = createServer(async (request, response) => {
   try {
     const target = new URL(request.url || '/', `http://${host}:${port}`);
-    const siteResponse = await worker.fetch(new Request(target, { method: request.method || 'GET' }));
+    const siteResponse = await worker.fetch(
+      new Request(target, { method: request.method || 'GET' }),
+      env
+    );
     response.writeHead(siteResponse.status, Object.fromEntries(siteResponse.headers));
     response.end(Buffer.from(await siteResponse.arrayBuffer()));
   } catch {

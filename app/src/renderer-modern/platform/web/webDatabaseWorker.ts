@@ -174,7 +174,7 @@ function initializeSqlite(): Promise<void> {
       { mode: 'exclusive', ifAvailable: true },
       async lock => {
         if (!lock) {
-          reject(new Error('本地数据库已在另一个标签页中打开，请关闭另一标签页后重试。'));
+          reject(new Error('浏览器本地数据库已被另一个工作区标签页占用。请关闭或退出另一标签页中的工作区后重试；站点首页和文档页不受影响。'));
           return;
         }
         try {
@@ -424,7 +424,7 @@ function errorResponse(id: string, error: unknown): WebDatabaseResponse {
   const message = rawMessage
     .replace(/data:[^\s'"\)]+/gi, 'data:[embedded-resource-omitted]')
     .slice(0, 1200);
-  const locked = message.includes('另一个标签页');
+  const locked = message.includes('另一个工作区标签页') || message.includes('另一个标签页');
   return {
     id,
     ok: false,

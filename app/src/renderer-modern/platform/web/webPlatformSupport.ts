@@ -14,6 +14,19 @@ export function failure(code: string, message: string): PlatformFailure {
   return { ok: false, error: { code, message } };
 }
 
+export function failureFromError(
+  error: unknown,
+  fallbackCode: string,
+  fallbackMessage: string
+): PlatformFailure {
+  const source = error && typeof error === 'object' ? error as { code?: unknown; message?: unknown } : {};
+  const code = source.code === 'WEB_DATABASE_LOCKED' ? 'WEB_DATABASE_LOCKED' : fallbackCode;
+  const message = typeof source.message === 'string' && source.message.trim()
+    ? source.message
+    : fallbackMessage;
+  return failure(code, message);
+}
+
 export function asRecord(value: unknown): UnknownRecord {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as UnknownRecord

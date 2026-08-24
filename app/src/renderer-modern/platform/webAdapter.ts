@@ -31,6 +31,7 @@ import {
   downloadBlob,
   downloadPayload,
   failure,
+  failureFromError,
   success,
   type UnknownRecord
 } from './web/webPlatformSupport';
@@ -102,12 +103,17 @@ async function loadProject(payload?: unknown): Promise<PlatformResponse<UnknownR
       zones: clone(session.zones),
       points: clone(session.points),
       webReadOnly: false,
-      webStorageMode: 'opfs-sahpool'
+      webStorageMode: 'opfs-sahpool',
+      webDirectoryPermissionStatus: repository.directoryPermissionStatus(session.projectDir),
+      webDirectoryReconnectRequired: ['prompt', 'denied'].includes(
+        repository.directoryPermissionStatus(session.projectDir)
+      )
     });
   } catch (error) {
-    return failure(
+    return failureFromError(
+      error,
       'WEB_PROJECT_LOAD_FAILED',
-      error instanceof Error ? error.message : '浏览器本地项目无法读取。'
+      '浏览器本地项目无法读取。'
     );
   }
 }
@@ -123,9 +129,10 @@ async function saveProject(payload?: unknown): Promise<PlatformResponse<UnknownR
     });
     return success({ ...result });
   } catch (error) {
-    return failure(
+    return failureFromError(
+      error,
       'WEB_PROJECT_SAVE_FAILED',
-      error instanceof Error ? error.message : '浏览器本地项目无法保存。'
+      '浏览器本地项目无法保存。'
     );
   }
 }
@@ -186,14 +193,15 @@ async function createBackup(payload?: unknown): Promise<PlatformResponse<Unknown
   const label = String(source.label || 'manual');
   try {
     const backup = await repository.createBackup(projectDir, label);
+    let filePath = backup.name;
     if (String(source.backupDir || '') === 'web://downloads') {
-      const stored = await repository.inspectBackup(projectDir, backup.name);
-      const content = JSON.stringify(stored?.snapshot || {}, null, 2);
-      await downloadBlob(new Blob([content], { type: 'application/json;charset=utf-8' }), backup.name);
+      const archive = await repository.exportBackupArchive(projectDir, backup.name);
+      await downloadBlob(archive.blob, archive.fileName);
+      filePath = archive.fileName;
     }
-    return success({ filePath: backup.name, ...backup });
+    return success({ filePath, ...backup });
   } catch (error) {
-    return failure('WEB_BACKUP_CREATE_FAILED', error instanceof Error ? error.message : '浏览器备份无法创建。');
+    return failureFromError(error, 'WEB_BACKUP_CREATE_FAILED', '浏览器备份无法创建。');
   }
 }
 
@@ -203,18 +211,26 @@ async function inspectBackup(payload?: unknown): Promise<PlatformResponse<Unknow
     const backup = await repository.inspectBackup(String(source.projectDir || ''), String(source.backupName || ''));
     if (!backup) return failure('WEB_BACKUP_NOT_FOUND', '未找到所选浏览器备份。');
     const snapshot = asRecord(backup.snapshot);
+    const imageSummary = await repository.inspectBackupImages(
+      String(source.projectDir || ''),
+      String(source.backupName || '')
+    );
     return success({
       ok: true,
       backupName: String(backup.name || source.backupName || ''),
-      restoreFileCount: 3,
+      restoreFileCount: 3 + imageSummary.entries.length,
       hasSqliteStorage: true,
       hasJsonStorage: Boolean(snapshot.settings || snapshot.zones || snapshot.points),
-      skippedBackupEntries: 0,
+      imageCount: imageSummary.entries.length,
+      missingImageCount: imageSummary.missingReferences.length,
+      skippedBackupEntries: imageSummary.missingReferences.length,
       createsSafetyBackup: true,
-      warnings: []
+      warnings: imageSummary.missingReferences.length
+        ? [`创建备份时有 ${imageSummary.missingReferences.length} 个图片引用无法读取。`]
+        : []
     });
   } catch (error) {
-    return failure('WEB_BACKUP_INSPECT_FAILED', error instanceof Error ? error.message : '浏览器备份无法检查。');
+    return failureFromError(error, 'WEB_BACKUP_INSPECT_FAILED', '浏览器备份无法检查。');
   }
 }
 
@@ -227,7 +243,7 @@ async function restoreBackup(payload?: unknown): Promise<PlatformResponse<Unknow
       String(source.backupName || '')
     ));
   } catch (error) {
-    return failure('WEB_BACKUP_RESTORE_FAILED', error instanceof Error ? error.message : '浏览器备份无法恢复。');
+    return failureFromError(error, 'WEB_BACKUP_RESTORE_FAILED', '浏览器备份无法恢复。');
   }
 }
 
@@ -252,7 +268,10 @@ async function deleteExpiredBackups(payload?: unknown): Promise<PlatformResponse
 async function checkWebImageRefs(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
   const refs = Array.isArray(asRecord(payload).refs) ? asRecord(payload).refs as string[] : [];
   try {
-    return success({ items: await inspectWebImageReferences(refs) });
+    const projectDir = String(asRecord(payload).projectDir || '');
+    return success({
+      items: await inspectWebImageReferences(refs, repository.directoryHandle(projectDir))
+    });
   } catch (error) {
     return failure('WEB_IMAGE_CHECK_FAILED', error instanceof Error ? error.message : '浏览器图片引用无法检查。');
   }

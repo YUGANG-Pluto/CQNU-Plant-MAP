@@ -3,17 +3,30 @@ import { getWebDatabaseClient, type WebDatabaseClient } from './webDatabaseClien
 import {
   importWebProjectFiles,
   deleteWebProjectJsonFiles,
+  recoverWebDirectoryHandle,
   readWebProjectDirectory,
   selectWebDirectoryProject,
   supportsWebDirectoryProjects,
   writeWebProjectDirectory,
+  type WebDirectoryPermissionStatus,
   type PermissionDirectoryHandle
 } from './webFileSystem';
+import {
+  captureWebImageBackup,
+  collectWebImageReferences,
+  deleteWebImageBackup,
+  hydrateWebImages,
+  inspectWebImageBackup,
+  readWebImageBackup,
+  restoreWebImageBackup
+} from './webImageStore';
+import { buildWebBackupArchive, webBackupArchiveName } from './webBackupArchive';
 import { webProjectDir, type WebProjectSession } from '../webProject';
 
 interface ProjectContext {
   session: WebProjectSession;
   directoryHandle?: PermissionDirectoryHandle;
+  directoryPermissionStatus: WebDirectoryPermissionStatus;
 }
 
 export interface WebProjectSaveInput {
@@ -90,7 +103,13 @@ export class WebProjectRepository {
 
   directoryHandle(projectDir = ''): PermissionDirectoryHandle | undefined {
     const projectId = projectIdFromDir(projectDir) || this.#activeProjectId;
-    return this.#contexts.get(projectId)?.directoryHandle;
+    const context = this.#contexts.get(projectId);
+    return context?.directoryPermissionStatus === 'granted' ? context.directoryHandle : undefined;
+  }
+
+  directoryPermissionStatus(projectDir = ''): WebDirectoryPermissionStatus {
+    const projectId = projectIdFromDir(projectDir) || this.#activeProjectId;
+    return this.#contexts.get(projectId)?.directoryPermissionStatus || 'missing';
   }
 
   hasDirectoryMirror(projectDir = ''): boolean {
@@ -109,12 +128,16 @@ export class WebProjectRepository {
       const session = useExisting && existing ? toSession(existing) : selection.session;
       if (!useExisting) await database.putProject(toStoredProject(session));
       if (selection.created) await writeWebProjectDirectory(selection.directoryHandle, session);
-      context = { session, directoryHandle: selection.directoryHandle };
+      context = {
+        session,
+        directoryHandle: selection.directoryHandle,
+        directoryPermissionStatus: 'granted'
+      };
     } else {
       const session = await importWebProjectFiles();
       if (!session) return null;
       await database.putProject(toStoredProject(session));
-      context = { session };
+      context = { session, directoryPermissionStatus: 'unsupported' };
     }
 
     this.#contexts.set(context.session.projectId, context);
@@ -126,18 +149,27 @@ export class WebProjectRepository {
     const projectId = projectIdFromDir(projectDir);
     if (!projectId) return null;
     const existingContext = this.#contexts.get(projectId);
-    const directorySession = preferredFormat === 'json' && existingContext?.directoryHandle
-      ? await readWebProjectDirectory(existingContext.directoryHandle, projectId)
+    const recovered = await recoverWebDirectoryHandle(projectId, false);
+    const directoryHandle = recovered.directoryHandle || existingContext?.directoryHandle;
+    const directoryPermissionStatus = recovered.directoryHandle
+      ? recovered.status
+      : existingContext?.directoryPermissionStatus || recovered.status;
+    const readableDirectoryHandle = directoryPermissionStatus === 'granted'
+      ? directoryHandle
+      : undefined;
+    const directorySession = preferredFormat === 'json' && readableDirectoryHandle
+      ? await readWebProjectDirectory(readableDirectoryHandle, projectId)
       : null;
     const project = directorySession ? null : await (await this.database()).getProject(projectId);
-    const fallbackDirectory = !project && !directorySession && existingContext?.directoryHandle
-      ? await readWebProjectDirectory(existingContext.directoryHandle, projectId)
+    const fallbackDirectory = !project && !directorySession && readableDirectoryHandle
+      ? await readWebProjectDirectory(readableDirectoryHandle, projectId)
       : null;
     const session = directorySession || fallbackDirectory || (project ? toSession(project) : null);
     if (!session) return null;
     this.#contexts.set(projectId, {
       session,
-      ...(existingContext?.directoryHandle ? { directoryHandle: existingContext.directoryHandle } : {})
+      directoryPermissionStatus,
+      ...(readableDirectoryHandle ? { directoryHandle: readableDirectoryHandle } : {})
     });
     this.#activeProjectId = projectId;
     return clone(session);
@@ -189,6 +221,7 @@ export class WebProjectRepository {
     const session = toSession(project);
     this.#contexts.set(projectId, {
       session,
+      directoryPermissionStatus: context?.directoryPermissionStatus || 'missing',
       ...(context?.directoryHandle ? { directoryHandle: context.directoryHandle } : {})
     });
     this.#activeProjectId = projectId;
@@ -213,7 +246,29 @@ export class WebProjectRepository {
   async createBackup(projectDir: string, label = 'manual'): Promise<WebBackupRecord> {
     const projectId = projectIdFromDir(projectDir);
     if (!projectId) throw new Error('浏览器项目标识无效。');
-    return (await this.database()).createBackup(projectId, label);
+    const database = await this.database();
+    const backup = await database.createBackup(projectId, label);
+    const stored = await database.getBackup(backup.id);
+    const snapshot = stored?.snapshot && typeof stored.snapshot === 'object' && !Array.isArray(stored.snapshot)
+      ? stored.snapshot as WebProjectRecord
+      : {};
+    const points = Array.isArray(snapshot.points) ? snapshot.points as WebProjectRecord[] : [];
+    try {
+      const captured = await captureWebImageBackup(
+        backup.id,
+        collectWebImageReferences(points),
+        this.directoryHandle(projectDir)
+      );
+      return {
+        ...backup,
+        imageCount: captured.entries.length,
+        missingImageCount: captured.missingReferences.length
+      };
+    } catch (error) {
+      await database.deleteBackups([backup.id]);
+      await deleteWebImageBackup(backup.id);
+      throw error;
+    }
   }
 
   async listBackups(projectDir: string): Promise<WebBackupRecord[]> {
@@ -230,13 +285,44 @@ export class WebProjectRepository {
       .map(item => item.id)
       .filter(Boolean);
     if (!ids.length) return 0;
-    return (await (await this.database()).deleteBackups(ids)).deleted;
+    const deleted = (await (await this.database()).deleteBackups(ids)).deleted;
+    await Promise.all(ids.map(id => deleteWebImageBackup(id)));
+    return deleted;
   }
 
   async inspectBackup(projectDir: string, name: string): Promise<WebProjectRecord | null> {
     const backup = (await this.listBackups(projectDir)).find(item => item.name === name);
     if (!backup?.id) return null;
     return (await (await this.database()).getBackup(backup.id)) as WebProjectRecord | null;
+  }
+
+  async inspectBackupImages(projectDir: string, name: string) {
+    const backup = (await this.listBackups(projectDir)).find(item => item.name === name);
+    return backup?.id
+      ? inspectWebImageBackup(backup.id)
+      : { entries: [], missingReferences: [] };
+  }
+
+  async exportBackupArchive(projectDir: string, name: string) {
+    const backup = (await this.listBackups(projectDir)).find(item => item.name === name);
+    if (!backup?.id) throw new Error('未找到所选浏览器备份。');
+    const stored = await (await this.database()).getBackup(backup.id);
+    const snapshot = stored?.snapshot && typeof stored.snapshot === 'object' && !Array.isArray(stored.snapshot)
+      ? stored.snapshot as WebProjectRecord
+      : {};
+    const images = await readWebImageBackup(backup.id);
+    const imageSummary = await inspectWebImageBackup(backup.id);
+    return {
+      blob: await buildWebBackupArchive({
+        backup,
+        snapshot,
+        images,
+        missingImageReferences: imageSummary.missingReferences
+      }),
+      fileName: webBackupArchiveName(backup.name),
+      imageCount: images.length,
+      missingImageCount: imageSummary.missingReferences.length
+    };
   }
 
   async restoreBackup(projectDir: string, name: string): Promise<WebProjectRecord> {
@@ -247,7 +333,7 @@ export class WebProjectRepository {
     }
     const source = snapshot as WebProjectRecord;
     const projectId = projectIdFromDir(projectDir);
-    await (await this.database()).createBackup(projectId, 'pre_restore');
+    const safetyBackup = await this.createBackup(projectDir, 'pre_restore');
     const sourceKind = ['directory', 'import', 'opfs'].includes(String(source.sourceKind || ''))
       ? source.sourceKind as StoredWebProject['sourceKind']
       : 'opfs';
@@ -265,17 +351,45 @@ export class WebProjectRepository {
     const session = toSession(restored);
     this.#contexts.set(projectId, {
       session,
+      directoryPermissionStatus: context?.directoryPermissionStatus || 'missing',
       ...(context?.directoryHandle ? { directoryHandle: context.directoryHandle } : {})
     });
-    if (context?.directoryHandle) await writeWebProjectDirectory(context.directoryHandle, restored);
+    const warnings: string[] = [];
+    let restoredDirectoryHandle = context?.directoryPermissionStatus === 'granted'
+      ? context.directoryHandle
+      : undefined;
+    let hasJsonStorage = false;
+    if (restoredDirectoryHandle) {
+      try {
+        await writeWebProjectDirectory(restoredDirectoryHandle, restored);
+        hasJsonStorage = true;
+      } catch {
+        warnings.push('项目目录权限不可用，已恢复浏览器数据库，但未写回 JSON 镜像。');
+        restoredDirectoryHandle = undefined;
+        this.#contexts.set(projectId, { session, directoryPermissionStatus: 'denied' });
+      }
+    }
+    const imageSummary = await inspectWebImageBackup(String(backup.id || ''));
+    const imageRestore = await restoreWebImageBackup(
+      String(backup.id || ''),
+      restoredDirectoryHandle
+    );
+    await hydrateWebImages(collectWebImageReferences(restored.points), restoredDirectoryHandle);
+    if (imageSummary.missingReferences.length) {
+      warnings.push(`创建备份时有 ${imageSummary.missingReferences.length} 个图片引用无法读取。`);
+    }
+    if (imageRestore.skipped) {
+      warnings.push(`有 ${imageRestore.skipped} 张目录图片因目录权限不可用而未写回。`);
+    }
     return {
       backupName: name,
-      restoredFileCount: 3,
+      restoredFileCount: 3 + imageRestore.restored,
       hasSqliteStorage: true,
-      hasJsonStorage: Boolean(context?.directoryHandle),
-      skippedBackupEntries: 0,
-      safetyBackupFile: 'pre_restore',
-      warnings: []
+      hasJsonStorage,
+      restoredImageCount: imageRestore.restored,
+      skippedBackupEntries: imageRestore.skipped + imageSummary.missingReferences.length,
+      safetyBackupFile: safetyBackup.name,
+      warnings
     };
   }
 }

@@ -51,6 +51,11 @@ export class WebDatabaseClient extends EventTarget {
     else {
       const error = new Error(response.error.message);
       Object.assign(error, { code: response.error.code });
+      if (response.error.code === 'WEB_DATABASE_LOCKED') {
+        window.dispatchEvent(new CustomEvent('cqnu:web-database-locked', {
+          detail: { code: response.error.code, message: response.error.message }
+        }));
+      }
       pending.reject(error);
     }
   }

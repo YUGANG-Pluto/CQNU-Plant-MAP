@@ -25,6 +25,8 @@ export interface WebBackupRecord {
   label: string;
   createdAt: number;
   size: number;
+  imageCount?: number;
+  missingImageCount?: number;
 }
 
 export interface WebLogRecord {

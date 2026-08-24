@@ -7,6 +7,7 @@ const I18N_ZH_CORE = {
   "webSiteHome": "站点首页",
   "webSiteDocs": "使用文档",
   "webProjectLoaded": "浏览器本地项目已加载，可在本机编辑和保存。",
+  "webDirectoryReconnectRequired": "项目已从浏览器数据库加载；如需同步目录文件，请点击“打开本地项目”重新授权原目录。",
   "confirmCreatePoint": "确认建立点位",
   "cancelCreatePoint": "取消建立点位",
   "cancelAction": "取消",
