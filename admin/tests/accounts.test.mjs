@@ -6,6 +6,9 @@ import {
   InMemoryAccountStore,
   InMemorySessionStore,
   ManagementAccountService,
+  PBKDF2_BOOTSTRAP_ITERATIONS,
+  PBKDF2_SHA256_ITERATIONS,
+  Pbkdf2PasswordHasher,
   bytesToBase64Url
 } from '../dist/index.js';
 
@@ -108,6 +111,27 @@ test('bootstrap credentials are seeded once and require first-use activation', a
   assert.equal(activated.account.mustChangePassword, false);
   assert.equal(activated.account.status, 'active');
   assert.equal(activated.account.username, 'principal.admin');
+});
+
+test('bootstrap verifiers use a bounded cost and require an immediate production rehash', async () => {
+  const passwordKeyRing = new AuthKeyRing({
+    activeKeyId: 'k1',
+    keys: { k1: bytesToBase64Url(Uint8Array.from({ length: 32 }, (_, index) => index + 17)) }
+  });
+  const hasher = new Pbkdf2PasswordHasher(passwordKeyRing, PBKDF2_SHA256_ITERATIONS);
+  const verifier = await hasher.hash('000000', {
+    allowWeakBootstrap: true,
+    bootstrapIterations: PBKDF2_BOOTSTRAP_ITERATIONS
+  });
+  assert.equal(verifier.iterations, PBKDF2_BOOTSTRAP_ITERATIONS);
+  assert.equal(await hasher.verify('000000', verifier), true);
+  assert.equal(hasher.needsRehash(verifier), true);
+  await assert.rejects(
+    hasher.hash('A secure research passphrase', {
+      bootstrapIterations: PBKDF2_BOOTSTRAP_ITERATIONS
+    }),
+    /PASSWORD_HASH_POLICY_INVALID/
+  );
 });
 
 test('login failures use a generic error and lock the account after five attempts', async () => {
