@@ -1,39 +1,62 @@
-import {
-  ADMIN_CAPABILITIES,
-  ADMIN_MODE,
-  type AdminCapability,
-  type AdminRole,
-  type AdminSessionRecord
+import type {
+  AdminCapability,
+  AdminSessionRecord,
+  ManagementAccessLevel,
+  ManagementAccountKind
 } from './contracts.js';
 
-const ROLE_CAPABILITIES = Object.freeze({
-  owner: ADMIN_CAPABILITIES,
-  editor: [
-    'site.read',
-    'site.publish',
-    'release.read',
-    'release.manage',
-    'audit.read'
-  ] as const,
-  viewer: ['site.read', 'release.read', 'audit.read'] as const
-}) satisfies Readonly<Record<AdminRole, readonly AdminCapability[]>>;
+const ACCESS_RANK: Readonly<Record<ManagementAccessLevel, number>> = Object.freeze({
+  read: 1,
+  edit: 2,
+  save: 3
+});
+
+const WORKSPACE_CAPABILITY_LEVEL: Partial<Record<AdminCapability, ManagementAccessLevel>> = {
+  'workspace.read': 'read',
+  'workspace.edit': 'edit',
+  'workspace.save': 'save'
+};
+
+const ADMIN_ONLY = new Set<AdminCapability>([
+  'site.read',
+  'site.publish',
+  'release.read',
+  'release.manage',
+  'member.read',
+  'member.manage',
+  'member.permission.manage',
+  'member.password.reset',
+  'audit.read'
+]);
+
+export function accessLevelAllows(
+  accessLevel: ManagementAccessLevel,
+  required: ManagementAccessLevel
+): boolean {
+  return ACCESS_RANK[accessLevel] >= ACCESS_RANK[required];
+}
+
+export function principalAllows(
+  accountKind: ManagementAccountKind,
+  accessLevel: ManagementAccessLevel,
+  capability: AdminCapability
+): boolean {
+  const workspaceLevel = WORKSPACE_CAPABILITY_LEVEL[capability];
+  if (workspaceLevel) return accessLevelAllows(accessLevel, workspaceLevel);
+  return accountKind === 'admin' && ADMIN_ONLY.has(capability);
+}
 
 export function isSessionActive(
   session: AdminSessionRecord | null,
   now = new Date()
 ): boolean {
   if (!session || session.revokedAt) return false;
-  const expiresAt = Date.parse(session.expiresAt);
+  const leaseExpiresAt = Date.parse(session.leaseExpiresAt);
   const absoluteExpiresAt = Date.parse(session.absoluteExpiresAt);
-  return Number.isFinite(expiresAt)
+  return Number.isFinite(leaseExpiresAt)
     && Number.isFinite(absoluteExpiresAt)
-    && expiresAt > now.getTime()
+    && leaseExpiresAt > now.getTime()
     && absoluteExpiresAt > now.getTime();
-}
-
-export function roleAllows(role: AdminRole, capability: AdminCapability): boolean {
-  const capabilities: readonly AdminCapability[] = ROLE_CAPABILITIES[role];
-  return capabilities.includes(capability);
 }
 
 export function can(
@@ -41,11 +64,10 @@ export function can(
   capability: AdminCapability,
   now = new Date()
 ): boolean {
-  if (!session || session.role !== 'owner') return false;
-  return ADMIN_MODE === 'owner-only'
-    && ADMIN_CAPABILITIES.includes(capability)
+  return Boolean(session
+    && !session.mustChangePassword
     && isSessionActive(session, now)
-    && roleAllows(session.role, capability);
+    && principalAllows(session.accountKind, session.accessLevel, capability));
 }
 
 export function requireCapability(

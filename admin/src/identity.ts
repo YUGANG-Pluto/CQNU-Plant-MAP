@@ -79,8 +79,13 @@ export class OwnerIdentityAdapter implements IdentityAdapter {
     return {
       id: this.#options.ownerPrincipalId,
       providerSubject: verified.subject,
+      username: this.#options.ownerPrincipalId,
       displayName: verified.displayName.trim().slice(0, 120) || this.#options.ownerDisplayName,
-      role: 'owner',
+      accountKind: 'admin',
+      accessLevel: 'save',
+      status: 'active',
+      mustChangePassword: false,
+      credentialVersion: 1,
       enabled: true
     };
   }

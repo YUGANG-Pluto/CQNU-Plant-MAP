@@ -1,42 +1,66 @@
-export const ADMIN_MODE = 'owner-only' as const;
+export const ADMIN_MODE = 'managed-access' as const;
 
 export const ADMIN_CAPABILITIES = [
+  'workspace.read',
+  'workspace.edit',
+  'workspace.save',
   'site.read',
   'site.publish',
   'release.read',
   'release.manage',
   'member.read',
   'member.manage',
+  'member.permission.manage',
+  'member.password.reset',
   'audit.read'
 ] as const;
 
 export type AdminCapability = typeof ADMIN_CAPABILITIES[number];
-export type AdminRole = 'owner' | 'editor' | 'viewer';
-export type AdminAuthenticationMethod = 'platform-owner-gate' | 'oidc' | 'webauthn';
+export type ManagementAccountKind = 'user' | 'admin';
+export type ManagementAccessLevel = 'read' | 'edit' | 'save';
+export type ManagementAccountStatus = 'pending-activation' | 'active' | 'disabled';
+export type AdminAuthenticationMethod = 'password' | 'platform-owner-gate' | 'oidc' | 'webauthn';
 export type AdminAuditAction = AdminCapability
+  | 'account.activate'
+  | 'account.username.change'
+  | 'account.password.change'
+  | 'account.password.reset.issue'
+  | 'account.password.reset.consume'
   | 'session.create'
+  | 'session.heartbeat'
   | 'session.rotate'
   | 'session.revoke'
   | 'session.revoke_all';
 
 export interface AdminPrincipal {
   id: string;
-  providerSubject: string;
+  username: string;
   displayName: string;
-  role: AdminRole;
+  accountKind: ManagementAccountKind;
+  accessLevel: ManagementAccessLevel;
+  status: ManagementAccountStatus;
+  mustChangePassword: boolean;
+  credentialVersion: number;
   enabled: boolean;
+  providerSubject?: string;
 }
 
 export interface AdminSessionRecord {
   id: string;
   tokenDigest: string;
+  tokenKeyId: string;
   csrfDigest: string;
+  csrfKeyId: string;
   principalId: string;
-  role: AdminRole;
+  username: string;
+  accountKind: ManagementAccountKind;
+  accessLevel: ManagementAccessLevel;
+  mustChangePassword: boolean;
+  credentialVersion: number;
   createdAt: string;
   rotatedAt: string;
   lastSeenAt: string;
-  expiresAt: string;
+  leaseExpiresAt: string;
   absoluteExpiresAt: string;
   authenticationMethod: AdminAuthenticationMethod;
   rotationCounter: number;
@@ -44,7 +68,10 @@ export interface AdminSessionRecord {
   revokedAt?: string;
 }
 
-export type AdminSession = Omit<AdminSessionRecord, 'tokenDigest' | 'csrfDigest'>;
+export type AdminSession = Omit<
+  AdminSessionRecord,
+  'tokenDigest' | 'tokenKeyId' | 'csrfDigest' | 'csrfKeyId'
+>;
 
 export interface AdminAuditEvent {
   id: string;
@@ -70,7 +97,7 @@ export interface AuditSink {
 }
 
 export interface SessionStore {
-  getByTokenDigest(tokenDigest: string): Promise<AdminSessionRecord | null>;
+  getByTokenDigest(tokenDigest: string, tokenKeyId: string): Promise<AdminSessionRecord | null>;
   put(session: AdminSessionRecord): Promise<void>;
   replace(expectedTokenDigest: string, session: AdminSessionRecord): Promise<boolean>;
   revoke(sessionId: string, revokedAt: string): Promise<boolean>;

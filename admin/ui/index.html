@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f4f9f6" />
+  <meta name="referrer" content="no-referrer" />
+  <title>访问与成员管理 · CQNU Plant MAP</title>
+  <link rel="icon" href="/assets/cqnu-logo.svg" />
+  <link rel="stylesheet" href="/assets/manage.css" />
+  <script type="module" src="/assets/manage.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#manageMain">跳至主要内容</a>
+
+  <div class="auth-stage" data-auth-stage>
+    <header class="auth-brandbar">
+      <a class="manage-brand" href="/">
+        <img src="/assets/cqnu-logo.svg" width="40" height="40" alt="" />
+        <span><strong>CQNU Plant MAP</strong><small>访问与成员管理</small></span>
+      </a>
+      <a class="quiet-link" href="/">返回科研导航</a>
+    </header>
+
+    <main id="manageMain" class="auth-main">
+      <section class="auth-intro" aria-labelledby="authIntroTitle">
+        <span class="section-kicker">RESEARCH ACCESS CONTROL</span>
+        <h1 id="authIntroTitle">本地数据不离开浏览器，访问权限由独立管理域控制。</h1>
+        <p>管理域只保存账户、会话、权限和安全审计。植物项目、图片、坐标与本地路径继续保存在用户设备中。</p>
+        <dl class="auth-facts">
+          <div><dt>会话</dt><dd>在线租约 + 24 小时绝对期限</dd></div>
+          <div><dt>权限</dt><dd>只读 / 编辑草稿 / 编辑并保存</dd></div>
+          <div><dt>管理员</dt><dd>最多 3 名，始终保留 1 名启用管理员</dd></div>
+        </dl>
+      </section>
+
+      <section class="auth-panel" data-auth-panel="loading" aria-live="polite">
+        <div class="auth-loading" data-auth-loading>
+          <span class="loading-mark" aria-hidden="true"></span>
+          <strong>正在核对会话</strong>
+          <p>管理页面不会读取本地植物项目。</p>
+        </div>
+
+        <form class="auth-form" data-login-form hidden>
+          <div class="form-heading">
+            <span>账户登录</span>
+            <h2>继续进入工作区</h2>
+            <p>首次使用初始账户登录后，必须修改用户名和密码。</p>
+          </div>
+          <label>
+            <span>用户名</span>
+            <input name="username" autocomplete="username" maxlength="32" required />
+          </label>
+          <label>
+            <span>密码</span>
+            <input name="password" type="password" autocomplete="current-password" maxlength="128" required />
+          </label>
+          <button class="primary-button" type="submit">登录</button>
+          <p class="form-message" data-login-message role="alert"></p>
+        </form>
+
+        <form class="auth-form" data-activation-form hidden>
+          <div class="form-heading">
+            <span>首次激活</span>
+            <h2>建立个人登录凭据</h2>
+            <p>激活完成后，用户名和密码仍可在账户设置中修改。</p>
+          </div>
+          <label>
+            <span>当前临时密码</span>
+            <input name="currentPassword" type="password" autocomplete="current-password" maxlength="128" required />
+          </label>
+          <label>
+            <span>新用户名</span>
+            <input name="username" autocomplete="username" minlength="3" maxlength="32" required />
+          </label>
+          <label>
+            <span>显示名称</span>
+            <input name="displayName" autocomplete="name" maxlength="80" />
+          </label>
+          <label>
+            <span>新密码</span>
+            <input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+          </label>
+          <label>
+            <span>确认新密码</span>
+            <input name="confirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+          </label>
+          <button class="primary-button" type="submit">完成激活</button>
+          <p class="form-message" data-activation-message role="alert"></p>
+        </form>
+
+        <form class="auth-form" data-token-form hidden>
+          <div class="form-heading">
+            <span data-token-kicker>安全链接</span>
+            <h2 data-token-title>设置登录凭据</h2>
+            <p>链接只能使用一次；提交后其他会话会立即失效。</p>
+          </div>
+          <input name="token" type="hidden" />
+          <label>
+            <span>用户名</span>
+            <input name="username" autocomplete="username" minlength="3" maxlength="32" />
+          </label>
+          <label>
+            <span>显示名称</span>
+            <input name="displayName" autocomplete="name" maxlength="80" />
+          </label>
+          <label>
+            <span>新密码</span>
+            <input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+          </label>
+          <label>
+            <span>确认新密码</span>
+            <input name="confirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+          </label>
+          <button class="primary-button" type="submit">保存并登录</button>
+          <p class="form-message" data-token-message role="alert"></p>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <div class="manage-shell" data-manage-shell hidden>
+    <header class="manage-topbar">
+      <a class="manage-brand" href="/">
+        <img src="/assets/cqnu-logo.svg" width="36" height="36" alt="" />
+        <span><strong>CQNU Plant MAP</strong><small>访问与成员管理</small></span>
+      </a>
+      <div class="topbar-state">
+        <span class="online-state" data-online-state><i></i>在线</span>
+        <span class="session-expiry" data-session-expiry></span>
+        <a class="secondary-button compact" href="/workspace">本地工作区</a>
+        <button class="quiet-button compact" type="button" data-logout>退出</button>
+      </div>
+    </header>
+
+    <div class="offline-banner" data-offline-banner hidden>
+      网络连接已中断。当前管理会话已在本页停用，服务端在线租约将在短时间内自动失效。
+    </div>
+
+    <div class="manage-frame">
+      <aside class="manage-sidebar">
+        <div class="account-summary">
+          <span class="avatar" data-avatar aria-hidden="true">A</span>
+          <div><strong data-account-name>—</strong><small data-account-role>—</small></div>
+        </div>
+        <nav class="manage-nav" aria-label="管理模块">
+          <button type="button" data-view-target="overview" aria-current="page">概览</button>
+          <button type="button" data-view-target="members" data-admin-only>成员与权限</button>
+          <button type="button" data-view-target="audit" data-admin-only>安全审计</button>
+          <button type="button" data-view-target="account">账户设置</button>
+        </nav>
+        <div class="sidebar-note">
+          <strong>本地优先边界</strong>
+          <p>此处不上传项目文件、图片、坐标或本地路径。</p>
+        </div>
+      </aside>
+
+      <main class="manage-content" tabindex="-1" data-manage-content>
+        <section class="manage-view is-active" data-view="overview">
+          <div class="view-heading">
+            <div><span>ACCESS OVERVIEW</span><h1>访问概览</h1><p>检查当前账户的权限、会话期限和本地数据边界。</p></div>
+            <a class="primary-button compact" href="/workspace">打开本地工作区</a>
+          </div>
+          <div class="summary-grid">
+            <article><span>账户类型</span><strong data-overview-kind>—</strong><small>管理员可管理组成员</small></article>
+            <article><span>工作区权限</span><strong data-overview-access>—</strong><small data-overview-access-note>—</small></article>
+            <article><span>账户状态</span><strong data-overview-status>—</strong><small>状态变化会撤销旧会话</small></article>
+            <article><span>绝对会话期限</span><strong data-overview-expiry>—</strong><small>持续在线也不会超过 24 小时</small></article>
+          </div>
+          <div class="overview-grid">
+            <section class="data-panel">
+              <div class="panel-heading"><div><span>权限清单</span><h2>当前可执行操作</h2></div></div>
+              <ul class="capability-list" data-capability-list></ul>
+            </section>
+            <section class="data-panel boundary-panel">
+              <div class="panel-heading"><div><span>数据边界</span><h2>本地项目与管理域分离</h2></div></div>
+              <ol>
+                <li><strong>浏览器本地</strong><span>项目 SQLite、JSON、图片与备份</span></li>
+                <li><strong>管理数据库</strong><span>账户、权限、会话摘要与安全审计</span></li>
+                <li><strong>主动联网</strong><span>物种参考查询仅发送必要名称</span></li>
+              </ol>
+            </section>
+          </div>
+        </section>
+
+        <section class="manage-view" data-view="members" hidden>
+          <div class="view-heading">
+            <div><span>GROUP ACCESS</span><h1>成员与权限</h1><p>管理员最多 3 名；只读、编辑草稿和保存权限逐级累积。</p></div>
+            <button class="primary-button compact" type="button" data-open-create-member>新增成员</button>
+          </div>
+          <section class="data-panel table-panel">
+            <div class="table-toolbar">
+              <label class="search-field"><span>筛选成员</span><input type="search" data-member-search placeholder="用户名或显示名称" /></label>
+              <span data-member-count>0 名成员</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>成员</th><th>账户类型</th><th>工作区权限</th><th>状态</th><th>最近更新</th><th><span class="visually-hidden">操作</span></th></tr></thead>
+                <tbody data-member-rows></tbody>
+              </table>
+            </div>
+            <p class="empty-state" data-member-empty hidden>没有符合筛选条件的成员。</p>
+          </section>
+        </section>
+
+        <section class="manage-view" data-view="audit" hidden>
+          <div class="view-heading">
+            <div><span>SECURITY AUDIT</span><h1>安全审计</h1><p>审计只记录业务动作与结果，不保存密码、令牌、本地路径或项目内容。</p></div>
+            <button class="secondary-button compact" type="button" data-refresh-audit>刷新</button>
+          </div>
+          <section class="data-panel table-panel">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>时间</th><th>动作</th><th>结果</th><th>账户 ID</th><th>请求 ID</th></tr></thead>
+                <tbody data-audit-rows></tbody>
+              </table>
+            </div>
+            <p class="empty-state" data-audit-empty hidden>当前没有可显示的审计事件。</p>
+          </section>
+        </section>
+
+        <section class="manage-view" data-view="account" hidden>
+          <div class="view-heading">
+            <div><span>ACCOUNT SECURITY</span><h1>账户设置</h1><p>用户名是登录名；修改用户名或密码会立即撤销其他会话。</p></div>
+          </div>
+          <div class="settings-grid">
+            <form class="data-panel settings-form" data-username-form>
+              <div class="panel-heading"><div><span>登录标识</span><h2>修改用户名</h2></div></div>
+              <label><span>新用户名</span><input name="username" minlength="3" maxlength="32" autocomplete="username" required /></label>
+              <label><span>当前密码</span><input name="currentPassword" type="password" maxlength="128" autocomplete="current-password" required /></label>
+              <button class="primary-button compact" type="submit">更新用户名</button>
+              <p class="form-message" data-username-message role="alert"></p>
+            </form>
+            <form class="data-panel settings-form" data-password-form>
+              <div class="panel-heading"><div><span>凭据安全</span><h2>修改密码</h2></div></div>
+              <label><span>当前密码</span><input name="currentPassword" type="password" maxlength="128" autocomplete="current-password" required /></label>
+              <label><span>新密码</span><input name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required /></label>
+              <label><span>确认新密码</span><input name="confirmPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required /></label>
+              <button class="primary-button compact" type="submit">更新密码</button>
+              <p class="form-message" data-password-message role="alert"></p>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <dialog class="manage-dialog" data-member-dialog aria-labelledby="memberDialogTitle">
+    <form method="dialog" class="dialog-surface" data-member-form>
+      <div class="dialog-heading"><div><span data-member-dialog-kicker>新增成员</span><h2 id="memberDialogTitle" data-member-dialog-title>配置访问权限</h2></div><button class="icon-button" type="button" data-close-member-dialog aria-label="关闭">×</button></div>
+      <input name="memberId" type="hidden" />
+      <label><span>用户名</span><input name="username" minlength="3" maxlength="32" autocomplete="off" required /></label>
+      <label><span>显示名称</span><input name="displayName" maxlength="80" autocomplete="off" required /></label>
+      <div class="form-columns">
+        <label><span>账户类型</span><select name="accountKind"><option value="user">用户</option><option value="admin">管理员</option></select></label>
+        <label><span>工作区权限</span><select name="accessLevel"><option value="read">只读</option><option value="edit">编辑草稿</option><option value="save">编辑并保存</option></select></label>
+      </div>
+      <label data-member-status-field hidden><span>账户状态</span><select name="status"><option value="pending-activation">待激活</option><option value="active">已启用</option><option value="disabled">已停用</option></select></label>
+      <p class="dialog-note">管理员固定拥有“编辑并保存”权限。新增成员后会生成一次性激活链接。</p>
+      <p class="form-message" data-member-message role="alert"></p>
+      <div class="dialog-actions"><button class="quiet-button" type="button" data-close-member-dialog>取消</button><button class="primary-button compact" type="submit" value="default" data-member-submit>创建并生成链接</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="manage-dialog token-dialog" data-token-dialog aria-labelledby="issuedTokenTitle">
+    <div class="dialog-surface">
+      <div class="dialog-heading"><div><span>一次性安全链接</span><h2 id="issuedTokenTitle" data-issued-token-title>激活成员账户</h2></div><button class="icon-button" type="button" data-close-token-dialog aria-label="关闭">×</button></div>
+      <p>此链接只显示一次。请通过可信渠道发送给对应成员，不要写入项目文件或公开文档。</p>
+      <label><span>安全链接</span><textarea rows="4" readonly data-issued-token-link></textarea></label>
+      <div class="token-expiry">有效期至 <strong data-issued-token-expiry>—</strong></div>
+      <div class="dialog-actions"><button class="secondary-button compact" type="button" data-copy-token>复制链接</button><button class="primary-button compact" type="button" data-close-token-dialog>完成</button></div>
+    </div>
+  </dialog>
+
+  <div class="toast-region" aria-live="polite" aria-atomic="true" data-toast-region></div>
+</body>
+</html>

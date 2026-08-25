@@ -7,7 +7,7 @@
 | `main` | Reviewed integration, documentation, and release history | Sole source of stable and Beta tags |
 | `desktop/main` | Electron application, desktop adapters, local storage, packaging, and installers | Desktop candidate line |
 | `web/main` | Browser application, PWA, browser storage adapters, and Sites deployment | Web candidate line |
-| `admin/foundation` | Management-system contracts, authorization boundaries, and threat model | Non-production preparation line |
+| `admin/foundation` | Management service, authorization boundaries, account UI, audit contracts, and database schema | Management candidate line |
 
 ## Shared Behavior
 
@@ -16,6 +16,7 @@
 - Browser-only access remains behind the Web Platform Adapter and must use explicit browser permissions.
 - Platform adapters may differ internally, but the same supported operation must preserve its user-visible meaning and data contract.
 - Site documentation routes and the documentation homepage remain available when `/workspace` changes.
+- The management service controls access only. Browser plant records remain in local browser storage or a user-authorized directory.
 
 ## Integration Rules
 

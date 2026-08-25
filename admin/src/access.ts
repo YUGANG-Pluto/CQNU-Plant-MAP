@@ -34,12 +34,15 @@ export async function authorizeAdminRequest(
 ): Promise<AdminAccessDecision> {
   const route = findAdminRoute(context.method, context.path);
   if (!route) return { allowed: false, code: 'ROUTE_DENIED', route: null };
-  if (route.mutatesState !== route.csrfProtected) {
+  if (route.sessionRequired && route.mutatesState !== route.csrfProtected) {
     return { allowed: false, code: 'ROUTE_SECURITY_INVALID', route };
   }
+  if (!route.sessionRequired) return { allowed: true, code: 'ALLOWED', route };
   const record = await sessions.inspect(context.sessionToken);
   if (!record) return { allowed: false, code: 'SESSION_REQUIRED', route };
-  if (record.role !== 'owner') return { allowed: false, code: 'CAPABILITY_DENIED', route };
+  if (record.mustChangePassword && !route.allowPendingActivation) {
+    return { allowed: false, code: 'CAPABILITY_DENIED', route };
+  }
   if (route.capability && !can(record, route.capability, sessions.now())) {
     return { allowed: false, code: 'CAPABILITY_DENIED', route };
   }
@@ -47,14 +50,12 @@ export async function authorizeAdminRequest(
     session: record,
     csrfToken: context.csrfToken || '',
     origin: context.origin || '',
-    allowedOrigins: context.allowedOrigins
+    allowedOrigins: context.allowedOrigins,
+    keyRing: sessions.keyRing()
   })) {
     return { allowed: false, code: 'CSRF_DENIED', route };
   }
-  const access = await sessions.touch(
-    context.sessionToken,
-    route.path === '/api/admin/session/rotate'
-  );
+  const access = await sessions.touch(context.sessionToken);
   if (!access) return { allowed: false, code: 'SESSION_REQUIRED', route };
   return {
     allowed: true,

@@ -1,5 +1,5 @@
 import type { AdminSessionRecord } from './contracts.js';
-import { digestOpaqueToken } from './session.js';
+import { AuthKeyRing } from './keyring.js';
 
 export function constantTimeTextEqual(left: string, right: string): boolean {
   const length = Math.max(left.length, right.length);
@@ -36,9 +36,13 @@ export async function validateAdminCsrf(input: {
   csrfToken: string;
   origin: string;
   allowedOrigins: readonly string[];
-  digest?: (value: string) => Promise<string>;
+  keyRing: AuthKeyRing;
 }): Promise<boolean> {
   if (!input.csrfToken || !isAllowedAdminOrigin(input.origin, input.allowedOrigins)) return false;
-  const digest = await (input.digest || digestOpaqueToken)(input.csrfToken);
-  return constantTimeTextEqual(digest, input.session.csrfDigest);
+  return input.keyRing.verify(
+    'csrf',
+    input.csrfToken,
+    input.session.csrfDigest,
+    input.session.csrfKeyId
+  );
 }

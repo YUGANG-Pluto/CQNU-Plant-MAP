@@ -5,22 +5,22 @@ import type {
   AdminSessionRecord,
   SessionStore
 } from './contracts.js';
-import { ADMIN_MODE } from './contracts.js';
+import { AuthKeyRing, randomBase64Url } from './keyring.js';
 import { isSessionActive } from './policy.js';
 
-export const ADMIN_SESSION_COOKIE_NAME = '__Host-cqnu_admin_session';
+export const ADMIN_SESSION_COOKIE_NAME = '__Host-cqnu_manage_session';
 export const ADMIN_CSRF_HEADER_NAME = 'x-cqnu-csrf';
 
 export interface AdminSessionPolicy {
-  idleTtlMs: number;
+  leaseTtlMs: number;
   absoluteTtlMs: number;
   rotationIntervalMs: number;
   tokenBytes: number;
 }
 
 export const DEFAULT_ADMIN_SESSION_POLICY: Readonly<AdminSessionPolicy> = Object.freeze({
-  idleTtlMs: 30 * 60 * 1000,
-  absoluteTtlMs: 8 * 60 * 60 * 1000,
+  leaseTtlMs: 2 * 60 * 1000,
+  absoluteTtlMs: 24 * 60 * 60 * 1000,
   rotationIntervalMs: 15 * 60 * 1000,
   tokenBytes: 32
 });
@@ -28,7 +28,7 @@ export const DEFAULT_ADMIN_SESSION_POLICY: Readonly<AdminSessionPolicy> = Object
 export interface AdminSessionRuntime {
   now(): Date;
   randomToken(byteLength: number): string;
-  digest(value: string): Promise<string>;
+  keyRing: AuthKeyRing;
 }
 
 export interface AdminSessionGrant {
@@ -45,27 +45,13 @@ export interface AdminSessionAccess {
   replacement?: Pick<AdminSessionGrant, 'sessionToken' | 'csrfToken' | 'csrfHeaderName'>;
 }
 
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+function sessionIndex(tokenKeyId: string, tokenDigest: string): string {
+  return `${tokenKeyId}:${tokenDigest}`;
 }
 
-export function randomOpaqueToken(byteLength = 32): string {
-  const bytes = new Uint8Array(byteLength);
-  crypto.getRandomValues(bytes);
-  return bytesToHex(bytes);
-}
-
-export async function digestOpaqueToken(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  return bytesToHex(new Uint8Array(digest));
-}
-
-function defaultRuntime(): AdminSessionRuntime {
-  return {
-    now: () => new Date(),
-    randomToken: randomOpaqueToken,
-    digest: digestOpaqueToken
-  };
+function tokenKeyId(token: string, prefix: string): string | null {
+  const match = new RegExp(`^${prefix}\\.([A-Za-z0-9_-]{1,32})\\.[A-Za-z0-9_-]{20,}$`, 'u').exec(token);
+  return match?.[1] || null;
 }
 
 function cloneSession(session: AdminSessionRecord): AdminSessionRecord {
@@ -76,11 +62,15 @@ function publicSession(session: AdminSessionRecord): AdminSession {
   return {
     id: session.id,
     principalId: session.principalId,
-    role: session.role,
+    username: session.username,
+    accountKind: session.accountKind,
+    accessLevel: session.accessLevel,
+    mustChangePassword: session.mustChangePassword,
+    credentialVersion: session.credentialVersion,
     createdAt: session.createdAt,
     rotatedAt: session.rotatedAt,
     lastSeenAt: session.lastSeenAt,
-    expiresAt: session.expiresAt,
+    leaseExpiresAt: session.leaseExpiresAt,
     absoluteExpiresAt: session.absoluteExpiresAt,
     authenticationMethod: session.authenticationMethod,
     rotationCounter: session.rotationCounter,
@@ -89,9 +79,9 @@ function publicSession(session: AdminSessionRecord): AdminSession {
   };
 }
 
-function expiryAt(now: Date, absoluteExpiresAt: string, idleTtlMs: number): string {
+function leaseExpiryAt(now: Date, absoluteExpiresAt: string, leaseTtlMs: number): string {
   return new Date(Math.min(
-    now.getTime() + idleTtlMs,
+    now.getTime() + leaseTtlMs,
     Date.parse(absoluteExpiresAt)
   )).toISOString();
 }
@@ -106,28 +96,31 @@ export function clearAdminSessionCookie(): string {
 }
 
 function validatePolicy(policy: AdminSessionPolicy): void {
-  if (Object.values(policy).some(value => !Number.isSafeInteger(value) || value <= 0)) {
+  if (Object.values(policy).some(value => !Number.isSafeInteger(value) || value <= 0)
+    || policy.tokenBytes < 32
+    || policy.tokenBytes > 64
+    || policy.leaseTtlMs > policy.absoluteTtlMs
+    || policy.rotationIntervalMs > policy.absoluteTtlMs) {
     throw new Error('ADMIN_SESSION_POLICY_INVALID');
   }
-  if (policy.tokenBytes < 32 || policy.tokenBytes > 64) throw new Error('ADMIN_SESSION_POLICY_INVALID');
 }
 
 export class InMemorySessionStore implements SessionStore {
   readonly #byId = new Map<string, AdminSessionRecord>();
   readonly #idByDigest = new Map<string, string>();
 
-  async getByTokenDigest(tokenDigest: string): Promise<AdminSessionRecord | null> {
-    const id = this.#idByDigest.get(tokenDigest);
+  async getByTokenDigest(tokenDigest: string, tokenKeyIdValue: string): Promise<AdminSessionRecord | null> {
+    const id = this.#idByDigest.get(sessionIndex(tokenKeyIdValue, tokenDigest));
     const session = id ? this.#byId.get(id) : null;
     return session ? cloneSession(session) : null;
   }
 
   async put(session: AdminSessionRecord): Promise<void> {
     const previous = this.#byId.get(session.id);
-    if (previous) this.#idByDigest.delete(previous.tokenDigest);
+    if (previous) this.#idByDigest.delete(sessionIndex(previous.tokenKeyId, previous.tokenDigest));
     const copy = cloneSession(session);
     this.#byId.set(copy.id, copy);
-    if (!copy.revokedAt) this.#idByDigest.set(copy.tokenDigest, copy.id);
+    if (!copy.revokedAt) this.#idByDigest.set(sessionIndex(copy.tokenKeyId, copy.tokenDigest), copy.id);
   }
 
   async replace(expectedTokenDigest: string, session: AdminSessionRecord): Promise<boolean> {
@@ -140,7 +133,7 @@ export class InMemorySessionStore implements SessionStore {
   async revoke(sessionId: string, revokedAt: string): Promise<boolean> {
     const session = this.#byId.get(sessionId);
     if (!session || session.revokedAt) return false;
-    this.#idByDigest.delete(session.tokenDigest);
+    this.#idByDigest.delete(sessionIndex(session.tokenKeyId, session.tokenDigest));
     this.#byId.set(session.id, { ...session, revokedAt });
     return true;
   }
@@ -149,7 +142,7 @@ export class InMemorySessionStore implements SessionStore {
     let revoked = 0;
     for (const session of this.#byId.values()) {
       if (session.principalId !== principalId || session.revokedAt) continue;
-      this.#idByDigest.delete(session.tokenDigest);
+      this.#idByDigest.delete(sessionIndex(session.tokenKeyId, session.tokenDigest));
       this.#byId.set(session.id, { ...session, revokedAt });
       revoked += 1;
     }
@@ -170,41 +163,51 @@ export class AdminSessionManager {
     store: SessionStore,
     options: {
       policy?: Partial<AdminSessionPolicy>;
-      runtime?: Partial<AdminSessionRuntime>;
-    } = {}
+      runtime: AdminSessionRuntime;
+    }
   ) {
     this.#store = store;
     this.#policy = { ...DEFAULT_ADMIN_SESSION_POLICY, ...(options.policy || {}) };
     validatePolicy(this.#policy);
-    this.#runtime = { ...defaultRuntime(), ...(options.runtime || {}) };
+    this.#runtime = options.runtime;
   }
 
   now(): Date {
     return this.#runtime.now();
   }
 
+  keyRing(): AuthKeyRing {
+    return this.#runtime.keyRing;
+  }
+
   async issue(
     principal: AdminPrincipal,
     authenticationMethod: AdminAuthenticationMethod
   ): Promise<AdminSessionGrant> {
-    if (!principal.enabled) throw new Error('ADMIN_PRINCIPAL_DISABLED');
-    if (ADMIN_MODE === 'owner-only' && principal.role !== 'owner') {
-      throw new Error('ADMIN_ROLE_DISABLED');
-    }
+    if (!principal.enabled || principal.status === 'disabled') throw new Error('ADMIN_PRINCIPAL_DISABLED');
     const now = this.now();
-    const sessionToken = `adm_${this.#runtime.randomToken(this.#policy.tokenBytes)}`;
-    const csrfToken = `csrf_${this.#runtime.randomToken(this.#policy.tokenBytes)}`;
+    const keyId = this.#runtime.keyRing.activeKeyId();
+    const sessionToken = `mgs.${keyId}.${this.#runtime.randomToken(this.#policy.tokenBytes)}`;
+    const csrfToken = `mgc.${keyId}.${this.#runtime.randomToken(this.#policy.tokenBytes)}`;
+    const sessionDigest = await this.#runtime.keyRing.digest('session', sessionToken, keyId);
+    const csrfDigest = await this.#runtime.keyRing.digest('csrf', csrfToken, keyId);
     const absoluteExpiresAt = new Date(now.getTime() + this.#policy.absoluteTtlMs).toISOString();
     const record: AdminSessionRecord = {
       id: `ses_${this.#runtime.randomToken(16)}`,
-      tokenDigest: await this.#runtime.digest(sessionToken),
-      csrfDigest: await this.#runtime.digest(csrfToken),
+      tokenDigest: sessionDigest.digest,
+      tokenKeyId: sessionDigest.keyId,
+      csrfDigest: csrfDigest.digest,
+      csrfKeyId: csrfDigest.keyId,
       principalId: principal.id,
-      role: principal.role,
+      username: principal.username,
+      accountKind: principal.accountKind,
+      accessLevel: principal.accessLevel,
+      mustChangePassword: principal.mustChangePassword,
+      credentialVersion: principal.credentialVersion,
       createdAt: now.toISOString(),
       rotatedAt: now.toISOString(),
       lastSeenAt: now.toISOString(),
-      expiresAt: expiryAt(now, absoluteExpiresAt, this.#policy.idleTtlMs),
+      leaseExpiresAt: leaseExpiryAt(now, absoluteExpiresAt, this.#policy.leaseTtlMs),
       absoluteExpiresAt,
       authenticationMethod,
       rotationCounter: 0
@@ -214,15 +217,16 @@ export class AdminSessionManager {
       session: publicSession(record),
       sessionToken,
       csrfToken,
-      setCookie: cookieFor(sessionToken, record.expiresAt, now),
+      setCookie: cookieFor(sessionToken, record.leaseExpiresAt, now),
       csrfHeaderName: ADMIN_CSRF_HEADER_NAME
     };
   }
 
   async inspect(sessionToken: string): Promise<AdminSessionRecord | null> {
-    if (!sessionToken) return null;
-    const tokenDigest = await this.#runtime.digest(sessionToken);
-    const record = await this.#store.getByTokenDigest(tokenDigest);
+    const keyId = tokenKeyId(sessionToken, 'mgs');
+    if (!keyId || !this.#runtime.keyRing.hasKey(keyId)) return null;
+    const digest = await this.#runtime.keyRing.digest('session', sessionToken, keyId);
+    const record = await this.#store.getByTokenDigest(digest.digest, keyId);
     const now = this.now();
     if (!isSessionActive(record, now)) {
       if (record && !record.revokedAt) await this.#store.revoke(record.id, now.toISOString());
@@ -237,27 +241,32 @@ export class AdminSessionManager {
     const now = this.now();
     const rotationDue = forceRotate
       || now.getTime() - Date.parse(record.rotatedAt) >= this.#policy.rotationIntervalMs;
-    const expiresAt = expiryAt(now, record.absoluteExpiresAt, this.#policy.idleTtlMs);
+    const leaseExpiresAt = leaseExpiryAt(now, record.absoluteExpiresAt, this.#policy.leaseTtlMs);
     if (!rotationDue) {
-      const next = { ...record, lastSeenAt: now.toISOString(), expiresAt };
+      const next = { ...record, lastSeenAt: now.toISOString(), leaseExpiresAt };
       if (!await this.#store.replace(record.tokenDigest, next)) {
         throw new Error('ADMIN_SESSION_UPDATE_CONFLICT');
       }
       return {
         session: publicSession(next),
-        setCookie: cookieFor(sessionToken, expiresAt, now)
+        setCookie: cookieFor(sessionToken, leaseExpiresAt, now)
       };
     }
 
-    const nextToken = `adm_${this.#runtime.randomToken(this.#policy.tokenBytes)}`;
-    const nextCsrf = `csrf_${this.#runtime.randomToken(this.#policy.tokenBytes)}`;
+    const keyId = this.#runtime.keyRing.activeKeyId();
+    const nextToken = `mgs.${keyId}.${this.#runtime.randomToken(this.#policy.tokenBytes)}`;
+    const nextCsrf = `mgc.${keyId}.${this.#runtime.randomToken(this.#policy.tokenBytes)}`;
+    const tokenDigest = await this.#runtime.keyRing.digest('session', nextToken, keyId);
+    const csrfDigest = await this.#runtime.keyRing.digest('csrf', nextCsrf, keyId);
     const next: AdminSessionRecord = {
       ...record,
-      tokenDigest: await this.#runtime.digest(nextToken),
-      csrfDigest: await this.#runtime.digest(nextCsrf),
+      tokenDigest: tokenDigest.digest,
+      tokenKeyId: tokenDigest.keyId,
+      csrfDigest: csrfDigest.digest,
+      csrfKeyId: csrfDigest.keyId,
       rotatedAt: now.toISOString(),
       lastSeenAt: now.toISOString(),
-      expiresAt,
+      leaseExpiresAt,
       rotationCounter: record.rotationCounter + 1
     };
     if (!await this.#store.replace(record.tokenDigest, next)) {
@@ -265,7 +274,7 @@ export class AdminSessionManager {
     }
     return {
       session: publicSession(next),
-      setCookie: cookieFor(nextToken, expiresAt, now),
+      setCookie: cookieFor(nextToken, leaseExpiresAt, now),
       replacement: {
         sessionToken: nextToken,
         csrfToken: nextCsrf,
@@ -282,4 +291,12 @@ export class AdminSessionManager {
   async revokeAllForPrincipal(principalId: string): Promise<number> {
     return this.#store.revokePrincipal(principalId, this.now().toISOString());
   }
+}
+
+export function defaultAdminSessionRuntime(keyRing: AuthKeyRing): AdminSessionRuntime {
+  return {
+    now: () => new Date(),
+    randomToken: randomBase64Url,
+    keyRing
+  };
 }
