@@ -65,7 +65,44 @@ function bindStatsAfterRender() {
   bindStatsDisplayControls();
   bindHeatmapCellEvents();
   bindStatsFullscreenEvents();
+  animateStatsCounters();
   if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
+}
+
+function statsMotionIsEnabled() {
+  if (document.documentElement.classList.contains('motion-disabled')) return false;
+  return !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
+
+function animateStatsCounters() {
+  if (!statsMotionIsEnabled() || !ui.statsModalBody) return;
+  const nodes = [...ui.statsModalBody.querySelectorAll('.stat-chip strong')];
+  nodes.forEach((node, index) => {
+    const finalText = String(node.textContent || '').trim();
+    const match = finalText.match(/^(-?\d+(?:\.\d+)?)(%)?$/);
+    if (!match) return;
+    const target = Number(match[1]);
+    if (!Number.isFinite(target)) return;
+    const decimals = (match[1].split('.')[1] || '').length;
+    const suffix = match[2] || '';
+    const duration = 760;
+    const delay = Math.min(index * 52, 312);
+    node.setAttribute('aria-label', finalText);
+    node.textContent = `${(0).toFixed(decimals)}${suffix}`;
+    window.setTimeout(() => {
+      const startedAt = performance.now();
+      const draw = now => {
+        if (!node.isConnected) return;
+        const progress = Math.min(1, (now - startedAt) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const value = target * eased;
+        node.textContent = `${value.toFixed(decimals)}${suffix}`;
+        if (progress < 1) window.requestAnimationFrame(draw);
+        else node.textContent = finalText;
+      };
+      window.requestAnimationFrame(draw);
+    }, delay);
+  });
 }
 
 function renderChartCard(title, body, options = {}) {

@@ -1,0 +1,90 @@
+/* Motion choreography for workspace module controls. */
+.ui-module-button {
+  position: relative;
+  overflow: hidden;
+  transition:
+    background-color var(--motion-duration, 580ms) var(--motion-ease, ease),
+    border-color var(--motion-duration, 580ms) var(--motion-ease, ease),
+    box-shadow var(--motion-duration, 580ms) var(--motion-ease, ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease) !important;
+}
+
+.ui-module-button::after {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: 0;
+  width: 3px;
+  content: "";
+  background: var(--ui-module-color);
+  border-radius: 0 999px 999px 0;
+  opacity: 0;
+  transform: scaleY(0.2);
+  transform-origin: center;
+  transition:
+    opacity var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration, 580ms) var(--motion-ease, ease);
+}
+
+.ui-module-button > * {
+  position: relative;
+  z-index: 1;
+}
+
+.ui-module-button .ui-command-button__icon {
+  transition:
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    background-color var(--motion-duration, 580ms) var(--motion-ease, ease),
+    transform var(--motion-duration, 580ms) var(--motion-ease, ease);
+}
+
+.ui-module-button .ui-command-button__label {
+  transition:
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration, 580ms) var(--motion-ease, ease);
+}
+
+.ui-module-button:hover:not(:disabled) {
+  transform: translateX(2px);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--ui-module-color) 10%, transparent) !important;
+}
+
+.ui-module-button:hover:not(:disabled)::after,
+.ui-module-button:focus-visible::after {
+  opacity: 0.82;
+  transform: scaleY(1);
+}
+
+.ui-module-button:hover:not(:disabled) .ui-command-button__icon {
+  transform: rotate(-3deg) scale(1.1);
+}
+
+.ui-module-button:hover:not(:disabled) .ui-command-button__label {
+  color: var(--ui-module-color);
+  transform: translateX(2px);
+}
+
+.ui-module-button:hover:not(:disabled) .ui-module-button__trailing {
+  transform: translateX(5px);
+}
+
+.ui-module-button:active:not(:disabled) {
+  transform: translateX(2px) scale(0.985);
+}
+
+.motion-mode-standard .ui-module-launcher .ui-module-button {
+  animation: uiModuleButtonIn var(--motion-duration-reveal, 720ms) var(--motion-ease, ease) backwards;
+}
+
+.motion-mode-standard .ui-module-launcher .ui-module-button:nth-child(2) { animation-delay: 56ms; }
+.motion-mode-standard .ui-module-launcher .ui-module-button:nth-child(3) { animation-delay: 112ms; }
+.motion-mode-standard .ui-module-launcher .ui-module-button:nth-child(4) { animation-delay: 168ms; }
+.motion-mode-standard .ui-module-launcher .ui-module-button:nth-child(5) { animation-delay: 224ms; }
+.motion-mode-standard .ui-module-launcher .ui-module-button:nth-child(6) { animation-delay: 280ms; }
+.motion-mode-standard .ui-module-launcher .ui-module-button:nth-child(n + 7) { animation-delay: 336ms; }
+
+@keyframes uiModuleButtonIn {
+  from { opacity: 0; transform: translateX(-16px) scale(0.985); }
+  52% { opacity: 0.76; }
+  to { opacity: 1; transform: none; }
+}

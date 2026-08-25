@@ -259,7 +259,7 @@ function pulseSelectionStatus() {
   objectSelectionPulseTimer = window.setTimeout(() => {
     nodes.forEach(node => node.classList.remove('is-updated'));
     objectSelectionPulseTimer = null;
-  }, 420);
+  }, 760);
 }
 
 function syncObjectSelectionUi(reason = 'sync', options = {}) {

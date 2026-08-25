@@ -1,3 +1,5 @@
+let lastRenderedWorkspaceListTab = '';
+
 function renderTrashList() {
   if (!ui.trashList) return;
   const trash = getRecycleBin();
@@ -28,17 +30,24 @@ function renderTrashList() {
 
 function renderLists() {
   if (!ui.zoneListPanel || !ui.pointListPanel) return;
-  ui.btnTabZones?.classList.toggle('active', state.activeListTab === 'zones');
-  ui.btnTabPoints?.classList.toggle('active', state.activeListTab === 'points');
-  ui.btnTabZones?.setAttribute('aria-selected', state.activeListTab === 'zones' ? 'true' : 'false');
-  ui.btnTabPoints?.setAttribute('aria-selected', state.activeListTab === 'points' ? 'true' : 'false');
-  ui.btnTabZones && (ui.btnTabZones.tabIndex = state.activeListTab === 'zones' ? 0 : -1);
-  ui.btnTabPoints && (ui.btnTabPoints.tabIndex = state.activeListTab === 'points' ? 0 : -1);
-  ui.zoneListPanel.classList.toggle('hidden', state.activeListTab !== 'zones');
-  ui.pointListPanel.classList.toggle('hidden', state.activeListTab !== 'points');
+  const activeTab = state.activeListTab === 'points' ? 'points' : 'zones';
+  const tabChanged = lastRenderedWorkspaceListTab !== activeTab;
+  const activePanel = activeTab === 'zones' ? ui.zoneListPanel : ui.pointListPanel;
+  ui.btnTabZones?.classList.toggle('active', activeTab === 'zones');
+  ui.btnTabPoints?.classList.toggle('active', activeTab === 'points');
+  ui.btnTabZones?.setAttribute('aria-selected', activeTab === 'zones' ? 'true' : 'false');
+  ui.btnTabPoints?.setAttribute('aria-selected', activeTab === 'points' ? 'true' : 'false');
+  ui.btnTabZones && (ui.btnTabZones.tabIndex = activeTab === 'zones' ? 0 : -1);
+  ui.btnTabPoints && (ui.btnTabPoints.tabIndex = activeTab === 'points' ? 0 : -1);
+  ui.zoneListPanel.classList.toggle('hidden', activeTab !== 'zones');
+  ui.pointListPanel.classList.toggle('hidden', activeTab !== 'points');
+  if (tabChanged) {
+    ui.zoneListPanel.classList.remove('is-entering');
+    ui.pointListPanel.classList.remove('is-entering');
+  }
   clearNode(ui.zoneListPanel);
   clearNode(ui.pointListPanel);
-  ui.listSummaryCount && (ui.listSummaryCount.textContent = String(state.activeListTab === 'zones' ? state.zones.length : state.points.length));
+  ui.listSummaryCount && (ui.listSummaryCount.textContent = String(activeTab === 'zones' ? state.zones.length : state.points.length));
   if (!state.zones.length) renderObjectListEmpty(ui.zoneListPanel, 'objectListEmptyZones', 'objectWorkflowNoObjects');
   else state.zones.forEach(zone => {
     ui.zoneListPanel.appendChild(createObjectListButton(
@@ -56,6 +65,13 @@ function renderLists() {
     ));
   });
   syncObjectSelectionUi('workspace-list-render');
+  if (tabChanged) {
+    window.requestAnimationFrame(() => {
+      activePanel.classList.add('is-entering');
+      window.setTimeout(() => activePanel.classList.remove('is-entering'), 1200);
+    });
+  }
+  lastRenderedWorkspaceListTab = activeTab;
 }
 
 function renderAllDerived() {

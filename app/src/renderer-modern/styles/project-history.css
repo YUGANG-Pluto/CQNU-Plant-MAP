@@ -36,6 +36,7 @@
 }
 
 .project-save-status {
+  position: relative;
   min-width: 118px;
   max-width: 190px;
   min-height: 34px;
@@ -52,6 +53,7 @@
 }
 
 .project-save-status__dot {
+  position: relative;
   width: 8px;
   height: 8px;
   flex: 0 0 auto;
@@ -60,6 +62,16 @@
   transition:
     background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
     transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
+}
+
+.project-save-status__dot::after {
+  position: absolute;
+  inset: -5px;
+  content: "";
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.4);
 }
 
 .project-save-status__time {
@@ -73,10 +85,15 @@
 .project-save-status.is-saved {
   color: var(--success);
   background: color-mix(in srgb, var(--success) 9%, transparent);
+  animation: projectSaveConfirmed 720ms var(--motion-ease, ease) both;
 }
 
 .project-save-status.is-saved .project-save-status__dot {
   background: var(--success);
+}
+
+.project-save-status.is-saved .project-save-status__dot::after {
+  animation: projectSaveRing 720ms var(--motion-ease, ease) both;
 }
 
 .project-save-status.is-saving {
@@ -102,6 +119,7 @@
 .project-save-status.is-error {
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 10%, transparent);
+  animation: projectSaveError 580ms var(--motion-ease, ease) both;
 }
 
 .project-save-status.is-error .project-save-status__dot {
@@ -111,6 +129,24 @@
 @keyframes projectSavePulse {
   0%, 100% { opacity: 0.45; transform: scale(0.82); }
   50% { opacity: 1; transform: scale(1.16); }
+}
+
+@keyframes projectSaveConfirmed {
+  0% { transform: translateY(3px) scale(0.98); }
+  56% { transform: translateY(0) scale(1.018); }
+  100% { transform: none; }
+}
+
+@keyframes projectSaveRing {
+  from { opacity: 0.68; transform: scale(0.42); }
+  to { opacity: 0; transform: scale(1.8); }
+}
+
+@keyframes projectSaveError {
+  0%, 100% { transform: translateX(0); }
+  28% { transform: translateX(-3px); }
+  58% { transform: translateX(3px); }
+  82% { transform: translateX(-1px); }
 }
 
 @media (max-width: 1320px) {
