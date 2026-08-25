@@ -1,6 +1,23 @@
 # Security Model
 
-This document describes the current desktop security boundary for the CQNU Campus Plant Mapping System.
+This document describes the desktop and browser security boundaries for the CQNU Campus Plant Mapping System.
+
+## Web Access Boundary
+
+The browser site separates management data from plant project data.
+
+| Layer | Responsibility |
+| --- | --- |
+| Management Worker | Account activation, authentication, member permissions, session lease, password reset, and allowlisted audit events. |
+| Management database | Account, keyed credential digest, single-use token digest, session digest, and security audit metadata only. |
+| Browser platform adapter | Enforces `read`, `edit`, and `save` capabilities before local project operations. |
+| Browser local storage | OPFS SQLite, optional authorized-directory mirror, images, backups, and diagnostics for the plant project. |
+
+The management service never accepts project records, images, coordinates, local paths, directory handles, or full third-party API responses. Project data remains in the browser or a directory explicitly authorized by the user.
+
+Passwords use PBKDF2-HMAC-SHA-256 with a deployment-provided pepper. Purpose-separated HMAC keys sign or digest session, CSRF, activation, and password-reset material. Production cookies are host-only, `HttpOnly`, `Secure`, and `SameSite=Strict`; state-changing account requests also require a same-origin CSRF token.
+
+Sessions require a renewable online lease and have a 24-hour absolute lifetime. Account activation, password change, username change, permission change, reset, disable, and explicit logout revoke the affected sessions. Reset and activation links are single-use and expire.
 
 ## Desktop Boundary
 

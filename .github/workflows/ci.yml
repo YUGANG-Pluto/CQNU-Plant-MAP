@@ -50,6 +50,9 @@ jobs:
       - name: Install dependencies
         run: npm run ci:install
 
+      - name: Install management dependencies
+        run: npm --prefix ../admin ci --ignore-scripts --no-audit --fund=false
+
       - name: Prepare Electron runtime and native dependencies
         run: npm run prepare:electron
 
@@ -70,6 +73,9 @@ jobs:
 
       - name: Run unit and integration tests
         run: npm run test --if-present
+
+      - name: Check management authorization contracts
+        run: npm --prefix ../admin run check
 
       - name: Run SQLite runtime acceptance
         run: npm run db:test-runtime
@@ -103,11 +109,16 @@ jobs:
           cache: npm
           cache-dependency-path: |
             app/package-lock.json
+            admin/package-lock.json
             site/package-lock.json
 
       - name: Install browser renderer dependencies
         working-directory: app
         run: npm run ci:install
+
+      - name: Install management dependencies
+        working-directory: admin
+        run: npm ci --ignore-scripts --no-audit --fund=false
 
       - name: Build shared browser renderer
         working-directory: app
@@ -115,6 +126,10 @@ jobs:
 
       - name: Install site dependencies
         run: npm ci --ignore-scripts --no-audit --fund=false
+
+      - name: Check management authorization contracts
+        working-directory: admin
+        run: npm run check
 
       - name: Build and validate site
         run: npm run check

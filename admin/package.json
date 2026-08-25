@@ -1,0 +1,16 @@
+{
+  "name": "cqnu-plant-map-admin-foundation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Owner-only authorization and audit contracts for the CQNU Plant MAP management system.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
