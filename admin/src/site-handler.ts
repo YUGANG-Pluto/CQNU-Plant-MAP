@@ -112,10 +112,16 @@ function publicError(code: string): { code: string; message: string } {
   return { code, message: messages[code] || '请求未完成，请检查输入后重试。' };
 }
 
+function normalizedFailureCode(error: unknown): string {
+  if (!(error instanceof Error)) return 'REQUEST_FAILED';
+  const exact = error.message.match(/^([A-Z][A-Z0-9_]{2,63})(?::|$)/u);
+  if (exact?.[1]) return exact[1];
+  const errorName = error.name.replace(/([a-z])([A-Z])/gu, '$1_$2').toUpperCase();
+  return /^[A-Z][A-Z0-9_]{2,63}$/u.test(errorName) ? errorName : 'REQUEST_FAILED';
+}
+
 function failure(error: unknown): Response {
-  const code = error instanceof Error && /^[A-Z0-9_]+$/u.test(error.message)
-    ? error.message
-    : 'REQUEST_FAILED';
+  const code = normalizedFailureCode(error);
   return jsonResponse({ ok: false, error: publicError(code) }, errorStatus(code));
 }
 
@@ -562,6 +568,11 @@ export async function handleManagementRequest(
   try {
     return await createManagementRequestHandler(await productionRuntime(env))(request);
   } catch (error) {
+    console.error(JSON.stringify({
+      event: 'management.request.failed',
+      path: new URL(request.url).pathname.slice(0, 128),
+      code: normalizedFailureCode(error)
+    }));
     return failure(error);
   }
 }
