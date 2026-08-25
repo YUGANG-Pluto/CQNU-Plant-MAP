@@ -22,7 +22,7 @@ import type {
 } from './contracts.js';
 import { AuthKeyRing, randomBase64Url } from './keyring.js';
 import type { PasswordHasher } from './password.js';
-import { validatePasswordPolicy } from './password.js';
+import { PBKDF2_BOOTSTRAP_ITERATIONS, validatePasswordPolicy } from './password.js';
 import type { AdminSessionGrant } from './session.js';
 import { AdminSessionManager } from './session.js';
 
@@ -145,18 +145,27 @@ export class ManagementAccountService {
       throw new Error('BOOTSTRAP_ACCOUNT_CONFIG_INVALID');
     }
     const normalized = new Set<string>();
-    const accounts: ManagementAccountRecord[] = [];
+    const prepared: Array<BootstrapAccountInput & {
+      username: string;
+      normalizedUsername: string;
+    }> = [];
     for (const item of records) {
       const username = validateUsername(item.username);
       const normalizedUsername = normalizeUsername(username);
       if (normalized.has(normalizedUsername)) throw new Error('BOOTSTRAP_ACCOUNT_CONFIG_INVALID');
       normalized.add(normalizedUsername);
-      const passwordVerifier = await this.#passwordHasher.hash(item.password, { allowWeakBootstrap: true });
-      accounts.push({
+      prepared.push({ ...item, username, normalizedUsername });
+    }
+    const accounts = await Promise.all(prepared.map(async item => {
+      const passwordVerifier = await this.#passwordHasher.hash(item.password, {
+        allowWeakBootstrap: true,
+        bootstrapIterations: PBKDF2_BOOTSTRAP_ITERATIONS
+      });
+      return {
         id: this.#clock.randomId('acct'),
-        username,
-        normalizedUsername,
-        displayName: cleanDisplayName(item.displayName, username),
+        username: item.username,
+        normalizedUsername: item.normalizedUsername,
+        displayName: cleanDisplayName(item.displayName, item.username),
         accountKind: item.accountKind,
         accessLevel: item.accountKind === 'admin' ? 'save' : normalizeAccessLevel(item.accessLevel),
         status: 'pending-activation',
@@ -169,8 +178,8 @@ export class ManagementAccountService {
         updatedAt: now,
         activatedAt: null,
         revision: 1
-      });
-    }
+      } satisfies ManagementAccountRecord;
+    }));
     try {
       await this.#store.createAccounts(accounts);
     } catch (error) {

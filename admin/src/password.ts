@@ -10,6 +10,7 @@ import {
 export const PASSWORD_MIN_LENGTH = 12;
 export const PASSWORD_MAX_LENGTH = 128;
 export const PBKDF2_SHA256_ITERATIONS = 600_000;
+export const PBKDF2_BOOTSTRAP_ITERATIONS = 120_000;
 
 const DEFAULT_BLOCKLIST = new Set([
   '000000',
@@ -34,7 +35,10 @@ export interface PasswordPolicyResult {
 }
 
 export interface PasswordHasher {
-  hash(password: string, options?: { allowWeakBootstrap?: boolean }): Promise<PasswordVerifierRecord>;
+  hash(password: string, options?: {
+    allowWeakBootstrap?: boolean;
+    bootstrapIterations?: number;
+  }): Promise<PasswordVerifierRecord>;
   verify(password: string, verifier: PasswordVerifierRecord): Promise<boolean>;
   needsRehash(verifier: PasswordVerifierRecord): boolean;
 }
@@ -96,7 +100,7 @@ export class Pbkdf2PasswordHasher implements PasswordHasher {
 
   async hash(
     password: string,
-    options: { allowWeakBootstrap?: boolean } = {}
+    options: { allowWeakBootstrap?: boolean; bootstrapIterations?: number } = {}
   ): Promise<PasswordVerifierRecord> {
     if (!options.allowWeakBootstrap) {
       const policy = validatePasswordPolicy(password);
@@ -104,12 +108,19 @@ export class Pbkdf2PasswordHasher implements PasswordHasher {
     }
     const normalized = normalizePassword(password);
     if (!normalized || normalized.length > PASSWORD_MAX_LENGTH) throw new Error('PASSWORD_LENGTH_INVALID');
+    const iterations = options.bootstrapIterations ?? this.#iterations;
+    if (!Number.isSafeInteger(iterations)
+      || iterations < 100_000
+      || iterations > this.#iterations
+      || (options.bootstrapIterations !== undefined && !options.allowWeakBootstrap)) {
+      throw new Error('PASSWORD_HASH_POLICY_INVALID');
+    }
     const salt = base64UrlToBytes(randomBase64Url(16));
-    const derived = await derivePasswordBytes(normalized, salt, this.#iterations);
+    const derived = await derivePasswordBytes(normalized, salt, iterations);
     const keyed = await this.#keyRing.digestBytes('password-pepper', derived);
     return {
       algorithm: 'pbkdf2-hmac-sha256+hmac-sha256',
-      iterations: this.#iterations,
+      iterations,
       salt: bytesToBase64Url(salt),
       digest: keyed.digest,
       keyId: keyed.keyId
