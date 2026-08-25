@@ -13,10 +13,17 @@
 
 The management system does not receive or store plant points, zones, coordinates, images, browser directory handles, desktop paths, SQLite project databases, JSON project files, or third-party species tokens. The browser workspace keeps those values on the user's device.
 
+## Password Controls
+
+- Password verifiers use a random salt, PBKDF2-HMAC-SHA-256, and a deployment-provided HMAC pepper.
+- The shared implementation defaults to 600,000 iterations. Cloudflare-hosted Workers use the platform ceiling of 100,000 iterations and retain the iteration count for future transparent upgrades.
+- Bootstrap passwords are accepted only for forced first-use activation. Normal password policy rejects common values and requires at least 12 characters.
+- Five failed logins lock the account for 10 minutes. Credential, identity, and permission changes revoke active sessions.
+
 ## Required Controls Before Production Identity
 
 - Replace the in-memory session and audit fixtures with durable, atomic, revocable server-side stores.
-- OIDC or WebAuthn through a maintained identity provider; no home-grown password hashing flow.
+- OIDC or WebAuthn through a maintained identity provider for a future public or multi-tenant deployment.
 - Provider-specific signature, issuer, audience, nonce, replay, and callback-state validation before the identity adapter is called.
 - Request and authentication rate limits.
 - Step-up authentication for publication, release, and member changes.
