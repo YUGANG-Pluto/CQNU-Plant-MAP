@@ -20,9 +20,9 @@
   --shadow-float: 0 30px 90px rgba(16, 45, 31, 0.2);
   --radius: 8px;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --motion-fast: 280ms var(--ease-out);
-  --motion: 340ms var(--ease-out);
-  --motion-slow: 420ms var(--ease-out);
+  --motion-fast: 340ms var(--ease-out);
+  --motion: 520ms var(--ease-out);
+  --motion-slow: 720ms var(--ease-out);
   font-family: Inter, "SF Pro Display", "SF Pro Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
@@ -159,7 +159,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important
   backdrop-filter: blur(22px) saturate(130%);
   transition: min-height var(--motion-slow), box-shadow var(--motion);
 }
-.auth-loading { display: grid; justify-items: center; text-align: center; animation: panelSwap var(--motion) both; }
+.auth-loading { display: grid; justify-items: center; text-align: center; animation: panelSwap var(--motion-slow) both; }
 .auth-loading p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
 .loading-mark {
   width: 34px;
@@ -170,7 +170,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important
   border-radius: 50%;
   animation: loadingSpin 900ms linear infinite;
 }
-.auth-form { display: grid; gap: 16px; animation: panelSwap var(--motion) both; }
+.auth-form { display: grid; gap: 16px; animation: panelSwap var(--motion-slow) both; }
 .form-heading { margin-bottom: 6px; }
 .form-heading h2 { margin: 5px 0 7px; font-size: 28px; }
 .form-heading p { margin: 0; color: var(--muted); font-size: 13px; }
@@ -254,12 +254,15 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
 .sidebar-note p { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
 
 .manage-content { min-width: 0; width: min(1440px, 100%); padding: 38px clamp(24px, 4vw, 64px) 64px; outline: 0; }
-.manage-view { animation: viewEnter var(--motion) both; }
+.manage-view { animation: viewEnter var(--motion-slow) both; }
 .view-heading { min-height: 84px; margin-bottom: 26px; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
 .view-heading h1 { margin: 5px 0 3px; font-size: 32px; line-height: 1.15; }
 .view-heading p { margin: 0; color: var(--muted); }
 .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 12px; }
-.summary-grid article { min-width: 0; min-height: 142px; padding: 18px; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); transition: transform var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast); }
+.summary-grid article { min-width: 0; min-height: 142px; padding: 18px; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); animation: panelSwap var(--motion-slow) both; transition: transform var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast); }
+.summary-grid article:nth-child(2) { animation-delay: 72ms; }
+.summary-grid article:nth-child(3) { animation-delay: 144ms; }
+.summary-grid article:nth-child(4) { animation-delay: 216ms; }
 .summary-grid article:hover { transform: translateY(-2px); border-color: rgba(23, 107, 69, 0.3); box-shadow: 0 12px 30px rgba(24, 67, 45, 0.08); }
 .summary-grid span { color: var(--muted); font-size: 12px; }
 .summary-grid strong { margin-top: 17px; font-size: 22px; }
@@ -269,7 +272,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
 .panel-heading { min-height: 50px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .panel-heading h2 { margin: 4px 0 0; font-size: 20px; }
 .capability-list { margin: 8px 0 0; padding: 0; list-style: none; }
-.capability-list li { min-height: 46px; padding: 11px 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid var(--line); animation: rowEnter var(--motion-fast) both; }
+.capability-list li { min-height: 46px; padding: 11px 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid var(--line); animation: rowEnter var(--motion) both; }
 .capability-list span { color: var(--muted); }
 .capability-list strong { flex: 0 0 auto; color: var(--primary); font-size: 11px; }
 .boundary-panel ol { margin: 8px 0 0; padding: 0; list-style: none; }
@@ -286,7 +289,12 @@ table { width: 100%; min-width: 820px; border-collapse: collapse; background: va
 th, td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
 th { position: sticky; top: 0; z-index: 2; color: var(--muted); font-size: 11px; font-weight: 750; background: #f4f9f6; }
 td { font-size: 13px; }
-tbody tr { transition: background-color var(--motion-fast), opacity var(--motion-fast); animation: rowEnter var(--motion-fast) both; }
+tbody tr { transition: background-color var(--motion-fast), opacity var(--motion-fast); animation: rowEnter var(--motion) both; }
+tbody tr:nth-child(2) { animation-delay: 48ms; }
+tbody tr:nth-child(3) { animation-delay: 96ms; }
+tbody tr:nth-child(4) { animation-delay: 144ms; }
+tbody tr:nth-child(5) { animation-delay: 192ms; }
+tbody tr:nth-child(n + 6) { animation-delay: 240ms; }
 tbody tr:hover { background: var(--surface-soft); }
 tbody tr:last-child td { border-bottom: 0; }
 .member-cell { max-width: 320px; display: grid; }
@@ -313,7 +321,7 @@ tbody tr:last-child td { border-bottom: 0; }
   overflow: visible;
 }
 .manage-dialog::backdrop { background: rgba(15, 35, 25, 0.42); backdrop-filter: blur(10px); animation: backdropEnter var(--motion) both; }
-.manage-dialog[open] { animation: dialogEnter 380ms var(--ease-out) both; }
+.manage-dialog[open] { animation: dialogEnter var(--motion-slow) both; }
 .dialog-surface { max-height: min(88vh, 820px); padding: 24px; display: grid; gap: 15px; border: 1px solid rgba(255, 255, 255, 0.86); border-radius: var(--radius); background: rgba(255, 255, 255, 0.96); overflow: auto; backdrop-filter: blur(28px) saturate(130%); }
 .dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
 .dialog-heading h2 { margin: 4px 0 0; font-size: 23px; }
@@ -325,20 +333,20 @@ tbody tr:last-child td { border-bottom: 0; }
 .token-expiry { padding: 10px 12px; color: var(--muted); border-left: 3px solid var(--primary); background: var(--primary-soft); font-size: 12px; }
 
 .toast-region { position: fixed; right: 18px; bottom: 18px; z-index: 180; width: min(380px, calc(100vw - 36px)); display: grid; gap: 8px; pointer-events: none; }
-.toast { padding: 13px 15px; color: white; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 7px; background: #173b2a; box-shadow: 0 16px 44px rgba(15, 42, 28, 0.26); animation: toastEnter 320ms var(--ease-out) both; }
+.toast { padding: 13px 15px; color: white; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 7px; background: #173b2a; box-shadow: 0 16px 44px rgba(15, 42, 28, 0.26); animation: toastEnter var(--motion) both; }
 .toast.is-error { background: #7d2e2a; }
-.toast.is-leaving { animation: toastLeave 280ms ease both; }
+.toast.is-leaving { animation: toastLeave var(--motion-fast) ease both; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-@keyframes stageEnter { from { opacity: 0; } to { opacity: 1; } }
-@keyframes panelSwap { from { opacity: 0; transform: translateY(10px) scale(0.992); } to { opacity: 1; transform: none; } }
-@keyframes viewEnter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-@keyframes rowEnter { from { opacity: 0; transform: translateX(6px); } to { opacity: 1; transform: none; } }
+@keyframes stageEnter { from { opacity: 0; transform: translateY(14px); } 45% { opacity: 0.7; } to { opacity: 1; transform: none; } }
+@keyframes panelSwap { from { opacity: 0; transform: translateY(20px) scale(0.975); } 46% { opacity: 0.72; } to { opacity: 1; transform: none; } }
+@keyframes viewEnter { from { opacity: 0; transform: translateY(22px); } 44% { opacity: 0.68; } to { opacity: 1; transform: none; } }
+@keyframes rowEnter { from { opacity: 0; transform: translateX(12px); } 50% { opacity: 0.74; } to { opacity: 1; transform: none; } }
 @keyframes navMarker { from { opacity: 0; transform: scaleY(0.25); } to { opacity: 1; transform: none; } }
 @keyframes bannerEnter { from { opacity: 0; transform: translateY(-100%); } to { opacity: 1; transform: none; } }
 @keyframes backdropEnter { from { opacity: 0; } to { opacity: 1; } }
-@keyframes dialogEnter { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
-@keyframes toastEnter { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes dialogEnter { from { opacity: 0; transform: translateY(24px) scale(0.97); } 46% { opacity: 0.72; } to { opacity: 1; transform: none; } }
+@keyframes toastEnter { from { opacity: 0; transform: translateY(16px) scale(0.975); } 48% { opacity: 0.76; } to { opacity: 1; transform: none; } }
 @keyframes toastLeave { to { opacity: 0; transform: translateY(8px) scale(0.98); } }
 @keyframes loadingSpin { to { transform: rotate(360deg); } }
 

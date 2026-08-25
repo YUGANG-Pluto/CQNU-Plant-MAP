@@ -232,7 +232,7 @@ function showToast(message, type = 'success') {
   region.append(toast);
   window.setTimeout(() => {
     toast.classList.add('is-leaving');
-    window.setTimeout(() => toast.remove(), 300);
+    window.setTimeout(() => toast.remove(), 380);
   }, 3_600);
 }
 
