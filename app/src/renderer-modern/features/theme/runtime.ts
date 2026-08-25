@@ -290,6 +290,7 @@ function applyThemeVariables(): void {
   setCssVariable('--motion-duration-fast', `${motionEnabled ? motion.fadeDuration : 0}ms`);
   setCssVariable('--motion-duration', `${motionEnabled ? motion.transitionDuration : 0}ms`);
   setCssVariable('--motion-duration-modal', `${motionEnabled ? motion.modalDuration : 0}ms`);
+  setCssVariable('--motion-duration-reveal', `${motionEnabled ? Math.max(motion.modalDuration, motion.transitionDuration) : 0}ms`);
   setCssVariable('--motion-stagger', `${motionEnabled ? motion.stagger : 0}ms`);
   setCssVariable('--motion-scale-enter', String(motionEnabled ? motion.scaleEnter : 1));
   setCssVariable('--motion-scale-press', String(motionEnabled ? motion.scalePress : 1));
@@ -297,10 +298,11 @@ function applyThemeVariables(): void {
   setCssVariable('--motion-ease', easing);
   setCssVariable('--motion-ease-standard', 'cubic-bezier(0.2, 0.8, 0.2, 1)');
   setCssVariable('--motion-ease-emphasized', 'cubic-bezier(0.16, 1, 0.3, 1)');
-  setCssVariable('--motion-dialog-translate-y', `${motionEnabled ? 12 : 0}px`);
-  setCssVariable('--motion-panel-translate-x', `${motionEnabled ? 20 : 0}px`);
-  setCssVariable('--motion-subpanel-translate', `${motionEnabled ? 14 : 0}px`);
-  setCssVariable('--motion-overlay-opacity', motionEnabled ? '0.28' : '0');
+  setCssVariable('--motion-dialog-translate-y', `${motionEnabled ? (motion.mode === 'standard' ? 22 : 12) : 0}px`);
+  setCssVariable('--motion-panel-translate-x', `${motionEnabled ? (motion.mode === 'standard' ? 30 : 18) : 0}px`);
+  setCssVariable('--motion-subpanel-translate', `${motionEnabled ? (motion.mode === 'standard' ? 18 : 10) : 0}px`);
+  setCssVariable('--motion-surface-translate-y', `${motionEnabled ? (motion.mode === 'standard' ? 18 : 10) : 0}px`);
+  setCssVariable('--motion-overlay-opacity', motionEnabled ? '0.34' : '0');
   setCssVariable('--radius-sm', `${Math.max(6, radius - 2)}px`);
   setCssVariable('--radius-md', `${radius}px`);
   setCssVariable('--radius-lg', `${radius}px`);

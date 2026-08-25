@@ -24,10 +24,10 @@
   gap: 5px;
   padding: 7px 9px;
   transition:
-    color var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    background var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    border-color var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    opacity var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    border-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    opacity var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .project-history-button span {
@@ -47,8 +47,8 @@
   white-space: nowrap;
   border-radius: 6px;
   transition:
-    color var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    background var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    background var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .project-save-status__dot {
@@ -58,8 +58,8 @@
   border-radius: 50%;
   background: var(--text-secondary);
   transition:
-    background var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    transform var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+    background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .project-save-status__time {

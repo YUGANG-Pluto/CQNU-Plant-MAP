@@ -44,16 +44,15 @@ Keep motion purposeful. It should explain state changes, guide attention, and ma
 Recommended motion tiers:
 
 - Off: no animation, still keeps instant focus and active states.
-- Minimal: 90-140ms, subtle opacity/scale, no layout drift.
-- Standard: 160-220ms, current default for modals, hovers, selection changes.
-- Expressive: 240-360ms, reserved for chart reveal, major panel transitions, and presentation-like statistics views.
-- Custom: advanced-only, preserves existing granular fields.
+- Minimal: 320-500ms, restrained opacity and scale with limited layout movement.
+- Standard: 440-720ms, clear fades and spatial continuity for panels, dialogs, charts, and workspace entrances.
+- Reduced motion: system preference or the explicit off mode removes nonessential animation without hiding state changes.
 
 After pruning, the visible motion model should be:
 
 - Simple switch: reduced motion.
-- Primary choice: off, minimal, standard, expressive.
-- Advanced custom only if the controls remain useful after pruning. If custom only exists to expose mediocre sliders, remove custom from the default UI and keep compatibility in data normalization.
+- Primary choice: off, minimal, or standard.
+- Stored custom values remain compatible, but enabled legacy timings are raised to the maintained perceptibility floor.
 
 Hover should stay, but become more nuanced:
 

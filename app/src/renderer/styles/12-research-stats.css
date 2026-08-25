@@ -116,8 +116,8 @@
   font-variant-numeric: tabular-nums;
   cursor: default;
   transition:
-    filter var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    outline-color var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+    filter var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    outline-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .stats-heatmap-cell.is-empty {

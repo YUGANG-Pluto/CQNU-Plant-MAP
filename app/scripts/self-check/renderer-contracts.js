@@ -145,7 +145,7 @@ function testModalWorkflowContract() {
   assert.ok(pointSource.includes('id="pointEditorSaveState"'));
   assert.ok(dialogRuntime.includes('function trapLayerModalFocus'));
   assert.ok(dialogRuntime.includes('layerReturnFocusTargets'));
-  assert.ok(dialogRuntime.includes("getMotionDurationMs('--motion-duration-fast', 300)"));
+  assert.ok(dialogRuntime.includes("getMotionDurationMs('--motion-duration', 580)"));
   assert.ok(eventRuntime.includes('getTopLayerModal()'));
   assert.ok(!eventRuntime.includes("if (!ui.queryModal.classList.contains('hidden')) closeLayerModal(ui.queryModal)"));
   assert.ok(phenologyRuntime.includes('function pointEditorHasUnsavedChanges'));

@@ -57,7 +57,7 @@ function testCommandPaletteContract() {
     '@media (prefers-reduced-motion: reduce)',
     '.motion-disabled :where('
   ].forEach(selector => assert.ok(styleSource.includes(selector), `${selector} must stay in command palette styles`));
-  ['300ms', 'var(--motion-duration-fast)'].forEach(duration => {
+  ['var(--motion-duration, 580ms)', 'var(--motion-duration-fast)'].forEach(duration => {
     assert.ok(styleSource.includes(duration), `${duration} must stay represented in command palette timing`);
   });
   ['zh.js', 'en.js'].forEach(name => {
@@ -157,7 +157,9 @@ function testProjectEditHistoryContract() {
     '@media (prefers-reduced-motion: reduce)',
     '.motion-disabled :where('
   ].forEach(selector => assert.ok(styleSource.includes(selector), `${selector} must stay in history styles`));
-  ['300ms', '900ms'].forEach(duration => assert.ok(styleSource.includes(duration), `${duration} must stay represented in history timing`));
+  ['var(--motion-duration-fast, 440ms)', '900ms'].forEach(duration => {
+    assert.ok(styleSource.includes(duration), `${duration} must stay represented in history timing`);
+  });
   ['zh.js', 'en.js'].forEach(name => {
     const source = readLocaleSource(name);
     [
@@ -260,7 +262,7 @@ function testResearchReviewWorkbenchContract() {
     '@media (prefers-reduced-motion: reduce)',
     '.motion-disabled :where('
   ].forEach(selector => assert.ok(styleSource.includes(selector), `${selector} must stay in review styles`));
-  ['300ms', '360ms'].forEach(duration => {
+  ['var(--motion-duration-fast, 440ms)', 'var(--motion-duration, 580ms)'].forEach(duration => {
     assert.ok(styleSource.includes(duration), `${duration} must stay represented in review timing`);
   });
   ['zh.js', 'en.js'].forEach(name => {

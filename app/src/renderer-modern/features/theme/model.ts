@@ -235,11 +235,11 @@ export const MOTION_MODE_PRESETS: Readonly<Record<MotionMode, Omit<MotionSetting
     },
     minimal: {
       speedMultiplier: 1,
-      fadeDuration: 260,
-      transitionDuration: 300,
-      modalDuration: 340,
-      stagger: 36,
-      scaleEnter: 0.995,
+      fadeDuration: 320,
+      transitionDuration: 400,
+      modalDuration: 500,
+      stagger: 48,
+      scaleEnter: 0.992,
       scalePress: 0.99,
       hoverLift: 1,
       easing: 'standard',
@@ -250,11 +250,11 @@ export const MOTION_MODE_PRESETS: Readonly<Record<MotionMode, Omit<MotionSetting
     },
     standard: {
       speedMultiplier: 1,
-      fadeDuration: 300,
-      transitionDuration: 360,
-      modalDuration: 440,
-      stagger: 48,
-      scaleEnter: 0.985,
+      fadeDuration: 440,
+      transitionDuration: 580,
+      modalDuration: 720,
+      stagger: 72,
+      scaleEnter: 0.97,
       scalePress: 0.975,
       hoverLift: 2,
       easing: 'emphasized',
@@ -329,14 +329,18 @@ export function normalizeMotionSettings(value: Record<string, unknown> = {}): Mo
     : 'standard';
   const preset = MOTION_MODE_PRESETS[mode];
   const reduced = booleanValue(value.reduced, false);
-  const durationFloor = mode === 'off' ? 0 : 260;
+  const durationFloor = mode === 'standard'
+    ? { fade: 400, transition: 500, modal: 620 }
+    : mode === 'minimal'
+      ? { fade: 300, transition: 360, modal: 440 }
+      : { fade: 0, transition: 0, modal: 0 };
   return {
     mode,
     speedMultiplier: finiteNumber(value.speedMultiplier, preset.speedMultiplier, 0.5, 1.5),
-    fadeDuration: mode === 'off' ? 0 : finiteNumber(value.fadeDuration, preset.fadeDuration, durationFloor, 480),
-    transitionDuration: mode === 'off' ? 0 : finiteNumber(value.transitionDuration, preset.transitionDuration, durationFloor, 560),
-    modalDuration: mode === 'off' ? 0 : finiteNumber(value.modalDuration, preset.modalDuration, durationFloor, 640),
-    stagger: finiteNumber(value.stagger, preset.stagger, 0, 120),
+    fadeDuration: mode === 'off' ? 0 : finiteNumber(value.fadeDuration, preset.fadeDuration, durationFloor.fade, 900),
+    transitionDuration: mode === 'off' ? 0 : finiteNumber(value.transitionDuration, preset.transitionDuration, durationFloor.transition, 1100),
+    modalDuration: mode === 'off' ? 0 : finiteNumber(value.modalDuration, preset.modalDuration, durationFloor.modal, 1400),
+    stagger: finiteNumber(value.stagger, preset.stagger, 0, 180),
     scaleEnter: finiteNumber(value.scaleEnter, preset.scaleEnter, 0.94, 1),
     scalePress: finiteNumber(value.scalePress, preset.scalePress, 0.94, 1),
     hoverLift: finiteNumber(value.hoverLift, preset.hoverLift, 0, 6),

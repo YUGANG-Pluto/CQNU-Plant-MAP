@@ -63,7 +63,7 @@
   height: 100%;
   border-radius: inherit;
   background: var(--primary);
-  transition: width var(--motion-duration, 360ms) var(--motion-ease, ease);
+  transition: width var(--motion-duration, 580ms) var(--motion-ease, ease);
 }
 
 .review-filter-bar {
@@ -170,9 +170,9 @@
   background: var(--panel-bg);
   cursor: pointer;
   transition:
-    border-color var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    background var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    box-shadow var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+    border-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    box-shadow var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .review-task-card:hover,

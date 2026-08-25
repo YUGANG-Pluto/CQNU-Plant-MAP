@@ -11,9 +11,9 @@
   place-items: center;
   flex: 0 0 auto;
   transition:
-    color var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    background var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    transform var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .ui-command-button__label {
@@ -49,10 +49,10 @@
   min-height: 38px;
   text-decoration: none;
   transition:
-    color var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    background var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    border-color var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    transform var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    border-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .web-site-link:hover {
@@ -85,10 +85,10 @@
   border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border-light));
   border-radius: 8px;
   transition:
-    color 300ms var(--motion-ease, ease),
-    background 300ms var(--motion-ease, ease),
-    border-color 300ms var(--motion-ease, ease),
-    transform 300ms var(--motion-ease, ease);
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    border-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .web-access-chip span {
@@ -129,7 +129,7 @@
   backdrop-filter: blur(18px) saturate(118%);
   -webkit-backdrop-filter: blur(18px) saturate(118%);
   transform: translate(-50%, -50%);
-  animation: webProjectWelcomeIn 380ms var(--motion-ease, ease) both;
+  animation: webProjectWelcomeIn var(--motion-duration-reveal, 720ms) var(--motion-ease, ease) both;
 }
 
 .web-project-welcome__icon {
@@ -227,10 +227,10 @@
   min-height: 40px;
   text-decoration: none;
   transition:
-    color 300ms var(--motion-ease, ease),
-    background 300ms var(--motion-ease, ease),
-    border-color 300ms var(--motion-ease, ease),
-    transform 300ms var(--motion-ease, ease);
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    border-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .web-project-welcome__actions .btn:hover:not(:disabled) {
@@ -238,11 +238,16 @@
 }
 
 @keyframes webProjectWelcomeIn {
-  from {
+  0% {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + 10px)) scale(0.985);
+    transform: translate(-50%, calc(-50% + 20px)) scale(0.97);
   }
-  to {
+
+  46% {
+    opacity: 0.72;
+  }
+
+  100% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
@@ -372,9 +377,9 @@
   color: var(--text-muted);
   opacity: 0.55;
   transition:
-    color var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    opacity var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    transform var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    opacity var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .ui-module-button:hover:not(:disabled) {
@@ -399,8 +404,8 @@
   align-items: center;
   gap: 6px;
   transition:
-    background var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    border-color var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+    background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    border-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .ui-status-chip strong {
@@ -445,7 +450,7 @@
 }
 
 .motion-mode-standard .app-shell > :where(.app-topbar, .panel-left, .map-shell, .panel-right) {
-  animation: workspaceSurfaceIn var(--motion-duration, 360ms) var(--motion-ease) both;
+  animation: workspaceSurfaceIn var(--motion-duration-reveal, 720ms) var(--motion-ease) both;
 }
 
 .motion-mode-standard .app-shell > .panel-left {
@@ -461,12 +466,16 @@
 }
 
 @keyframes workspaceSurfaceIn {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(var(--motion-surface-translate-y, 18px));
   }
 
-  to {
+  44% {
+    opacity: 0.68;
+  }
+
+  100% {
     opacity: 1;
     transform: translateY(0);
   }

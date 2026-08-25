@@ -139,9 +139,9 @@
   background: var(--panel-bg, #fff);
   cursor: pointer;
   transition:
-    border-color var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    box-shadow var(--motion-duration-fast, 300ms) var(--motion-ease, ease),
-    transform var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+    border-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    box-shadow var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .modern-theme-choice:hover {
@@ -179,7 +179,7 @@
 .modern-theme-choice-check {
   opacity: 0;
   color: var(--primary, #2f6f62);
-  transition: opacity var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+  transition: opacity var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .modern-theme-choice.active .modern-theme-choice-check {
@@ -261,7 +261,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--text-secondary, #5e6b67) 22%, var(--panel-bg, #fff));
   cursor: pointer;
-  transition: background var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+  transition: background var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .modern-switch::after {
@@ -274,7 +274,7 @@
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 2px 6px rgba(31, 52, 47, 0.22);
-  transition: transform var(--motion-duration-fast, 300ms) var(--motion-ease, ease);
+  transition: transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .modern-switch:checked {

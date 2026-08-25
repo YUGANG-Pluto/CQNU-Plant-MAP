@@ -162,7 +162,7 @@ function openImagePreview(src, caption = '', imageSet = []) {
 
 function closeImagePreview() {
   closeLayerModal(ui.imagePreviewModal, { returnFocus: document.activeElement });
-  const delay = document.documentElement.classList.contains('motion-disabled') ? 0 : getMotionDurationMs('--motion-duration-fast', 160);
+  const delay = document.documentElement.classList.contains('motion-disabled') ? 0 : getMotionDurationMs('--motion-duration', 580);
   window.setTimeout(() => {
     if (!ui.imagePreviewModal.classList.contains('hidden')) return;
     ui.imagePreviewFull.src = '';

@@ -26,7 +26,14 @@
 
 .motion-modal .layer-modal:not(.hidden) > :where(.layer-modal-panel, .confirm-panel),
 .motion-modal .image-modal:not(.hidden) .image-modal-content {
-  animation: uiDialogIn var(--motion-duration-modal) var(--motion-ease) both;
+  animation: uiDialogIn var(--motion-duration-reveal) var(--motion-ease) both;
+}
+
+.motion-modal .layer-modal:not(.hidden) .layer-modal-backdrop,
+.motion-modal .image-modal:not(.hidden) .image-modal-backdrop,
+.motion-modal .right-inspector-drawer:not(.hidden) .layer-modal-backdrop,
+.motion-modal .workspace-utility-drawer:not(.hidden) .layer-modal-backdrop {
+  animation: uiBackdropIn var(--motion-duration) var(--motion-ease-standard) both;
 }
 
 .motion-modal .basemap-settings-panel:not(.hidden),
@@ -37,7 +44,7 @@
 
 .motion-modal .layer-modal.is-closing > :where(.layer-modal-panel, .confirm-panel),
 .motion-modal .image-modal.is-closing .image-modal-content {
-  animation: uiDialogOut var(--motion-duration-fast) var(--motion-ease-standard) forwards;
+  animation: uiDialogOut var(--motion-duration) var(--motion-ease-standard) forwards;
 }
 
 .motion-modal .layer-modal.is-closing .layer-modal-backdrop,
@@ -58,7 +65,7 @@
 
 .right-inspector-drawer.is-closing .right-inspector-drawer-panel,
 .workspace-utility-drawer.is-closing .workspace-utility-panel {
-  animation: uiPanelOut var(--motion-duration-fast) var(--motion-ease-standard) forwards;
+  animation: uiPanelOut var(--motion-duration) var(--motion-ease-standard) forwards;
 }
 
 .motion-layout :where(.app-shell, .map-shell, .panel),
@@ -71,24 +78,42 @@
 }
 
 @keyframes uiDialogIn {
-  from {
+  0% {
     opacity: 0;
     transform: translateY(var(--motion-dialog-translate-y)) scale(var(--motion-scale-enter));
   }
 
-  to {
+  48% {
+    opacity: 0.78;
+  }
+
+  100% {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
 
-@keyframes uiPanelIn {
+@keyframes uiBackdropIn {
   from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: var(--motion-overlay-opacity, 0.34);
+  }
+}
+
+@keyframes uiPanelIn {
+  0% {
     opacity: 0;
     transform: translateX(var(--motion-panel-translate-x));
   }
 
-  to {
+  42% {
+    opacity: 0.7;
+  }
+
+  100% {
     opacity: 1;
     transform: translateX(0);
   }

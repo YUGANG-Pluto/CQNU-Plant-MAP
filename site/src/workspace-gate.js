@@ -24,7 +24,7 @@
 
   function hideGate() {
     gate.classList.add('is-leaving');
-    window.setTimeout(() => { gate.hidden = true; }, 340);
+    window.setTimeout(() => { gate.hidden = true; }, 540);
   }
 
   async function fetchSession() {

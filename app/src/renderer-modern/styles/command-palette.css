@@ -160,8 +160,8 @@
   border-radius: var(--radius-sm);
   background: transparent;
   cursor: pointer;
-  animation: commandPaletteResultIn 300ms var(--motion-ease) both;
-  animation-delay: calc(min(var(--command-index, 0), 6) * 32ms);
+  animation: commandPaletteResultIn var(--motion-duration, 580ms) var(--motion-ease) both;
+  animation-delay: calc(min(var(--command-index, 0), 6) * var(--motion-stagger, 72ms));
   transition:
     color var(--motion-duration-fast) var(--motion-ease),
     background var(--motion-duration-fast) var(--motion-ease),
@@ -306,7 +306,7 @@
 @keyframes commandPaletteResultIn {
   from {
     opacity: 0;
-    transform: translateY(5px);
+    transform: translateY(11px);
   }
   to {
     opacity: 1;

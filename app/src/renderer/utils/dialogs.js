@@ -137,7 +137,7 @@ function closeLayerModal(modal, options = {}) {
   if (!modal || modal.classList.contains('hidden')) return;
   const returnFocus = options.returnFocus || layerReturnFocusTargets.get(modal);
   const motionDisabled = document.documentElement.classList.contains('motion-disabled');
-  const duration = options.instant || motionDisabled ? 0 : getMotionDurationMs('--motion-duration-fast', 300);
+  const duration = options.instant || motionDisabled ? 0 : getMotionDurationMs('--motion-duration', 580);
   modal.classList.add('is-closing');
   modal.classList.remove('is-open');
   modal.setAttribute('aria-hidden', 'true');

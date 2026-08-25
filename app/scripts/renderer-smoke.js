@@ -121,6 +121,10 @@ async function run() {
     const rootStyle = getComputedStyle(document.documentElement);
     const parseMs = value => Number.parseFloat(String(value || '').replace('ms', ''));
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const motionCloseDelay = Math.max(
+      420,
+      (parseMs(rootStyle.getPropertyValue('--motion-duration')) || 0) + 80
+    );
     const queryTrigger = document.getElementById('btnOpenQuery');
     const queryModal = document.getElementById('queryModal');
     queryTrigger.focus();
@@ -134,7 +138,7 @@ async function run() {
     lastFocusable?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
     const queryFocusTrapped = document.activeElement === firstFocusable;
     document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
-    await delay(420);
+    await delay(motionCloseDelay);
     const queryFocusReturned = document.activeElement === queryTrigger;
 
     const appState = window.__CQNU_STATE__;
@@ -221,7 +225,7 @@ async function run() {
       Object.isFrozen(speciesReferenceSession) &&
       Object.isFrozen(speciesReferenceSession.suggestionIds);
     document.getElementById('btnCloseSpeciesReferenceModal').click();
-    await delay(420);
+    await delay(motionCloseDelay);
     const speciesReferenceModalClosed = speciesReferenceModal.classList.contains('hidden') &&
       getSpeciesReferencePanelController()?.inspect().phase === 'idle';
 
@@ -317,7 +321,7 @@ async function run() {
       !reviewModal.classList.contains('hidden') &&
       getTopLayerModal()?.id === 'pointEditorModal';
     document.getElementById('btnClosePointEditorModal').click();
-    await delay(420);
+    await delay(motionCloseDelay);
     const reviewRestoredAfterEditor = !reviewModal.classList.contains('hidden') &&
       getTopLayerModal()?.id === 'reviewWorkbenchModal';
     const reviewOriginalLanguage = appState.settings.language;
@@ -328,7 +332,7 @@ async function run() {
     appState.settings.language = reviewOriginalLanguage;
     applyI18n();
     document.getElementById('btnCloseReviewWorkbench').click();
-    await delay(420);
+    await delay(motionCloseDelay);
     const reviewWorkbenchClosed = reviewModal.classList.contains('hidden');
 
     const commandPalette = document.getElementById('commandPaletteModal');
@@ -360,7 +364,7 @@ async function run() {
     document.getElementById('btnCommandPaletteHelp').click();
     const commandHelpWorked = document.querySelectorAll('.command-palette-shortcut-row').length >= 6;
     document.getElementById('btnCloseCommandPalette').click();
-    await delay(420);
+    await delay(motionCloseDelay);
     const commandPaletteClosedByButton = commandPalette.classList.contains('hidden');
 
     const originalLanguage = appState.settings.language;
@@ -371,7 +375,7 @@ async function run() {
     const commandPaletteEnglish = document.getElementById('commandPaletteModalTitle').textContent === 'Command Center' &&
       document.getElementById('commandPaletteModeLabel').textContent === 'Quick actions';
     commandInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
-    await delay(420);
+    await delay(motionCloseDelay);
     const commandPaletteClosedByEscape = commandPalette.classList.contains('hidden');
     appState.settings.language = originalLanguage;
     applyI18n();
@@ -381,7 +385,7 @@ async function run() {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true, cancelable: true }));
     const commandPaletteBlockedByModal = commandPalette.classList.contains('hidden') && !queryModal.classList.contains('hidden');
     queryModal.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
-    await delay(420);
+    await delay(motionCloseDelay);
 
     document.getElementById('btnOpenPointEditor').click();
     await delay(60);
@@ -399,12 +403,12 @@ async function run() {
     await delay(60);
     const pointEditorDiscardGuard = !document.getElementById('confirmModal').classList.contains('hidden') && !pointEditor.classList.contains('hidden');
     document.getElementById('btnConfirmCancel').click();
-    await delay(420);
+    await delay(motionCloseDelay);
     const pointEditorCancelKeptOpen = !pointEditor.classList.contains('hidden');
     observerInput.value = '';
     observerInput.dispatchEvent(new Event('input', { bubbles: true }));
     document.getElementById('btnClosePointEditorModal').click();
-    await delay(420);
+    await delay(motionCloseDelay);
     const pointEditorClosedCleanly = pointEditor.classList.contains('hidden');
     persistProject = originalPersistProjectForHistory;
     Object.assign(appState, originalState);
@@ -421,7 +425,8 @@ async function run() {
       motionDurations: [
         parseMs(rootStyle.getPropertyValue('--motion-duration-fast')),
         parseMs(rootStyle.getPropertyValue('--motion-duration')),
-        parseMs(rootStyle.getPropertyValue('--motion-duration-modal'))
+        parseMs(rootStyle.getPropertyValue('--motion-duration-modal')),
+        parseMs(rootStyle.getPropertyValue('--motion-duration-reveal'))
       ],
       modalPrimitiveCount: document.querySelectorAll('.modal-workflow-body').length,
       queryFocusTrapped,
@@ -496,8 +501,9 @@ async function run() {
   if (result.modernChildCount < 1) failures.push('modern renderer root is empty');
   if (result.workspaceSurfaceCount !== 4) failures.push(`workspace surface count: ${result.workspaceSurfaceCount}`);
   if (result.moduleButtonCount !== 11) failures.push(`workspace module button count: ${result.moduleButtonCount}`);
-  if (result.motionDurations.some(value => !Number.isFinite(value) || value < 260)) {
-    failures.push(`motion durations below 260ms: ${result.motionDurations.join(', ')}`);
+  const motionDurationFloors = [400, 500, 620, 620];
+  if (result.motionDurations.some((value, index) => !Number.isFinite(value) || value < motionDurationFloors[index])) {
+    failures.push(`motion durations below perceptible floors: ${result.motionDurations.join(', ')}`);
   }
   if (result.modalPrimitiveCount < 3) failures.push(`modal primitive count: ${result.modalPrimitiveCount}`);
   if (!result.queryFocusTrapped) failures.push('query modal does not trap keyboard focus');

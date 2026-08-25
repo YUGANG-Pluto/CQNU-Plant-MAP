@@ -70,23 +70,30 @@ test('invalid values fall back without leaking display strings', () => {
   assert.equal(value.motion.mode, 'standard');
 });
 
-test('enabled motion presets keep perceptible durations at or above 260ms', () => {
-  ['minimal', 'standard'].forEach(mode => {
-    const motion = theme.createMotionSettings(mode);
-    assert.ok(motion.fadeDuration >= 260, `${mode} fade duration must be at least 260ms`);
-    assert.ok(motion.transitionDuration >= 260, `${mode} transition duration must be at least 260ms`);
-    assert.ok(motion.modalDuration >= 260, `${mode} modal duration must be at least 260ms`);
-  });
+test('enabled motion presets keep perceptible and clearly separated timing tiers', () => {
+  const minimal = theme.createMotionSettings('minimal');
+  const standard = theme.createMotionSettings('standard');
+  assert.deepEqual(
+    [minimal.fadeDuration, minimal.transitionDuration, minimal.modalDuration],
+    [320, 400, 500]
+  );
+  assert.deepEqual(
+    [standard.fadeDuration, standard.transitionDuration, standard.modalDuration],
+    [440, 580, 720]
+  );
+  assert.ok(standard.fadeDuration < standard.transitionDuration);
+  assert.ok(standard.transitionDuration < standard.modalDuration);
+  assert.ok(standard.stagger >= 72);
 });
 
-test('legacy custom motion durations are raised to the maintained minimum', () => {
+test('legacy custom motion durations are raised to the new perceptible minimum', () => {
   const motion = theme.normalizeMotionSettings({
     mode: 'standard',
     fadeDuration: 80,
     transitionDuration: 120,
     modalDuration: 180
   });
-  assert.equal(motion.fadeDuration, 260);
-  assert.equal(motion.transitionDuration, 260);
-  assert.equal(motion.modalDuration, 260);
+  assert.equal(motion.fadeDuration, 400);
+  assert.equal(motion.transitionDuration, 500);
+  assert.equal(motion.modalDuration, 620);
 });

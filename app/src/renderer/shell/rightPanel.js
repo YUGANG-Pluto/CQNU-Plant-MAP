@@ -397,7 +397,7 @@ function closeRightInspectorDrawer(options = {}) {
     return;
   }
   closeLayerModal(ui.rightInspectorDrawer, { instant: !!options.instant, returnFocus });
-  const duration = options.instant ? 0 : getMotionDurationMs('--motion-duration-fast', 160);
+  const duration = options.instant ? 0 : getMotionDurationMs('--motion-duration', 580);
   window.setTimeout(() => {
     returnRightDrawerModule();
     state.activeRightDrawerModule = '';

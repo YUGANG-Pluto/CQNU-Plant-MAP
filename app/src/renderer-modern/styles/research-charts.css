@@ -254,8 +254,29 @@
 }
 
 .motion-mode-standard #statsModal:not(.hidden) :where(.stats-control-card, .chart-card) {
-  animation: researchContentIn var(--motion-duration) var(--motion-ease) both;
+  animation: researchContentIn var(--motion-duration-reveal, 720ms) var(--motion-ease) both;
+  animation-delay: var(--chart-card-delay, 0ms);
 }
+
+.motion-mode-standard #statsModal:not(.hidden) .chart-card:nth-child(2) { --chart-card-delay: 72ms; }
+.motion-mode-standard #statsModal:not(.hidden) .chart-card:nth-child(3) { --chart-card-delay: 144ms; }
+.motion-mode-standard #statsModal:not(.hidden) .chart-card:nth-child(4) { --chart-card-delay: 216ms; }
+.motion-mode-standard #statsModal:not(.hidden) .chart-card:nth-child(n + 5) { --chart-card-delay: 288ms; }
+
+.motion-mode-standard #statsModal:not(.hidden) :where(
+  .chart-bar-group,
+  .chart-combo-category,
+  .chart-line-point-group,
+  .donut-slice,
+  .legend-item
+) {
+  animation: researchMarkIn var(--motion-duration, 580ms) var(--motion-ease) backwards;
+}
+
+.motion-mode-standard #statsModal:not(.hidden) :where(.chart-bar-group, .chart-combo-category, .chart-line-point-group, .donut-slice, .legend-item):nth-child(2) { animation-delay: 56ms; }
+.motion-mode-standard #statsModal:not(.hidden) :where(.chart-bar-group, .chart-combo-category, .chart-line-point-group, .donut-slice, .legend-item):nth-child(3) { animation-delay: 112ms; }
+.motion-mode-standard #statsModal:not(.hidden) :where(.chart-bar-group, .chart-combo-category, .chart-line-point-group, .donut-slice, .legend-item):nth-child(4) { animation-delay: 168ms; }
+.motion-mode-standard #statsModal:not(.hidden) :where(.chart-bar-group, .chart-combo-category, .chart-line-point-group, .donut-slice, .legend-item):nth-child(n + 5) { animation-delay: 224ms; }
 
 .motion-disabled :where(
   .btn,
@@ -264,7 +285,8 @@
   .chart-bar-group,
   .chart-combo-category,
   .chart-line-point-group,
-  .donut-slice
+  .donut-slice,
+  .legend-item
 ) {
   animation: none !important;
   transition: none !important;
@@ -272,14 +294,25 @@
 }
 
 @keyframes researchContentIn {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(16px);
   }
-  to {
+
+  44% {
+    opacity: 0.64;
+  }
+
+  100% {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes researchMarkIn {
+  from { opacity: 0; }
+  48% { opacity: 0.58; }
+  to { opacity: 1; }
 }
 
 @media (max-width: 720px) {

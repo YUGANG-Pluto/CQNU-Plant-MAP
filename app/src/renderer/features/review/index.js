@@ -279,7 +279,7 @@ function locateCurrentReviewTask() {
   closeReviewWorkbench();
   window.setTimeout(() => {
     activateObjectSelection('point', task.pointInternalId, { focusMap: true, source: 'review-locate' });
-  }, getMotionDurationMs('--motion-duration-fast', 300) + 20);
+  }, getMotionDurationMs('--motion-duration', 580) + 20);
 }
 
 function editCurrentReviewTask() {

@@ -44,6 +44,16 @@ test('navigation client supports keyboard search and complete mobile dismissal',
   assert.match(client, /matchMedia\('\(max-width: 700px\)'\)/);
 });
 
+test('site motion uses a real progressive reveal with a reduced-motion fallback', async () => {
+  const client = await readFile(new URL('../src/client.js', import.meta.url), 'utf8');
+  const styles = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  assert.match(client, /motion-reveal-ready/);
+  assert.match(client, /requestAnimationFrame/);
+  assert.match(styles, /--motion-reveal:\s*720ms/);
+  assert.match(styles, /\.motion-reveal-ready \[data-reveal\][\s\S]*opacity:\s*0/);
+  assert.match(styles, /prefers-reduced-motion:[\s\S]*opacity:\s*1/);
+});
+
 test('management UI keeps login and member administration in a separate shell', async () => {
   const source = await readFile(new URL('../../admin/ui/index.html', import.meta.url), 'utf8');
   const client = await readFile(new URL('../../admin/ui/manage.js', import.meta.url), 'utf8');

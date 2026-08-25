@@ -236,7 +236,7 @@ function executeCommandPaletteCommand(command) {
   const target = current.targetId ? document.getElementById(current.targetId) : null;
   const focusTarget = target?.getClientRects().length ? target : ui.btnOpenCommandPalette;
   const motionDisabled = document.documentElement.classList.contains('motion-disabled');
-  const delay = motionDisabled ? 0 : getMotionDurationMs('--motion-duration-fast', 300) + 20;
+  const delay = motionDisabled ? 0 : getMotionDurationMs('--motion-duration', 580) + 20;
   closeCommandPalette({ restoreFocus: false });
   window.setTimeout(() => {
     focusTarget?.focus?.({ preventScroll: true });

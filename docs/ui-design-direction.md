@@ -43,7 +43,9 @@ These references inform local layout and interaction decisions. Their component 
 
 ## Shared Interaction Rules
 
-- Standard transitions use 300-420 ms with consistent easing; staggered entrances remain subtle and finish quickly.
+- Micro-interactions use at least 320 ms, standard state changes use about 400-580 ms, and scene or modal entrances use about 620-720 ms with consistent easing.
+- Page, panel, chart, and dialog entrances combine a real opacity transition with restrained spatial movement so the state change remains perceptible without blocking input.
+- Staggered entrances use short 48-72 ms intervals and cap the number of delayed items so dense research views do not become theatrical or slow to operate.
 - Hover and press feedback must preserve layout and cannot move adjacent content.
 - `prefers-reduced-motion` disables nonessential transitions and transforms.
 - Every busy operation exposes a readable status; unavailable actions are disabled with a reason instead of failing silently.
