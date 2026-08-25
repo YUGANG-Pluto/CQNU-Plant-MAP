@@ -12,6 +12,7 @@ interface CommandButtonProps {
   moduleAction?: boolean;
   shortcut?: string;
   disabled?: boolean;
+  title?: string;
 }
 
 export function CommandButton({
@@ -22,7 +23,8 @@ export function CommandButton({
   className = '',
   moduleAction = false,
   shortcut,
-  disabled = false
+  disabled = false,
+  title
 }: CommandButtonProps) {
   const classes = [
     'btn',
@@ -32,7 +34,7 @@ export function CommandButton({
   ].filter(Boolean).join(' ');
 
   return (
-    <button id={id} class={classes} type="button" disabled={disabled}>
+    <button id={id} class={classes} type="button" disabled={disabled} title={title}>
       {icon ? <span class="ui-command-button__icon">{icon}</span> : null}
       <span class="ui-command-button__label" data-i18n={i18nKey}>{label}</span>
       {shortcut ? <kbd class="ui-command-shortcut">{shortcut}</kbd> : null}
@@ -131,6 +133,8 @@ export interface ModuleAction {
   label: string;
   i18nKey: string;
   className: string;
+  disabled?: boolean;
+  title?: string;
 }
 
 interface ModuleLauncherProps {
@@ -153,6 +157,8 @@ export function ModuleLauncher({ actions }: ModuleLauncherProps) {
           i18nKey={action.i18nKey}
           className={action.className}
           moduleAction
+          disabled={action.disabled}
+          title={action.title}
         />
       ))}
     </div>

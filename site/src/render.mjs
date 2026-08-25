@@ -1,8 +1,8 @@
 import {
   architectureLayers,
-  capabilities,
   docsSections,
   navigation,
+  researchNavigationGroups,
   researchFlow,
   siteMeta
 } from './content.mjs';
@@ -67,24 +67,27 @@ function layout({ activePath, title, description, body }) {
 </html>`;
 }
 
-function metricStrip() {
-  const releaseFamily = siteMeta.version.split('-')[0].split('.').slice(0, 2).join('.');
-  return `
-    <div class="metric-strip" aria-label="版本能力摘要" data-reveal>
-      <div><strong>${escapeHtml(releaseFamily)}</strong><span>${escapeHtml(siteMeta.releaseChannelLabel)}</span></div>
-      <div><strong>Local</strong><span>项目数据优先保存在本地</span></div>
-      <div><strong>5</strong><span>研究型相似性与质量矩阵</span></div>
-      <div><strong>4</strong><span>CSV / JSON / Markdown / SVG</span></div>
-    </div>`;
-}
-
 function homePage() {
-  const capabilityCards = capabilities.map(item => `
-    <article class="feature-card" data-reveal>
-      <span>${item.index}</span>
-      <h3>${escapeHtml(item.title)}</h3>
-      <p>${escapeHtml(item.body)}</p>
-    </article>`).join('');
+  const groupNavigation = researchNavigationGroups.map(group => `
+    <a href="#${escapeHtml(group.id)}">${escapeHtml(group.title)}</a>`).join('');
+  const groups = researchNavigationGroups.map(group => {
+    const items = group.items.map(item => {
+      const content = `
+        <span class="hub-card-meta"><b>${escapeHtml(item.label)}</b><i>${item.state === 'available' ? '可用' : '待接入'}</i></span>
+        <strong>${escapeHtml(item.title)}</strong>
+        <p>${escapeHtml(item.description)}</p>
+        <span class="hub-card-action">${item.state === 'available' ? '打开模块' : '保留位置'}</span>`;
+      const attributes = `class="hub-card${item.state === 'planned' ? ' is-planned' : ''}" data-hub-item data-search="${escapeHtml(`${item.title} ${item.description} ${item.keywords}`)}"`;
+      return item.href
+        ? `<a ${attributes} href="${escapeHtml(item.href)}">${content}</a>`
+        : `<article ${attributes} aria-disabled="true">${content}</article>`;
+    }).join('');
+    return `
+      <section id="${escapeHtml(group.id)}" class="hub-group" data-hub-group data-reveal>
+        <div class="hub-group-heading"><div><span>${escapeHtml(group.title)}</span><h2>${escapeHtml(group.title)}</h2></div><p>${escapeHtml(group.description)}</p></div>
+        <div class="hub-grid">${items}</div>
+      </section>`;
+  }).join('');
   const flow = researchFlow.map((item, index) => `
     <li data-reveal>
       <span>${String(index + 1).padStart(2, '0')}</span>
@@ -93,27 +96,26 @@ function homePage() {
 
   return layout({
     activePath: '/',
-    title: '校园植物资源记录与研究统计',
+    title: '科研导航',
     body: `
-      <section class="hero hero-product">
-        <img class="hero-media" src="/assets/app-preview.png" alt="CQNU Plant MAP 桌面应用界面预览" />
-        <div class="hero-shade"></div>
-        <div class="hero-content" data-reveal>
-          <span class="eyebrow">RESEARCH DESKTOP · VERSION ${siteMeta.version}</span>
-          <h1>CQNU Plant MAP</h1>
-          <p>面向校园植物资源动态更新、定点记录、物候追踪、图片证据归档、分区比较与可视化管理研究。</p>
-          <div class="hero-actions">
-            <a class="button button-primary" href="${siteMeta.releasesUrl}" target="_blank" rel="noreferrer">查看 Beta 版本</a>
-            <a class="button button-secondary" href="/workspace">打开本地工作区</a>
-          </div>
-          <p class="hero-note">Windows 桌面端 · 本地优先 · 用户主动触发网络查询</p>
+      <section class="hub-intro">
+        <div class="hub-intro-inner" data-reveal>
+          <div><span class="eyebrow">RESEARCH NAVIGATION · ${siteMeta.version}</span><h1>CQNU Research Hub</h1><p>从一个入口进入校园植物研究工具、项目服务、文档与后续科研模块。项目数据继续保存在本机。</p></div>
+          <a class="button button-primary" href="/workspace">进入植物地图工作区</a>
         </div>
       </section>
-      <section class="content-band band-plain"><div class="content-wrap">${metricStrip()}</div></section>
-      <section class="content-band band-soft">
-        <div class="content-wrap">
-          <div class="section-heading" data-reveal><span>核心模块</span><h2>围绕调查、复核、分析和交付组织工作</h2></div>
-          <div class="feature-grid">${capabilityCards}</div>
+      <section class="hub-workbench content-wrap">
+        <aside class="hub-sidebar" data-reveal>
+          <div><strong>模块目录</strong>${groupNavigation}</div>
+          <div class="hub-version"><span>当前通道</span><strong>${escapeHtml(siteMeta.releaseChannelLabel)}</strong><small>Version ${escapeHtml(siteMeta.version)}</small></div>
+        </aside>
+        <div class="hub-content">
+          <div class="hub-toolbar" data-reveal>
+            <label><span>查找科研模块 <kbd>Ctrl K</kbd></span><input type="search" data-hub-search placeholder="输入植物、统计、权限、备份或文档" autocomplete="off" aria-describedby="hubSearchStatus" /></label>
+            <div id="hubSearchStatus" role="status" aria-live="polite"><span data-hub-count>0</span><small> 个模块</small></div>
+          </div>
+          <p class="hub-empty" data-hub-empty role="status" hidden>没有匹配的模块。未来模块会在完成验收后加入此导航。</p>
+          ${groups}
         </div>
       </section>
       <section class="content-band band-white">
@@ -126,18 +128,11 @@ function homePage() {
           <ol class="research-flow">${flow}</ol>
         </div>
       </section>
-      <section class="content-band band-dark">
-        <div class="content-wrap platform-callout" data-reveal>
-          <div><span>Web-ready renderer</span><h2>同一套界面基础，明确区分桌面权限与浏览器权限</h2></div>
-          <p>Preact、TypeScript、统计纯函数和设计系统可以共用；本地文件、SQLite、备份与系统能力由平台适配器提供。</p>
-          <a class="button button-light" href="/web">查看 Web 化边界</a>
-        </div>
-      </section>
       <section class="content-band band-plain">
         <div class="content-wrap final-cta" data-reveal>
           <span>Version ${siteMeta.version}</span>
-          <h2>从一份可复核的校园植物项目开始</h2>
-          <div><a class="button button-primary" href="${siteMeta.releasesUrl}" target="_blank" rel="noreferrer">前往 GitHub Releases</a><a class="text-link" href="/release">查看版本内容</a></div>
+          <h2>桌面端与浏览器端保持同一研究流程</h2>
+          <div><a class="button button-primary" href="/workspace">打开本地工作区</a><a class="text-link" href="/web">查看平台能力边界</a></div>
         </div>
       </section>`
   });

@@ -1,6 +1,7 @@
 import type {
   PlatformAdapter,
-  PlatformServiceApi
+  PlatformServiceApi,
+  ManagementWorkspaceAccess
 } from '../../shared/types/platform';
 import { createElectronPlatformAdapter } from './electronAdapter';
 import { createWebPlatformAdapter } from './webAdapter';
@@ -9,6 +10,7 @@ declare global {
   interface Window {
     plantApp?: PlatformServiceApi;
     platformAdapter?: PlatformAdapter;
+    managementAccess?: Readonly<ManagementWorkspaceAccess>;
   }
 }
 

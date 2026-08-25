@@ -14,11 +14,112 @@ export const siteMeta = Object.freeze({
 });
 
 export const navigation = Object.freeze([
-  { href: '/', label: '产品' },
+  { href: '/', label: '科研导航' },
   { href: '/workspace', label: '本地工作区' },
+  { href: '/manage', label: '访问管理' },
   { href: '/docs', label: '使用文档' },
   { href: '/web', label: 'Web 架构' },
   { href: '/release', label: '版本 1.1 Beta' }
+]);
+
+export const researchNavigationGroups = Object.freeze([
+  {
+    id: 'research-workspaces',
+    title: '研究工作区',
+    description: '进入实际数据记录、整理与分析工具。',
+    items: [
+      {
+        id: 'plant-map',
+        title: 'CQNU Plant MAP',
+        description: '校园植物点位、分区、物候、图片证据与研究型统计。',
+        href: '/workspace',
+        label: '本地应用',
+        state: 'available',
+        keywords: '植物 地图 点位 分区 物候 统计 SQLite 本地'
+      },
+      {
+        id: 'field-files',
+        title: '野外调查文件夹',
+        description: '后续接入调查批次、原始表格与图片归档导航。',
+        label: '研究资料',
+        state: 'planned',
+        keywords: '调查 文件 图片 原始数据'
+      },
+      {
+        id: 'analysis-notebooks',
+        title: '分析笔记与脚本',
+        description: '后续集中管理可复现分析入口、方法说明和交付材料。',
+        label: '可复现分析',
+        state: 'planned',
+        keywords: '分析 脚本 笔记 可复现'
+      }
+    ]
+  },
+  {
+    id: 'project-services',
+    title: '项目服务',
+    description: '账户、安全、文档和发布状态。',
+    items: [
+      {
+        id: 'access-management',
+        title: '访问与成员管理',
+        description: '管理账户、工作区权限、密码重置和安全审计。',
+        href: '/manage',
+        label: '受限访问',
+        state: 'available',
+        keywords: '账户 用户 管理员 权限 密码 审计'
+      },
+      {
+        id: 'documentation',
+        title: '使用与数据文档',
+        description: '浏览安装、浏览器兼容、数据、备份、隐私和网络边界。',
+        href: '/docs',
+        label: '文档',
+        state: 'available',
+        keywords: '文档 安装 数据 备份 隐私 网络'
+      },
+      {
+        id: 'release-center',
+        title: '版本与发布记录',
+        description: `查看 ${siteMeta.version} Beta 版本能力、下载入口和版本策略。`,
+        href: '/release',
+        label: siteMeta.releaseChannelLabel,
+        state: 'available',
+        keywords: '版本 发布 下载 beta changelog'
+      }
+    ]
+  },
+  {
+    id: 'future-research',
+    title: '后续科研模块',
+    description: '预留统一导航位置，模块完成验收后再开放。',
+    items: [
+      {
+        id: 'specimen-catalog',
+        title: '标本与凭证目录',
+        description: '预留标本编号、凭证图片和保存位置的检索入口。',
+        label: '待接入',
+        state: 'planned',
+        keywords: '标本 凭证 目录 检索'
+      },
+      {
+        id: 'literature-index',
+        title: '研究文献导航',
+        description: '预留项目文献、研究方法与引用材料的统一入口。',
+        label: '待接入',
+        state: 'planned',
+        keywords: '文献 方法 引用 阅读'
+      },
+      {
+        id: 'shared-reports',
+        title: '报告与成果目录',
+        description: '预留论文图表、调研报告和答辩材料的版本导航。',
+        label: '待接入',
+        state: 'planned',
+        keywords: '论文 报告 图表 答辩 成果'
+      }
+    ]
+  }
 ]);
 
 export const capabilities = Object.freeze([
@@ -106,6 +207,17 @@ export const docsSections = Object.freeze([
       '不支持目录选择但具备本地数据库能力时，项目仍保存在 OPFS SQLite，并通过用户选择的 JSON、CSV、GeoJSON 或备份 ZIP 与本地文件交换。',
       '缺少 OPFS、Web Locks 或其他关键能力时，工作区会禁用本地写入并建议使用当前 Chromium 浏览器或桌面版，不会静默改用远程存储。',
       '浏览器能力检测只读取功能是否存在，不读取项目内容，也不发送设备能力报告。'
+    ]
+  },
+  {
+    id: 'access-management',
+    title: '账户与工作区权限',
+    items: [
+      '首次登录或管理员创建的成员链接必须先完成账户激活；激活后可修改登录名、显示名称和密码。',
+      '只读权限可打开项目、浏览、查询、统计和导出；编辑权限增加会话草稿但不写入项目；保存权限增加本地持久化、图片、备份、恢复和存储转换。',
+      '管理员最多 3 名，可管理其他成员、权限、激活链接、一次性密码重置链接和安全审计；管理员不能通过成员表修改自己的权限。',
+      '账户服务只保存认证、权限和安全审计信息，不接收项目记录、图片、坐标、本地路径或目录句柄。',
+      '浏览器离线或心跳中断后短租约会失效；持续在线的会话最长 24 小时，之后需要重新登录。'
     ]
   },
   {

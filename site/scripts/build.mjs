@@ -6,6 +6,7 @@ import { renderPages } from '../src/render.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const appRoot = resolve(projectRoot, '../app');
+const adminRoot = resolve(projectRoot, '../admin');
 const distRoot = resolve(projectRoot, 'dist');
 const clientRoot = resolve(distRoot, 'client');
 const distRelative = relative(projectRoot, distRoot);
@@ -13,22 +14,44 @@ if (!distRelative || distRelative.startsWith('..') || distRelative.includes(':')
   throw new Error('Refusing to clean a dist path outside the site workspace.');
 }
 
-const [styles, client, appIndex, hostingConfig] = await Promise.all([
+const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, manageHtml, manageCss, manageClient, manageApi, manageI18n, hostingConfig] = await Promise.all([
   readFile(resolve(projectRoot, 'src/styles.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/client.js'), 'utf8'),
+  readFile(resolve(projectRoot, 'src/workspace-gate.css'), 'utf8'),
+  readFile(resolve(projectRoot, 'src/workspace-gate.js'), 'utf8'),
   readFile(resolve(appRoot, 'index.html'), 'utf8'),
+  readFile(resolve(adminRoot, 'ui/index.html'), 'utf8'),
+  readFile(resolve(adminRoot, 'ui/manage.css'), 'utf8'),
+  readFile(resolve(adminRoot, 'ui/manage.js'), 'utf8'),
+  readFile(resolve(adminRoot, 'ui/manage-api.js'), 'utf8'),
+  readFile(resolve(adminRoot, 'ui/manage-i18n.js'), 'utf8'),
   readFile(resolve(projectRoot, '.openai/hosting.json'), 'utf8')
 ]);
 
 JSON.parse(hostingConfig);
 const workspaceHtml = appIndex
+  .replace('  <script src="./renderer-dist/modern-shell.js"></script>\n', '')
+  .replace('  <script src="./node_modules/leaflet/dist/leaflet.js"></script>\n', '')
+  .replace('  <script src="./node_modules/leaflet-draw/dist/leaflet.draw.js"></script>\n', '')
+  .replace('  <script defer src="./src/renderer/legacy-loader.js"></script>\n', '')
   .replace(
     "script-src 'self';",
     "script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:;"
   )
-  .replace('</head>', '  <link rel="manifest" href="/workspace.webmanifest" />\n</head>')
-  .replace('<body>', '<body data-site-workspace="true">');
-const pages = renderPages({ workspaceHtml });
+  .replace('</head>', '  <link rel="manifest" href="/workspace.webmanifest" />\n  <link rel="stylesheet" href="/assets/workspace-gate.css" />\n</head>')
+  .replace('<body>', `<body data-site-workspace="true">
+  <div class="workspace-access-gate" data-workspace-access-gate role="status" aria-live="polite">
+    <div class="workspace-access-panel">
+      <img src="/assets/cqnu-logo.svg" alt="" />
+      <h1 data-gate-title>正在核对访问权限</h1>
+      <p data-gate-message>植物项目数据仍保存在本机；管理服务只核对当前账户与会话。</p>
+      <a href="/manage?next=/workspace" data-gate-action hidden>前往登录</a>
+    </div>
+  </div>`)
+  .replace('</body>', '  <script src="/assets/workspace-gate.js"></script>\n</body>');
+const pages = { ...renderPages({ workspaceHtml }), '/manage': manageHtml };
+const { managementSchemaSql } = await import('../../admin/dist/schema.js');
+const schemaSource = `export const managementSchemaSql = ${JSON.stringify(managementSchemaSql)};\n`;
 
 async function copyRendererAssets() {
   const rendererDist = resolve(appRoot, 'renderer-dist');
@@ -63,6 +86,8 @@ async function collectFileMetrics(directory) {
 await rm(distRoot, { recursive: true, force: true });
 await Promise.all([
   mkdir(resolve(distRoot, 'server'), { recursive: true }),
+  mkdir(resolve(distRoot, 'server/admin'), { recursive: true }),
+  mkdir(resolve(distRoot, 'db'), { recursive: true }),
   mkdir(resolve(distRoot, '.openai'), { recursive: true }),
   mkdir(resolve(clientRoot, 'assets'), { recursive: true }),
   mkdir(resolve(clientRoot, 'renderer-dist'), { recursive: true })
@@ -71,6 +96,14 @@ await Promise.all([
 await Promise.all([
   writeFile(resolve(clientRoot, 'assets/styles.css'), styles, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/client.js'), client, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/workspace-gate.css'), workspaceGateCss, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/workspace-gate.js'), workspaceGateClient, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/manage.css'), manageCss, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/manage.js'), manageClient, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/manage-api.js'), manageApi, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/manage-i18n.js'), manageI18n, 'utf8'),
+  writeFile(resolve(distRoot, 'db/schema.ts'), schemaSource, 'utf8'),
+  cp(resolve(adminRoot, 'dist'), resolve(distRoot, 'server/admin'), { recursive: true }),
   cp(resolve(projectRoot, 'public/cqnu-logo.svg'), resolve(clientRoot, 'assets/cqnu-logo.svg')),
   cp(resolve(projectRoot, 'public/app-preview.png'), resolve(clientRoot, 'assets/app-preview.png')),
   cp(resolve(projectRoot, 'public/workspace-service-worker.js'), resolve(clientRoot, 'workspace-service-worker.js')),
@@ -83,10 +116,12 @@ await Promise.all([
 ]);
 
 const clientMetrics = await collectFileMetrics(clientRoot);
-const workerSource = `const PAGES = ${JSON.stringify(pages)};
+const workerSource = `import { handleManagementRequest } from './admin/site-handler.js';
+
+const PAGES = ${JSON.stringify(pages)};
 const SITE_VERSION = ${JSON.stringify(siteMeta.version)};
 const SITE_CHANNEL = 'web/main';
-const ARTIFACT_VERSION = 2;
+const ARTIFACT_VERSION = 3;
 const CLIENT_ASSET_COUNT = ${clientMetrics.count};
 
 const documentSecurityHeaders = {
@@ -101,9 +136,20 @@ const workspaceSecurityHeaders = {
   'content-security-policy': "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https: data:; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none'; frame-src 'none'"
 };
 
+const managementSecurityHeaders = {
+  ...documentSecurityHeaders,
+  'content-security-policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+};
+
 const siteAssetPaths = new Set([
   '/assets/styles.css',
   '/assets/client.js',
+  '/assets/workspace-gate.css',
+  '/assets/workspace-gate.js',
+  '/assets/manage.css',
+  '/assets/manage.js',
+  '/assets/manage-api.js',
+  '/assets/manage-i18n.js',
   '/assets/cqnu-logo.svg',
   '/assets/app-preview.png'
 ]);
@@ -154,6 +200,9 @@ export default {
     const path = url.pathname.length > 1 && url.pathname.endsWith('/')
       ? url.pathname.slice(0, -1)
       : url.pathname;
+    if (path.startsWith('/api/manage/')) {
+      return handleManagementRequest(request, env);
+    }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return response('Method not allowed', 'text/plain; charset=utf-8', 405, 'no-store');
     }
@@ -171,7 +220,11 @@ export default {
       'text/html; charset=utf-8',
       200,
       'public, max-age=300',
-      path === '/workspace' ? workspaceSecurityHeaders : documentSecurityHeaders
+      path === '/workspace'
+        ? workspaceSecurityHeaders
+        : path === '/manage'
+          ? managementSecurityHeaders
+          : documentSecurityHeaders
     );
     const asset = await staticAsset(request, env, path);
     if (asset) return asset;

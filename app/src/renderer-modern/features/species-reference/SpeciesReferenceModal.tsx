@@ -3,6 +3,9 @@ import { LayerModal } from '../../components/LayerModal';
 import { FormSection, ModalBody, ModalCommandBar } from '../../components/ui/ModalPrimitives';
 
 export function SpeciesReferenceModal() {
+  const isWebReadOnly = window.platformAdapter?.runtime === 'web'
+    && window.platformAdapter.capabilities.importRecords !== true;
+
   return (
     <LayerModal
       id="speciesReferenceModal"
@@ -24,7 +27,7 @@ export function SpeciesReferenceModal() {
             <span data-i18n="speciesReferenceDiscard">不使用并清除</span>
           </button>
           <span class="command-spacer" aria-hidden="true" />
-          <button id="btnApplySpeciesReference" class="btn btn-primary" type="button">
+          <button id="btnApplySpeciesReference" class="btn btn-primary" type="button" disabled={isWebReadOnly}>
             <Check class="command-button-icon" size={16} aria-hidden="true" />
             <span data-i18n="speciesReferenceApply">应用所选建议</span>
           </button>

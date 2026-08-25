@@ -6,6 +6,7 @@ import { installProjectEditHistoryBridge } from './features/history/runtime';
 import { installResearchReviewBridge } from './features/review/runtime';
 import { installRendererStateFacade } from './features/state/runtime';
 import { installLegacyThemeBridge } from './features/theme/runtime';
+import './styles/web-capability.css';
 import './styles/design-system.css';
 import './styles/research-charts.css';
 import './styles/workspace-primitives.css';

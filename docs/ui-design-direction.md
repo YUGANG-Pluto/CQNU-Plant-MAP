@@ -1,28 +1,69 @@
-# UI design direction
+# UI Design Direction
 
-Scope: keep the app lightweight, map-first, and maintainable. Do not add bundled design assets, large UI frameworks, or local map assets.
+CQNU Plant MAP uses one shared component system with a different visual emphasis for each task. The interface remains lightweight, map-first, responsive, and free of large UI frameworks or decorative asset bundles.
 
-## Sources reviewed
+## Reference Patterns
 
-- Figma UI design principles: https://www.figma.com/resource-library/ui-design-principles/
-- Canva visual hierarchy guidance: https://www.canva.com/learn/visual-hierarchy/
-- GitHub Primer design system: https://primer.github.io/design/guides/introduction/
-- CSDN Chinese admin-system UI discussions: https://blog.csdn.net/2501_92274820/article/details/149201306
+- Apple Human Interface Guidelines, Materials: https://developer.apple.com/design/human-interface-guidelines/materials
+- Apple Human Interface Guidelines, Motion: https://developer.apple.com/design/human-interface-guidelines/motion
+- IBM Carbon, Data table: https://carbondesignsystem.com/components/data-table/usage/
+- Esri Calcite, Shell and Shell Panel: https://developers.arcgis.com/calcite-design-system/components/shell/
+- WAI-ARIA Authoring Practices, Modal dialog: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
 
-## Local direction
+These references inform local layout and interaction decisions. Their component libraries are not bundled into the application.
 
-- Use a field-notebook visual language: botanical but not single-green, warm paper background, restrained teal, deep green, muted terracotta, and amber.
-- Prefer workbench density over landing-page composition. The first viewport must remain the usable map workspace.
-- Keep settings complete before any reduction. Future simplification should hide advanced controls behind progressive disclosure, not delete data fields or saved settings.
-- Keep controls compact and predictable. Avoid decorative cards inside cards; reserve cards for repeated content, modals, and actual grouped tools.
-- Preserve online basemap references and external Leaflet loading. Do not vendor map assets locally.
+## Task-Specific Languages
 
-## Future setting simplification checkpoint
+### Research Navigation
 
-Before removing or merging any setting control:
+- Use a searchable directory and clear module groups rather than a marketing landing page.
+- Available modules are actionable; planned modules remain visibly disabled and never use placeholder links.
+- Use restrained glass material for the pinned navigation and search toolbar only.
+- Keep the first viewport focused on navigation, current release state, and the next operational action.
 
-1. Confirm it is not the only UI path to a saved value.
-2. Confirm existing `settings.json` values still normalize and apply.
-3. Keep backward compatibility in `uiTheme`.
-4. Add a self-check for the migration or control binding.
-5. Run `npm test` and full `node --check`.
+### Map Workspace
+
+- Keep the map as the primary canvas with pinned global actions, a start-side tool panel, and an end-side object inspector.
+- Use translucent material only for command surfaces and map overlays where spatial context remains useful.
+- Keep forms, tables, statistics, and long-form records on opaque scientific-white surfaces.
+- Collapse or relocate side tools at narrow widths instead of compressing the map into an unusable area.
+
+### Access Management
+
+- Use a dense scientific-white operational layout with explicit page headings, toolbar search, status chips, and full-width tables.
+- Keep row heights, header heights, and column alignment consistent. Long content stays inside the table scroll container.
+- Keep primary actions in the table toolbar and member-specific actions in their row.
+- Do not use decorative glass effects behind security, account, audit, or permission data.
+
+### Authentication And Activation
+
+- Use a single-task surface with one primary action and no unrelated navigation inside the form.
+- Explain activation, expiry, and password-reset state next to the relevant control.
+- Use native modal semantics or an equivalent focus-trapped dialog for sensitive confirmations.
+
+## Shared Interaction Rules
+
+- Standard transitions use 300-420 ms with consistent easing; staggered entrances remain subtle and finish quickly.
+- Hover and press feedback must preserve layout and cannot move adjacent content.
+- `prefers-reduced-motion` disables nonessential transitions and transforms.
+- Every busy operation exposes a readable status; unavailable actions are disabled with a reason instead of failing silently.
+- Icon-only actions require an accessible name and tooltip. Familiar command icons come from the existing Lucide dependency.
+- Long tables receive the available page width and use internal horizontal scrolling only as a fallback.
+- Dialogs appear above the active shell, retain a visible close action, close with Escape, and return focus after dismissal.
+
+## Theme Boundary
+
+- `theme-scientific-white` is the default for research data, management, forms, and documentation.
+- `theme-liquid-glass` is an optional presentation layer for navigation, command bars, and transient overlays.
+- Glass material never reduces text contrast, obscures data, or replaces a semantic boundary.
+- Avoid decorative gradients, floating color blobs, oversized rounded cards, and one-color page treatments.
+
+## Change Checkpoint
+
+Before removing, merging, or restyling a control:
+
+1. Confirm it is not the only route to a saved value or existing feature.
+2. Confirm desktop and browser adapters preserve the same user-visible meaning.
+3. Preserve existing project fields and unknown data.
+4. Add or update a focused contract check when behavior changes.
+5. Run renderer type checks, responsive visual checks, and the affected application tests.

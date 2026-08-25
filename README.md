@@ -12,11 +12,11 @@
 
 ### 中文
 
-重庆师范大学校园植物分区管理系统是一款本地桌面应用，用于校园植物资源调查、分区绘制、点位记录、图片归档、查询统计和项目维护。软件以“本地项目目录”为核心保存数据，支持 JSON 与 SQLite 本地存储，不依赖业务服务器；底图可使用在线地图服务，避免把底图资源本地化造成空间浪费。
+重庆师范大学校园植物分区管理系统是一款本地优先的桌面与浏览器应用，用于校园植物资源调查、分区绘制、点位记录、图片归档、查询统计和项目维护。桌面版以本地项目目录保存 JSON 与 SQLite；浏览器版以 OPFS SQLite 和用户授权目录保存数据。访问管理服务只核验账户与权限，不接收植物项目记录；底图可使用在线地图服务，避免把底图资源本地化造成空间浪费。
 
 ### English
 
-CQNU Campus Plant Mapping System is a local desktop application for campus plant surveys, zone drawing, point records, image archiving, query, statistics, and project maintenance. Data is stored locally in a user-selected project folder with JSON and SQLite storage options. Online basemap services can be used directly, avoiding large local map assets.
+CQNU Campus Plant Mapping System is a local-first desktop and browser application for campus plant surveys, zone drawing, point records, image archiving, query, statistics, and project maintenance. The desktop app stores JSON and SQLite in a user-selected project folder; the browser app stores OPFS SQLite and can mirror data to an authorized directory. The access service authenticates accounts and permissions without receiving plant project records. Online basemap services can be used directly, avoiding large local map assets.
 
 ---
 
@@ -59,6 +59,7 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 - 界面设置：切换主题、布局、玻璃效果、动效和状态颜色。
 - 中英双语：支持中文和 English 界面切换。
 - 浏览器本地工作区：完整界面位于 `/workspace`，由用户主动授权项目目录或选择文件；项目主副本保存在浏览器 OPFS SQLite 中，有目录权限时同步兼容 JSON 与图片归档，项目数据不上传到站点服务端。
+- 访问管理：独立登录、首次激活、用户与管理员角色、只读/编辑草稿/编辑并保存权限、单次密码重置链接和安全审计；管理员最多 3 名。
 
 ### English
 
@@ -77,6 +78,7 @@ CQNU Campus Plant Mapping System is a local desktop application for campus plant
 - UI settings: switch themes, layouts, glass effects, motion, and status colors.
 - Bilingual UI: Chinese and English interface switching.
 - Browser-local workspace: the complete interface is available at `/workspace`. Users explicitly authorize a project directory or select files; the primary copy is stored in OPFS SQLite, with compatible JSON and image mirroring when directory permission is available. Project data is not uploaded to the site server.
+- Access management: separate sign-in and first-use activation, user and administrator roles, read/edit-draft/edit-and-save access, single-use password reset links, and security audit events, with at most three administrators.
 
 ---
 

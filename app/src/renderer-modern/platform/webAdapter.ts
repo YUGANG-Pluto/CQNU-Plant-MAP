@@ -1,4 +1,5 @@
 import type {
+  ManagementWorkspaceAccess,
   PlatformAdapter,
   PlatformResponse
 } from '../../shared/types/platform';
@@ -51,6 +52,21 @@ const storageMaintenance = createWebStorageMaintenance(repository);
 const webCapabilityReport = Object.freeze(assessWebRuntimeCapabilities());
 const EXTERNAL_BACKUP_IMPORT_TTL = 15 * 60 * 1000;
 
+interface WebDraftProject {
+  modifiedAt: number;
+  settings: UnknownRecord;
+  zones: UnknownRecord[];
+  points: UnknownRecord[];
+}
+
+const managementAccess = window.managementAccess;
+const managementAccessRequired = document.body?.dataset.siteWorkspace === 'true';
+const managementCapabilities = new Set(managementAccess?.capabilities || []);
+const canReadWorkspace = !managementAccessRequired || managementCapabilities.has('workspace.read');
+const canEditWorkspace = !managementAccessRequired || managementCapabilities.has('workspace.edit');
+const canSaveWorkspace = !managementAccessRequired || managementCapabilities.has('workspace.save');
+const draftProjects = new Map<string, WebDraftProject>();
+
 let pendingExternalBackup: {
   token: string;
   projectDir: string;
@@ -64,10 +80,28 @@ function requireWebWorkspace(): void {
   }
 }
 
+function requireWorkspaceRead(): void {
+  requireWebWorkspace();
+  if (!canReadWorkspace) throw new Error('当前账户没有读取工作区的权限。');
+}
+
+function requireWorkspaceEdit(): void {
+  requireWorkspaceRead();
+  if (!canEditWorkspace) throw new Error('当前账户为只读权限，不能修改项目。');
+}
+
+function requireWorkspaceSave(): void {
+  requireWorkspaceEdit();
+  if (!canSaveWorkspace) throw new Error('当前账户只能编辑草稿，不能保存到本地项目。');
+}
+
 async function chooseProject(): Promise<PlatformResponse<UnknownRecord>> {
   try {
-    requireWebWorkspace();
-    const session = await repository.choose(true);
+    requireWorkspaceRead();
+    const session = await repository.choose(true, {
+      allowCreate: canEditWorkspace,
+      persist: canSaveWorkspace
+    });
     if (!session) return success({ canceled: true });
     return success({
       canceled: false,
@@ -85,8 +119,11 @@ async function chooseProject(): Promise<PlatformResponse<UnknownRecord>> {
 
 async function chooseMergeProject(): Promise<PlatformResponse<UnknownRecord>> {
   try {
-    requireWebWorkspace();
-    const session = await repository.choose(false);
+    requireWorkspaceRead();
+    const session = await repository.choose(false, {
+      allowCreate: false,
+      persist: false
+    });
     if (!session) return success({ canceled: true });
     return success({ canceled: false, projectDir: session.projectDir, label: session.label });
   } catch (error) {
@@ -104,13 +141,15 @@ async function loadProject(payload?: unknown): Promise<PlatformResponse<UnknownR
     ? String(source.storageFormat) as 'sqlite' | 'json'
     : 'auto';
   try {
-    requireWebWorkspace();
+    requireWorkspaceRead();
     const session = await repository.load(requestedDir, requestedFormat);
     if (!session) {
       return failure('WEB_PROJECT_NOT_SELECTED', '请先选择浏览器本地项目或可写项目目录。');
     }
+    const draft = draftProjects.get(session.projectDir);
+    const effective = draft || session;
     await hydrateWebImages(
-      collectWebImageReferences(session.points),
+      collectWebImageReferences(effective.points),
       repository.directoryHandle(session.projectDir)
     );
     const sqliteDatabaseExists = await repository.hasDatabaseProject(session.projectDir);
@@ -121,14 +160,16 @@ async function loadProject(payload?: unknown): Promise<PlatformResponse<UnknownR
       : 'sqlite';
     return success({
       projectDir: session.projectDir,
-      projectModifiedTime: session.modifiedAt,
+      projectModifiedTime: effective.modifiedAt,
       storageFormat,
       jsonFilesExist,
       sqliteDatabaseExists,
-      settings: clone(session.settings),
-      zones: clone(session.zones),
-      points: clone(session.points),
-      webReadOnly: false,
+      settings: clone(effective.settings),
+      zones: clone(effective.zones),
+      points: clone(effective.points),
+      webReadOnly: !canEditWorkspace,
+      webDraftOnly: Boolean(draft) || (canEditWorkspace && !canSaveWorkspace),
+      webAccessLevel: managementAccess?.accessLevel || 'save',
       webStorageMode: 'opfs-sahpool',
       webDirectoryPermissionStatus: repository.directoryPermissionStatus(session.projectDir),
       webDirectoryReconnectRequired: ['prompt', 'denied'].includes(
@@ -147,13 +188,32 @@ async function loadProject(payload?: unknown): Promise<PlatformResponse<UnknownR
 async function saveProject(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
   const source = asRecord(payload);
   try {
-    requireWebWorkspace();
+    requireWorkspaceEdit();
+    const projectDir = String(source.projectDir || '');
+    if (!canSaveWorkspace) {
+      const modifiedAt = Date.now();
+      draftProjects.set(projectDir, {
+        modifiedAt,
+        settings: clone(asRecord(source.settings)),
+        zones: clone(Array.isArray(source.zones) ? source.zones.filter(item => item && typeof item === 'object') as UnknownRecord[] : []),
+        points: clone(Array.isArray(source.points) ? source.points.filter(item => item && typeof item === 'object') as UnknownRecord[] : [])
+      });
+      return success({
+        projectDir,
+        projectModifiedTime: modifiedAt,
+        storageFormat: 'sqlite',
+        jsonFilesExist: repository.hasDirectoryMirror(projectDir),
+        sqliteDatabaseExists: await repository.hasDatabaseProject(projectDir),
+        draftOnly: true
+      });
+    }
     const result = await repository.save({
-      projectDir: String(source.projectDir || ''),
+      projectDir,
       settings: asRecord(source.settings),
       zones: Array.isArray(source.zones) ? source.zones.filter(item => item && typeof item === 'object') as UnknownRecord[] : [],
       points: Array.isArray(source.points) ? source.points.filter(item => item && typeof item === 'object') as UnknownRecord[] : []
     });
+    draftProjects.delete(projectDir);
     return success({ ...result });
   } catch (error) {
     return failureFromError(
@@ -190,6 +250,7 @@ async function importTextFile(accept: string): Promise<PlatformResponse<UnknownR
 async function importImage(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
   const projectDir = String(asRecord(payload).projectDir || '');
   try {
+    requireWorkspaceSave();
     return success(await importWebImage(projectDir, repository.directoryHandle(projectDir)));
   } catch (error) {
     return failure('WEB_IMAGE_IMPORT_FAILED', error instanceof Error ? error.message : '浏览器图片无法导入。');
@@ -200,6 +261,7 @@ async function removeImage(payload?: unknown): Promise<PlatformResponse<UnknownR
   const source = asRecord(payload);
   const projectDir = String(source.projectDir || '');
   try {
+    requireWorkspaceSave();
     const deleted = await deleteWebImage(
       String(source.relativePath || ''),
       repository.directoryHandle(projectDir)
@@ -219,7 +281,7 @@ async function createBackup(payload?: unknown): Promise<PlatformResponse<Unknown
   const projectDir = String(source.projectDir || '');
   const label = String(source.label || 'manual');
   try {
-    requireWebWorkspace();
+    requireWorkspaceSave();
     const backup = await repository.createBackup(projectDir, label);
     let filePath = backup.name;
     if (String(source.backupDir || '') === 'web://downloads') {
@@ -266,6 +328,7 @@ async function restoreBackup(payload?: unknown): Promise<PlatformResponse<Unknow
   const source = asRecord(payload);
   if (source.confirmRestore !== true) return failure('WEB_BACKUP_CONFIRM_REQUIRED', '恢复备份需要明确确认。');
   try {
+    requireWorkspaceSave();
     return success(await repository.restoreBackup(
       String(source.projectDir || ''),
       String(source.backupName || '')
@@ -277,7 +340,7 @@ async function restoreBackup(payload?: unknown): Promise<PlatformResponse<Unknow
 
 async function importExternalBackup(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
   try {
-    requireWebWorkspace();
+    requireWorkspaceSave();
     const projectDir = String(asRecord(payload).projectDir || '');
     if (!projectDir || repository.activeContext()?.session.projectDir !== projectDir) {
       return failure('WEB_PROJECT_NOT_SELECTED', '请先打开当前项目，再导入外部备份。');
@@ -332,7 +395,7 @@ async function restoreImportedBackup(payload?: unknown): Promise<PlatformRespons
     return failure('WEB_BACKUP_IMPORT_EXPIRED', '外部备份预览已失效，请重新选择并检测 ZIP。');
   }
   try {
-    requireWebWorkspace();
+    requireWorkspaceSave();
     const result = await repository.restoreImportedBackup(pending.projectDir, pending.archive);
     pendingExternalBackup = null;
     return success(result);
@@ -353,10 +416,27 @@ async function deleteExpiredBackups(payload?: unknown): Promise<PlatformResponse
   const source = asRecord(payload);
   const names = Array.isArray(source.paths) ? source.paths.map(String) : [];
   try {
+    requireWorkspaceSave();
     return success({ deleted: await repository.deleteBackupsByName(String(source.projectDir || ''), names) });
   } catch (error) {
     return failure('WEB_BACKUP_DELETE_FAILED', error instanceof Error ? error.message : '浏览器备份无法删除。');
   }
+}
+
+function guardedStorageMutation(
+  operation: (payload?: unknown) => Promise<PlatformResponse<UnknownRecord>>
+): (payload?: unknown) => Promise<PlatformResponse<UnknownRecord>> {
+  return async payload => {
+    try {
+      requireWorkspaceSave();
+      return await operation(payload);
+    } catch (error) {
+      return failure(
+        'WEB_STORAGE_PERMISSION_DENIED',
+        error instanceof Error ? error.message : '当前账户不能修改浏览器项目存储。'
+      );
+    }
+  };
 }
 
 async function checkWebImageRefs(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
@@ -441,21 +521,24 @@ export function createWebPlatformAdapter(): PlatformAdapter {
   return Object.freeze({
     runtime: 'web' as const,
     capabilities: Object.freeze({
-      readProject: webCapabilityReport.workspaceReady,
-      writeProject: webCapabilityReport.workspaceReady,
-      importRecords: webCapabilityReport.workspaceReady,
-      exportFiles: webCapabilityReport.portableBackupAvailable,
-      sqliteStorage: webCapabilityReport.workspaceReady,
-      backups: webCapabilityReport.workspaceReady,
-      diagnostics: webCapabilityReport.workspaceReady,
+      readProject: webCapabilityReport.workspaceReady && canReadWorkspace,
+      writeProject: webCapabilityReport.workspaceReady && canSaveWorkspace,
+      importRecords: webCapabilityReport.workspaceReady && canEditWorkspace,
+      exportFiles: webCapabilityReport.portableBackupAvailable && canReadWorkspace,
+      sqliteStorage: webCapabilityReport.workspaceReady && canReadWorkspace,
+      backups: webCapabilityReport.workspaceReady && canSaveWorkspace,
+      diagnostics: webCapabilityReport.workspaceReady && canReadWorkspace,
       speciesReference: true,
       externalLinks: true,
       nativeWindow: false,
-      readOnly: !webCapabilityReport.workspaceReady,
-      externalBackupImport: webCapabilityReport.portableBackupAvailable,
-      directoryMirror: webCapabilityReport.directoryMirrorAvailable
+      readOnly: !webCapabilityReport.workspaceReady || !canEditWorkspace,
+      externalBackupImport: webCapabilityReport.portableBackupAvailable && canSaveWorkspace,
+      directoryMirror: webCapabilityReport.directoryMirrorAvailable && canSaveWorkspace
     }),
-    web: Object.freeze({ capabilityReport: webCapabilityReport }),
+    web: Object.freeze({
+      capabilityReport: webCapabilityReport,
+      ...(managementAccess ? { managementAccess: managementAccess as Readonly<ManagementWorkspaceAccess> } : {})
+    }),
     project: Object.freeze({
       chooseDir: chooseProject,
       chooseMergeDir: chooseMergeProject,
@@ -498,9 +581,9 @@ export function createWebPlatformAdapter(): PlatformAdapter {
     storage: Object.freeze({
       conversionPreflight: storageMaintenance.conversionPreflight,
       listArtifacts: storageMaintenance.listArtifacts,
-      deleteArtifacts: storageMaintenance.deleteArtifacts,
-      createSqliteFromJson: storageMaintenance.createSqliteFromJson,
-      exportSqliteToJson: storageMaintenance.exportSqliteToJson
+      deleteArtifacts: guardedStorageMutation(storageMaintenance.deleteArtifacts),
+      createSqliteFromJson: guardedStorageMutation(storageMaintenance.createSqliteFromJson),
+      exportSqliteToJson: guardedStorageMutation(storageMaintenance.exportSqliteToJson)
     }),
     species: Object.freeze({
       referenceQuery: webSpeciesReference,

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cqnu-plant-map-workspace-v1';
+const CACHE_NAME = 'cqnu-plant-map-workspace-v2';
 const cacheablePrefixes = [
   '/assets/',
   '/node_modules/leaflet/',

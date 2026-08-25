@@ -91,6 +91,16 @@ export interface PlatformServiceApi {
 
 export type PlatformRuntime = 'electron' | 'web';
 
+export interface ManagementWorkspaceAccess {
+  accountId: string;
+  username: string;
+  displayName: string;
+  accountKind: 'user' | 'admin';
+  accessLevel: 'read' | 'edit' | 'save';
+  capabilities: readonly string[];
+  absoluteExpiresAt: string;
+}
+
 export interface PlatformCapabilities {
   readProject: boolean;
   writeProject: boolean;
@@ -125,5 +135,6 @@ export interface PlatformAdapter extends PlatformServiceApi {
   capabilities: Readonly<PlatformCapabilities>;
   web?: {
     capabilityReport: Readonly<PlatformWebCapabilityReport>;
+    managementAccess?: Readonly<ManagementWorkspaceAccess>;
   };
 }

@@ -1,6 +1,6 @@
 import { readFile, stat } from 'node:fs/promises';
 import { dirname, extname, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const distRoot = resolve(projectRoot, 'dist');
@@ -57,9 +57,8 @@ export function createLocalAssetsBinding() {
 }
 
 export async function createLocalSiteRuntime() {
-  const source = await readFile(resolve(distRoot, 'server/index.js'), 'utf8');
-  const workerUrl = `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
-  const worker = (await import(workerUrl)).default;
+  const workerPath = resolve(distRoot, 'server/index.js');
+  const worker = (await import(`${pathToFileURL(workerPath).href}?v=${Date.now()}`)).default;
   return {
     worker,
     env: Object.freeze({ ASSETS: createLocalAssetsBinding() })

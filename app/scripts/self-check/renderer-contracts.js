@@ -24,6 +24,8 @@ function testEngineeringSplitContract() {
     '10-controls-lists.css',
     '11-map-modals.css',
     '12-research-stats.css',
+    '12-research-stats-fullscreen.css',
+    '12-research-stats-responsive.css',
     '13-maintenance.css',
     '20-workbench-layout.css',
     '21-chart-primitives.css',
@@ -68,6 +70,7 @@ function testEngineeringSplitContract() {
 function testModernVisualSystemContract() {
   const modernStyleDir = path.join(process.cwd(), 'src/renderer-modern/styles');
   const designSource = fs.readFileSync(path.join(modernStyleDir, 'design-system.css'), 'utf8');
+  const capabilitySource = fs.readFileSync(path.join(modernStyleDir, 'web-capability.css'), 'utf8');
   const chartSource = fs.readFileSync(path.join(modernStyleDir, 'research-charts.css'), 'utf8');
   [
     'theme-scientific-white',
@@ -82,6 +85,8 @@ function testModernVisualSystemContract() {
   });
   assert.ok(chartSource.includes('--research-focus-ring'));
   assert.ok(chartSource.includes('border-radius: 8px'));
+  assert.ok(capabilitySource.includes('.web-capability-disclosure'));
+  assert.ok(capabilitySource.includes('@media (max-width: 720px)'));
   assert.ok(!designSource.includes('vibeui'), 'removed design experiments must not remain in the maintained visual layer');
 }
 
@@ -356,7 +361,11 @@ function testStatisticsChartVisualContract() {
   const statsResearchSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/statsResearch.js'), 'utf8');
   const chartSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/charts.js'), 'utf8');
   const loaderSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/legacy-loader.js'), 'utf8');
-  const coreCss = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/12-research-stats.css'), 'utf8');
+  const coreCss = readAppSources([
+    'src/renderer/styles/12-research-stats.css',
+    'src/renderer/styles/12-research-stats-fullscreen.css',
+    'src/renderer/styles/12-research-stats-responsive.css'
+  ]);
   const visualCss = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/styles/research-charts.css'), 'utf8');
   assert.ok(statsSource.includes('function renderChartCard'), 'statistics cards should use a shared chart-card renderer');
   assert.ok(loaderSource.includes('./src/renderer/features/stats/statsResearch.js'));

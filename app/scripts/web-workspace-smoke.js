@@ -6,6 +6,27 @@ const { app, BrowserWindow, session } = require('electron');
 const siteRuntimePath = path.resolve(__dirname, '../../site/scripts/local-runtime.mjs');
 const host = '127.0.0.1';
 
+function managementSessionFixture() {
+  const absoluteExpiresAt = new Date(Date.now() + (60 * 60 * 1000)).toISOString();
+  return {
+    ok: true,
+    data: {
+      account: {
+        id: 'acct_web_smoke',
+        username: 'web.smoke',
+        displayName: 'Web smoke',
+        accountKind: 'admin',
+        accessLevel: 'save',
+        status: 'active',
+        mustChangePassword: false
+      },
+      capabilities: ['workspace.read', 'workspace.edit', 'workspace.save'],
+      session: { absoluteExpiresAt },
+      csrfToken: 'web-smoke-csrf'
+    }
+  };
+}
+
 async function createSiteServer() {
   const { createLocalSiteRuntime } = await import(pathToFileURL(siteRuntimePath).href);
   const { worker, env } = await createLocalSiteRuntime();
@@ -14,6 +35,15 @@ async function createSiteServer() {
       const address = server.address();
       const port = typeof address === 'object' && address ? address.port : 0;
       const target = new URL(request.url || '/', `http://${host}:${port}`);
+      if (target.pathname === '/api/manage/session'
+        || target.pathname === '/api/manage/session/heartbeat') {
+        response.writeHead(200, {
+          'content-type': 'application/json; charset=utf-8',
+          'cache-control': 'no-store'
+        });
+        response.end(JSON.stringify(managementSessionFixture()));
+        return;
+      }
       const siteResponse = await worker.fetch(
         new Request(target, { method: request.method || 'GET' }),
         env
@@ -280,7 +310,10 @@ async function run() {
       failures.push(`secondary tab lock message: ${lockResult?.error?.message || ''}`);
     }
     if (!primaryAfterLock?.ok) failures.push('primary tab stopped working after secondary lock rejection');
-    failures.push(...errors.filter(message => !message.includes('Failed to load resource')));
+    failures.push(...errors.filter(message => {
+      if (message.includes('Failed to load resource')) return false;
+      return !/^net::ERR_ABORTED https:\/\/[abc]\.tile\.openstreetmap\.org\//.test(message);
+    }));
     if (failures.length) throw new Error(failures.join('\n'));
     process.stdout.write('web workspace smoke passed (OPFS SQLite, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n');
   } finally {

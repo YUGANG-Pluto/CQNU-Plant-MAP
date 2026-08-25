@@ -12,6 +12,19 @@ The browser workspace is available at `/workspace` and uses the same renderer, d
 
 The site server does not receive project records, coordinates, images, local directory handles, or local paths. Clearing the site's browser data removes OPFS, IndexedDB handle references, Cache Storage images, and internal browser backups that have not been exported or mirrored elsewhere.
 
+## Access Management
+
+The site uses a separate account and session service to decide who may enter the workspace. The service does not store or proxy plant project records.
+
+- `read` allows project opening, browsing, queries, statistics, diagnostics, and exports.
+- `edit` adds in-memory editing, but changes remain a session draft and are not written to the local project.
+- `save` adds local project persistence, image changes, backups, restore, and storage conversion.
+- Administrators can manage members, access levels, activation links, password-reset links, and security audit events. Administrative status always includes `save` access and is limited to three enabled accounts.
+- Bootstrap and newly created accounts require activation before normal access. Deployment-provided temporary credentials are never stored in source files.
+- An active browser renews a short online lease through a heartbeat. Losing that lease ends the session, and every continuously active session has an absolute 24-hour lifetime.
+
+Authentication cookies are host-only, `HttpOnly`, `Secure`, and `SameSite=Strict`. Authenticated mutations require a same-origin CSRF token. Username, password, permission, reset, and disable operations revoke affected sessions.
+
 ## Browser Permissions
 
 The workspace reports detected capabilities instead of assuming support from the browser name. The current hidden acceptance target is Chromium. Chromium, Firefox, and Safari use the same checks for WebAssembly, Worker, OPFS, Web Locks, IndexedDB, Cache Storage, secure identifiers, file selection, downloads, and optional directory selection.

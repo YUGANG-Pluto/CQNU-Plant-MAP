@@ -1,6 +1,7 @@
 # Node / Electron
 node_modules/
 dist/
+app/dist-*/
 app/renderer-dist/
 app/main-dist/
 release/

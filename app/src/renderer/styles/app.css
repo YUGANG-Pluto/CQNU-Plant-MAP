@@ -2,6 +2,8 @@
 @import url("./10-controls-lists.css");
 @import url("./11-map-modals.css");
 @import url("./12-research-stats.css");
+@import url("./12-research-stats-fullscreen.css");
+@import url("./12-research-stats-responsive.css");
 @import url("./13-maintenance.css");
 @import url("./20-workbench-layout.css");
 @import url("./21-chart-primitives.css");

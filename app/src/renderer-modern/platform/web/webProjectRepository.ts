@@ -50,6 +50,11 @@ export interface WebProjectSaveResult {
   mirrorWarning?: string;
 }
 
+export interface WebProjectChooseOptions {
+  allowCreate?: boolean;
+  persist?: boolean;
+}
+
 function clone<T>(value: T): T {
   if (typeof structuredClone === 'function') return structuredClone(value);
   return JSON.parse(JSON.stringify(value)) as T;
@@ -121,18 +126,26 @@ export class WebProjectRepository {
     return Boolean(this.directoryHandle(projectDir));
   }
 
-  async choose(makeActive = true): Promise<WebProjectSession | null> {
+  async choose(
+    makeActive = true,
+    options: WebProjectChooseOptions = {}
+  ): Promise<WebProjectSession | null> {
+    const allowCreate = options.allowCreate ?? true;
+    const persist = options.persist ?? true;
     const database = await this.database();
     let context: ProjectContext | null = null;
 
     if (supportsWebDirectoryProjects()) {
       const selection = await selectWebDirectoryProject();
       if (!selection) return null;
+      if (selection.created && !allowCreate) {
+        throw new Error('只读账户不能在空目录中创建新项目。');
+      }
       const existing = await database.getProject(selection.session.projectId);
       const useExisting = Boolean(existing && existing.modifiedAt > selection.session.modifiedAt && !selection.created);
       const session = useExisting && existing ? toSession(existing) : selection.session;
-      if (!useExisting) await database.putProject(toStoredProject(session));
-      if (selection.created) await writeWebProjectDirectory(selection.directoryHandle, session);
+      if (persist && !useExisting) await database.putProject(toStoredProject(session));
+      if (persist && selection.created) await writeWebProjectDirectory(selection.directoryHandle, session);
       context = {
         session,
         directoryHandle: selection.directoryHandle,
@@ -141,7 +154,10 @@ export class WebProjectRepository {
     } else {
       const session = await importWebProjectFiles();
       if (!session) return null;
-      await database.putProject(toStoredProject(session));
+      if (!allowCreate && !session.points.length && !session.zones.length) {
+        throw new Error('只读账户不能创建空项目。');
+      }
+      if (persist) await database.putProject(toStoredProject(session));
       context = { session, directoryPermissionStatus: 'unsupported' };
     }
 

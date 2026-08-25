@@ -1,0 +1,56 @@
+/* Responsive statistics center layout */
+@media (max-width: 1180px) {
+  .stats-card-grid,
+  .stats-summary-grid {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+
+  .stats-chart-toggle-groups,
+  .stats-export-layout {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  #statsModal .layer-modal-panel {
+    width: calc(100vw - 20px);
+  }
+
+  .stats-section-grid,
+  .stats-chart-grid,
+  .stats-heatmap-grid,
+  .stats-export-layout,
+  .stats-two-col,
+  .stats-three-col {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stats-display-control-head {
+    display: grid;
+  }
+
+  .stats-display-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .stats-card-grid,
+  .stats-summary-grid,
+  .stats-chart-toggle-groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stats-fullscreen-layer {
+    padding: 10px;
+  }
+
+  .stats-fullscreen-panel {
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+  }
+
+  .stats-chart-head {
+    display: grid;
+  }
+}

@@ -17,7 +17,7 @@ async function fetchSite(path, init) {
 assert.equal(typeof worker?.fetch, 'function');
 assert.ok((await stat(workerPath)).size < 512_000, 'Site Worker should remain below 500 KiB');
 assert.doesNotMatch(source, /APP_ASSETS|sqlite3-worker1-[A-Za-z0-9_-]+.*base64/);
-for (const route of ['/', '/workspace', '/docs', '/web', '/release', '/privacy']) {
+for (const route of ['/', '/workspace', '/manage', '/docs', '/web', '/release', '/privacy']) {
   const response = await fetchSite(route);
   const html = await response.text();
   assert.equal(response.status, 200, `${route} should return 200`);
@@ -29,7 +29,9 @@ for (const route of ['/', '/workspace', '/docs', '/web', '/release', '/privacy']
 const workspace = await fetchSite('/workspace');
 const workspaceHtml = await workspace.text();
 assert.match(workspaceHtml, /modernUiRoot/);
-assert.match(workspaceHtml, /renderer-dist\/modern-shell\.js/);
+assert.match(workspaceHtml, /workspace-access-gate/);
+assert.match(workspaceHtml, /assets\/workspace-gate\.js/);
+assert.doesNotMatch(workspaceHtml, /<script src="\.\/renderer-dist\/modern-shell\.js"><\/script>/);
 assert.match(workspace.headers.get('content-security-policy') || '', /wasm-unsafe-eval/);
 assert.match(workspace.headers.get('content-security-policy') || '', /worker-src 'self' blob:/);
 assert.match(workspace.headers.get('content-security-policy') || '', /connect-src 'self' https: data:/);
@@ -39,13 +41,19 @@ const healthData = await health.json();
 assert.equal(healthData.ok, true);
 assert.equal(healthData.version, siteMeta.version);
 assert.equal(healthData.channel, 'web/main');
-assert.equal(healthData.artifactVersion, 2);
+assert.equal(healthData.artifactVersion, 3);
 assert.ok(healthData.clientAssetCount > 100);
 const preview = await fetchSite('/assets/app-preview.png');
 assert.equal(preview.status, 200);
 assert.match(preview.headers.get('content-type') || '', /image\/png/);
 assert.ok((await preview.arrayBuffer()).byteLength > 1000);
-for (const asset of ['/renderer-dist/modern-shell.js', '/src/renderer/legacy-loader.js']) {
+for (const asset of [
+  '/renderer-dist/modern-shell.js',
+  '/src/renderer/legacy-loader.js',
+  '/assets/workspace-gate.js',
+  '/assets/manage.js',
+  '/assets/manage-api.js'
+]) {
   const response = await fetchSite(asset);
   const source = await response.text();
   assert.equal(response.status, 200);
@@ -53,6 +61,16 @@ for (const asset of ['/renderer-dist/modern-shell.js', '/src/renderer/legacy-loa
   assert.ok(source.length > 1000);
   assert.doesNotMatch(source, /[A-Za-z]:\\/);
 }
+const managementPage = await fetchSite('/manage');
+const managementHtml = await managementPage.text();
+assert.match(managementHtml, /data-manage-shell/);
+assert.match(managementHtml, /assets\/manage\.js/);
+assert.match(managementPage.headers.get('content-security-policy') || '', /connect-src 'self'/);
+const unavailableSession = await fetchSite('/api/manage/session');
+const unavailableSessionData = await unavailableSession.json();
+assert.equal(unavailableSession.status, 503);
+assert.equal(unavailableSessionData.ok, false);
+assert.equal(unavailableSessionData.error.code, 'MANAGEMENT_SERVICE_UNAVAILABLE');
 const modernShellResponse = await fetchSite('/renderer-dist/modern-shell.js');
 const modernShellSource = await modernShellResponse.text();
 const databaseWorkerMatch = modernShellSource.match(/assets\/webDatabaseWorker-[A-Za-z0-9_-]+\.js/);

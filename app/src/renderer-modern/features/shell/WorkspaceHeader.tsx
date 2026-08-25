@@ -1,4 +1,4 @@
-import { BookOpen, FolderOpen, Home, Save, Search } from 'lucide-preact';
+import { BookOpen, FolderOpen, Home, Save, Search, ShieldCheck } from 'lucide-preact';
 import {
   CommandButton,
   SegmentedControl,
@@ -9,6 +9,13 @@ import { WebCapabilityDisclosure } from './WebCapabilityDisclosure';
 
 export function WorkspaceHeader() {
   const isWebRuntime = window.platformAdapter?.runtime === 'web';
+  const managementAccess = window.platformAdapter?.web?.managementAccess;
+  const accessKey = managementAccess?.accessLevel === 'read'
+    ? 'webAccessRead'
+    : managementAccess?.accessLevel === 'edit'
+      ? 'webAccessEdit'
+      : 'webAccessSave';
+  const draftOnly = managementAccess?.accessLevel === 'edit';
   return (
     <header class="app-topbar glass">
       <div class="app-brand-block app-brand">
@@ -23,7 +30,16 @@ export function WorkspaceHeader() {
           <h1 data-i18n="appTitle">校园植物分区管理系统</h1>
           <p class="subtle" data-i18n="appSubtitle">分区绘制、点位管理、植物信息与图片归档</p>
           {isWebRuntime ? (
-            <WebCapabilityDisclosure />
+            <div class="web-runtime-disclosures">
+              {managementAccess ? (
+                <a class="web-access-chip" href="/manage" title="管理账户与访问权限">
+                  <ShieldCheck size={14} aria-hidden="true" />
+                  <span>{managementAccess.displayName || managementAccess.username}</span>
+                  <strong data-i18n={accessKey}>{managementAccess.accessLevel}</strong>
+                </a>
+              ) : null}
+              <WebCapabilityDisclosure />
+            </div>
           ) : null}
         </div>
       </div>
@@ -69,8 +85,8 @@ export function WorkspaceHeader() {
         <CommandButton
           id="btnSave"
           icon={<Save size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
-          label="保存项目"
-          i18nKey="saveProject"
+          label={draftOnly ? '仅会话草稿' : '保存项目'}
+          i18nKey={draftOnly ? 'webDraftOnly' : 'saveProject'}
           className="btn-primary"
           disabled={isWebRuntime && window.platformAdapter?.capabilities.writeProject !== true}
         />

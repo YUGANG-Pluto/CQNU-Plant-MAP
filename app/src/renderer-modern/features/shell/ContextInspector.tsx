@@ -6,6 +6,12 @@ import {
 import { ObjectCommandBar } from './ObjectCommandBar';
 
 export function ContextInspector() {
+  const isWebReadOnly = window.platformAdapter?.runtime === 'web'
+    && window.platformAdapter.capabilities.importRecords !== true;
+  const readOnlyTitle = isWebReadOnly
+    ? '当前账户为只读权限，不能修改项目。'
+    : undefined;
+
   return (
     <aside id="rightInspectorPanel" class="panel panel-right glass" data-right-panel-mode="auto">
       <div class="right-inspector-header">
@@ -53,10 +59,10 @@ export function ContextInspector() {
           <h2 data-i18n="zoneInfo">分区信息</h2>
           <span class="pill" id="zoneCount">0</span>
         </div>
-        <div class="field"><label for="zoneId" data-i18n="zoneId">分区编号</label><input id="zoneId" class="input" /></div>
-        <div class="field"><label for="zoneName" data-i18n="zoneName">分区名称</label><input id="zoneName" class="input" /></div>
-        <div class="field"><label for="zoneDescription" data-i18n="zoneDescription">分区描述</label><textarea id="zoneDescription" class="input textarea" /></div>
-        <button id="btnApplyZone" class="btn btn-primary" type="button" data-i18n="applyZoneInfo">应用到当前分区</button>
+        <div class="field"><label for="zoneId" data-i18n="zoneId">分区编号</label><input id="zoneId" class="input" disabled={isWebReadOnly} title={readOnlyTitle} /></div>
+        <div class="field"><label for="zoneName" data-i18n="zoneName">分区名称</label><input id="zoneName" class="input" disabled={isWebReadOnly} title={readOnlyTitle} /></div>
+        <div class="field"><label for="zoneDescription" data-i18n="zoneDescription">分区描述</label><textarea id="zoneDescription" class="input textarea" disabled={isWebReadOnly} title={readOnlyTitle} /></div>
+        <button id="btnApplyZone" class="btn btn-primary" type="button" data-i18n="applyZoneInfo" disabled={isWebReadOnly} title={readOnlyTitle}>应用到当前分区</button>
       </section>
 
       <section
@@ -78,6 +84,8 @@ export function ContextInspector() {
           label="物候录入中心"
           i18nKey="openPhenologyCenter"
           className="morandi-btn morandi-blue"
+          disabled={isWebReadOnly}
+          title={readOnlyTitle}
         />
       </section>
 

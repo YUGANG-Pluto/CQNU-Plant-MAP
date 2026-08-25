@@ -1,0 +1,66 @@
+/* Statistics fullscreen presentation */
+.stats-fullscreen-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.stats-fullscreen-layer.hidden {
+  display: none;
+}
+
+.stats-fullscreen-panel {
+  position: relative;
+  z-index: 10001;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1480px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+}
+
+.stats-fullscreen-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.stats-fullscreen-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+}
+
+.stats-fullscreen-card {
+  min-height: 100%;
+  box-shadow: none;
+}
+
+.stats-fullscreen-card .chart-scroll-area,
+.stats-fullscreen-card .stats-heatmap-scroll,
+.stats-fullscreen-card .stats-table-scroll {
+  max-height: calc(100vh - 220px);
+  overflow: auto;
+}
+
+.stats-fullscreen-card .stats-heatmap-corner,
+.stats-fullscreen-card .stats-heatmap-row-label {
+  width: 220px;
+  max-width: 280px;
+}
+
+.stats-fullscreen-card .stats-heatmap-header {
+  width: 140px;
+}

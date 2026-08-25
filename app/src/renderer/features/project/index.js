@@ -71,6 +71,14 @@ async function loadProjectIntoRenderer(projectDir, options = {}) {
 
   selectZone(null);
   renderAllDerived();
+  document.documentElement.dataset.projectLoaded = 'true';
+  window.dispatchEvent(new CustomEvent('cqnu:project-loaded', {
+    detail: {
+      projectDir: data.projectDir,
+      storageFormat: state.storageFormat,
+      webAccessLevel: data.webAccessLevel || ''
+    }
+  }));
 
   requestAnimationFrame(() => {
     state.map.invalidateSize();

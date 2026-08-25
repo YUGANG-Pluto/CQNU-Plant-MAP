@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "npm --prefix ../admin run build",
     "build": "node --disable-warning=ExperimentalWarning scripts/build.mjs",
     "validate": "node scripts/validate.mjs",
     "check": "npm run build && npm run validate",
