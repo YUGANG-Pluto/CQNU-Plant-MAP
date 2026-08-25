@@ -8,6 +8,10 @@ The site is the restricted-access release, documentation, and browser applicatio
 npm run check
 ```
 
+Sites remote builds run from the repository root through `npm run build`. The root
+entry prepares only missing workspace dependencies, builds the shared browser
+renderer, validates the site Worker, and copies the verified output to `dist/`.
+
 The source has no runtime dependency installation step. The build produces the standard Sites artifact layout under `dist/`:
 
 - `server/index.js`: routing, security headers, health reporting, and static-asset binding.

@@ -108,6 +108,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: |
+            package-lock.json
             app/package-lock.json
             admin/package-lock.json
             site/package-lock.json
@@ -131,8 +132,9 @@ jobs:
         working-directory: admin
         run: npm run check
 
-      - name: Build and validate site
-        run: npm run check
+      - name: Build and validate production site entry
+        working-directory: ${{ github.workspace }}
+        run: npm run build
 
       - name: Run site tests
         run: npm test
