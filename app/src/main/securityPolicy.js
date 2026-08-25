@@ -5,6 +5,14 @@ const { AppError } = require('./errors');
 const { ERROR_CODES } = require('./errorCodes');
 
 const APP_INDEX_URL = pathToFileURL(path.join(__dirname, '..', '..', 'index.html')).toString();
+const ALLOWED_EXTERNAL_HOSTS = new Set([
+  'gbif.org',
+  'www.gbif.org',
+  'inaturalist.org',
+  'www.inaturalist.org',
+  'wikipedia.org'
+]);
+const ALLOWED_EXTERNAL_HOST_SUFFIXES = ['.wikipedia.org'];
 
 function isTrustedRendererUrl(value) {
   const url = String(value || '');
@@ -21,6 +29,12 @@ function assertTrustedIpcSender(event) {
   }
 }
 
+function isAllowedExternalHost(value) {
+  const hostname = String(value || '').trim().toLowerCase().replace(/\.$/, '');
+  return ALLOWED_EXTERNAL_HOSTS.has(hostname) ||
+    ALLOWED_EXTERNAL_HOST_SUFFIXES.some(suffix => hostname.endsWith(suffix));
+}
+
 function normalizeExternalUrl(value) {
   let parsed;
   try {
@@ -29,8 +43,8 @@ function normalizeExternalUrl(value) {
     throw new AppError(ERROR_CODES.INVALID_EXTERNAL_URL, '外部链接无效。', error);
   }
 
-  if (!['http:', 'https:'].includes(parsed.protocol)) {
-    throw new AppError(ERROR_CODES.INVALID_EXTERNAL_URL, '只允许打开 http 或 https 链接。');
+  if (parsed.protocol !== 'https:' || !isAllowedExternalHost(parsed.hostname)) {
+    throw new AppError(ERROR_CODES.INVALID_EXTERNAL_URL, '只允许打开受信任的 HTTPS 物种参考链接。');
   }
   return parsed.toString();
 }
@@ -46,6 +60,7 @@ module.exports = {
   isTrustedRendererUrl,
   senderUrl,
   assertTrustedIpcSender,
+  isAllowedExternalHost,
   normalizeExternalUrl,
   openExternalUrl
 };

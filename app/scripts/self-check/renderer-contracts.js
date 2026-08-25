@@ -107,7 +107,7 @@ function testModernMotionContract() {
     globalSource.includes(selector) || chartStyles.includes(selector),
     `${selector} must stay wired`
   ));
-  assert.ok(chartStyles.includes('.motion-mode-standard #statsModal:not(.hidden)'));
+  assert.ok(chartStyles.includes(':where(#statsModal:not(.hidden), .stats-fullscreen-layer)'));
   assert.ok(globalSource.includes('@media (prefers-reduced-motion: reduce)'), 'system reduced-motion preferences must be respected');
   assert.ok(chartStyles.includes('.motion-hover #statsModal :where(.chart-card, .stats-control-card):hover'), 'stats chart cards must not lift while reading charts');
   assert.ok(!chartStyles.includes('.donut-svg {\n  animation:'), 'donut svg should not animate independently of its data marks');
@@ -201,7 +201,7 @@ function testObjectWorkflowContract() {
   ['.object-command-center', '.object-list-item.is-selected', '.object-empty-state', '#map .leaflet-interactive:focus-visible'].forEach(selector => {
     assert.ok(styleSource.includes(selector), `${selector} must stay in the object workflow styles`);
   });
-  ['320ms', '420ms', '900ms'].forEach(duration => {
+  ['320ms', '720ms', '900ms'].forEach(duration => {
     assert.ok(styleSource.includes(duration) || workflowSource.includes(duration), `${duration} must stay represented in the interaction timing`);
   });
   assert.ok(workflowSource.includes('OBJECT_FOCUS_FEEDBACK_MS = 360'));
@@ -408,6 +408,8 @@ function testStatisticsChartVisualContract() {
   assert.ok(chartSource.includes('chartMetricLabel'), 'charts should use explicit metric labels for legends and tooltips');
   assert.ok(chartSource.includes('chartAxisLabel'), 'combo charts should label each y axis by metric semantics');
   assert.ok(chartSource.includes('axisLabels'), 'combo charts should render y-axis semantic labels');
+  assert.ok(chartSource.includes('pathLength="1"'), 'line charts should expose a stable path length for draw animation');
+  assert.ok(chartSource.includes('--chart-delay:'), 'chart marks should expose bounded stagger timing');
   assert.ok(chartSource.includes('chart-empty-state'));
   assert.ok(chartSource.includes('donutSvgFromCounts(entries, palette, settings, donut = true, chartKey = \'donut\')'));
   assert.ok(chartSource.includes('arcSlicePath(center, innerRadius, outerRadius, startAngle, endAngle)'));
@@ -416,6 +418,10 @@ function testStatisticsChartVisualContract() {
   assert.ok(visualCss.includes('.donut-center-plate'));
   assert.ok(visualCss.includes('.motion-disabled :where('));
   assert.ok(visualCss.includes('.chart-bar-group,'));
+  ['researchBarGrow', 'researchLineDraw', 'researchAreaReveal', 'researchDonutIn', 'researchRowIn'].forEach(keyframe => {
+    assert.ok(visualCss.includes(`@keyframes ${keyframe}`), `${keyframe} must stay available to normal and fullscreen charts`);
+  });
+  assert.ok(visualCss.includes(':where(#statsModal:not(.hidden), .stats-fullscreen-layer)'));
   assert.ok(!visualCss.includes('transform: scale(1.018)'), 'donut hover must not move its own hit target');
   assert.ok(!visualCss.includes('.motion-hover .donut-slice:hover {\n  filter:'), 'donut hover must not use per-slice hover filters');
   [

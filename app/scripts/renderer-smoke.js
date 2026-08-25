@@ -2,6 +2,7 @@ const { app } = require('electron');
 const { createMainWindow } = require('../main-dist/main/windowManager');
 const { registerIpc } = require('../main-dist/main/ipc/register');
 const { runRendererDomainSmoke } = require('./renderer-smoke/domain-contract');
+const { runRendererMotionSmoke } = require('./renderer-smoke/motion-contract');
 
 const requiredIds = [
   'map',
@@ -120,6 +121,7 @@ async function run() {
     const duplicateIds = allIds.filter((id, index) => allIds.indexOf(id) !== index);
     const rootStyle = getComputedStyle(document.documentElement);
     const parseMs = value => Number.parseFloat(String(value || '').replace('ms', ''));
+    const rendererMotionContract = (${runRendererMotionSmoke.toString()})();
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     const motionCloseDelay = Math.max(
       420,
@@ -428,6 +430,7 @@ async function run() {
         parseMs(rootStyle.getPropertyValue('--motion-duration-modal')),
         parseMs(rootStyle.getPropertyValue('--motion-duration-reveal'))
       ],
+      ...rendererMotionContract,
       modalPrimitiveCount: document.querySelectorAll('.modal-workflow-body').length,
       queryFocusTrapped,
       queryClosedByEscape: queryModal.classList.contains('hidden'),
@@ -504,6 +507,9 @@ async function run() {
   const motionDurationFloors = [400, 500, 620, 620];
   if (result.motionDurations.some((value, index) => !Number.isFinite(value) || value < motionDurationFloors[index])) {
     failures.push(`motion durations below perceptible floors: ${result.motionDurations.join(', ')}`);
+  }
+  if (!result.moduleMotionRuntimeReady) {
+    failures.push(`workspace module motion is not active at runtime: ${result.moduleTransitionDurations.join(', ')}`);
   }
   if (result.modalPrimitiveCount < 3) failures.push(`modal primitive count: ${result.modalPrimitiveCount}`);
   if (!result.queryFocusTrapped) failures.push('query modal does not trap keyboard focus');

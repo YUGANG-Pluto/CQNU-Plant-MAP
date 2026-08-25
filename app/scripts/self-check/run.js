@@ -16,6 +16,7 @@ async function main() {
   testModalWorkflowContract();
   testObjectWorkflowContract();
   testCommandPaletteContract();
+  testMotionFeedbackContract();
   testProjectEditHistoryContract();
   testResearchReviewWorkbenchContract();
   testRendererDomainModuleArchitectureContract();

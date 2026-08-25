@@ -10,6 +10,7 @@ import './styles/web-capability.css';
 import './styles/design-system.css';
 import './styles/research-charts.css';
 import './styles/workspace-primitives.css';
+import './styles/workspace-motion.css';
 import './styles/modal-primitives.css';
 import './styles/command-palette.css';
 import './styles/project-history.css';

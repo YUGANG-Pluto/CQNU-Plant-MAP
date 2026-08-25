@@ -75,6 +75,31 @@ function testCommandPaletteContract() {
   });
 }
 
+function testMotionFeedbackContract() {
+  const read = relativePath => fs.readFileSync(path.join(process.cwd(), relativePath), 'utf8');
+  const listRuntime = read('src/renderer/features/recycleBin/index.js');
+  const objectRuntime = read('src/renderer/shell/objectWorkflow.js');
+  const objectStyles = read('src/renderer/styles/52-object-workflow.css');
+  const workspaceStyles = read('src/renderer-modern/styles/workspace-motion.css');
+  const historyStyles = read('src/renderer-modern/styles/project-history.css');
+  const runtimeMotionSmoke = read('scripts/renderer-smoke/motion-contract.js');
+
+  assert.ok(listRuntime.includes("classList.add('is-entering')"));
+  assert.ok(listRuntime.includes("classList.remove('is-entering')"));
+  assert.ok(objectRuntime.includes('}, 760);'));
+  ['objectListPanelIn', 'objectListItemIn', 'objectSelectionPulse 720ms'].forEach(fragment => {
+    assert.ok(objectStyles.includes(fragment), `object workflow motion missing ${fragment}`);
+  });
+  ['uiModuleButtonIn', '--motion-duration-reveal, 720ms', '.ui-module-button::after'].forEach(fragment => {
+    assert.ok(workspaceStyles.includes(fragment), `module motion missing ${fragment}`);
+  });
+  ['projectSaveConfirmed', 'projectSaveRing', 'projectSaveError'].forEach(fragment => {
+    assert.ok(historyStyles.includes(fragment), `save feedback motion missing ${fragment}`);
+  });
+  assert.ok(runtimeMotionSmoke.includes('moduleTransitionDurations'));
+  assert.ok(runtimeMotionSmoke.includes('duration >= 260'));
+}
+
 function testProjectEditHistoryContract() {
   const modernRoot = path.join(process.cwd(), 'src/renderer-modern');
   const modelSource = fs.readFileSync(path.join(modernRoot, 'features/history/model.ts'), 'utf8');

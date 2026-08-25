@@ -166,6 +166,12 @@ async function testIpcDoesNotMaskFalsePayload() {
       const invalidExternalResponse = await handlers['window:openExternal'](trustedEvent, { url: 'file:///tmp/test' });
       assert.strictEqual(invalidExternalResponse.ok, false);
       assert.strictEqual(invalidExternalResponse.error.code, ERROR_CODES.INVALID_EXTERNAL_URL);
+      const untrustedExternalResponse = await handlers['window:openExternal'](
+        trustedEvent,
+        { url: 'https://example.invalid/reference' }
+      );
+      assert.strictEqual(untrustedExternalResponse.ok, false);
+      assert.strictEqual(untrustedExternalResponse.error.code, ERROR_CODES.INVALID_EXTERNAL_URL);
       [
         'settings:importJson',
         'settings:exportJson',

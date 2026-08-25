@@ -117,6 +117,8 @@ function testElectronSecurityContract() {
     'webSecurity: true',
     'allowRunningInsecureContent: false',
     'webviewTag: false',
+    'setPermissionCheckHandler',
+    'setPermissionRequestHandler',
     'setWindowOpenHandler',
     'will-navigate'
   ].forEach(fragment => assert.ok(windowSource.includes(fragment), `window security missing ${fragment}`));
@@ -130,6 +132,9 @@ function testElectronSecurityContract() {
   assert.ok(!/<link[^>]+https?:\/\//i.test(html), 'renderer styles must be local');
 
   assert.ok(ipcSource.includes('assertTrustedIpcSender'));
+  assert.ok(securitySource.includes('ALLOWED_EXTERNAL_HOSTS'));
+  assert.ok(securitySource.includes("parsed.protocol !== 'https:'"));
+  assert.ok(securitySource.includes('isAllowedExternalHost(parsed.hostname)'));
   assert.strictEqual(packageJson.main, 'main-dist/main/index.js');
   assert.ok(windowSource.includes("path.join(appRoot, 'main-dist', 'preload', 'index.js')"));
   assert.ok(preloadSource.includes('contextBridge.exposeInMainWorld'));
@@ -156,7 +161,7 @@ function testElectronSecurityContract() {
 
   assert.ok(securitySource.includes('APP_INDEX_URL'));
   assert.ok(securitySource.includes('shell.openExternal'));
-  assert.ok(securitySource.includes("['http:', 'https:']"));
+  assert.ok(securitySource.includes("parsed.protocol !== 'https:'"));
   assert.ok(errorCodesSource.includes('UNTRUSTED_IPC_SENDER'));
   assert.ok(errorCodesSource.includes('UNTRUSTED_PROJECT_DIR'));
   assert.ok(errorCodesSource.includes('INVALID_EXTERNAL_URL'));

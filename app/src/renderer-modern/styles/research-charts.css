@@ -253,30 +253,118 @@
   transform: none;
 }
 
-.motion-mode-standard #statsModal:not(.hidden) :where(.stats-control-card, .chart-card) {
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .stats-center-layout {
+  animation: researchPageIn var(--motion-duration-reveal, 720ms) var(--motion-ease) both;
+}
+
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) :where(
+  .stats-display-control,
+  .stats-control-card,
+  .chart-card,
+  .stats-table-panel,
+  .stats-heatmap-panel,
+  .stats-export-card
+) {
   animation: researchContentIn var(--motion-duration-reveal, 720ms) var(--motion-ease) both;
   animation-delay: var(--chart-card-delay, 0ms);
 }
 
-.motion-mode-standard #statsModal:not(.hidden) .chart-card:nth-child(2) { --chart-card-delay: 72ms; }
-.motion-mode-standard #statsModal:not(.hidden) .chart-card:nth-child(3) { --chart-card-delay: 144ms; }
-.motion-mode-standard #statsModal:not(.hidden) .chart-card:nth-child(4) { --chart-card-delay: 216ms; }
-.motion-mode-standard #statsModal:not(.hidden) .chart-card:nth-child(n + 5) { --chart-card-delay: 288ms; }
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .chart-card:nth-child(2) { --chart-card-delay: 72ms; }
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .chart-card:nth-child(3) { --chart-card-delay: 144ms; }
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .chart-card:nth-child(4) { --chart-card-delay: 216ms; }
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .chart-card:nth-child(n + 5) { --chart-card-delay: 288ms; }
 
-.motion-mode-standard #statsModal:not(.hidden) :where(
-  .chart-bar-group,
-  .chart-combo-category,
-  .chart-line-point-group,
-  .donut-slice,
-  .legend-item
-) {
-  animation: researchMarkIn var(--motion-duration, 580ms) var(--motion-ease) backwards;
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .stat-chip {
+  animation: researchMetricIn 760ms var(--motion-ease) backwards;
 }
 
-.motion-mode-standard #statsModal:not(.hidden) :where(.chart-bar-group, .chart-combo-category, .chart-line-point-group, .donut-slice, .legend-item):nth-child(2) { animation-delay: 56ms; }
-.motion-mode-standard #statsModal:not(.hidden) :where(.chart-bar-group, .chart-combo-category, .chart-line-point-group, .donut-slice, .legend-item):nth-child(3) { animation-delay: 112ms; }
-.motion-mode-standard #statsModal:not(.hidden) :where(.chart-bar-group, .chart-combo-category, .chart-line-point-group, .donut-slice, .legend-item):nth-child(4) { animation-delay: 168ms; }
-.motion-mode-standard #statsModal:not(.hidden) :where(.chart-bar-group, .chart-combo-category, .chart-line-point-group, .donut-slice, .legend-item):nth-child(n + 5) { animation-delay: 224ms; }
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .stat-chip:nth-child(2) { animation-delay: 64ms; }
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .stat-chip:nth-child(3) { animation-delay: 128ms; }
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .stat-chip:nth-child(4) { animation-delay: 192ms; }
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .stat-chip:nth-child(n + 5) { animation-delay: 256ms; }
+
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) :where(
+  .chart-bar-depth,
+  .chart-bar-rect,
+  .chart-bar-highlight
+) {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: researchBarGrow 820ms var(--motion-ease) backwards;
+  animation-delay: var(--chart-delay, 0ms);
+}
+
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .chart-line-path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: researchLineDraw 980ms var(--motion-ease) backwards;
+}
+
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .chart-line-area {
+  animation: researchAreaReveal 920ms var(--motion-ease) 120ms backwards;
+}
+
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .chart-line-point-group {
+  animation: researchPointIn 680ms var(--motion-ease) backwards;
+  animation-delay: var(--chart-delay, 0ms);
+}
+
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .donut-slice {
+  animation: researchDonutIn 820ms var(--motion-ease) backwards;
+  animation-delay: var(--slice-delay, 0ms);
+}
+
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) .legend-item {
+  animation: researchLegendIn 680ms var(--motion-ease) backwards;
+  animation-delay: var(--legend-delay, 0ms);
+}
+
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) :where(.chart-value, .chart-line-value) {
+  animation: researchValueIn 580ms var(--motion-ease) backwards;
+  animation-delay: var(--chart-delay, 0ms);
+}
+
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) :where(
+  .stats-data-table tbody tr,
+  .stats-heatmap-table tbody tr
+) {
+  animation: researchRowIn 640ms var(--motion-ease) backwards;
+}
+
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) :where(.stats-data-table, .stats-heatmap-table) tbody tr:nth-child(2) { animation-delay: 52ms; }
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) :where(.stats-data-table, .stats-heatmap-table) tbody tr:nth-child(3) { animation-delay: 104ms; }
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) :where(.stats-data-table, .stats-heatmap-table) tbody tr:nth-child(4) { animation-delay: 156ms; }
+.motion-mode-standard :where(#statsModal:not(.hidden), .stats-fullscreen-layer) :where(.stats-data-table, .stats-heatmap-table) tbody tr:nth-child(n + 5) { animation-delay: 208ms; }
+
+#statsModal .stats-tab {
+  position: relative;
+  overflow: hidden;
+  transition:
+    color var(--motion-duration-fast, 440ms) var(--motion-ease),
+    background-color var(--motion-duration-fast, 440ms) var(--motion-ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease);
+}
+
+#statsModal .stats-tab::after {
+  position: absolute;
+  right: 14px;
+  bottom: 3px;
+  left: 14px;
+  height: 2px;
+  content: "";
+  background: currentColor;
+  border-radius: 999px;
+  opacity: 0;
+  transform: scaleX(0.24);
+  transition:
+    opacity var(--motion-duration-fast, 440ms) var(--motion-ease),
+    transform var(--motion-duration, 580ms) var(--motion-ease);
+}
+
+#statsModal .stats-tab.active::after {
+  opacity: 0.74;
+  transform: scaleX(1);
+}
 
 .motion-disabled :where(
   .btn,
@@ -285,18 +373,36 @@
   .chart-bar-group,
   .chart-combo-category,
   .chart-line-point-group,
+  .chart-line-path,
+  .chart-line-area,
+  .chart-bar-depth,
+  .chart-bar-rect,
+  .chart-bar-highlight,
+  .chart-value,
+  .chart-line-value,
   .donut-slice,
-  .legend-item
+  .legend-item,
+  .stat-chip,
+  .stats-data-table tbody tr,
+  .stats-heatmap-table tbody tr,
+  .stats-tab
 ) {
   animation: none !important;
   transition: none !important;
   transform: none !important;
 }
 
+@keyframes researchPageIn {
+  from { opacity: 0; transform: translateY(18px); }
+  48% { opacity: 0.7; }
+  to { opacity: 1; transform: none; }
+}
+
 @keyframes researchContentIn {
   0% {
     opacity: 0;
-    transform: translateY(16px);
+    filter: blur(7px);
+    transform: translateY(24px) scale(0.985);
   }
 
   44% {
@@ -305,14 +411,60 @@
 
   100% {
     opacity: 1;
-    transform: translateY(0);
+    filter: blur(0);
+    transform: none;
   }
 }
 
-@keyframes researchMarkIn {
-  from { opacity: 0; }
-  48% { opacity: 0.58; }
-  to { opacity: 1; }
+@keyframes researchMetricIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  58% { opacity: 0.82; transform: translateY(-2px) scale(1.012); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes researchBarGrow {
+  from { opacity: 0.18; transform: scaleY(0.04); }
+  52% { opacity: 0.86; }
+  to { opacity: 1; transform: scaleY(1); }
+}
+
+@keyframes researchLineDraw {
+  from { opacity: 0.24; stroke-dashoffset: 1; }
+  56% { opacity: 0.92; }
+  to { opacity: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes researchAreaReveal {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); }
+  to { opacity: 1; clip-path: inset(0); }
+}
+
+@keyframes researchPointIn {
+  from { opacity: 0; transform: scale(0.32); }
+  62% { opacity: 1; transform: scale(1.14); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes researchDonutIn {
+  from { opacity: 0; transform: rotate(-7deg) scale(0.76); }
+  62% { opacity: 0.9; transform: rotate(1deg) scale(1.025); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes researchLegendIn {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes researchValueIn {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes researchRowIn {
+  from { opacity: 0; transform: translateX(12px); }
+  52% { opacity: 0.76; }
+  to { opacity: 1; transform: none; }
 }
 
 @media (max-width: 720px) {
