@@ -9,6 +9,14 @@ export interface MainWindowOptions {
   show?: boolean;
 }
 
+function installSessionPermissionPolicy(window: BrowserWindow): void {
+  const appSession = window.webContents.session;
+  appSession.setPermissionCheckHandler(() => false);
+  appSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
+    callback(false);
+  });
+}
+
 export function createMainWindow(options: MainWindowOptions = {}): BrowserWindow {
   const show = options.show !== false;
   const appRoot = path.resolve(__dirname, '..', '..');
@@ -32,6 +40,7 @@ export function createMainWindow(options: MainWindowOptions = {}): BrowserWindow
     }
   });
 
+  installSessionPermissionPolicy(window);
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, targetUrl) => {
     const { APP_INDEX_URL } = securityPolicy;
