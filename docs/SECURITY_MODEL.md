@@ -15,7 +15,7 @@ The browser site separates management data from plant project data.
 
 The management service never accepts project records, images, coordinates, local paths, directory handles, or full third-party API responses. Project data remains in the browser or a directory explicitly authorized by the user.
 
-Passwords use PBKDF2-HMAC-SHA-256 with a deployment-provided pepper. Purpose-separated HMAC keys sign or digest session, CSRF, activation, and password-reset material. Production cookies are host-only, `HttpOnly`, `Secure`, and `SameSite=Strict`; state-changing account requests also require a same-origin CSRF token.
+Passwords use salted PBKDF2-HMAC-SHA-256 with a deployment-provided HMAC pepper. The shared implementation defaults to 600,000 iterations; the Sites Worker uses the Cloudflare runtime ceiling of 100,000 iterations. Every verifier stores its iteration count so the cost can be raised transparently when the platform permits it. The Worker limit is additionally bounded by mandatory first-use password replacement, a weak-password blocklist, login lockout, purpose-separated keys, and owner-only hosting access. Purpose-separated HMAC keys sign or digest session, CSRF, activation, and password-reset material. Production cookies are host-only, `HttpOnly`, `Secure`, and `SameSite=Strict`; state-changing account requests also require a same-origin CSRF token.
 
 Sessions require a renewable online lease and have a 24-hour absolute lifetime. Account activation, password change, username change, permission change, reset, disable, and explicit logout revoke the affected sessions. Reset and activation links are single-use and expire.
 

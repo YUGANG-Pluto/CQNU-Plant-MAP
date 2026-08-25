@@ -24,7 +24,7 @@ import {
   type AdminRouteContract
 } from './http-contract.js';
 import { AuthKeyRing, parseAuthKeyRingConfig, randomBase64Url } from './keyring.js';
-import { Pbkdf2PasswordHasher } from './password.js';
+import { PBKDF2_EDGE_ITERATIONS, Pbkdf2PasswordHasher } from './password.js';
 import { principalAllows } from './policy.js';
 import {
   ADMIN_CSRF_HEADER_NAME,
@@ -263,7 +263,7 @@ async function productionRuntime(env: ManagementWorkerEnvironment): Promise<Mana
     const accounts = new ManagementAccountService({
       store,
       sessions,
-      passwordHasher: new Pbkdf2PasswordHasher(keyRing),
+      passwordHasher: new Pbkdf2PasswordHasher(keyRing, PBKDF2_EDGE_ITERATIONS),
       keyRing
     });
     if (!(await store.listAccounts()).length) {
