@@ -409,6 +409,21 @@ export async function importWebProjectFiles(): Promise<WebProjectSession | null>
   return createWebProjectSession(files, { sourceKind: 'import' });
 }
 
+export async function importWebSqliteFile(): Promise<WebProjectSession | null> {
+  const files = await selectWebProjectFiles('sqlite');
+  if (!files.length) return null;
+  const file = files.find(isExternalSqliteFile);
+  if (!file) throw new Error('请选择 .db、.sqlite 或 .sqlite3 项目文件。');
+  return importExternalSqliteFile(file);
+}
+
+export async function importWebJsonFiles(): Promise<WebProjectSession | null> {
+  const files = await selectWebProjectFiles('json');
+  if (!files.length) return null;
+  if (files.some(isExternalSqliteFile)) throw new Error('此入口仅接受 JSON 或 GeoJSON 项目文件。');
+  return createWebProjectSession(files, { sourceKind: 'import' });
+}
+
 export async function importWebProjectFolder(): Promise<WebProjectSession | null> {
   const files = await selectWebProjectFolderFiles();
   if (!files.length) return null;

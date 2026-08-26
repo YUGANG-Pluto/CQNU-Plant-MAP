@@ -15,7 +15,7 @@ function testStatisticsChartVisualContract() {
     'src/renderer-modern/features/stats/contractsRuntime.ts',
     'src/renderer-modern/main.tsx'
   ]);
-  const dialogSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/utils/dialogs.js'), 'utf8');
+  const layerManagerSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/features/layers/runtime.ts'), 'utf8');
   const modalPrimitiveCss = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/styles/modal-primitives.css'), 'utf8');
   const loaderSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/legacy-loader.js'), 'utf8');
   const coreCss = readAppSources([
@@ -111,7 +111,7 @@ function testStatisticsChartVisualContract() {
     '.stats-export-grid',
     '.stats-notes-list'
   ].forEach(selector => assert.ok(coreCss.includes(selector), `${selector} must support research stats UI`));
-  assert.ok(dialogSource.includes("'.layer-modal, .image-modal, .stats-fullscreen-layer'"), 'elevated renderer surfaces must share one layer selector');
+  assert.ok(layerManagerSource.includes("'.layer-modal, .image-modal, .stats-fullscreen-layer'"), 'elevated renderer surfaces must share one layer selector');
   assert.ok(modalPrimitiveCss.includes('.stats-fullscreen-layer'));
   assert.ok(modalPrimitiveCss.includes('var(--layer-order, 0)'), 'fullscreen layers must use dynamic open order');
   assert.ok(coreCss.includes('z-index: 1'), 'statistics fullscreen dialog must stay above its overlay backdrop');

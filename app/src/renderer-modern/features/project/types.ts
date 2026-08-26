@@ -8,7 +8,7 @@ import type {
 import type { PlatformResponse } from '../../../shared/types/platform';
 
 export type ProjectStorageFormat = 'auto' | 'json' | 'sqlite';
-export type ProjectOpenMode = 'directory' | 'portable-folder';
+export type ProjectOpenMode = 'directory' | 'portable-folder' | 'sqlite-file' | 'json-files';
 export type ProjectWorkflowOperation =
   | 'open'
   | 'load'
@@ -50,6 +50,9 @@ export interface ProjectLoadedData extends UnknownRecord {
   sqliteDatabaseExists?: boolean;
   webAccessLevel?: string;
   webDirectoryReconnectRequired?: boolean;
+  webDirectoryPermissionStatus?: string;
+  webProjectSourceKind?: string;
+  webExternalSqliteImported?: boolean;
 }
 
 export interface ProjectSavePayload {

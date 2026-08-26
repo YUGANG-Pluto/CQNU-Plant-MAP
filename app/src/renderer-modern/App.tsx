@@ -4,6 +4,7 @@ import { MaintenanceModal } from './features/maintenance/MaintenanceModal';
 import { PointEditorModal } from './features/phenology/PointEditorModal';
 import { DialogSupport } from './features/phenology/DialogSupport';
 import { ProjectOperationModals } from './features/project/ProjectOperationModals';
+import { ProjectImportCenter } from './features/project/ProjectImportCenter';
 import { QueryModal } from './features/query/QueryModal';
 import { RecycleBinModal } from './features/recycle-bin/RecycleBinModal';
 import { ReviewWorkbenchModal } from './features/review/ReviewWorkbenchModal';
@@ -29,6 +30,7 @@ export function App() {
       <RecycleBinModal />
       <ReviewWorkbenchModal />
       <ThemeSettingsModal />
+      <ProjectImportCenter />
       <ProjectOperationModals />
       <MaintenanceModal />
       <SystemDialogs />

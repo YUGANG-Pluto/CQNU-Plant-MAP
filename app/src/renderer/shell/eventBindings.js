@@ -1,6 +1,9 @@
 function bindProjectEvents() {
   ui.btnChooseDir.addEventListener('click', chooseAndLoadProject);
   ui.btnChooseDirWelcome?.addEventListener('click', chooseAndLoadProject);
+  ui.btnImportProjectDirectory?.addEventListener('click', chooseAndLoadProject);
+  ui.btnImportProjectSqlite?.addEventListener('click', chooseAndLoadProject);
+  ui.btnImportProjectJson?.addEventListener('click', chooseAndLoadProject);
   ui.btnImportProjectFolder?.addEventListener('click', chooseAndLoadProject);
   ui.btnSave?.addEventListener('click', async () => {
     if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('save-project')) return;

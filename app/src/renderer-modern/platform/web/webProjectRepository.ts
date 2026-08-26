@@ -1,8 +1,11 @@
 import type { StoredWebProject, WebBackupRecord, WebProjectRecord } from './webDatabaseProtocol';
-import { getWebDatabaseClient, type WebDatabaseClient } from './webDatabaseClient';
+import type { WebDatabaseClient } from './webDatabaseClient';
+import { loadWebDatabaseClient } from './webDatabaseLoader';
 import {
   importWebProjectFolder,
   importWebProjectFiles,
+  importWebJsonFiles,
+  importWebSqliteFile,
   deleteWebProjectJsonFiles,
   recoverWebDirectoryHandle,
   readWebProjectDirectory,
@@ -57,7 +60,7 @@ export interface WebProjectChooseOptions {
   allowCreate?: boolean;
   persist?: boolean;
   directoryAccessMode?: WebDirectoryAccessMode;
-  selectionMode?: 'auto' | 'directory' | 'portable-folder';
+  selectionMode?: 'auto' | 'directory' | 'portable-folder' | 'sqlite-file' | 'json-files';
 }
 
 export interface WebProjectRepositoryOptions {
@@ -114,7 +117,7 @@ export class WebProjectRepository {
   }
 
   async database(): Promise<WebDatabaseClient> {
-    return getWebDatabaseClient();
+    return loadWebDatabaseClient();
   }
 
   activeProjectId(): string {
@@ -158,7 +161,7 @@ export class WebProjectRepository {
     const selectionMode = options.selectionMode || 'auto';
     let context: ProjectContext | null = null;
 
-    if (selectionMode !== 'portable-folder' && supportsWebDirectoryProjects()) {
+    if (['auto', 'directory'].includes(selectionMode) && supportsWebDirectoryProjects()) {
       // Keep the native picker as the first awaited operation so the click's
       // transient user activation remains valid in Chromium.
       const selection = await selectWebDirectoryProject(directoryAccessMode);
@@ -184,7 +187,11 @@ export class WebProjectRepository {
     } else {
       const session = selectionMode === 'portable-folder' || selectionMode === 'auto'
         ? await importWebProjectFolder()
-        : await importWebProjectFiles();
+        : selectionMode === 'sqlite-file'
+          ? await importWebSqliteFile()
+          : selectionMode === 'json-files'
+            ? await importWebJsonFiles()
+            : await importWebProjectFiles();
       if (!session) return null;
       if (!allowCreate && !session.points.length && !session.zones.length) {
         throw new Error('只读账户不能创建空项目。');

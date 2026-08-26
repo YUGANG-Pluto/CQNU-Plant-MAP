@@ -90,7 +90,7 @@ function testProjectWorkflowContract() {
   assert.ok(projectSource.includes('window.projectWorkflow?.save'));
   assert.ok(projectSource.includes('window.projectWorkflow?.load'));
   assert.ok(projectSource.includes('function applyLoadedProjectToRenderer(data)'));
-  assert.ok(drawerSource.includes('workflow.chooseAndLoad({ mode:'));
+  assert.ok(drawerSource.includes('workflow.chooseAndLoad({ mode })'));
   assert.ok(drawerSource.includes('await applyLoadedProjectToRenderer(result.project)'));
   assert.ok(backupSource.includes('window.projectWorkflow?.createBackup'));
   assert.ok(storageSource.includes('window.projectWorkflow?.inspectBackup'));
@@ -177,6 +177,7 @@ function testModalWorkflowContract() {
   const speciesSource = fs.readFileSync(path.join(modernRoot, 'features/species-reference/SpeciesReferenceModal.tsx'), 'utf8');
   const pointSource = fs.readFileSync(path.join(modernRoot, 'features/phenology/PointEditorModal.tsx'), 'utf8');
   const dialogRuntime = fs.readFileSync(path.join(process.cwd(), 'src/renderer/utils/dialogs.js'), 'utf8');
+  const layerRuntime = fs.readFileSync(path.join(modernRoot, 'features/layers/runtime.ts'), 'utf8');
   const eventRuntime = fs.readFileSync(path.join(process.cwd(), 'src/renderer/shell/eventBindings.js'), 'utf8');
   const phenologyRuntime = readPhenologyRuntimeSource();
 
@@ -196,8 +197,9 @@ function testModalWorkflowContract() {
   assert.ok(pointSource.includes('footer={('));
   assert.ok(pointSource.includes('id="pointEditorSaveState"'));
   assert.ok(dialogRuntime.includes('function trapLayerModalFocus'));
-  assert.ok(dialogRuntime.includes('layerReturnFocusTargets'));
-  assert.ok(dialogRuntime.includes("getMotionDurationMs('--motion-duration', 580)"));
+  assert.ok(dialogRuntime.includes('window.cqnuLayerManager?.trapFocus'));
+  assert.ok(layerRuntime.includes('returnFocusTargets'));
+  assert.ok(layerRuntime.includes("motionDurationMs('--motion-duration')"));
   assert.ok(eventRuntime.includes('getTopLayerModal()'));
   assert.ok(!eventRuntime.includes("if (!ui.queryModal.classList.contains('hidden')) closeLayerModal(ui.queryModal)"));
   assert.ok(phenologyRuntime.includes('function pointEditorHasUnsavedChanges'));

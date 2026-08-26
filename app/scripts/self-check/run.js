@@ -25,6 +25,7 @@ async function main() {
   testLegacyThemeCssRemoved();
   testThemeSettingsProgressiveDisclosure();
   testBrandLogoResource();
+  testProjectImportAndLayerManagerContract();
   testStatisticsChartVisualContract();
   testResearchStatsFormulaContract();
   testReducedInnerHtmlSurface();

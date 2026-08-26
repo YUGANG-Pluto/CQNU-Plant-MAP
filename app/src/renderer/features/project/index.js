@@ -82,11 +82,22 @@ async function applyLoadedProjectToRenderer(data) {
   selectZone(null);
   renderAllDerived();
   document.documentElement.dataset.projectLoaded = 'true';
+  document.documentElement.dataset.projectSourceKind = data.webProjectSourceKind || '';
+  document.documentElement.dataset.projectStorageFormat = state.storageFormat;
+  document.documentElement.dataset.projectDirectoryPermission = data.webDirectoryPermissionStatus || '';
+  document.documentElement.dataset.projectDirectoryReconnect = String(Boolean(data.webDirectoryReconnectRequired));
+  document.documentElement.dataset.projectExternalSqlite = String(Boolean(data.webExternalSqliteImported));
   window.dispatchEvent(new CustomEvent('cqnu:project-loaded', {
     detail: {
       projectDir: data.projectDir,
       storageFormat: state.storageFormat,
-      webAccessLevel: data.webAccessLevel || ''
+      webAccessLevel: data.webAccessLevel || '',
+      sourceKind: data.webProjectSourceKind || '',
+      directoryPermissionStatus: data.webDirectoryPermissionStatus || '',
+      directoryReconnectRequired: Boolean(data.webDirectoryReconnectRequired),
+      externalSqliteImported: Boolean(data.webExternalSqliteImported),
+      jsonFilesExist: state.jsonFilesExist,
+      sqliteDatabaseExists: state.sqliteDatabaseExists
     }
   }));
 

@@ -27,9 +27,13 @@ function createWorkflowServices(): ProjectWorkflowServices {
 
   return {
     chooseProject(mode: ProjectOpenMode) {
-      const command = mode === 'portable-folder'
-        ? adapter.project.choosePortableDir
-        : adapter.project.chooseDir;
+      const commands = {
+        directory: adapter.project.chooseDir,
+        'portable-folder': adapter.project.choosePortableDir,
+        'sqlite-file': adapter.project.chooseSqliteFile,
+        'json-files': adapter.project.chooseJsonFiles
+      } satisfies Record<ProjectOpenMode, typeof adapter.project.chooseDir | undefined>;
+      const command = commands[mode];
       if (typeof command !== 'function') {
         return Promise.resolve({
           ok: false,

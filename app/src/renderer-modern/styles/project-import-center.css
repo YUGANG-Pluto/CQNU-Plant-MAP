@@ -1,0 +1,274 @@
+.project-import-panel {
+  width: min(960px, calc(100vw - 32px));
+  max-height: min(860px, calc(100vh - 32px));
+}
+
+.project-import-content {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px 20px;
+}
+
+.project-import-assurance,
+.project-import-current {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border-light));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary-soft) 42%, var(--panel-bg));
+  animation: projectImportContextIn var(--motion-duration-reveal, 720ms) var(--motion-ease, ease) both;
+}
+
+.project-import-assurance > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--primary);
+}
+
+.project-import-assurance p,
+.project-import-current small {
+  margin: 3px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.project-import-current {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 3px 12px;
+  border-color: var(--border-light);
+  background: color-mix(in srgb, var(--panel-bg-soft) 88%, transparent);
+}
+
+.project-import-current > span {
+  grid-row: 1 / span 2;
+  align-self: stretch;
+  display: grid;
+  padding-right: 12px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 720;
+  border-right: 1px solid var(--border-light);
+  place-items: center;
+}
+
+.project-import-current__warning {
+  grid-column: 2;
+  color: var(--warning) !important;
+}
+
+.project-import-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.project-import-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 94px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  overflow: hidden;
+  color: var(--text-main);
+  text-align: left;
+  background: color-mix(in srgb, var(--panel-bg) 90%, transparent);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--glass-highlight) 58%, transparent);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(18px) scale(0.985);
+  animation: projectImportOptionIn var(--motion-duration-reveal, 720ms) var(--motion-ease, ease) forwards;
+  transition:
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    border-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    box-shadow var(--motion-duration, 580ms) var(--motion-ease, ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
+}
+
+.project-import-option:nth-child(2) { animation-delay: 72ms; }
+.project-import-option:nth-child(3) { animation-delay: 144ms; }
+.project-import-option:nth-child(4) { animation-delay: 216ms; }
+.project-import-option:nth-child(5) { animation-delay: 288ms; }
+
+.project-import-option.is-recommended {
+  border-color: color-mix(in srgb, var(--primary) 38%, var(--border-light));
+  background: color-mix(in srgb, var(--primary-soft) 34%, var(--panel-bg));
+}
+
+.project-import-option:hover:not(:disabled) {
+  z-index: 1;
+  border-color: color-mix(in srgb, var(--primary) 54%, var(--border-light));
+  box-shadow: 0 16px 30px color-mix(in srgb, var(--primary) 13%, transparent);
+  transform: translateY(-3px) scale(1.008);
+}
+
+.project-import-option:active:not(:disabled) {
+  transform: translateY(0) scale(var(--motion-scale-press, 0.975));
+}
+
+.project-import-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.48 !important;
+  transform: none !important;
+  animation: none;
+  filter: saturate(0.55);
+}
+
+.project-import-option__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary-soft) 62%, var(--panel-bg));
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border-radius: 8px;
+  place-items: center;
+  transition:
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration, 580ms) var(--motion-ease, ease);
+}
+
+.project-import-option:hover:not(:disabled) .project-import-option__icon {
+  color: var(--primary-hover);
+  transform: translateY(-2px) rotate(-3deg) scale(1.06);
+}
+
+.project-import-option__copy {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.project-import-option__copy strong {
+  font-size: 14px;
+}
+
+.project-import-option__copy small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.project-import-option .pill {
+  align-self: start;
+  white-space: nowrap;
+}
+
+.project-import-status {
+  min-height: 20px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: right;
+}
+
+.project-source-status {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, auto) auto;
+  max-width: min(340px, 42vw);
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 7px 6px 10px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--panel-bg) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border-light));
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--glass-highlight) 58%, transparent);
+  animation: projectSourceStatusIn var(--motion-duration-reveal, 720ms) var(--motion-ease, ease) both;
+}
+
+.project-source-status__copy {
+  display: grid;
+  min-width: 0;
+}
+
+.project-source-status__copy strong,
+.project-source-status__copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-source-status__copy strong {
+  font-size: 11px;
+}
+
+.project-source-status__copy small {
+  max-width: 210px;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.project-source-status__action {
+  width: 28px;
+  height: 28px;
+  color: var(--primary);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration, 580ms) var(--motion-ease, ease);
+}
+
+.project-source-status__action:hover {
+  background: var(--primary-soft);
+  transform: rotate(-18deg) scale(1.06);
+}
+
+@keyframes projectImportContextIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes projectImportOptionIn {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes projectSourceStatusIn {
+  from { opacity: 0; transform: translateX(14px) scale(0.97); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@media (max-width: 760px) {
+  .project-import-content { padding: 14px; }
+  .project-import-options { grid-template-columns: 1fr; }
+  .project-import-option { min-height: 84px; }
+  .project-source-status { max-width: calc(100vw - 40px); }
+  .project-source-status__copy small { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-import-assurance,
+  .project-import-current,
+  .project-import-option,
+  .project-source-status {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.motion-disabled :where(
+  .project-import-assurance,
+  .project-import-current,
+  .project-import-option,
+  .project-source-status
+) {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
+}
