@@ -7,6 +7,7 @@ import { installResearchReviewBridge } from './features/review/runtime';
 import { installRendererStateFacade } from './features/state/runtime';
 import { installStatsChartRegistryBridge } from './features/stats/runtime';
 import { installLegacyThemeBridge } from './features/theme/runtime';
+import { installMotionKernel } from './motion/motionKernel';
 import './styles/web-capability.css';
 import './styles/design-system.css';
 import './styles/research-charts.css';
@@ -28,4 +29,5 @@ installStatsChartRegistryBridge();
 const root = document.getElementById('modernUiRoot');
 if (root) {
   render(<App />, root);
+  installMotionKernel();
 }

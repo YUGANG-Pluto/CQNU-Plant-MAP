@@ -364,7 +364,7 @@ export async function selectWebProjectFiles(): Promise<File[]> {
   const picker = (window as FilePickerWindow).showOpenFilePicker;
   if (!picker) return inputFileSelection();
   try {
-    const handles = await picker({
+    const handles = await picker.call(window, {
       multiple: true,
       types: [{
         description: '校园植物项目数据',

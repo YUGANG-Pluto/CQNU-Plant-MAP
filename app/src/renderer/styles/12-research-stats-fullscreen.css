@@ -2,7 +2,7 @@
 .stats-fullscreen-layer {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: var(--z-fullscreen, 30000);
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -16,7 +16,7 @@
 
 .stats-fullscreen-panel {
   position: relative;
-  z-index: 10001;
+  z-index: 1;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   width: min(1480px, calc(100vw - 48px));

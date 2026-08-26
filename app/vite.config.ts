@@ -4,6 +4,11 @@ import preact from '@preact/preset-vite';
 
 export default defineConfig({
   plugins: [preact()],
+  // Motion's browser bundle keeps development guards as process.env checks.
+  // Replace the constant at build time without exposing Node globals to the renderer.
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production')
+  },
   optimizeDeps: {
     exclude: ['@sqlite.org/sqlite-wasm']
   },

@@ -6,7 +6,7 @@ const state = {
   session: null,
   capabilities: [],
   members: [],
-  activeView: 'overview',
+  activeView: safeRequestedView(),
   heartbeatId: 0,
   issuedLink: ''
 };
@@ -21,6 +21,7 @@ const manageContent = document.querySelector('[data-manage-content]');
 const memberDialog = document.querySelector('[data-member-dialog]');
 const memberForm = document.querySelector('[data-member-form]');
 const tokenDialog = document.querySelector('[data-token-dialog]');
+const localProfile = window.cqnuLocalProfile;
 
 function messageTarget(form) {
   return form.querySelector('.form-message');
@@ -42,7 +43,12 @@ function isUnauthorized(error) {
 
 function safeNextPath() {
   const value = new URLSearchParams(location.search).get('next') || '';
-  return /^\/(workspace|manage)$/u.test(value) ? value : '';
+  return /^\/(workspace|manage)$/u.test(value) ? value : '/workspace';
+}
+
+function safeRequestedView() {
+  const value = new URLSearchParams(location.search).get('view') || '';
+  return ['overview', 'members', 'audit', 'account'].includes(value) ? value : 'overview';
 }
 
 function credentialFragment() {
@@ -114,12 +120,40 @@ function showActivation(data) {
   showAuthForm(activationForm);
 }
 
+function accountInitial() {
+  const account = state.account;
+  return (account?.displayName || account?.username || 'A').slice(0, 1).toUpperCase();
+}
+
+function renderAvatarNode(node, value) {
+  if (!node) return;
+  const image = node.querySelector('img');
+  const fallback = node.querySelector('span');
+  if (image) {
+    image.hidden = !value;
+    image.src = value || '';
+  }
+  if (fallback) {
+    fallback.hidden = Boolean(value);
+    fallback.textContent = accountInitial();
+  }
+  node.classList.toggle('has-image', Boolean(value));
+}
+
+function renderLocalAvatar() {
+  const value = state.account && localProfile ? localProfile.read(state.account.id) : '';
+  renderAvatarNode(document.querySelector('[data-avatar]'), value);
+  renderAvatarNode(document.querySelector('[data-avatar-preview]'), value);
+  const removeButton = document.querySelector('[data-avatar-remove]');
+  if (removeButton) removeButton.disabled = !value;
+}
+
 function renderAccountSummary() {
   const account = state.account;
   const session = state.session;
   document.querySelector('[data-account-name]').textContent = account.displayName || account.username;
   document.querySelector('[data-account-role]').textContent = `${label('accountKind', account.accountKind)} · ${label('accessLevel', account.accessLevel)}`;
-  document.querySelector('[data-avatar]').textContent = (account.displayName || account.username || 'A').slice(0, 1).toUpperCase();
+  renderLocalAvatar();
   document.querySelector('[data-overview-kind]').textContent = label('accountKind', account.accountKind);
   document.querySelector('[data-overview-access]').textContent = label('accessLevel', account.accessLevel);
   document.querySelector('[data-overview-status]').textContent = label('status', account.status);
@@ -167,6 +201,7 @@ function showDashboard(data, options = {}) {
     location.assign('/workspace');
     return;
   }
+  if (options.followNext && next === '/manage') state.activeView = safeRequestedView();
   authStage.hidden = true;
   manageShell.hidden = false;
   renderAccountSummary();
@@ -176,18 +211,29 @@ function showDashboard(data, options = {}) {
   startHeartbeat();
 }
 
-function switchView(viewName) {
+function switchView(viewName, options = {}) {
   const targetButton = document.querySelector(`[data-view-target="${CSS.escape(viewName)}"]`);
   if (!targetButton || targetButton.hidden) viewName = 'overview';
-  state.activeView = viewName;
-  for (const button of document.querySelectorAll('[data-view-target]')) {
-    if (button.dataset.viewTarget === viewName) button.setAttribute('aria-current', 'page');
-    else button.removeAttribute('aria-current');
+  const update = () => {
+    state.activeView = viewName;
+    for (const button of document.querySelectorAll('[data-view-target]')) {
+      if (button.dataset.viewTarget === viewName) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    }
+    for (const view of document.querySelectorAll('[data-view]')) {
+      const active = view.dataset.view === viewName;
+      view.hidden = !active;
+      view.classList.toggle('is-active', active);
+    }
+  };
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reducedMotion && document.startViewTransition && state.activeView !== viewName) {
+    document.startViewTransition(update);
+  } else {
+    update();
   }
-  for (const view of document.querySelectorAll('[data-view]')) {
-    const active = view.dataset.view === viewName;
-    view.hidden = !active;
-    view.classList.toggle('is-active', active);
+  if (options.updateUrl) {
+    history.replaceState(null, '', `/manage?next=/manage&view=${encodeURIComponent(viewName)}`);
   }
   manageContent.focus({ preventScroll: true });
   if (viewName === 'members') void loadMembers();
@@ -515,11 +561,49 @@ document.querySelector('[data-password-form]').addEventListener('submit', async 
 
 document.addEventListener('click', event => {
   const viewButton = event.target.closest('[data-view-target]');
-  if (viewButton) switchView(viewButton.dataset.viewTarget);
+  if (viewButton) switchView(viewButton.dataset.viewTarget, { updateUrl: true });
+  const accountButton = event.target.closest('[data-open-account]');
+  if (accountButton) switchView('account', { updateUrl: true });
   const editButton = event.target.closest('[data-member-edit]');
   if (editButton) openMemberDialog(state.members.find(member => member.id === editButton.dataset.memberEdit));
   const resetButton = event.target.closest('[data-member-reset]');
   if (resetButton) void resetMember(resetButton.dataset.memberReset);
+});
+
+document.querySelector('[data-avatar-select]').addEventListener('click', () => {
+  const input = document.querySelector('[data-avatar-input]');
+  input.value = '';
+  input.click();
+});
+document.querySelector('[data-avatar-input]').addEventListener('change', async event => {
+  const input = event.currentTarget;
+  const file = input.files?.[0];
+  if (!file || !state.account) return;
+  const button = document.querySelector('[data-avatar-select]');
+  const message = document.querySelector('[data-avatar-message]');
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+  message.textContent = '';
+  try {
+    if (!localProfile) throw new Error('当前浏览器未启用本地头像存储。');
+    const value = await localProfile.prepare(file);
+    localProfile.write(state.account.id, value);
+    renderLocalAvatar();
+    showToast('头像已保存在当前浏览器。');
+  } catch (error) {
+    message.textContent = error instanceof Error ? error.message : '头像未能保存。';
+  } finally {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    input.value = '';
+  }
+});
+document.querySelector('[data-avatar-remove]').addEventListener('click', () => {
+  if (!state.account || !localProfile) return;
+  localProfile.remove(state.account.id);
+  renderLocalAvatar();
+  document.querySelector('[data-avatar-message]').textContent = '';
+  showToast('已移除当前浏览器中的头像。');
 });
 
 document.querySelector('[data-open-create-member]').addEventListener('click', () => openMemberDialog());

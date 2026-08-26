@@ -1,5 +1,5 @@
 .layer-modal {
-  z-index: calc(3000 + var(--layer-order, 0));
+  z-index: calc(var(--z-layer-base, 20000) + var(--layer-order, 0));
 }
 
 body.has-open-layer-modal {
@@ -195,7 +195,7 @@ body.has-open-layer-modal {
   position: fixed;
   top: 18px;
   left: 50%;
-  z-index: 12000;
+  z-index: var(--z-toast, 40000);
   max-width: min(560px, calc(100vw - 32px));
   padding: 10px 14px;
   pointer-events: none;

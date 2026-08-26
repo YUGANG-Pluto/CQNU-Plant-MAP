@@ -24,13 +24,13 @@
   transform: scale(var(--motion-scale-press));
 }
 
-.motion-modal .layer-modal:not(.hidden) > :where(.layer-modal-panel, .confirm-panel),
-.motion-modal .image-modal:not(.hidden) .image-modal-content {
+.motion-modal .layer-modal:not(.hidden):not([data-motion-managed]) > :where(.layer-modal-panel, .confirm-panel),
+.motion-modal .image-modal:not(.hidden):not([data-motion-managed]) .image-modal-content {
   animation: uiDialogIn var(--motion-duration-reveal) var(--motion-ease) both;
 }
 
-.motion-modal .layer-modal:not(.hidden) .layer-modal-backdrop,
-.motion-modal .image-modal:not(.hidden) .image-modal-backdrop,
+.motion-modal .layer-modal:not(.hidden):not([data-motion-managed]) .layer-modal-backdrop,
+.motion-modal .image-modal:not(.hidden):not([data-motion-managed]) .image-modal-backdrop,
 .motion-modal .right-inspector-drawer:not(.hidden) .layer-modal-backdrop,
 .motion-modal .workspace-utility-drawer:not(.hidden) .layer-modal-backdrop {
   animation: uiBackdropIn var(--motion-duration) var(--motion-ease-standard) both;

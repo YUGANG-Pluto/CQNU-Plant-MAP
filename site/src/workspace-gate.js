@@ -58,6 +58,7 @@
   }
 
   function installAccess(data) {
+    const avatarDataUrl = window.cqnuLocalProfile?.read(data.account.id) || '';
     const access = Object.freeze({
       accountId: data.account.id,
       username: data.account.username,
@@ -65,7 +66,8 @@
       accountKind: data.account.accountKind,
       accessLevel: data.account.accessLevel,
       capabilities: Object.freeze([...(data.capabilities || [])]),
-      absoluteExpiresAt: data.session.absoluteExpiresAt
+      absoluteExpiresAt: data.session.absoluteExpiresAt,
+      ...(avatarDataUrl ? { avatarDataUrl } : {})
     });
     Object.defineProperty(window, 'managementAccess', {
       configurable: true,

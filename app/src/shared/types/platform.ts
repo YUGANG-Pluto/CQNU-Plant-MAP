@@ -99,6 +99,7 @@ export interface ManagementWorkspaceAccess {
   accessLevel: 'read' | 'edit' | 'save';
   capabilities: readonly string[];
   absoluteExpiresAt: string;
+  avatarDataUrl?: string;
 }
 
 export interface PlatformCapabilities {

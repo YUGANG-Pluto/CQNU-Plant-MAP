@@ -14,6 +14,8 @@ export interface PermissionDirectoryHandle extends FileSystemDirectoryHandle {
   requestPermission?(descriptor: { mode: 'read' | 'readwrite' }): Promise<PermissionState>;
 }
 
+export type WebDirectoryAccessMode = 'read' | 'readwrite';
+
 interface DirectoryPickerWindow extends Window {
   showDirectoryPicker?(options?: {
     id?: string;
@@ -116,8 +118,11 @@ async function directoryProjectId(handle: PermissionDirectoryHandle): Promise<st
   }
 }
 
-export async function ensureReadWritePermission(handle: PermissionDirectoryHandle): Promise<boolean> {
-  const descriptor = { mode: 'readwrite' as const };
+export async function ensureDirectoryPermission(
+  handle: PermissionDirectoryHandle,
+  mode: WebDirectoryAccessMode
+): Promise<boolean> {
+  const descriptor = { mode };
   if (!handle.queryPermission) return true;
   if (await handle.queryPermission(descriptor) === 'granted') return true;
   return handle.requestPermission
@@ -125,13 +130,18 @@ export async function ensureReadWritePermission(handle: PermissionDirectoryHandl
     : false;
 }
 
+export async function ensureReadWritePermission(handle: PermissionDirectoryHandle): Promise<boolean> {
+  return ensureDirectoryPermission(handle, 'readwrite');
+}
+
 export async function recoverWebDirectoryHandle(
   projectId: string,
-  requestPermission = false
+  requestPermission = false,
+  mode: WebDirectoryAccessMode = 'readwrite'
 ): Promise<WebDirectoryHandleRecovery> {
   const stored = await storedHandleForProject(projectId);
   if (!stored?.handle) return { name: '', status: 'missing' };
-  const descriptor = { mode: 'readwrite' as const };
+  const descriptor = { mode };
   let status: PermissionState;
   try {
     status = stored.handle.queryPermission
@@ -283,17 +293,21 @@ export function supportsWebDirectoryProjects(): boolean {
   return typeof (window as DirectoryPickerWindow).showDirectoryPicker === 'function';
 }
 
-export async function selectWebDirectoryProject(): Promise<WebDirectorySelection | null> {
+export async function selectWebDirectoryProject(
+  mode: WebDirectoryAccessMode = 'readwrite'
+): Promise<WebDirectorySelection | null> {
   const picker = (window as DirectoryPickerWindow).showDirectoryPicker;
   if (!picker) return null;
   try {
-    const directoryHandle = await picker({
+    const directoryHandle = await picker.call(window, {
       id: 'cqnu-plant-map-project',
-      mode: 'readwrite',
+      mode,
       startIn: 'documents'
     });
-    if (!await ensureReadWritePermission(directoryHandle)) {
-      throw new Error('未获得所选项目目录的读写权限。');
+    if (!await ensureDirectoryPermission(directoryHandle, mode)) {
+      throw new Error(mode === 'readwrite'
+        ? '未获得所选项目目录的读写权限。'
+        : '未获得所选项目目录的读取权限。');
     }
     const projectId = await directoryProjectId(directoryHandle);
     const files = await readProjectFiles(directoryHandle);
@@ -315,6 +329,9 @@ export async function selectWebDirectoryProject(): Promise<WebDirectorySelection
     return { session, directoryHandle, created };
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return null;
+    if (error instanceof DOMException && ['NotAllowedError', 'SecurityError'].includes(error.name)) {
+      throw new Error('浏览器未能打开项目目录。请直接点击“打开本地项目”，并允许读取所选目录。');
+    }
     throw error;
   }
 }

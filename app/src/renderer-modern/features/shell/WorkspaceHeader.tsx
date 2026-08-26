@@ -1,4 +1,4 @@
-import { BookOpen, FolderOpen, Home, Save, Search, ShieldCheck } from 'lucide-preact';
+import { BookOpen, FolderOpen, Home, Save, Search } from 'lucide-preact';
 import {
   CommandButton,
   SegmentedControl,
@@ -31,19 +31,32 @@ export function WorkspaceHeader() {
           <p class="subtle" data-i18n="appSubtitle">分区绘制、点位管理、植物信息与图片归档</p>
           {isWebRuntime ? (
             <div class="web-runtime-disclosures">
-              {managementAccess ? (
-                <a class="web-access-chip" href="/manage" title="管理账户与访问权限">
-                  <ShieldCheck size={14} aria-hidden="true" />
-                  <span>{managementAccess.displayName || managementAccess.username}</span>
-                  <strong data-i18n={accessKey}>{managementAccess.accessLevel}</strong>
-                </a>
-              ) : null}
               <WebCapabilityDisclosure />
             </div>
           ) : null}
         </div>
       </div>
       <div class="app-topbar-actions ui-command-bar">
+        {isWebRuntime && managementAccess ? (
+          <a
+            class="web-profile-control glass-interactive"
+            href="/manage?next=/manage&view=account"
+            aria-label={`打开 ${managementAccess.displayName || managementAccess.username} 的账户设置`}
+            title="打开账户设置"
+          >
+            <span class="web-profile-avatar" aria-hidden="true">
+              {managementAccess.avatarDataUrl ? (
+                <img src={managementAccess.avatarDataUrl} alt="" />
+              ) : (
+                <span>{(managementAccess.displayName || managementAccess.username || 'A').slice(0, 1).toUpperCase()}</span>
+              )}
+            </span>
+            <span class="web-profile-copy">
+              <strong>{managementAccess.displayName || managementAccess.username}</strong>
+              <small data-i18n={accessKey}>{managementAccess.accessLevel}</small>
+            </span>
+          </a>
+        ) : null}
         {isWebRuntime ? (
           <nav class="web-site-links" aria-label="站点导航">
             <a class="btn btn-soft web-site-link" href="/" title="站点首页">

@@ -46,9 +46,6 @@ import {
   webRuntimeUnavailableMessage
 } from './web/webCapabilities';
 
-const repository = new WebProjectRepository();
-const diagnostics = createWebDiagnostics(repository);
-const storageMaintenance = createWebStorageMaintenance(repository);
 const webCapabilityReport = Object.freeze(assessWebRuntimeCapabilities());
 const EXTERNAL_BACKUP_IMPORT_TTL = 15 * 60 * 1000;
 
@@ -65,6 +62,11 @@ const managementCapabilities = new Set(managementAccess?.capabilities || []);
 const canReadWorkspace = !managementAccessRequired || managementCapabilities.has('workspace.read');
 const canEditWorkspace = !managementAccessRequired || managementCapabilities.has('workspace.edit');
 const canSaveWorkspace = !managementAccessRequired || managementCapabilities.has('workspace.save');
+const repository = new WebProjectRepository({
+  directoryAccessMode: canSaveWorkspace ? 'readwrite' : 'read'
+});
+const diagnostics = createWebDiagnostics(repository);
+const storageMaintenance = createWebStorageMaintenance(repository);
 const draftProjects = new Map<string, WebDraftProject>();
 
 let pendingExternalBackup: {
@@ -100,7 +102,8 @@ async function chooseProject(): Promise<PlatformResponse<UnknownRecord>> {
     requireWorkspaceRead();
     const session = await repository.choose(true, {
       allowCreate: canEditWorkspace,
-      persist: canSaveWorkspace
+      persist: canSaveWorkspace,
+      directoryAccessMode: canSaveWorkspace ? 'readwrite' : 'read'
     });
     if (!session) return success({ canceled: true });
     return success({
@@ -122,7 +125,8 @@ async function chooseMergeProject(): Promise<PlatformResponse<UnknownRecord>> {
     requireWorkspaceRead();
     const session = await repository.choose(false, {
       allowCreate: false,
-      persist: false
+      persist: false,
+      directoryAccessMode: 'read'
     });
     if (!session) return success({ canceled: true });
     return success({ canceled: false, projectDir: session.projectDir, label: session.label });
