@@ -5,6 +5,7 @@ import {
   StatusChip,
   WORKSPACE_ICON_SIZE
 } from '../../components/ui/WorkspacePrimitives';
+import { ProjectSourceStatus } from '../project/ProjectImportCenter';
 
 export function MapWorkspace() {
   const isWebRuntime = window.platformAdapter?.runtime === 'web';
@@ -48,6 +49,7 @@ export function MapWorkspace() {
         </div>
         <div id="basemapStatusPanel" class="basemap-state-strip" />
         <div class="map-workbar-actions">
+          <ProjectSourceStatus />
           <button id="btnConfirmPoint" class="btn btn-primary hidden" type="button" data-i18n="confirmCreatePoint">
             确认建立点位
           </button>
@@ -90,20 +92,9 @@ export function MapWorkspace() {
                 class="btn btn-primary"
                 type="button"
                 disabled={!canOpenProject}
-                data-project-open-mode="directory"
               >
                 <FolderOpen size={17} aria-hidden="true" />
-                <span data-i18n="webOpenLocalData">打开本地项目</span>
-              </button>
-              <button
-                id="btnImportProjectFolder"
-                class="btn btn-soft"
-                type="button"
-                disabled={!canOpenProject}
-                data-project-open-mode="portable-folder"
-              >
-                <HardDrive size={17} aria-hidden="true" />
-                <span data-i18n="webImportProjectFolder">兼容导入文件夹</span>
+                <span data-i18n="webChooseProjectSource">选择打开方式</span>
               </button>
               <a class="btn btn-soft" href="/manage?next=/manage&view=account" data-i18n="webManageAccess">
                 管理账户权限

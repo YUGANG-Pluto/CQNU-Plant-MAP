@@ -1,7 +1,14 @@
 let workspaceDrawerCloseTimer = null;
 
 function projectOpenButtons() {
-  return [ui.btnChooseDir, ui.btnChooseDirWelcome, ui.btnImportProjectFolder].filter(Boolean);
+  return [
+    ui.btnChooseDir,
+    ui.btnChooseDirWelcome,
+    ui.btnImportProjectDirectory,
+    ui.btnImportProjectSqlite,
+    ui.btnImportProjectJson,
+    ui.btnImportProjectFolder
+  ].filter(Boolean);
 }
 
 function setProjectOpenState(activeButton, busy, message = '') {
@@ -11,7 +18,9 @@ function setProjectOpenState(activeButton, busy, message = '') {
     else button.removeAttribute('aria-busy');
     button.disabled = busy || window.platformAdapter?.capabilities.readProject !== true;
   });
-  if (ui.webProjectOpenStatus) ui.webProjectOpenStatus.textContent = message;
+  [ui.webProjectOpenStatus, ui.projectImportStatus].filter(Boolean).forEach(region => {
+    region.textContent = message;
+  });
   const motionState = busy
     ? 'opening'
     : message === t('webProjectOpenReady')
@@ -26,26 +35,47 @@ async function chooseAndLoadProject(event) {
   const button = event?.currentTarget || ui.btnChooseDir;
   if (projectOpenButtons().some(candidate => candidate.classList.contains('is-busy'))) return;
 
+  const requestedMode = button?.dataset?.projectOpenMode || '';
+  if (
+    window.platformAdapter?.runtime === 'web' &&
+    !requestedMode &&
+    [ui.btnChooseDir, ui.btnChooseDirWelcome].includes(button)
+  ) {
+    openProjectImportCenter(button);
+    return;
+  }
+
   const discardDecision = typeof confirmDiscardProjectDraft === 'function'
     ? confirmDiscardProjectDraft()
     : true;
   if (discardDecision !== true && !await discardDecision) return;
 
-  const portable = button?.dataset?.projectOpenMode === 'portable-folder';
+  const mode = ['directory', 'portable-folder', 'sqlite-file', 'json-files'].includes(requestedMode)
+    ? requestedMode
+    : 'directory';
   const workflow = window.projectWorkflow;
-  const command = portable
-    ? window.platformAdapter.project.choosePortableDir
-    : window.platformAdapter.project.chooseDir;
+  const command = {
+    directory: window.platformAdapter.project.chooseDir,
+    'portable-folder': window.platformAdapter.project.choosePortableDir,
+    'sqlite-file': window.platformAdapter.project.chooseSqliteFile,
+    'json-files': window.platformAdapter.project.chooseJsonFiles
+  }[mode];
   if (!workflow?.chooseAndLoad && typeof command !== 'function') {
     showAlert(t('webProjectFolderUnsupported'));
     return;
   }
 
-  setProjectOpenState(button, true, t(portable ? 'webProjectImportingFolder' : 'webProjectOpeningFolder'));
+  const progressKey = {
+    directory: 'webProjectOpeningFolder',
+    'portable-folder': 'webProjectImportingFolder',
+    'sqlite-file': 'projectImportReadingSqlite',
+    'json-files': 'projectImportReadingJson'
+  }[mode];
+  setProjectOpenState(button, true, t(progressKey));
   try {
     // Invoke the picker before the first await to preserve Chromium's trusted user activation.
     const pendingOpen = workflow?.chooseAndLoad
-      ? workflow.chooseAndLoad({ mode: portable ? 'portable-folder' : 'directory' })
+      ? workflow.chooseAndLoad({ mode })
       : command();
     const result = workflow?.chooseAndLoad
       ? await pendingOpen
@@ -59,6 +89,7 @@ async function chooseAndLoadProject(event) {
     } else {
       await loadProjectIntoRenderer(result.projectDir, { storageFormat: result.storageFormat || 'auto' });
     }
+    closeLayerModal(ui.projectImportModal, { restoreFocus: false });
     setProjectOpenState(button, false, t('webProjectOpenReady'));
   } catch (error) {
     setProjectOpenState(button, false, t('webProjectOpenFailed'));
@@ -66,6 +97,29 @@ async function chooseAndLoadProject(event) {
   } finally {
     setProjectOpenState(button, false, ui.webProjectOpenStatus?.textContent || '');
   }
+}
+
+function openProjectImportCenter(returnFocus = null) {
+  if (!ui.projectImportModal) return;
+  if (ui.btnImportProjectBackup) {
+    ui.btnImportProjectBackup.disabled = !state.projectDir
+      || window.platformAdapter?.capabilities.externalBackupImport !== true;
+  }
+  if (ui.projectImportStatus) ui.projectImportStatus.textContent = t('projectImportReady');
+  openLayerModal(ui.projectImportModal, {
+    focusTarget: ui.btnImportProjectDirectory,
+    returnFocus
+  });
+}
+
+function openExternalBackupFromImportCenter() {
+  if (!state.projectDir) {
+    showAlert(t('projectImportBackupRequiresProject'));
+    return;
+  }
+  closeLayerModal(ui.projectImportModal, { restoreFocus: false });
+  if (typeof openMaintenanceCenter === 'function') openMaintenanceCenter();
+  if (typeof importExternalBackupArchive === 'function') importExternalBackupArchive();
 }
 
 function requireProject() {
@@ -102,4 +156,8 @@ function bindWorkspaceDrawerEvents() {
   ui.btnCloseWorkspaceDrawer?.addEventListener('click', closeWorkspaceUtilityDrawer);
   ui.workspaceUtilityDrawer?.querySelector('.layer-modal-backdrop')
     ?.addEventListener('click', closeWorkspaceUtilityDrawer);
+  ui.btnCloseProjectImportModal?.addEventListener('click', () => closeLayerModal(ui.projectImportModal));
+  ui.projectImportModal?.querySelector('.layer-modal-backdrop')
+    ?.addEventListener('click', () => closeLayerModal(ui.projectImportModal));
+  ui.btnImportProjectBackup?.addEventListener('click', openExternalBackupFromImportCenter);
 }

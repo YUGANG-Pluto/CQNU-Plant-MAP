@@ -1,7 +1,4 @@
-let layerOpenSequence = 0;
 let toastTimer = 0;
-const layerReturnFocusTargets = new WeakMap();
-const elevatedLayerSelector = '.layer-modal, .image-modal, .stats-fullscreen-layer';
 
 function ensureSettingsShape(settings) {
   const next = settings || {};
@@ -31,153 +28,23 @@ function getRecycleBin() {
 }
 
 function getMotionDurationMs(variableName, fallback = 300) {
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
-  const match = raw.match(/^([\d.]+)\s*(ms|s)?$/i);
-  const value = match ? Number(match[1]) * (String(match[2]).toLowerCase() === 's' ? 1000 : 1) : Number.NaN;
-  return Number.isFinite(value) ? Math.max(260, value) : Math.max(260, fallback);
-}
-
-function focusableElements(container) {
-  if (!container) return [];
-  const selector = [
-    'button:not([disabled])',
-    '[href]',
-    'input:not([disabled])',
-    'select:not([disabled])',
-    'textarea:not([disabled])',
-    '[tabindex]:not([tabindex="-1"])'
-  ].join(',');
-  return Array.from(container.querySelectorAll(selector)).filter(node => (
-    node.getAttribute('aria-hidden') !== 'true' &&
-    node.getClientRects().length > 0
-  ));
-}
-
-function firstFocusableElement(container) {
-  return focusableElements(container)[0] || container?.querySelector?.('[role="dialog"], [role="alertdialog"]') || null;
-}
-
-function visibleLayerModals() {
-  return Array.from(document.querySelectorAll(elevatedLayerSelector))
-    .filter(layer => !layer.classList.contains('hidden') && !layer.classList.contains('is-closing'));
+  return window.cqnuLayerManager?.getDurationMs(variableName, fallback) || Math.max(260, fallback);
 }
 
 function getTopLayerModal() {
-  const layers = visibleLayerModals();
-  if (!layers.length) return null;
-  return layers
-    .map((layer, index) => ({ layer, index, order: Number(layer.dataset.layerOrder || 0) }))
-    .sort((a, b) => a.order - b.order || a.index - b.index)
-    .pop().layer;
-}
-
-function syncLayerModalDocumentState() {
-  const hasVisibleLayer = Array.from(document.querySelectorAll(elevatedLayerSelector))
-    .some(layer => !layer.classList.contains('hidden'));
-  document.body?.classList.toggle('has-open-layer-modal', hasVisibleLayer);
-  if (!hasVisibleLayer) layerOpenSequence = 0;
-}
-
-function restoreLayerModalFocus(target) {
-  if (!target?.isConnected || target.getClientRects().length === 0) return;
-  const topLayer = getTopLayerModal();
-  if (!topLayer || topLayer.contains(target)) {
-    target.focus?.({ preventScroll: true });
-  }
+  return window.cqnuLayerManager?.getTopLayer() || null;
 }
 
 function trapLayerModalFocus(event) {
-  if (event.key !== 'Tab') return false;
-  const modal = getTopLayerModal();
-  if (!modal) return false;
-  const focusable = focusableElements(modal);
-  if (!focusable.length) {
-    event.preventDefault();
-    firstFocusableElement(modal)?.focus?.({ preventScroll: true });
-    return true;
-  }
-
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  const active = document.activeElement;
-  if (!modal.contains(active) || (event.shiftKey && active === first) || (!event.shiftKey && active === last)) {
-    event.preventDefault();
-    (event.shiftKey ? last : first).focus({ preventScroll: true });
-  }
-  return true;
+  return window.cqnuLayerManager?.trapFocus(event) || false;
 }
 
 function openLayerModal(modal, options = {}) {
-  if (!modal) return;
-  const wasHidden = modal.classList.contains('hidden');
-  if (modal.dataset.closeTimer) {
-    clearTimeout(Number(modal.dataset.closeTimer));
-    delete modal.dataset.closeTimer;
-  }
-  if (wasHidden) {
-    const origin = document.activeElement;
-    if (origin && origin !== document.body && !modal.contains(origin)) {
-      layerReturnFocusTargets.set(modal, origin);
-    }
-    if (!visibleLayerModals().length) layerOpenSequence = 0;
-    layerOpenSequence += 1;
-    modal.dataset.layerOrder = String(layerOpenSequence);
-    modal.style.setProperty('--layer-order', String(layerOpenSequence));
-  }
-  modal.classList.remove('hidden', 'is-closing');
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden', 'false');
-  window.cqnuMotionKernel?.openLayer?.(modal);
-  syncLayerModalDocumentState();
-  if (options.focus !== false) {
-    window.requestAnimationFrame(() => {
-      const target = options.focusTarget || firstFocusableElement(modal);
-      target?.focus?.({ preventScroll: true });
-    });
-  }
+  window.cqnuLayerManager?.open(modal, options);
 }
 
 function closeLayerModal(modal, options = {}) {
-  if (!modal || modal.classList.contains('hidden')) return;
-  const returnFocus = options.returnFocus || layerReturnFocusTargets.get(modal);
-  const motionDisabled = document.documentElement.classList.contains('motion-disabled');
-  const duration = options.instant || motionDisabled ? 0 : getMotionDurationMs('--motion-duration', 580);
-  modal.classList.add('is-closing');
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden', 'true');
-
-  let closed = false;
-  const finishClose = () => {
-    if (closed) return;
-    closed = true;
-    if (modal.dataset.closeTimer) {
-      clearTimeout(Number(modal.dataset.closeTimer));
-    }
-    modal.classList.add('hidden');
-    modal.classList.remove('is-closing');
-    delete modal.dataset.closeTimer;
-    delete modal.dataset.layerOrder;
-    modal.style.removeProperty('--layer-order');
-    layerReturnFocusTargets.delete(modal);
-    syncLayerModalDocumentState();
-    if (typeof options.onClosed === 'function') options.onClosed(modal);
-    if (options.restoreFocus !== false) restoreLayerModalFocus(returnFocus);
-  };
-
-  if (duration <= 1) {
-    finishClose();
-    return;
-  }
-  if (typeof window.cqnuMotionKernel?.closeLayer === 'function') {
-    const timer = window.setTimeout(finishClose, duration + 120);
-    modal.dataset.closeTimer = String(timer);
-    Promise.resolve(window.cqnuMotionKernel.closeLayer(modal)).then(finishClose, finishClose);
-    return;
-  }
-  const timer = window.setTimeout(() => {
-    finishClose();
-  }, duration);
-  modal.dataset.closeTimer = String(timer);
+  window.cqnuLayerManager?.close(modal, options);
 }
 
 function showAlert(message) {

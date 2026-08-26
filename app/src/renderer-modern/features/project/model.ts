@@ -130,7 +130,13 @@ export function createProjectWorkflowController(
     const previousStablePhase = stablePhase;
     const token = begin('open', 'choosing');
     try {
-      const mode = options.mode === 'portable-folder' ? 'portable-folder' : 'directory';
+      const supportedModes = new Set<ProjectOpenMode>([
+        'directory',
+        'portable-folder',
+        'sqlite-file',
+        'json-files'
+      ]);
+      const mode = options.mode && supportedModes.has(options.mode) ? options.mode : 'directory';
       // The picker is invoked before the first await so Chromium retains transient user activation.
       const pendingSelection = services.chooseProject(mode);
       const selection = unwrapProjectResponse(await pendingSelection);

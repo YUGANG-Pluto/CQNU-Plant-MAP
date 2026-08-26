@@ -404,6 +404,8 @@ async function run() {
     if (result.runtimeStatus !== 'ready') failures.push(`runtime status: ${result.runtimeStatus}`);
     if (!result.siteHomeLink) failures.push('site homepage link is missing');
     if (!externalSqliteResult.ok
+      || !externalSqliteResult.filePickerCalled
+      || externalSqliteResult.filePickerMultiple !== false
       || !externalSqliteResult.externalSqliteImported
       || !externalSqliteResult.sourceUnchangedFlag
       || !externalSqliteResult.sourceHashUnchanged
@@ -441,7 +443,7 @@ async function run() {
       return !/^net::ERR_ABORTED https:\/\/[abc]\.tile\.openstreetmap\.org\//.test(message);
     }));
     if (failures.length) throw new Error(failures.join('\n'));
-    process.stdout.write(`web workspace smoke passed (login-to-workspace ${managementResult.loginReadyMs}ms; bundled runtime, OPFS SQLite, read-only external SQLite import, trusted welcome-directory picker, local avatar, modal and statistics-fullscreen top-layer hit tests, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n`);
+    process.stdout.write(`web workspace smoke passed (login-to-workspace ${managementResult.loginReadyMs}ms; typed import center, OPFS SQLite, direct read-only SQLite picker, lazy SQLite worker, trusted directory picker, local avatar, modal and statistics-fullscreen top-layer hit tests, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n`);
   } finally {
     markSmokeStage('primary:cleanup-window');
     window.destroy();

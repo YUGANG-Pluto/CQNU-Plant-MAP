@@ -1,5 +1,5 @@
 import type { WebProjectSession } from '../webProject';
-import { getWebDatabaseClient } from './webDatabaseClient';
+import { loadWebDatabaseClient } from './webDatabaseLoader';
 import {
   assertExternalSqliteFile,
   projectDocumentFromExternalSqlite,
@@ -36,7 +36,7 @@ export async function importExternalSqliteFile(
   assertExternalSqliteFile(file, header);
   const bytes = await file.arrayBuffer();
   const hash = await sha256Hex(bytes);
-  const result = await (await getWebDatabaseClient()).readExternalDatabase(bytes);
+  const result = await (await loadWebDatabaseClient()).readExternalDatabase(bytes);
   const project = projectDocumentFromExternalSqlite(result);
   const projectId = options.projectId || `sqlite-${hash.slice(0, 32)}`;
   const label = options.label?.trim() || result.project?.label || fileLabel(file.name);

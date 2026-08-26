@@ -79,11 +79,17 @@ async function runExternalSqliteImportSmoke(window, bytes) {
         throw new DOMException('Not found', 'NotFoundError');
       }
     };
-    Object.defineProperty(window, 'showDirectoryPicker', {
+    let filePickerCalled = false;
+    let filePickerMultiple = null;
+    Object.defineProperty(window, 'showOpenFilePicker', {
       configurable: true,
-      value: () => Promise.resolve(handle)
+      value: options => {
+        filePickerCalled = true;
+        filePickerMultiple = options?.multiple;
+        return Promise.resolve([{ getFile: async () => sourceFile }]);
+      }
     });
-    const chosen = await window.platformAdapter.project.chooseDir();
+    const chosen = await window.platformAdapter.project.chooseSqliteFile();
     if (!chosen.ok) return { ok: false, error: chosen.error };
     const loaded = await window.platformAdapter.project.load({
       projectDir: chosen.data.projectDir,
@@ -103,6 +109,8 @@ async function runExternalSqliteImportSmoke(window, bytes) {
       sourceUnchangedFlag: loaded.data.webExternalSqliteSourceUnchanged,
       sourceHashUnchanged: beforeHash === afterHash,
       writeAttempted,
+      filePickerCalled,
+      filePickerMultiple,
       jsonFilesExist: saved.ok ? saved.data.jsonFilesExist : true,
       saved: saved.ok,
       zoneCount: loaded.data.zones.length,
@@ -118,6 +126,14 @@ async function runExternalSqliteImportSmoke(window, bytes) {
 async function runStatsFullscreenLayerSmoke(window) {
   return window.webContents.executeJavaScript(`(async () => {
     const wait = duration => new Promise(resolve => window.setTimeout(resolve, duration));
+    const layerCloseWait = () => {
+      const raw = getComputedStyle(document.documentElement).getPropertyValue('--motion-duration').trim();
+      const match = raw.match(/^([\\d.]+)\\s*(ms|s)?$/i);
+      const duration = match
+        ? Number(match[1]) * (String(match[2] || '').toLowerCase() === 's' ? 1000 : 1)
+        : 580;
+      return Math.min(2200, Math.max(850, duration + 420));
+    };
     const statsButton = document.getElementById('btnOpenStats');
     if (!statsButton) return { ok: false, error: 'Statistics entry is missing' };
     statsButton.click();
@@ -150,12 +166,24 @@ async function runStatsFullscreenLayerSmoke(window) {
     };
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    await wait(850);
+    await wait(layerCloseWait());
     result.closedByEscape = Boolean(layer?.classList.contains('hidden'));
+    result.closeStateAfterEscape = {
+      className: layer?.className || '',
+      closeTimer: layer?.dataset.closeTimer || '',
+      layerOrder: layer?.dataset.layerOrder || '',
+      topLayerId: window.cqnuLayerManager?.getTopLayer()?.id || '',
+      managerVersion: window.cqnuLayerManager?.version || ''
+    };
     result.statsModalStillVisible = !statsModal.classList.contains('hidden');
     statsModal.querySelector('#btnCloseStatsModal')?.click();
-    await wait(850);
+    await wait(layerCloseWait());
     result.statsModalClosed = statsModal.classList.contains('hidden');
+    result.statsModalCloseState = {
+      className: statsModal.className,
+      closeTimer: statsModal.dataset.closeTimer || '',
+      layerOrder: statsModal.dataset.layerOrder || ''
+    };
     return result;
   })()`, true);
 }

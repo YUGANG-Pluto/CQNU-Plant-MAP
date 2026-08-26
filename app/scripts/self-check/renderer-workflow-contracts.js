@@ -195,3 +195,57 @@ function testBrandLogoResource() {
   assert.ok(!html.includes('brand-logo-full-symbol'), 'HTML must not retain the simplified inline logo symbol');
   assert.ok(themeSource.includes("style: 'theme'"), 'brand settings defaults must stay compatible');
 }
+
+function testProjectImportAndLayerManagerContract() {
+  const modernRoot = path.join(process.cwd(), 'src/renderer-modern');
+  const importUi = fs.readFileSync(path.join(modernRoot, 'features/project/ProjectImportCenter.tsx'), 'utf8');
+  const importModel = fs.readFileSync(path.join(modernRoot, 'features/project/importCenterModel.ts'), 'utf8');
+  const workflowTypes = fs.readFileSync(path.join(modernRoot, 'features/project/types.ts'), 'utf8');
+  const workflowRuntime = fs.readFileSync(path.join(modernRoot, 'features/project/runtime.ts'), 'utf8');
+  const layerRuntime = fs.readFileSync(path.join(modernRoot, 'features/layers/runtime.ts'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(modernRoot, 'main.tsx'), 'utf8');
+  const legacyDialogs = fs.readFileSync(path.join(process.cwd(), 'src/renderer/utils/dialogs.js'), 'utf8');
+  const legacyWorkspace = fs.readFileSync(path.join(process.cwd(), 'src/renderer/shell/workspaceDrawer.js'), 'utf8');
+  const webCommands = fs.readFileSync(path.join(modernRoot, 'platform/web/webProjectCommands.ts'), 'utf8');
+  const databaseLoader = fs.readFileSync(path.join(modernRoot, 'platform/web/webDatabaseLoader.ts'), 'utf8');
+  const importStyles = fs.readFileSync(path.join(modernRoot, 'styles/project-import-center.css'), 'utf8');
+
+  [
+    'btnImportProjectDirectory',
+    'btnImportProjectSqlite',
+    'btnImportProjectJson',
+    'btnImportProjectFolder',
+    'btnImportProjectBackup',
+    'projectImportStatus'
+  ].forEach(id => assert.ok(importUi.includes(`id={option.id}`) || importUi.includes(`id="${id}"`) || importModel.includes(`id: '${id}'`), `${id} missing from import center`));
+  ['directory', 'sqlite-file', 'json-files', 'portable-folder'].forEach(mode => {
+    assert.ok(workflowTypes.includes(`'${mode}'`), `project workflow missing ${mode}`);
+    const runtimeKey = mode === 'directory' ? 'directory:' : `'${mode}':`;
+    assert.ok(workflowRuntime.includes(runtimeKey), `project workflow runtime missing ${mode}`);
+    assert.ok(importModel.includes(`mode: '${mode}'`), `import center model missing ${mode}`);
+  });
+  assert.ok(webCommands.includes('chooseSqliteFile'));
+  assert.ok(webCommands.includes('chooseJsonFiles'));
+  assert.ok(legacyWorkspace.includes('confirmDiscardProjectDraft'));
+  assert.ok(legacyWorkspace.includes('importExternalBackupArchive'));
+  assert.ok(mainSource.includes('installLayerManagerBridge()'));
+  assert.ok(layerRuntime.includes("version: 'layer-manager-v1'"));
+  assert.ok(layerRuntime.includes('Math.max(260'));
+  assert.ok(layerRuntime.includes('getDurationMs: motionDurationMs'));
+  assert.ok(layerRuntime.includes('layer.inert = true'));
+  assert.ok(layerRuntime.includes('presentedLayers()'));
+  assert.ok(layerRuntime.includes('wasHidden || wasClosing'));
+  assert.ok(layerRuntime.includes("'.layer-modal, .image-modal, .stats-fullscreen-layer'"));
+  assert.ok(legacyDialogs.includes('window.cqnuLayerManager?.open'));
+  assert.ok(legacyDialogs.includes('window.cqnuLayerManager?.close'));
+  assert.ok(!legacyDialogs.includes('new WeakMap()'), 'legacy dialogs must not retain a second layer state manager');
+  assert.ok(databaseLoader.includes("import('./webDatabaseClient')"));
+  assert.ok(importStyles.includes('440ms'));
+  assert.ok(importStyles.includes('720ms'));
+  ['zh.js', 'en.js'].forEach(name => {
+    const source = readLocaleSource(name);
+    ['projectImportTitle', 'projectImportSqlite', 'projectImportJson', 'projectSourceSqlite'].forEach(key => {
+      assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`);
+    });
+  });
+}

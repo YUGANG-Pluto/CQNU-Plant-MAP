@@ -30,6 +30,8 @@ export interface PlatformServiceApi {
   project: {
     chooseDir: PlatformNoPayloadCommand;
     choosePortableDir?: PlatformNoPayloadCommand;
+    chooseSqliteFile?: PlatformNoPayloadCommand;
+    chooseJsonFiles?: PlatformNoPayloadCommand;
     chooseMergeDir: PlatformNoPayloadCommand;
     load: PlatformCommand;
     save: PlatformCommand;

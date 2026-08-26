@@ -28,6 +28,8 @@ interface WebDraftProject {
 export interface WebProjectCommands {
   readonly chooseDir: PlatformNoPayloadCommand;
   readonly choosePortableDir: PlatformNoPayloadCommand;
+  readonly chooseSqliteFile: PlatformNoPayloadCommand;
+  readonly chooseJsonFiles: PlatformNoPayloadCommand;
   readonly chooseMergeDir: PlatformNoPayloadCommand;
   readonly load: PlatformCommand;
   readonly save: PlatformCommand;
@@ -88,6 +90,34 @@ export function createWebProjectCommands(
       return failure(
         'WEB_PROJECT_FOLDER_IMPORT_FAILED',
         error instanceof Error ? error.message : '所选文件夹无法作为浏览器本地项目导入。'
+      );
+    }
+  }
+
+  async function chooseImportedProject(
+    selectionMode: 'sqlite-file' | 'json-files'
+  ): Promise<PlatformResponse<UnknownRecord>> {
+    try {
+      access.requireRead();
+      const session = await repository.choose(true, {
+        allowCreate: false,
+        persist: access.canSave,
+        directoryAccessMode: 'read',
+        selectionMode
+      });
+      if (!session) return success({ canceled: true });
+      return success({
+        canceled: false,
+        projectDir: session.projectDir,
+        label: session.label,
+        storageFormat: 'sqlite',
+        sourceKind: session.sourceKind,
+        externalSqliteImported: session.sourceKind === 'sqlite'
+      });
+    } catch (error) {
+      return failure(
+        selectionMode === 'sqlite-file' ? 'WEB_SQLITE_IMPORT_FAILED' : 'WEB_JSON_IMPORT_FAILED',
+        error instanceof Error ? error.message : '所选项目文件无法读取。'
       );
     }
   }
@@ -216,6 +246,8 @@ export function createWebProjectCommands(
   return Object.freeze({
     chooseDir: chooseProject,
     choosePortableDir: choosePortableProject,
+    chooseSqliteFile: () => chooseImportedProject('sqlite-file'),
+    chooseJsonFiles: () => chooseImportedProject('json-files'),
     chooseMergeDir: chooseMergeProject,
     load: loadProject,
     save: saveProject,

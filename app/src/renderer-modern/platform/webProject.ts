@@ -393,7 +393,41 @@ export async function createWebProjectSession(
   };
 }
 
-function inputFileSelection(folder = false): Promise<File[]> {
+export type WebProjectFileSelectionKind = 'any' | 'sqlite' | 'json';
+
+function fileAcceptFor(kind: WebProjectFileSelectionKind): string {
+  if (kind === 'sqlite') return '.db,.sqlite,.sqlite3,application/vnd.sqlite3,application/x-sqlite3';
+  if (kind === 'json') return '.json,.geojson,application/json,application/geo+json';
+  return '.db,.sqlite,.sqlite3,.json,.geojson,.csv,application/vnd.sqlite3,application/x-sqlite3,application/json,text/csv,application/geo+json';
+}
+
+function pickerTypesFor(kind: WebProjectFileSelectionKind) {
+  if (kind === 'sqlite') {
+    return [{
+      description: 'SQLite 植物项目',
+      accept: { 'application/vnd.sqlite3': ['.db', '.sqlite', '.sqlite3'] }
+    }];
+  }
+  if (kind === 'json') {
+    return [{
+      description: 'JSON 植物项目',
+      accept: {
+        'application/json': ['.json'],
+        'application/geo+json': ['.geojson']
+      }
+    }];
+  }
+  return [{
+    description: '校园植物项目数据',
+    accept: {
+      'application/vnd.sqlite3': ['.db', '.sqlite', '.sqlite3'],
+      'application/json': ['.json', '.geojson'],
+      'text/csv': ['.csv']
+    }
+  }];
+}
+
+function inputFileSelection(folder = false, kind: WebProjectFileSelectionKind = 'any'): Promise<File[]> {
   return new Promise(resolve => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -402,7 +436,7 @@ function inputFileSelection(folder = false): Promise<File[]> {
       input.setAttribute('webkitdirectory', '');
       input.setAttribute('directory', '');
     } else {
-      input.accept = '.db,.sqlite,.sqlite3,.json,.geojson,.csv,application/vnd.sqlite3,application/x-sqlite3,application/json,text/csv,application/geo+json';
+      input.accept = fileAcceptFor(kind);
     }
     input.hidden = true;
     let settled = false;
@@ -427,20 +461,13 @@ export function selectWebProjectFolderFiles(): Promise<File[]> {
   return inputFileSelection(true);
 }
 
-export async function selectWebProjectFiles(): Promise<File[]> {
+export async function selectWebProjectFiles(kind: WebProjectFileSelectionKind = 'any'): Promise<File[]> {
   const picker = (window as FilePickerWindow).showOpenFilePicker;
-  if (!picker) return inputFileSelection();
+  if (!picker) return inputFileSelection(false, kind);
   try {
     const handles = await picker.call(window, {
-      multiple: true,
-      types: [{
-        description: '校园植物项目数据',
-        accept: {
-          'application/vnd.sqlite3': ['.db', '.sqlite', '.sqlite3'],
-          'application/json': ['.json', '.geojson'],
-          'text/csv': ['.csv']
-        }
-      }]
+      multiple: kind !== 'sqlite',
+      types: pickerTypesFor(kind)
     });
     return Promise.all(handles.map(handle => handle.getFile()));
   } catch (error) {

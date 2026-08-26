@@ -94,6 +94,20 @@ test('canceling folder selection does not load a project', async () => {
   assert.equal(workflow.getStatus().phase, 'idle');
 });
 
+test('explicit SQLite and JSON modes reach the matching picker service unchanged', async () => {
+  const modes = [];
+  const workflow = createProjectWorkflowController(createServices({
+    chooseProject: async mode => {
+      modes.push(mode);
+      return ok({ canceled: true });
+    }
+  }));
+
+  await workflow.chooseAndLoad({ mode: 'sqlite-file' });
+  await workflow.chooseAndLoad({ mode: 'json-files' });
+  assert.deepEqual(modes, ['sqlite-file', 'json-files']);
+});
+
 test('platform failures preserve their structured error code', async () => {
   const workflow = createProjectWorkflowController(createServices({
     loadProject: async () => ({

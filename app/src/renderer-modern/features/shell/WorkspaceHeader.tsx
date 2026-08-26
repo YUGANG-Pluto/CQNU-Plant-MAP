@@ -90,8 +90,8 @@ export function WorkspaceHeader() {
         <CommandButton
           id="btnChooseDir"
           icon={<FolderOpen size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
-          label={isWebRuntime ? '打开本地项目' : '选择项目目录'}
-          i18nKey={isWebRuntime ? 'webOpenLocalData' : 'chooseProject'}
+          label={isWebRuntime ? '打开项目' : '选择项目目录'}
+          i18nKey={isWebRuntime ? 'webChooseProjectSource' : 'chooseProject'}
           className="btn-primary"
           disabled={isWebRuntime && window.platformAdapter?.capabilities.readProject !== true}
         />

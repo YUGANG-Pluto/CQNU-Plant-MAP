@@ -96,6 +96,14 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
   const origin = new URL(baseUrl).origin;
   await isolatedSession.cookies.set({ url: origin, name: 'smoke-access', value: 'read', path: '/' });
   const errors = [];
+  const requestedPaths = [];
+  isolatedSession.webRequest.onCompleted(details => {
+    try {
+      requestedPaths.push(new URL(details.url).pathname);
+    } catch {
+      return;
+    }
+  });
   const window = new BrowserWindow({
     show: false,
     width: 1440,
@@ -113,6 +121,9 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
     markSmokeStage('read-picker:load-workspace');
     await window.loadURL(`${origin}/workspace`);
     await waitForRuntime(window);
+    const workerRequestsBeforeSelection = requestedPaths.filter(value => (
+      /webDatabaseWorker|sqlite3-worker/i.test(value)
+    ));
     markSmokeStage('read-picker:install-fixture');
     const buttonRect = await window.webContents.executeJavaScript(`(() => {
       const now = Date.now();
@@ -149,6 +160,9 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
         async getDirectoryHandle(name) {
           if (name === 'information') return information;
           throw new DOMException('Not found', 'NotFoundError');
+        },
+        async getFileHandle() {
+          throw new DOMException('Not found', 'NotFoundError');
         }
       };
       window.__readPickerSmoke = {
@@ -178,10 +192,49 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
       return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, disabled: button.disabled };
     })()`, true);
     if (buttonRect.disabled) throw new Error('read account project button is disabled');
-    markSmokeStage('read-picker:trusted-click');
+    markSmokeStage('read-picker:open-import-center');
     window.webContents.sendInputEvent({ type: 'mouseMove', x: Math.round(buttonRect.x), y: Math.round(buttonRect.y) });
     window.webContents.sendInputEvent({ type: 'mouseDown', x: Math.round(buttonRect.x), y: Math.round(buttonRect.y), button: 'left', clickCount: 1 });
     window.webContents.sendInputEvent({ type: 'mouseUp', x: Math.round(buttonRect.x), y: Math.round(buttonRect.y), button: 'left', clickCount: 1 });
+    const importCenter = await window.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+      const startedAt = Date.now();
+      const poll = () => {
+        const layer = document.getElementById('projectImportModal');
+        const button = document.getElementById('btnImportProjectDirectory');
+        if (layer && button && !layer.classList.contains('hidden')) {
+          const rect = button.getBoundingClientRect();
+          const closeButton = document.getElementById('btnCloseProjectImportModal');
+          const closeRect = closeButton?.getBoundingClientRect();
+          const hit = closeRect
+            ? document.elementFromPoint(closeRect.left + closeRect.width / 2, closeRect.top + closeRect.height / 2)
+            : null;
+          return resolve({
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+            disabled: button.disabled,
+            layerZ: Number.parseInt(getComputedStyle(layer).zIndex, 10) || 0,
+            topbarZ: Number.parseInt(getComputedStyle(document.querySelector('.app-topbar')).zIndex, 10) || 0,
+            closeHitVisible: Boolean(closeButton && (hit === closeButton || closeButton.contains(hit))),
+            layerManager: document.documentElement.dataset.layerManager || ''
+          });
+        }
+        if (Date.now() - startedAt > 5000) return reject(new Error('Project import center timed out.'));
+        setTimeout(poll, 40);
+      };
+      poll();
+    })`, true);
+    await captureSmokeScreenshot(window, 'workspace-project-import-center');
+    await captureSmokeScreenshot(window, 'workspace-project-import-center-mobile', { width: 390, height: 844 });
+    if (process.env.CQNU_SMOKE_SCREENSHOT_DIR) {
+      const bounds = window.getBounds();
+      window.setBounds({ ...bounds, x: -32_000, y: -32_000 }, false);
+      window.showInactive();
+    }
+    if (importCenter.disabled) throw new Error('recommended project directory option is disabled');
+    markSmokeStage('read-picker:trusted-directory-click');
+    window.webContents.sendInputEvent({ type: 'mouseMove', x: Math.round(importCenter.x), y: Math.round(importCenter.y) });
+    window.webContents.sendInputEvent({ type: 'mouseDown', x: Math.round(importCenter.x), y: Math.round(importCenter.y), button: 'left', clickCount: 1 });
+    window.webContents.sendInputEvent({ type: 'mouseUp', x: Math.round(importCenter.x), y: Math.round(importCenter.y), button: 'left', clickCount: 1 });
     markSmokeStage('read-picker:await-project');
     const result = await window.webContents.executeJavaScript(`new Promise(resolve => {
       const startedAt = Date.now();
@@ -202,6 +255,8 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
               pointCount: window.__CQNU_STATE__?.points?.length ?? -1,
               readOnly: window.platformAdapter.capabilities.readOnly,
               writeProject: window.platformAdapter.capabilities.writeProject,
+              projectSourceKind: document.documentElement.dataset.projectSourceKind || '',
+              sourceStatusVisible: Boolean(document.querySelector('.project-source-status')),
               layerZ: Number.isFinite(layerZ) ? layerZ : 0,
               topbarZ: Number.isFinite(topbarZ) ? topbarZ : 0,
               layerHidden: layer?.classList.contains('hidden'),
@@ -229,6 +284,17 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
       poll();
     })`, true);
     const failures = [];
+    const workerRequestsAfterSelection = requestedPaths.filter(value => (
+      /webDatabaseWorker|sqlite3-worker/i.test(value)
+    ));
+    if (workerRequestsBeforeSelection.length) {
+      failures.push(`SQLite workers loaded before project selection: ${workerRequestsBeforeSelection.join(',')}`);
+    }
+    if (!workerRequestsAfterSelection.length) failures.push('SQLite workers were not loaded after project selection');
+    if (importCenter.layerManager !== 'layer-manager-v1') failures.push(`typed layer manager missing: ${importCenter.layerManager}`);
+    if (importCenter.layerZ <= importCenter.topbarZ || !importCenter.closeHitVisible) {
+      failures.push(`import center layer contract failed: ${JSON.stringify(importCenter)}`);
+    }
     if (!result.called || !result.thisBound) failures.push('directory picker was not called with the Window receiver');
     if (!result.userActivation) failures.push('directory picker lost trusted user activation');
     if (result.mode !== 'read' || result.permissionModes.some(mode => mode !== 'read')) {
@@ -236,6 +302,9 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
     }
     if (!result.loaded || !result.projectLoaded || result.pointCount !== 1) {
       failures.push(`read account project load failed: ${result.loaded} / ${result.projectLoaded} / ${result.pointCount}`);
+    }
+    if (result.projectSourceKind !== 'directory' || !result.sourceStatusVisible) {
+      failures.push(`project source status failed: ${result.projectSourceKind} / ${result.sourceStatusVisible}`);
     }
     if (!result.readOnly || result.writeProject) failures.push('read account received write capabilities');
     if (result.layerZ <= result.topbarZ || !result.closeHitVisible) {
@@ -273,7 +342,9 @@ async function runManagementUiSmoke(baseUrl) {
   isolatedSession.webRequest.onCompleted(details => {
     try {
       requestedPaths.push(new URL(details.url).pathname);
-    } catch {}
+    } catch {
+      return;
+    }
   });
   const window = new BrowserWindow({
     show: false,
