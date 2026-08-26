@@ -57,11 +57,28 @@ test('site motion uses a real progressive reveal with a reduced-motion fallback'
 test('management UI keeps login and member administration in a separate shell', async () => {
   const source = await readFile(new URL('../../admin/ui/index.html', import.meta.url), 'utf8');
   const client = await readFile(new URL('../../admin/ui/manage.js', import.meta.url), 'utf8');
+  const profile = await readFile(new URL('../../admin/ui/profile-storage.js', import.meta.url), 'utf8');
   assert.match(source, /data-auth-stage/);
   assert.match(source, /data-manage-shell/);
   assert.match(source, /data-member-rows/);
+  assert.match(source, /data-avatar-input/);
+  assert.match(source, /minlength="6"/);
+  assert.doesNotMatch(source, /minlength="12"/);
+  assert.match(source, /assets\/profile-storage\.js/);
   assert.match(source, /assets\/manage\.js/);
   assert.match(client, /\.\/manage-api\.js/);
+  assert.ok(client.includes("return /^\\/(workspace|manage)$/u.test(value) ? value : '/workspace';"));
+  assert.match(client, /cqnuLocalProfile/);
+  assert.match(profile, /MAX_SOURCE_BYTES/);
+  assert.match(profile, /localStorage/);
+  assert.doesNotMatch(profile, /fetch\(|\/api\/manage/);
+});
+
+test('workspace access bridge carries only a local avatar preference', async () => {
+  const gate = await readFile(new URL('../src/workspace-gate.js', import.meta.url), 'utf8');
+  assert.match(gate, /cqnuLocalProfile\?\.read\(data\.account\.id\)/);
+  assert.match(gate, /avatarDataUrl/);
+  assert.doesNotMatch(gate, /avatarDataUrl[\s\S]{0,120}fetch\(/);
 });
 
 test('published pages never embed local paths or desktop bridge names', () => {

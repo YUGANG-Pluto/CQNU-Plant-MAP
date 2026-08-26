@@ -72,7 +72,7 @@
   transform: translateX(2px) scale(0.985);
 }
 
-.motion-mode-standard .ui-module-launcher .ui-module-button {
+.motion-mode-standard:not(.motion-kernel-ready) .ui-module-launcher .ui-module-button {
   animation: uiModuleButtonIn var(--motion-duration-reveal, 720ms) var(--motion-ease, ease) backwards;
 }
 

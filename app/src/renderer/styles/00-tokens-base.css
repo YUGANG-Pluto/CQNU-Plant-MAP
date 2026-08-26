@@ -86,6 +86,13 @@
   --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
   --motion-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --z-map-controls: 500;
+  --z-workspace-floating: 900;
+  --z-progress: 12000;
+  --z-layer-base: 20000;
+  --z-fullscreen: 30000;
+  --z-toast: 40000;
+  --z-session-gate: 60000;
   --status-success: #3F8C68;
   --status-danger: #BA525D;
   --status-warning: #B48632;

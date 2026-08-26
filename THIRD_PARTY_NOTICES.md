@@ -13,6 +13,7 @@ This project uses third-party packages through the application package manifest 
 | fflate | Browser backup ZIP creation | MIT |
 | preact | Component-based renderer shell | MIT |
 | lucide-preact | User-interface icons | ISC |
+| motion | DOM animation, gesture, reveal, and transition runtime | MIT |
 
 ## Browser Runtime Libraries
 
@@ -59,6 +60,7 @@ Map data, imagery, and tile services are provided by their respective service pr
 | fflate | 浏览器备份 ZIP 创建 | MIT |
 | preact | 组件化渲染器外壳 | MIT |
 | lucide-preact | 用户界面图标 | ISC |
+| motion | DOM 动画、手势、进入效果与转场运行时 | MIT |
 
 ## 开发依赖
 

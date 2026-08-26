@@ -7,6 +7,7 @@ import {
   principalAllows,
   sanitizeAuditMetadata
 } from '../dist/index.js';
+import { validatePasswordPolicy } from '../dist/password.js';
 
 const session = Object.freeze({
   id: 'session-1',
@@ -71,4 +72,10 @@ test('management routes are project-free, deny unknown paths, and protect authen
   assert.equal(ADMIN_ROUTES
     .filter(route => route.sessionRequired && route.mutatesState)
     .every(route => route.csrfProtected), true);
+});
+
+test('password policy accepts non-blocked six-character credentials', () => {
+  assert.equal(validatePasswordPolicy('Ab9!xy').valid, true);
+  assert.equal(validatePasswordPolicy('A9!xy').code, 'PASSWORD_TOO_SHORT');
+  assert.equal(validatePasswordPolicy('123456').code, 'PASSWORD_BLOCKED');
 });

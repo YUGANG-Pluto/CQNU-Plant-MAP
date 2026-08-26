@@ -1,10 +1,23 @@
 let workspaceDrawerCloseTimer = null;
 
 async function chooseAndLoadProject() {
+  const button = ui.btnChooseDir;
+  if (button?.classList.contains('is-busy')) return;
   if (typeof confirmDiscardProjectDraft === 'function' && !await confirmDiscardProjectDraft()) return;
-  const result = await callIpc(window.platformAdapter.project.chooseDir());
-  if (result.canceled) return;
-  await loadProjectIntoRenderer(result.projectDir);
+  button?.classList.add('is-busy');
+  button?.setAttribute('aria-busy', 'true');
+  if (button) button.disabled = true;
+  try {
+    const result = await callIpc(window.platformAdapter.project.chooseDir());
+    if (result.canceled) return;
+    await loadProjectIntoRenderer(result.projectDir);
+  } catch (error) {
+    showAlert(error?.message || '本地项目目录未能打开，请检查浏览器权限后重试。');
+  } finally {
+    button?.classList.remove('is-busy');
+    button?.removeAttribute('aria-busy');
+    if (button) button.disabled = window.platformAdapter?.capabilities.readProject !== true;
+  }
 }
 
 function requireProject() {

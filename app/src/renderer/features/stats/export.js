@@ -345,6 +345,7 @@ function openStatsFullscreen(button) {
   body.innerHTML = '';
   body.appendChild(clone);
   layer.classList.remove('hidden');
+  window.cqnuMotionKernel?.openLayer?.(layer);
 }
 
 function closeStatsFullscreen() {

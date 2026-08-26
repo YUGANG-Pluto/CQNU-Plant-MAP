@@ -215,7 +215,7 @@
   position: fixed;
   right: 22px;
   bottom: 22px;
-  z-index: 3000;
+  z-index: var(--z-progress, 12000);
   display: grid;
   gap: 10px;
   width: min(380px, calc(100vw - 44px));

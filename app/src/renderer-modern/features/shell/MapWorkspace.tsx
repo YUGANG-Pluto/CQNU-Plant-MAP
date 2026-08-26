@@ -94,7 +94,7 @@ export function MapWorkspace() {
                 <FolderOpen size={17} aria-hidden="true" />
                 <span data-i18n="webOpenLocalData">打开本地项目</span>
               </button>
-              <a class="btn btn-soft" href="/manage" data-i18n="webManageAccess">
+              <a class="btn btn-soft" href="/manage?next=/manage&view=account" data-i18n="webManageAccess">
                 管理账户权限
               </a>
             </div>

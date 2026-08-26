@@ -7,7 +7,7 @@ import {
   randomBase64Url
 } from './keyring.js';
 
-export const PASSWORD_MIN_LENGTH = 12;
+export const PASSWORD_MIN_LENGTH = 6;
 export const PASSWORD_MAX_LENGTH = 128;
 export const PBKDF2_SHA256_ITERATIONS = 600_000;
 export const PBKDF2_EDGE_ITERATIONS = 100_000;

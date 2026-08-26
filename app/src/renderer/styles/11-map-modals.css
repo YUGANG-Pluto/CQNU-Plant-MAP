@@ -94,7 +94,8 @@
 .image-modal {
   position: fixed;
   inset: 0;
-  z-index: 3000;
+  z-index: var(--z-layer-base, 20000);
+  isolation: isolate;
   pointer-events: auto;
 }
 

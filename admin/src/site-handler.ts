@@ -96,7 +96,7 @@ function publicError(code: string): { code: string; message: string } {
     CSRF_DENIED: '请求验证失败，请刷新页面后重试。',
     CAPABILITY_DENIED: '当前账户没有执行此操作的权限。',
     ADMIN_ACCESS_DENIED: '当前账户没有管理员权限。',
-    PASSWORD_TOO_SHORT: '新密码至少需要 12 个字符。',
+    PASSWORD_TOO_SHORT: '新密码至少需要 6 个字符。',
     PASSWORD_TOO_LONG: '新密码不能超过 128 个字符。',
     PASSWORD_BLOCKED: '该密码过于常见，请更换更安全的密码。',
     CURRENT_PASSWORD_INVALID: '当前密码不正确。',

@@ -9,6 +9,7 @@ import {
   supportsWebDirectoryProjects,
   writeWebProjectDirectory,
   type WebDirectoryPermissionStatus,
+  type WebDirectoryAccessMode,
   type PermissionDirectoryHandle
 } from './webFileSystem';
 import {
@@ -53,6 +54,11 @@ export interface WebProjectSaveResult {
 export interface WebProjectChooseOptions {
   allowCreate?: boolean;
   persist?: boolean;
+  directoryAccessMode?: WebDirectoryAccessMode;
+}
+
+export interface WebProjectRepositoryOptions {
+  directoryAccessMode?: WebDirectoryAccessMode;
 }
 
 function clone<T>(value: T): T {
@@ -97,7 +103,12 @@ function toSession(project: StoredWebProject): WebProjectSession {
 
 export class WebProjectRepository {
   readonly #contexts = new Map<string, ProjectContext>();
+  readonly #directoryAccessMode: WebDirectoryAccessMode;
   #activeProjectId = '';
+
+  constructor(options: WebProjectRepositoryOptions = {}) {
+    this.#directoryAccessMode = options.directoryAccessMode || 'readwrite';
+  }
 
   async database(): Promise<WebDatabaseClient> {
     return getWebDatabaseClient();
@@ -132,20 +143,26 @@ export class WebProjectRepository {
   ): Promise<WebProjectSession | null> {
     const allowCreate = options.allowCreate ?? true;
     const persist = options.persist ?? true;
-    const database = await this.database();
+    const directoryAccessMode = options.directoryAccessMode || this.#directoryAccessMode;
     let context: ProjectContext | null = null;
 
     if (supportsWebDirectoryProjects()) {
-      const selection = await selectWebDirectoryProject();
+      // Keep the native picker as the first awaited operation so the click's
+      // transient user activation remains valid in Chromium.
+      const selection = await selectWebDirectoryProject(directoryAccessMode);
       if (!selection) return null;
       if (selection.created && !allowCreate) {
         throw new Error('只读账户不能在空目录中创建新项目。');
       }
-      const existing = await database.getProject(selection.session.projectId);
-      const useExisting = Boolean(existing && existing.modifiedAt > selection.session.modifiedAt && !selection.created);
-      const session = useExisting && existing ? toSession(existing) : selection.session;
-      if (persist && !useExisting) await database.putProject(toStoredProject(session));
-      if (persist && selection.created) await writeWebProjectDirectory(selection.directoryHandle, session);
+      let session = selection.session;
+      if (persist) {
+        const database = await this.database();
+        const existing = await database.getProject(selection.session.projectId);
+        const useExisting = Boolean(existing && existing.modifiedAt > selection.session.modifiedAt && !selection.created);
+        session = useExisting && existing ? toSession(existing) : selection.session;
+        if (!useExisting) await database.putProject(toStoredProject(session));
+        if (selection.created) await writeWebProjectDirectory(selection.directoryHandle, session);
+      }
       context = {
         session,
         directoryHandle: selection.directoryHandle,
@@ -157,7 +174,7 @@ export class WebProjectRepository {
       if (!allowCreate && !session.points.length && !session.zones.length) {
         throw new Error('只读账户不能创建空项目。');
       }
-      if (persist) await database.putProject(toStoredProject(session));
+      if (persist) await (await this.database()).putProject(toStoredProject(session));
       context = { session, directoryPermissionStatus: 'unsupported' };
     }
 
@@ -170,22 +187,30 @@ export class WebProjectRepository {
     const projectId = projectIdFromDir(projectDir);
     if (!projectId) return null;
     const existingContext = this.#contexts.get(projectId);
-    const recovered = await recoverWebDirectoryHandle(projectId, false);
-    const directoryHandle = recovered.directoryHandle || existingContext?.directoryHandle;
-    const directoryPermissionStatus = recovered.directoryHandle
-      ? recovered.status
-      : existingContext?.directoryPermissionStatus || recovered.status;
+    if (existingContext?.directoryPermissionStatus === 'granted'
+      || existingContext?.directoryPermissionStatus === 'unsupported') {
+      this.#activeProjectId = projectId;
+      return clone(existingContext.session);
+    }
+    const recovered = await recoverWebDirectoryHandle(projectId, false, this.#directoryAccessMode);
+    const directoryHandle = recovered.directoryHandle;
+    const directoryPermissionStatus = recovered.status;
     const readableDirectoryHandle = directoryPermissionStatus === 'granted'
       ? directoryHandle
       : undefined;
     const directorySession = preferredFormat === 'json' && readableDirectoryHandle
       ? await readWebProjectDirectory(readableDirectoryHandle, projectId)
       : null;
-    const project = directorySession ? null : await (await this.database()).getProject(projectId);
+    const project = directorySession || existingContext
+      ? null
+      : await (await this.database()).getProject(projectId);
     const fallbackDirectory = !project && !directorySession && readableDirectoryHandle
       ? await readWebProjectDirectory(readableDirectoryHandle, projectId)
       : null;
-    const session = directorySession || fallbackDirectory || (project ? toSession(project) : null);
+    const session = directorySession
+      || fallbackDirectory
+      || existingContext?.session
+      || (project ? toSession(project) : null);
     if (!session) return null;
     this.#contexts.set(projectId, {
       session,
@@ -198,7 +223,12 @@ export class WebProjectRepository {
 
   async hasDatabaseProject(projectDir: string): Promise<boolean> {
     const projectId = projectIdFromDir(projectDir);
-    return Boolean(projectId && await (await this.database()).getProject(projectId));
+    if (!projectId) return false;
+    try {
+      return Boolean(await (await this.database()).getProject(projectId));
+    } catch {
+      return false;
+    }
   }
 
   async deleteDatabaseProject(projectDir: string): Promise<boolean> {

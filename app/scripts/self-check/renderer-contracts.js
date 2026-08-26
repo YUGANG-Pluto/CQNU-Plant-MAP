@@ -456,8 +456,8 @@ function testStatisticsChartVisualContract() {
     '.stats-export-grid',
     '.stats-notes-list'
   ].forEach(selector => assert.ok(coreCss.includes(selector), `${selector} must support research stats UI`));
-  assert.ok(coreCss.includes('z-index: 10000'), 'statistics fullscreen overlay must stay above ordinary modals');
-  assert.ok(coreCss.includes('z-index: 10001'), 'statistics fullscreen dialog must stay above its overlay backdrop');
+  assert.ok(coreCss.includes('z-index: var(--z-fullscreen, 30000)'), 'statistics fullscreen overlay must use the top-level fullscreen tier');
+  assert.ok(coreCss.includes('z-index: 1'), 'statistics fullscreen dialog must stay above its overlay backdrop');
   ['zh.js', 'en.js'].forEach(name => {
     const source = readLocaleSource(name);
     [

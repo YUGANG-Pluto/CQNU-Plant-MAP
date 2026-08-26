@@ -8,7 +8,6 @@
   <title>访问与成员管理 · CQNU Plant MAP</title>
   <link rel="icon" href="/assets/cqnu-logo.svg" />
   <link rel="stylesheet" href="/assets/manage.css" />
-  <script type="module" src="/assets/manage.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#manageMain">跳至主要内容</a>
@@ -79,11 +78,11 @@
           </label>
           <label>
             <span>新密码</span>
-            <input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+            <input name="password" type="password" autocomplete="new-password" minlength="6" maxlength="128" required />
           </label>
           <label>
             <span>确认新密码</span>
-            <input name="confirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+            <input name="confirmPassword" type="password" autocomplete="new-password" minlength="6" maxlength="128" required />
           </label>
           <button class="primary-button" type="submit">完成激活</button>
           <p class="form-message" data-activation-message role="alert"></p>
@@ -106,11 +105,11 @@
           </label>
           <label>
             <span>新密码</span>
-            <input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+            <input name="password" type="password" autocomplete="new-password" minlength="6" maxlength="128" required />
           </label>
           <label>
             <span>确认新密码</span>
-            <input name="confirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+            <input name="confirmPassword" type="password" autocomplete="new-password" minlength="6" maxlength="128" required />
           </label>
           <button class="primary-button" type="submit">保存并登录</button>
           <p class="form-message" data-token-message role="alert"></p>
@@ -139,10 +138,11 @@
 
     <div class="manage-frame">
       <aside class="manage-sidebar">
-        <div class="account-summary">
-          <span class="avatar" data-avatar aria-hidden="true">A</span>
-          <div><strong data-account-name>—</strong><small data-account-role>—</small></div>
-        </div>
+        <button class="account-summary" type="button" data-open-account title="打开账户设置">
+          <span class="avatar" data-avatar aria-hidden="true"><img data-avatar-image alt="" hidden /><span data-avatar-fallback>A</span></span>
+          <span class="account-summary-copy"><strong data-account-name>—</strong><small data-account-role>—</small></span>
+          <span class="account-summary-arrow" aria-hidden="true">›</span>
+        </button>
         <nav class="manage-nav" aria-label="管理模块">
           <button type="button" data-view-target="overview" aria-current="page">概览</button>
           <button type="button" data-view-target="members" data-admin-only>成员与权限</button>
@@ -224,6 +224,22 @@
             <div><span>ACCOUNT SECURITY</span><h1>账户设置</h1><p>用户名是登录名；修改用户名或密码会立即撤销其他会话。</p></div>
           </div>
           <div class="settings-grid">
+            <section class="data-panel profile-panel" aria-labelledby="profileAvatarTitle">
+              <div class="panel-heading"><div><span>本机资料</span><h2 id="profileAvatarTitle">个人头像</h2></div></div>
+              <div class="avatar-editor">
+                <span class="avatar avatar-preview" data-avatar-preview aria-hidden="true"><img data-avatar-preview-image alt="" hidden /><span data-avatar-preview-fallback>A</span></span>
+                <div>
+                  <strong>当前浏览器头像</strong>
+                  <p>图片会裁剪为正方形并压缩，仅保存在当前浏览器，不上传到管理服务或项目文件。</p>
+                </div>
+              </div>
+              <input class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" data-avatar-input />
+              <div class="profile-actions">
+                <button class="primary-button compact" type="button" data-avatar-select>选择头像</button>
+                <button class="quiet-button compact" type="button" data-avatar-remove>移除头像</button>
+              </div>
+              <p class="form-message" data-avatar-message role="alert"></p>
+            </section>
             <form class="data-panel settings-form" data-username-form>
               <div class="panel-heading"><div><span>登录标识</span><h2>修改用户名</h2></div></div>
               <label><span>新用户名</span><input name="username" minlength="3" maxlength="32" autocomplete="username" required /></label>
@@ -234,8 +250,8 @@
             <form class="data-panel settings-form" data-password-form>
               <div class="panel-heading"><div><span>凭据安全</span><h2>修改密码</h2></div></div>
               <label><span>当前密码</span><input name="currentPassword" type="password" maxlength="128" autocomplete="current-password" required /></label>
-              <label><span>新密码</span><input name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required /></label>
-              <label><span>确认新密码</span><input name="confirmPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required /></label>
+              <label><span>新密码</span><input name="password" type="password" minlength="6" maxlength="128" autocomplete="new-password" required /></label>
+              <label><span>确认新密码</span><input name="confirmPassword" type="password" minlength="6" maxlength="128" autocomplete="new-password" required /></label>
               <button class="primary-button compact" type="submit">更新密码</button>
               <p class="form-message" data-password-message role="alert"></p>
             </form>
@@ -273,5 +289,7 @@
   </dialog>
 
   <div class="toast-region" aria-live="polite" aria-atomic="true" data-toast-region></div>
+  <script src="/assets/profile-storage.js"></script>
+  <script type="module" src="/assets/manage.js"></script>
 </body>
 </html>

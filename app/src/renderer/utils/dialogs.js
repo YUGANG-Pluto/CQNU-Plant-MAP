@@ -124,6 +124,7 @@ function openLayerModal(modal, options = {}) {
   modal.classList.remove('hidden', 'is-closing');
   modal.classList.add('is-open');
   modal.setAttribute('aria-hidden', 'false');
+  window.cqnuMotionKernel?.openLayer?.(modal);
   syncLayerModalDocumentState();
   if (options.focus !== false) {
     window.requestAnimationFrame(() => {

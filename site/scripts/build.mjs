@@ -14,7 +14,7 @@ if (!distRelative || distRelative.startsWith('..') || distRelative.includes(':')
   throw new Error('Refusing to clean a dist path outside the site workspace.');
 }
 
-const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, manageHtml, manageCss, manageClient, manageApi, manageI18n, hostingConfig] = await Promise.all([
+const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, manageHtml, manageCss, manageClient, manageApi, manageI18n, profileStorage, hostingConfig] = await Promise.all([
   readFile(resolve(projectRoot, 'src/styles.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/client.js'), 'utf8'),
   readFile(resolve(projectRoot, 'src/workspace-gate.css'), 'utf8'),
@@ -25,6 +25,7 @@ const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, manageHt
   readFile(resolve(adminRoot, 'ui/manage.js'), 'utf8'),
   readFile(resolve(adminRoot, 'ui/manage-api.js'), 'utf8'),
   readFile(resolve(adminRoot, 'ui/manage-i18n.js'), 'utf8'),
+  readFile(resolve(adminRoot, 'ui/profile-storage.js'), 'utf8'),
   readFile(resolve(projectRoot, '.openai/hosting.json'), 'utf8')
 ]);
 
@@ -48,7 +49,7 @@ const workspaceHtml = appIndex
       <a href="/manage?next=/workspace" data-gate-action hidden>前往登录</a>
     </div>
   </div>`)
-  .replace('</body>', '  <script src="/assets/workspace-gate.js"></script>\n</body>');
+  .replace('</body>', '  <script src="/assets/profile-storage.js"></script>\n  <script src="/assets/workspace-gate.js"></script>\n</body>');
 const pages = { ...renderPages({ workspaceHtml }), '/manage': manageHtml };
 const { managementSchemaSql } = await import('../../admin/dist/schema.js');
 const schemaSource = `export const managementSchemaSql = ${JSON.stringify(managementSchemaSql)};\n`;
@@ -102,6 +103,7 @@ await Promise.all([
   writeFile(resolve(clientRoot, 'assets/manage.js'), manageClient, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/manage-api.js'), manageApi, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/manage-i18n.js'), manageI18n, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/profile-storage.js'), profileStorage, 'utf8'),
   writeFile(resolve(distRoot, 'db/schema.ts'), schemaSource, 'utf8'),
   cp(resolve(adminRoot, 'dist'), resolve(distRoot, 'server/admin'), { recursive: true }),
   cp(resolve(projectRoot, 'public/cqnu-logo.svg'), resolve(clientRoot, 'assets/cqnu-logo.svg')),
@@ -138,7 +140,7 @@ const workspaceSecurityHeaders = {
 
 const managementSecurityHeaders = {
   ...documentSecurityHeaders,
-  'content-security-policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+  'content-security-policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
 };
 
 const siteAssetPaths = new Set([
@@ -150,6 +152,7 @@ const siteAssetPaths = new Set([
   '/assets/manage.js',
   '/assets/manage-api.js',
   '/assets/manage-i18n.js',
+  '/assets/profile-storage.js',
   '/assets/cqnu-logo.svg',
   '/assets/app-preview.png'
 ]);

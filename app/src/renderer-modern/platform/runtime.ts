@@ -11,6 +11,9 @@ declare global {
     plantApp?: PlatformServiceApi;
     platformAdapter?: PlatformAdapter;
     managementAccess?: Readonly<ManagementWorkspaceAccess>;
+    cqnuLocalProfile?: {
+      read(accountId: string): string;
+    };
   }
 }
 
