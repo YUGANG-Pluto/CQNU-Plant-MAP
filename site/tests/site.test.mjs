@@ -58,6 +58,10 @@ test('site motion uses a real progressive reveal with a reduced-motion fallback'
 test('management UI keeps login and member administration in a separate shell', async () => {
   const source = await readFile(new URL('../../admin/ui/index.html', import.meta.url), 'utf8');
   const client = await readFile(new URL('../../admin/ui/manage.js', import.meta.url), 'utf8');
+  const context = await readFile(new URL('../../admin/ui/manage-context.js', import.meta.url), 'utf8');
+  const session = await readFile(new URL('../../admin/ui/manage-session.js', import.meta.url), 'utf8');
+  const members = await readFile(new URL('../../admin/ui/manage-members.js', import.meta.url), 'utf8');
+  const profileController = await readFile(new URL('../../admin/ui/manage-profile.js', import.meta.url), 'utf8');
   const profile = await readFile(new URL('../../admin/ui/profile-storage.js', import.meta.url), 'utf8');
   assert.match(source, /data-auth-stage/);
   assert.match(source, /data-manage-shell/);
@@ -67,9 +71,14 @@ test('management UI keeps login and member administration in a separate shell', 
   assert.doesNotMatch(source, /minlength="12"/);
   assert.match(source, /assets\/profile-storage\.js/);
   assert.match(source, /assets\/manage\.js/);
-  assert.match(client, /\.\/manage-api\.js/);
-  assert.ok(client.includes("return /^\\/(workspace|manage)$/u.test(value) ? value : '/workspace';"));
-  assert.match(client, /cqnuLocalProfile/);
+  assert.match(client, /\.\/manage-session\.js/);
+  assert.ok(context.includes("return /^\\/(workspace|manage)$/u.test(value) ? value : '/workspace';"));
+  assert.match(session, /location\.replace\('\/workspace'\)/);
+  assert.match(members, /managementApi\.listMembers/);
+  assert.match(profileController, /cqnuLocalProfile|localProfile/);
+  for (const moduleSource of [context, session, members, profileController]) {
+    assert.ok(moduleSource.split(/\r?\n/).length <= 360, 'Management UI modules should stay below 360 lines');
+  }
   assert.match(profile, /MAX_SOURCE_BYTES/);
   assert.match(profile, /localStorage/);
   assert.doesNotMatch(profile, /fetch\(|\/api\/manage/);
