@@ -91,6 +91,9 @@ test('workspace startup uses staged progress and one bundled legacy runtime requ
   assert.match(gate, /updateProgress\(100/);
   assert.match(build, /CQNU_LEGACY_RUNTIME_SOURCES/);
   assert.match(build, /legacyRuntimeBundle/);
+  assert.match(build, /copyWorkspaceRuntimeAssets/);
+  assert.doesNotMatch(build, /cp\(resolve\(appRoot, 'src\/renderer'\),/);
+  assert.doesNotMatch(build, /cp\(resolve\(appRoot, 'node_modules\/leaflet\/dist'\),/);
 });
 
 test('published pages never embed local paths or desktop bridge names', () => {

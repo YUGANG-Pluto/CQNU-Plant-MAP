@@ -109,6 +109,28 @@ async function copyRendererAssets() {
   }
 }
 
+async function copyWorkspaceRuntimeAssets() {
+  const leafletSource = resolve(appRoot, 'node_modules/leaflet/dist');
+  const leafletDrawSource = resolve(appRoot, 'node_modules/leaflet-draw/dist');
+  const leafletTarget = resolve(clientRoot, 'node_modules/leaflet/dist');
+  const leafletDrawTarget = resolve(clientRoot, 'node_modules/leaflet-draw/dist');
+
+  await Promise.all([
+    mkdir(leafletTarget, { recursive: true }),
+    mkdir(leafletDrawTarget, { recursive: true }),
+    cp(resolve(appRoot, 'src/renderer/styles'), resolve(clientRoot, 'src/renderer/styles'), { recursive: true }),
+    cp(resolve(appRoot, 'src/renderer/assets'), resolve(clientRoot, 'src/renderer/assets'), { recursive: true })
+  ]);
+  await Promise.all([
+    cp(resolve(leafletSource, 'leaflet.css'), resolve(leafletTarget, 'leaflet.css')),
+    cp(resolve(leafletSource, 'leaflet.js'), resolve(leafletTarget, 'leaflet.js')),
+    cp(resolve(leafletSource, 'images'), resolve(leafletTarget, 'images'), { recursive: true }),
+    cp(resolve(leafletDrawSource, 'leaflet.draw.css'), resolve(leafletDrawTarget, 'leaflet.draw.css')),
+    cp(resolve(leafletDrawSource, 'leaflet.draw.js'), resolve(leafletDrawTarget, 'leaflet.draw.js')),
+    cp(resolve(leafletDrawSource, 'images'), resolve(leafletDrawTarget, 'images'), { recursive: true })
+  ]);
+}
+
 async function collectFileMetrics(directory) {
   let count = 0;
   let bytes = 0;
@@ -155,9 +177,7 @@ await Promise.all([
   cp(resolve(projectRoot, 'public/workspace-service-worker.js'), resolve(clientRoot, 'workspace-service-worker.js')),
   cp(resolve(projectRoot, 'public/workspace.webmanifest'), resolve(clientRoot, 'workspace.webmanifest')),
   cp(resolve(appRoot, 'style.css'), resolve(clientRoot, 'style.css')),
-  cp(resolve(appRoot, 'src/renderer'), resolve(clientRoot, 'src/renderer'), { recursive: true }),
-  cp(resolve(appRoot, 'node_modules/leaflet/dist'), resolve(clientRoot, 'node_modules/leaflet/dist'), { recursive: true }),
-  cp(resolve(appRoot, 'node_modules/leaflet-draw/dist'), resolve(clientRoot, 'node_modules/leaflet-draw/dist'), { recursive: true }),
+  copyWorkspaceRuntimeAssets(),
   copyRendererAssets()
 ]);
 
