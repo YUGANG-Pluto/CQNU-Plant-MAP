@@ -8,6 +8,7 @@ import { renderPages } from '../src/render.mjs';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const appRoot = resolve(projectRoot, '../app');
 const adminRoot = resolve(projectRoot, '../admin');
+const adminDistRoot = resolve(adminRoot, 'dist');
 const distRoot = resolve(projectRoot, 'dist');
 const clientRoot = resolve(distRoot, 'client');
 const distRelative = relative(projectRoot, distRoot);
@@ -15,15 +16,13 @@ if (!distRelative || distRelative.startsWith('..') || distRelative.includes(':')
   throw new Error('Refusing to clean a dist path outside the site workspace.');
 }
 
-const managementUiModuleNames = [
-  'manage.js',
-  'manage-context.js',
-  'manage-session.js',
-  'manage-profile.js',
-  'manage-members.js',
-  'manage-api.js',
-  'manage-i18n.js'
-];
+const managementUiModuleNames = (await readdir(resolve(adminDistRoot, 'ui'), { withFileTypes: true }))
+  .filter(entry => entry.isFile() && entry.name.endsWith('.js'))
+  .map(entry => entry.name)
+  .sort();
+if (!managementUiModuleNames.includes('manage.js')) {
+  throw new Error('Compiled management UI entry is missing.');
+}
 
 const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, legacyLoaderSource, manageHtml, manageCss, managementUiModules, profileStorage, hostingConfig] = await Promise.all([
   readFile(resolve(projectRoot, 'src/styles.css'), 'utf8'),
@@ -36,7 +35,7 @@ const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, legacyLo
   readFile(resolve(adminRoot, 'ui/manage.css'), 'utf8'),
   Promise.all(managementUiModuleNames.map(async name => ({
     name,
-    source: await readFile(resolve(adminRoot, 'ui', name), 'utf8')
+    source: await readFile(resolve(adminDistRoot, 'ui', name), 'utf8')
   }))),
   readFile(resolve(adminRoot, 'ui/profile-storage.js'), 'utf8'),
   readFile(resolve(projectRoot, '.openai/hosting.json'), 'utf8')
@@ -142,6 +141,17 @@ async function copyWorkspaceRuntimeAssets() {
   ]);
 }
 
+async function copyAdminServerAssets() {
+  const entries = await readdir(adminDistRoot, { withFileTypes: true });
+  await Promise.all(entries
+    .filter(entry => entry.name !== 'ui')
+    .map(entry => cp(
+      resolve(adminDistRoot, entry.name),
+      resolve(distRoot, 'server/admin', entry.name),
+      { recursive: entry.isDirectory() }
+    )));
+}
+
 async function collectFileMetrics(directory) {
   let count = 0;
   let bytes = 0;
@@ -182,7 +192,7 @@ await Promise.all([
   )),
   writeFile(resolve(clientRoot, 'assets/profile-storage.js'), profileStorage, 'utf8'),
   writeFile(resolve(distRoot, 'db/schema.ts'), schemaSource, 'utf8'),
-  cp(resolve(adminRoot, 'dist'), resolve(distRoot, 'server/admin'), { recursive: true }),
+  copyAdminServerAssets(),
   cp(resolve(projectRoot, 'public/cqnu-logo.svg'), resolve(clientRoot, 'assets/cqnu-logo.svg')),
   cp(resolve(projectRoot, 'public/app-preview.png'), resolve(clientRoot, 'assets/app-preview.png')),
   cp(resolve(projectRoot, 'public/workspace-service-worker.js'), resolve(clientRoot, 'workspace-service-worker.js')),
@@ -218,19 +228,14 @@ const managementSecurityHeaders = {
   'content-security-policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
 };
 
+const managementUiAssetPaths = ${JSON.stringify(managementUiModuleNames.map(name => `/assets/${name}`))};
 const siteAssetPaths = new Set([
   '/assets/styles.css',
   '/assets/client.js',
   '/assets/workspace-gate.css',
   '/assets/workspace-gate.js',
   '/assets/manage.css',
-  '/assets/manage.js',
-  '/assets/manage-context.js',
-  '/assets/manage-session.js',
-  '/assets/manage-profile.js',
-  '/assets/manage-members.js',
-  '/assets/manage-api.js',
-  '/assets/manage-i18n.js',
+  ...managementUiAssetPaths,
   '/assets/profile-storage.js',
   '/assets/cqnu-logo.svg',
   '/assets/app-preview.png'

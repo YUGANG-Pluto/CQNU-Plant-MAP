@@ -24,6 +24,7 @@ import {
   type AdminRouteContract
 } from './http-contract.js';
 import { AuthKeyRing, parseAuthKeyRingConfig, randomBase64Url } from './keyring.js';
+import type { ManagementSessionData } from './management-ui-contracts.js';
 import { PBKDF2_EDGE_ITERATIONS, Pbkdf2PasswordHasher } from './password.js';
 import { principalAllows } from './policy.js';
 import {
@@ -180,7 +181,7 @@ function sessionData(
   session: AdminSession,
   account: PublicManagementAccount,
   csrfToken?: string
-): JsonObject {
+): ManagementSessionData {
   return {
     session,
     account,

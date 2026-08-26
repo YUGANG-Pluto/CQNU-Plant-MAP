@@ -56,13 +56,16 @@ const labels = Object.freeze({
     'session.revoke': '退出登录',
     'session.revoke_all': '撤销全部会话'
   }
-});
+} as const);
 
-export function label(group, value) {
-  return labels[group]?.[value] || String(value || '—');
+type LabelGroup = keyof typeof labels;
+
+export function label(group: LabelGroup, value: string): string {
+  const groupLabels = labels[group] as Readonly<Record<string, string>>;
+  return groupLabels[value] || String(value || '—');
 }
 
-export function formatDateTime(value) {
+export function formatDateTime(value: string): string {
   const timestamp = Date.parse(value);
   if (!Number.isFinite(timestamp)) return '—';
   return new Intl.DateTimeFormat('zh-CN', {

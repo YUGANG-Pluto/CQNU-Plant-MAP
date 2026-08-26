@@ -69,7 +69,8 @@ for (const asset of [
   '/assets/manage-profile.js',
   '/assets/manage-members.js',
   '/assets/manage-api.js',
-  '/assets/manage-i18n.js'
+  '/assets/manage-i18n.js',
+  '/assets/manage-dom.js'
 ]) {
   const response = await fetchSite(asset);
   const moduleSource = await response.text();

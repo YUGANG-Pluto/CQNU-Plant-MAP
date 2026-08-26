@@ -1,0 +1,175 @@
+.ui-command-bar .btn-primary,
+.map-tool-grid .mode-btn.active {
+  background: var(--primary);
+}
+
+.ui-command-bar .btn-primary:hover:not(:disabled),
+.map-tool-grid .mode-btn.active:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.ui-segmented-control {
+  flex-wrap: nowrap;
+}
+
+.ui-section-heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ui-section-heading__copy {
+  min-width: 0;
+}
+
+.ui-section-heading h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 17px;
+  letter-spacing: 0;
+}
+
+.ui-section-heading p {
+  margin: 5px 0 0;
+  line-height: 1.45;
+}
+
+.ui-command-stack {
+  gap: 7px;
+}
+
+.map-tool-grid .ui-command-button {
+  justify-content: flex-start;
+  min-height: 42px;
+  padding: 9px 11px;
+  box-shadow: none;
+}
+
+.map-tool-grid .btn-danger-soft {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--panel-bg) 88%, var(--danger-soft));
+  border-color: color-mix(in srgb, var(--danger) 24%, var(--border-light));
+}
+
+.map-tool-grid .btn-danger-soft:hover:not(:disabled) {
+  color: var(--danger-contrast);
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.workspace-module-section {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-light);
+}
+
+.ui-module-launcher {
+  gap: 8px;
+}
+
+.ui-module-button {
+  --ui-module-color: var(--primary);
+  --ui-module-tint: var(--primary-soft);
+  justify-content: flex-start !important;
+  min-height: 52px !important;
+  padding: 8px 9px !important;
+  text-align: left;
+  background: color-mix(in srgb, var(--panel-bg) 92%, var(--ui-module-tint)) !important;
+  border-color: color-mix(in srgb, var(--ui-module-color) 16%, var(--border-light)) !important;
+  box-shadow: none !important;
+}
+
+.ui-module-button.morandi-purple {
+  --ui-module-color: var(--primary);
+  --ui-module-tint: var(--primary-soft);
+}
+
+.ui-module-button.morandi-green {
+  --ui-module-color: var(--success);
+  --ui-module-tint: var(--success-soft);
+}
+
+.ui-module-button.morandi-rose {
+  --ui-module-color: var(--accent);
+  --ui-module-tint: var(--accent-soft);
+}
+
+.ui-module-button.morandi-blue {
+  --ui-module-color: var(--secondary);
+  --ui-module-tint: var(--secondary-soft);
+}
+
+.ui-module-button.morandi-sand {
+  --ui-module-color: var(--warning);
+  --ui-module-tint: var(--warning-soft);
+}
+
+.ui-module-button .ui-command-button__icon {
+  width: 30px;
+  height: 30px;
+  color: var(--ui-module-color);
+  background: var(--ui-module-tint);
+  border: 1px solid color-mix(in srgb, var(--ui-module-color) 18%, transparent);
+  border-radius: 8px;
+}
+
+.ui-module-button__trailing {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--text-muted);
+  opacity: 0.55;
+  transition:
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    opacity var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
+}
+
+.ui-module-button:hover:not(:disabled) {
+  transform: none;
+  background: color-mix(in srgb, var(--panel-bg) 84%, var(--ui-module-tint)) !important;
+  border-color: color-mix(in srgb, var(--ui-module-color) 34%, var(--border-light)) !important;
+}
+
+.ui-module-button:hover:not(:disabled) .ui-command-button__icon {
+  transform: scale(1.06);
+}
+
+.ui-module-button:hover:not(:disabled) .ui-module-button__trailing {
+  color: var(--ui-module-color);
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+.ui-status-chip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  transition:
+    background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    border-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
+}
+
+.ui-status-chip strong {
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.workspace-permission-note {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border-light));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--primary) 5%, var(--panel-bg));
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.workspace-permission-note.is-draft {
+  border-color: color-mix(in srgb, var(--warning) 24%, var(--border-light));
+  background: color-mix(in srgb, var(--warning) 6%, var(--panel-bg));
+}

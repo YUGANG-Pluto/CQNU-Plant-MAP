@@ -57,11 +57,12 @@ test('site motion uses a real progressive reveal with a reduced-motion fallback'
 
 test('management UI keeps login and member administration in a separate shell', async () => {
   const source = await readFile(new URL('../../admin/ui/index.html', import.meta.url), 'utf8');
-  const client = await readFile(new URL('../../admin/ui/manage.js', import.meta.url), 'utf8');
-  const context = await readFile(new URL('../../admin/ui/manage-context.js', import.meta.url), 'utf8');
-  const session = await readFile(new URL('../../admin/ui/manage-session.js', import.meta.url), 'utf8');
-  const members = await readFile(new URL('../../admin/ui/manage-members.js', import.meta.url), 'utf8');
-  const profileController = await readFile(new URL('../../admin/ui/manage-profile.js', import.meta.url), 'utf8');
+  const client = await readFile(new URL('../../admin/src/ui/manage.ts', import.meta.url), 'utf8');
+  const context = await readFile(new URL('../../admin/src/ui/manage-context.ts', import.meta.url), 'utf8');
+  const session = await readFile(new URL('../../admin/src/ui/manage-session.ts', import.meta.url), 'utf8');
+  const members = await readFile(new URL('../../admin/src/ui/manage-members.ts', import.meta.url), 'utf8');
+  const profileController = await readFile(new URL('../../admin/src/ui/manage-profile.ts', import.meta.url), 'utf8');
+  const dom = await readFile(new URL('../../admin/src/ui/manage-dom.ts', import.meta.url), 'utf8');
   const profile = await readFile(new URL('../../admin/ui/profile-storage.js', import.meta.url), 'utf8');
   assert.match(source, /data-auth-stage/);
   assert.match(source, /data-manage-shell/);
@@ -72,11 +73,13 @@ test('management UI keeps login and member administration in a separate shell', 
   assert.match(source, /assets\/profile-storage\.js/);
   assert.match(source, /assets\/manage\.js/);
   assert.match(client, /\.\/manage-session\.js/);
-  assert.ok(context.includes("return /^\\/(workspace|manage)$/u.test(value) ? value : '/workspace';"));
+  assert.match(context, /\.\/manage-dom\.js/);
+  assert.match(context, /export function safeNextPath/);
+  assert.match(context, /\^\\\/\(workspace\|manage\)\$/);
   assert.match(session, /location\.replace\('\/workspace'\)/);
   assert.match(members, /managementApi\.listMembers/);
   assert.match(profileController, /cqnuLocalProfile|localProfile/);
-  for (const moduleSource of [context, session, members, profileController]) {
+  for (const moduleSource of [context, session, members, profileController, dom]) {
     assert.ok(moduleSource.split(/\r?\n/).length <= 360, 'Management UI modules should stay below 360 lines');
   }
   assert.match(profile, /MAX_SOURCE_BYTES/);
@@ -101,6 +104,8 @@ test('workspace startup uses staged progress and one bundled legacy runtime requ
   assert.match(build, /CQNU_LEGACY_RUNTIME_SOURCES/);
   assert.match(build, /legacyRuntimeBundle/);
   assert.match(build, /copyWorkspaceRuntimeAssets/);
+  assert.match(build, /readdir\(resolve\(adminDistRoot, 'ui'\)/);
+  assert.match(build, /Compiled management UI entry is missing/);
   assert.doesNotMatch(build, /cp\(resolve\(appRoot, 'src\/renderer'\),/);
   assert.doesNotMatch(build, /cp\(resolve\(appRoot, 'node_modules\/leaflet\/dist'\),/);
 });

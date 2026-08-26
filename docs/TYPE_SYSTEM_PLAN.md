@@ -2,13 +2,14 @@
 
 ## Current Position
 
-The Electron application boundary and modern renderer shell now use TypeScript. Existing storage services and compatibility renderer features remain JavaScript with a focused `checkJs` gate.
+The Electron application boundary, modern renderer shell, management service, and management browser controllers use TypeScript. Existing storage services and compatibility renderer features remain JavaScript with a focused `checkJs` gate.
 
 - `electron/main/`: application lifecycle, window policy, and IPC registration.
 - `electron/preload/`: typed `window.plantApp` bridge.
 - `electron/shared/`: stable IPC channel contract.
 - `src/renderer-modern/`: Preact components, theme model, and presentation runtime.
 - `src/shared/types/`: project and storage declarations used by checked JavaScript.
+- `../admin/src/`: strict management server, security contracts, and browser UI controllers.
 
 ## Principles
 
@@ -25,6 +26,7 @@ The Electron application boundary and modern renderer shell now use TypeScript. 
 3. Migrated the main lifecycle, window policy, IPC registration, and preload bridge.
 4. Added strict typechecking for Preact renderer components.
 5. Kept storage services under `checkJs` while preserving JSON and SQLite compatibility.
+6. Migrated the management browser controllers to TypeScript and made the site consume only clean compiler output.
 
 ## Current Typecheck Scope
 
@@ -47,6 +49,8 @@ The checked JavaScript scope includes:
 - `src/shared/types/**/*.d.ts`
 
 The combined `npm run typecheck` command covers these three gates.
+
+The management package has a separate strict gate: `npm --prefix admin run check`. The site build invokes its clean TypeScript build before collecting server and browser modules.
 
 ## Expansion Gate
 
