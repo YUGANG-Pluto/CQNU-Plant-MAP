@@ -46,6 +46,15 @@ function footer() {
 }
 
 function layout({ activePath, title, description, body }) {
+  const pageClass = activePath === '/'
+    ? 'site-page--home'
+    : activePath === '/docs'
+      ? 'site-page--docs'
+      : activePath === '/web'
+        ? 'site-page--architecture'
+        : activePath === '/release'
+          ? 'site-page--release'
+          : 'site-page--privacy';
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -56,9 +65,11 @@ function layout({ activePath, title, description, body }) {
   <title>${escapeHtml(title)} · CQNU Plant MAP</title>
   <link rel="icon" href="/assets/cqnu-logo.svg" />
   <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/page-experience.css" />
+  <link rel="stylesheet" href="/assets/responsive.css" />
   <script src="/assets/client.js" defer></script>
 </head>
-<body>
+<body class="site-page ${pageClass}">
   <a class="skip-link" href="#mainContent">跳至主要内容</a>
   ${nav(activePath)}
   <main id="mainContent">${body}</main>
@@ -139,9 +150,9 @@ function homePage() {
 }
 
 function docsPage() {
-  const toc = docsSections.map(section => `<a href="#${section.id}">${section.title}</a>`).join('');
+  const toc = docsSections.map(section => `<a href="#${section.id}" data-doc-link>${section.title}</a>`).join('');
   const sections = docsSections.map(section => `
-    <section id="${section.id}" class="doc-section" data-reveal>
+    <section id="${section.id}" class="doc-section" data-doc-section data-reveal>
       <h2>${escapeHtml(section.title)}</h2>
       <ol>${section.items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ol>
     </section>`).join('');
@@ -150,13 +161,18 @@ function docsPage() {
     title: '使用文档',
     description: 'CQNU Plant MAP 安装、项目数据、备份和网络服务使用说明。',
     body: `
+      <div class="doc-reading-progress" aria-hidden="true"><i data-doc-progress></i></div>
       <section class="page-hero"><div class="content-wrap" data-reveal><span>DOCUMENTATION</span><h1>使用文档</h1><p>从安装启动到项目维护，按真实工作流组织的快速参考。</p></div></section>
       <section class="content-band band-plain"><div class="content-wrap docs-layout">
         <aside class="doc-toc" aria-label="文档目录"><strong>目录</strong>${toc}</aside>
         <div class="doc-content">${sections}
           <section class="doc-section notice-block" data-reveal><h2>需要进一步核对时</h2><p>先保留项目备份和相关日志，再通过维护中心读取诊断结果。不要直接修改数据库文件或删除唯一数据源。</p><a class="text-link" href="${siteMeta.repositoryUrl}/issues" target="_blank" rel="noreferrer">前往问题反馈</a></section>
         </div>
-      </div></section>`
+      </div></section>
+      <nav class="doc-float-actions" aria-label="文档快捷操作">
+        <a href="#mainContent" title="返回文档顶部">顶部</a>
+        <a href="/workspace" title="打开本地工作区">工作区</a>
+      </nav>`
   });
 }
 

@@ -107,11 +107,12 @@ function testModernVisualSystemContract() {
   const designSource = fs.readFileSync(path.join(modernStyleDir, 'design-system.css'), 'utf8');
   const capabilitySource = fs.readFileSync(path.join(modernStyleDir, 'web-capability.css'), 'utf8');
   const chartSource = fs.readFileSync(path.join(modernStyleDir, 'research-charts.css'), 'utf8');
-  const appearanceSource = [
-    'appearance-center.css',
-    'appearance-preview.css'
-  ].map(name => fs.readFileSync(path.join(modernStyleDir, name), 'utf8')).join('\n');
-  const maintainedSource = [designSource, chartSource, appearanceSource].join('\n');
+  const appearanceSource = fs.readFileSync(path.join(modernStyleDir, 'appearance-center.css'), 'utf8');
+  const materialSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/renderer/styles/30-glass-scopes.css'),
+    'utf8'
+  );
+  const maintainedSource = [designSource, chartSource, appearanceSource, materialSource].join('\n');
   [
     'theme-scientific-white',
     'theme-liquid-glass',
@@ -128,9 +129,11 @@ function testModernVisualSystemContract() {
   assert.ok(capabilitySource.includes('.web-capability-disclosure'));
   assert.ok(capabilitySource.includes('@media (max-width: 720px)'));
   assert.ok(!maintainedSource.includes('vibeui'), 'removed design experiments must not remain in the maintained visual layer');
-  assert.ok(appearanceSource.includes('@keyframes appearanceAmbientDrift'));
-  assert.ok(appearanceSource.includes('@keyframes appearancePointPulse'));
-  assert.ok(appearanceSource.includes('@keyframes appearanceChartBreathe'));
+  assert.ok(appearanceSource.includes('.modern-material-segmented'));
+  assert.ok(!fs.existsSync(path.join(modernStyleDir, 'appearance-preview.css')));
+  ['glass-mode-solid', 'glass-mode-regular', 'glass-mode-clear', '.glass-interactive']
+    .forEach(selector => assert.ok(materialSource.includes(selector), `${selector} must remain available`));
+  assert.ok(materialSource.includes('prefers-reduced-transparency: reduce'));
 }
 
 function testModernMotionContract() {

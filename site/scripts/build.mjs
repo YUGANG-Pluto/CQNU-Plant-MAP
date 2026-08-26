@@ -24,8 +24,10 @@ if (!managementUiModuleNames.includes('manage.js')) {
   throw new Error('Compiled management UI entry is missing.');
 }
 
-const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, legacyLoaderSource, manageHtml, manageCss, managementUiModules, profileStorage, hostingConfig] = await Promise.all([
+const [styles, pageExperienceStyles, responsiveStyles, client, workspaceGateCss, workspaceGateClient, appIndex, legacyLoaderSource, manageHtml, manageCss, managementUiModules, profileStorage, hostingConfig] = await Promise.all([
   readFile(resolve(projectRoot, 'src/styles.css'), 'utf8'),
+  readFile(resolve(projectRoot, 'src/page-experience.css'), 'utf8'),
+  readFile(resolve(projectRoot, 'src/responsive.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/client.js'), 'utf8'),
   readFile(resolve(projectRoot, 'src/workspace-gate.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/workspace-gate.js'), 'utf8'),
@@ -182,6 +184,8 @@ await Promise.all([
 
 await Promise.all([
   writeFile(resolve(clientRoot, 'assets/styles.css'), styles, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/page-experience.css'), pageExperienceStyles, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/responsive.css'), responsiveStyles, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/client.js'), client, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/workspace-gate.css'), workspaceGateCss, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/workspace-gate.js'), workspaceGateClient, 'utf8'),
@@ -231,6 +235,8 @@ const managementSecurityHeaders = {
 const managementUiAssetPaths = ${JSON.stringify(managementUiModuleNames.map(name => `/assets/${name}`))};
 const siteAssetPaths = new Set([
   '/assets/styles.css',
+  '/assets/page-experience.css',
+  '/assets/responsive.css',
   '/assets/client.js',
   '/assets/workspace-gate.css',
   '/assets/workspace-gate.js',

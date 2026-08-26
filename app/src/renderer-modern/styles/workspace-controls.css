@@ -2,6 +2,8 @@
   min-width: 0;
   gap: 8px;
   overflow: hidden;
+  border-radius: var(--radius-functional, 12px);
+  transform-origin: center bottom;
 }
 
 .ui-command-button__icon {
@@ -20,6 +22,22 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition:
+    color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
+}
+
+.ui-command-button:hover:not(:disabled) .ui-command-button__icon,
+.ui-command-button:focus-visible .ui-command-button__icon {
+  transform: translateY(-1px) scale(1.08);
+}
+
+.ui-command-button:hover:not(:disabled) .ui-command-button__label {
+  transform: translateY(-1px);
+}
+
+.ui-command-button:active:not(:disabled) .ui-command-button__icon {
+  transform: scale(0.94);
 }
 
 .ui-command-button:focus-visible,
@@ -29,10 +47,21 @@
 }
 
 .ui-command-bar {
-  padding: 4px;
+  padding: 5px;
   background: color-mix(in srgb, var(--panel-bg) 78%, transparent);
   border: 1px solid var(--glass-border-soft);
-  border-radius: 8px;
+  border-radius: var(--radius-functional, 14px);
+  box-shadow: var(--glass-specular, inset 0 1px 0 rgba(255, 255, 255, 0.72));
+  transition:
+    border-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    box-shadow var(--motion-duration, 580ms) var(--motion-ease, ease),
+    transform var(--motion-duration, 580ms) var(--motion-ease, ease);
+}
+
+:root:not(.glass-mode-solid) .ui-command-bar:hover {
+  border-color: color-mix(in srgb, var(--primary) 22%, var(--glass-border));
+  box-shadow: var(--glass-lens-shadow), var(--glass-specular);
+  transform: translateY(-1px);
 }
 
 .web-site-links {
@@ -52,11 +81,12 @@
     color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
     background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
     border-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
+    box-shadow var(--motion-duration, 580ms) var(--motion-ease, ease),
     transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .web-site-link:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.01);
 }
 
 .web-runtime-disclosures {
@@ -85,14 +115,15 @@
   text-decoration: none;
   background: color-mix(in srgb, var(--glass-bg-strong) 78%, transparent);
   border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--glass-border));
-  border-radius: 8px;
+  border-radius: var(--radius-functional, 14px);
   box-shadow: var(--glass-inner-shadow);
   isolation: isolate;
   transition:
     color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
     background var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
     border-color var(--motion-duration-fast, 440ms) var(--motion-ease, ease),
-    box-shadow var(--motion-duration, 580ms) var(--motion-ease, ease);
+    box-shadow var(--motion-duration, 580ms) var(--motion-ease, ease),
+    transform var(--motion-duration-fast, 440ms) var(--motion-ease, ease);
 }
 
 .web-profile-avatar {
@@ -148,4 +179,5 @@
   background: color-mix(in srgb, var(--glass-bg-strong) 68%, var(--primary-soft));
   border-color: color-mix(in srgb, var(--primary) 35%, var(--border-light));
   box-shadow: var(--glass-shadow), var(--glass-inner-shadow);
+  transform: translateY(-2px);
 }

@@ -6,7 +6,6 @@ import {
   FlaskConical,
   Gauge,
   Layers3,
-  MousePointer2,
   RotateCcw,
   SlidersHorizontal,
   Sparkles,
@@ -33,7 +32,7 @@ export function ThemeSettingsModal() {
               <span class="modern-theme-kicker" data-i18n="themeCenterKicker">APPEARANCE & MOTION</span>
               <h2 id="modernThemeTitle" data-i18n="themeCenterTitle">界面与动效</h2>
               <p class="subtle" data-i18n="themeCenterSubtitle">
-                统一管理科研白底、液态材质、全局转场与交互反馈
+                选择功能层材质、信息密度与全局动效
               </p>
             </div>
           </div>
@@ -95,18 +94,18 @@ export function ThemeSettingsModal() {
                 <span class="modern-theme-section-icon"><Layers3 size={17} aria-hidden="true" /></span>
                 <div>
                   <h3 id="themeMaterialHeading" data-i18n="themeMaterialHeading">材质与密度</h3>
-                  <p class="subtle" data-i18n="themeMaterialHint">选择控制层的透明度与工作区信息密度</p>
+                  <p class="subtle" data-i18n="themeMaterialHint">Liquid Glass 仅用于导航、控件与浮层，研究内容保持实色</p>
                 </div>
               </div>
-              <div class="modern-theme-control-row">
+              <div class="modern-theme-control-row modern-material-row">
                 <div class="modern-theme-label">
                   <span data-i18n="themeGlassMode">控制层材质</span>
-                  <small data-i18n="themeGlassHint">不会改变地图、统计或文件读写逻辑</small>
+                  <small data-i18n="themeGlassHint">Clear 仅增强地图上方浮动控件，不改变地图、统计或文件逻辑</small>
                 </div>
-                <div id="themeGlassControls" class="modern-segmented" role="group" aria-label="控制层材质">
-                  <button type="button" data-glass-mode="off" aria-pressed="false" data-i18n="themeMaterialSolid">实色</button>
-                  <button type="button" class="active" data-glass-mode="light" aria-pressed="true" data-i18n="themeMaterialRegular">标准玻璃</button>
-                  <button type="button" data-glass-mode="liquid" aria-pressed="false" data-i18n="themeMaterialClear">通透液态</button>
+                <div id="themeGlassControls" class="modern-segmented modern-material-segmented" role="group" aria-label="控制层材质">
+                  <button type="button" class="active" data-glass-mode="solid" aria-pressed="true" data-i18n="themeMaterialSolid">科研白</button>
+                  <button type="button" data-glass-mode="regular" aria-pressed="false" data-i18n="themeMaterialRegular">Liquid Glass Regular</button>
+                  <button type="button" data-glass-mode="clear" aria-pressed="false" data-i18n="themeMaterialClear">Liquid Glass Clear</button>
                 </div>
               </div>
               <div class="modern-theme-control-row">
@@ -171,48 +170,6 @@ export function ThemeSettingsModal() {
             </section>
           </div>
 
-          <aside class="modern-theme-preview-section" aria-labelledby="themePreviewHeading">
-            <div class="modern-theme-section-heading">
-              <span class="modern-theme-section-icon"><MousePointer2 size={17} aria-hidden="true" /></span>
-              <div>
-                <h3 id="themePreviewHeading" data-i18n="themePreviewTitle">实时预览</h3>
-                <p class="subtle" data-i18n="themePreviewHint">材质与动态立即应用，保存后写入当前项目</p>
-              </div>
-            </div>
-            <div
-              id="themePreviewCard"
-              class="modern-theme-preview"
-              data-preview-style="scientific-white"
-              data-preview-glass="light"
-              data-preview-motion="expressive"
-            >
-              <div class="modern-preview-ambient" aria-hidden="true"><i /><i /></div>
-              <div class="modern-preview-toolbar">
-                <span class="modern-preview-brand"><i />CQNU Plant MAP</span>
-                <span class="modern-preview-pill" data-i18n="themePreviewWorkspace">研究工作区</span>
-              </div>
-              <div class="modern-preview-body">
-                <div class="modern-preview-map">
-                  <span class="preview-zone" />
-                  <i class="preview-point one" />
-                  <i class="preview-point two" />
-                  <i class="preview-point three" />
-                  <span class="preview-map-label" data-i18n="themePreviewMap">校园植物地图</span>
-                </div>
-                <div class="modern-preview-panel">
-                  <small data-i18n="themePreviewMetric">点位记录</small>
-                  <strong>128</strong>
-                  <div class="modern-preview-bars"><i /><i /><i /><i /></div>
-                  <span class="modern-preview-status"><i /> <span data-i18n="themePreviewSynced">本地数据就绪</span></span>
-                </div>
-              </div>
-              <div class="modern-preview-dock" aria-hidden="true"><i /><i /><i /><i /></div>
-            </div>
-            <div class="modern-theme-preview-notes">
-              <span><i class="material-dot" /><span data-i18n="themePreviewMaterialNote">玻璃用于导航与控制层</span></span>
-              <span><i class="content-dot" /><span data-i18n="themePreviewContentNote">研究内容保持清晰白底</span></span>
-            </div>
-          </aside>
         </div>
 
         <footer class="modern-theme-footer">

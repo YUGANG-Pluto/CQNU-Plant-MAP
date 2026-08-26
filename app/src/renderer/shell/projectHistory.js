@@ -102,6 +102,7 @@ function setProjectDraftSource(source, active) {
   if (!source) return;
   if (active) projectEditSession.draftSources.add(source);
   else projectEditSession.draftSources.delete(source);
+  window.projectSessionStore?.setDirty(projectHasUnappliedDraft());
   syncProjectSaveStatusUi();
   syncProjectHistoryUi();
 }

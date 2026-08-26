@@ -23,6 +23,13 @@ async function persistProject() {
     state.storageFormat = data.storageFormat || state.storageFormat || 'json';
     state.jsonFilesExist = Boolean(data.jsonFilesExist);
     state.sqliteDatabaseExists = Boolean(data.sqliteDatabaseExists);
+    window.projectSessionStore?.setSavedProject({
+      ...data,
+      projectModifiedTime: state.projectModifiedTime,
+      storageFormat: state.storageFormat,
+      jsonFilesExist: state.jsonFilesExist,
+      sqliteDatabaseExists: state.sqliteDatabaseExists
+    });
     if (typeof notifyProjectSaveSucceeded === 'function') notifyProjectSaveSucceeded(state.projectModifiedTime);
   } catch (error) {
     if (typeof notifyProjectSaveFailed === 'function') notifyProjectSaveFailed();
@@ -81,25 +88,39 @@ async function applyLoadedProjectToRenderer(data) {
 
   selectZone(null);
   renderAllDerived();
-  document.documentElement.dataset.projectLoaded = 'true';
-  document.documentElement.dataset.projectSourceKind = data.webProjectSourceKind || '';
-  document.documentElement.dataset.projectStorageFormat = state.storageFormat;
-  document.documentElement.dataset.projectDirectoryPermission = data.webDirectoryPermissionStatus || '';
-  document.documentElement.dataset.projectDirectoryReconnect = String(Boolean(data.webDirectoryReconnectRequired));
-  document.documentElement.dataset.projectExternalSqlite = String(Boolean(data.webExternalSqliteImported));
-  window.dispatchEvent(new CustomEvent('cqnu:project-loaded', {
-    detail: {
-      projectDir: data.projectDir,
+  if (window.projectSessionStore?.setLoadedProject) {
+    window.projectSessionStore.setLoadedProject({
+      ...data,
+      projectDir: state.projectDir,
+      projectModifiedTime: state.projectModifiedTime,
       storageFormat: state.storageFormat,
-      webAccessLevel: data.webAccessLevel || '',
-      sourceKind: data.webProjectSourceKind || '',
-      directoryPermissionStatus: data.webDirectoryPermissionStatus || '',
-      directoryReconnectRequired: Boolean(data.webDirectoryReconnectRequired),
-      externalSqliteImported: Boolean(data.webExternalSqliteImported),
+      settings: state.settings,
+      zones: state.zones,
+      points: state.points,
       jsonFilesExist: state.jsonFilesExist,
       sqliteDatabaseExists: state.sqliteDatabaseExists
-    }
-  }));
+    });
+  } else {
+    document.documentElement.dataset.projectLoaded = 'true';
+    document.documentElement.dataset.projectSourceKind = data.webProjectSourceKind || '';
+    document.documentElement.dataset.projectStorageFormat = state.storageFormat;
+    document.documentElement.dataset.projectDirectoryPermission = data.webDirectoryPermissionStatus || '';
+    document.documentElement.dataset.projectDirectoryReconnect = String(Boolean(data.webDirectoryReconnectRequired));
+    document.documentElement.dataset.projectExternalSqlite = String(Boolean(data.webExternalSqliteImported));
+    window.dispatchEvent(new CustomEvent('cqnu:project-loaded', {
+      detail: {
+        projectDir: data.projectDir,
+        storageFormat: state.storageFormat,
+        webAccessLevel: data.webAccessLevel || '',
+        sourceKind: data.webProjectSourceKind || '',
+        directoryPermissionStatus: data.webDirectoryPermissionStatus || '',
+        directoryReconnectRequired: Boolean(data.webDirectoryReconnectRequired),
+        externalSqliteImported: Boolean(data.webExternalSqliteImported),
+        jsonFilesExist: state.jsonFilesExist,
+        sqliteDatabaseExists: state.sqliteDatabaseExists
+      }
+    }));
+  }
 
   requestAnimationFrame(() => {
     state.map.invalidateSize();

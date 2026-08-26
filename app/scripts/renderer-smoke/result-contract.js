@@ -16,13 +16,14 @@ function collectRendererSmokeFailures(result, runtimeErrors = []) {
   if (!result.statsRegistryReady) failures.push('typed statistics chart registry is incomplete');
   if (!result.statsRegistryImmutable) failures.push('typed statistics chart registry exposes mutable containers');
   if (!result.projectWorkflowReady) failures.push('typed project workflow bridge is incomplete');
+  if (!result.projectSessionStoreReady) failures.push('typed project session store is missing, mutable, or not mirrored to the compatibility dataset');
   if (result.modalPrimitiveCount < 3) failures.push(`modal primitive count: ${result.modalPrimitiveCount}`);
   if (!result.queryFocusTrapped) failures.push('query modal does not trap keyboard focus');
   if (!result.queryClosedByEscape) failures.push('query modal did not close with Escape');
   if (!result.queryFocusReturned) failures.push('query modal did not restore focus to its opener');
   if (!result.themeCenterOpened) failures.push('appearance center did not open as the top workflow layer');
   if (!result.themeControlsApplied) failures.push('appearance center did not apply the shared liquid-glass and motion state');
-  if (!result.themePreviewSynchronized) failures.push('appearance center preview did not follow the selected material and motion profile');
+  if (!result.themeMaterialControlsReady) failures.push('appearance center did not expose the compact solid, regular, and clear material controls');
   if (result.themeActiveDurations.some(value => !Number.isFinite(value) || value < 260)) {
     failures.push(`appearance center exposed an active animation below 260ms: ${result.themeActiveDurations.join(', ')}`);
   }

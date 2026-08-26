@@ -62,6 +62,7 @@ export function installProjectWorkflowBridge(): ProjectWorkflowController {
     writable: false,
     value: controller
   });
+  controller.subscribe(status => window.projectSessionStore?.applyWorkflowStatus(status));
   document.documentElement.dataset.projectWorkflow = controller.version;
   return controller;
 }

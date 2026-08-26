@@ -88,6 +88,14 @@ async function run() {
       ['idle', 'ready'].includes(projectWorkflowStatus?.phase) &&
       ['chooseAndLoad', 'load', 'save', 'createBackup', 'inspectBackup', 'restoreBackup']
         .every(name => typeof window.projectWorkflow?.[name] === 'function');
+    const projectSessionSnapshot = window.projectSessionStore?.getSnapshot();
+    const projectSessionStoreReady = window.projectSessionStore?.version === 'project-session-v1' &&
+      document.documentElement.dataset.projectSession === 'project-session-v1' &&
+      Object.isFrozen(window.projectSessionStore) &&
+      Object.isFrozen(projectSessionSnapshot) &&
+      typeof window.projectSessionStore?.subscribe === 'function' &&
+      ['electron', 'web'].includes(projectSessionSnapshot?.runtime) &&
+      ['idle', 'ready'].includes(projectSessionSnapshot?.phase);
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     const motionCloseDelay = Math.max(
       760,
@@ -118,24 +126,23 @@ async function run() {
     themeTrigger.click();
     await delay(120);
     document.querySelector('[data-style="liquid-glass"]')?.click();
-    document.querySelector('[data-glass-mode="liquid"]')?.click();
+    document.querySelector('[data-glass-mode="clear"]')?.click();
     document.querySelector('[data-motion-mode="expressive"]')?.click();
     document.querySelector('[data-motion-feedback="strong"]')?.click();
     const ambientToggle = document.getElementById('motionAmbient');
     ambientToggle.checked = true;
     ambientToggle.dispatchEvent(new Event('change', { bubbles: true }));
     await delay(120);
-    const themePreview = document.getElementById('themePreviewCard');
     const themeCenterOpened = !themeModal.classList.contains('hidden') && getTopLayerModal()?.id === 'themeModal';
     const themeControlsApplied = document.documentElement.classList.contains('theme-liquid-glass') &&
-      document.documentElement.classList.contains('glass-mode-liquid') &&
+      document.documentElement.classList.contains('glass-mode-clear') &&
       document.documentElement.classList.contains('motion-mode-expressive') &&
       document.documentElement.dataset.motionEngine === 'motion' &&
       document.documentElement.dataset.motionFeedback === 'strong' &&
       document.documentElement.dataset.motionAmbient === 'true';
-    const themePreviewSynchronized = themePreview.dataset.previewStyle === 'liquid-glass' &&
-      themePreview.dataset.previewGlass === 'liquid' &&
-      themePreview.dataset.previewMotion === 'expressive';
+    const themeMaterialControlsReady = ['solid', 'regular', 'clear'].every(mode =>
+      Boolean(document.querySelector('[data-glass-mode="' + mode + '"]'))
+    ) && !document.getElementById('themePreviewCard');
     const themeActiveDurations = [
       '--motion-duration-fast',
       '--motion-duration',
@@ -437,13 +444,14 @@ async function run() {
       statsRegistryReady,
       statsRegistryImmutable,
       projectWorkflowReady,
+      projectSessionStoreReady,
       modalPrimitiveCount: document.querySelectorAll('.modal-workflow-body').length,
       queryFocusTrapped,
       queryClosedByEscape: queryModal.classList.contains('hidden'),
       queryFocusReturned,
       themeCenterOpened,
       themeControlsApplied,
-      themePreviewSynchronized,
+      themeMaterialControlsReady,
       themeActiveDurations,
       themeCenterClosed,
       pointEditorDirtyDetected,

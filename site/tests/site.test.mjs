@@ -5,6 +5,15 @@ import { renderPages } from '../src/render.mjs';
 
 const workspaceHtml = '<!doctype html><html lang="zh-CN"><head><title>CQNU Plant MAP</title><link rel="preload" href="/assets/legacy-runtime.js" as="script"><link rel="stylesheet" href="./renderer-dist/modern-shell.css"><link rel="stylesheet" href="/assets/workspace-gate.css"></head><body data-site-workspace="true"><div class="workspace-access-gate"></div><div id="modernUiRoot"></div><script src="/assets/workspace-gate.js"></script></body></html>';
 
+async function readSiteStyles() {
+  const sources = await Promise.all([
+    readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
+    readFile(new URL('../src/page-experience.css', import.meta.url), 'utf8'),
+    readFile(new URL('../src/responsive.css', import.meta.url), 'utf8')
+  ]);
+  return sources.join('\n');
+}
+
 test('site routes render complete branded documents', () => {
   const pages = renderPages({ workspaceHtml });
   assert.deepEqual(Object.keys(pages), ['/', '/workspace', '/docs', '/web', '/release', '/privacy']);
@@ -47,12 +56,40 @@ test('navigation client supports keyboard search and complete mobile dismissal',
 
 test('site motion uses a real progressive reveal with a reduced-motion fallback', async () => {
   const client = await readFile(new URL('../src/client.js', import.meta.url), 'utf8');
-  const styles = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
+  const styles = await readSiteStyles();
   assert.match(client, /motion-reveal-ready/);
   assert.match(client, /requestAnimationFrame/);
   assert.match(styles, /--motion-reveal:\s*720ms/);
   assert.match(styles, /\.motion-reveal-ready \[data-reveal\][\s\S]*opacity:\s*0/);
   assert.match(styles, /prefers-reduced-motion:[\s\S]*opacity:\s*1/);
+});
+
+test('site sections use content-specific palettes over shared material primitives', async () => {
+  const pages = renderPages({ workspaceHtml });
+  const styles = await readSiteStyles();
+  assert.match(pages['/'], /class="[^"]*site-page--home/);
+  assert.match(pages['/docs'], /class="[^"]*site-page--docs/);
+  assert.match(pages['/web'], /class="[^"]*site-page--architecture/);
+  assert.match(pages['/release'], /class="[^"]*site-page--release/);
+  assert.match(pages['/privacy'], /class="[^"]*site-page--privacy/);
+  assert.match(pages['/docs'], /assets\/page-experience\.css/);
+  assert.match(pages['/docs'], /assets\/responsive\.css/);
+  assert.match(styles, /\.site-page--home\s*\{[\s\S]*?--accent:\s*#176b45/);
+  assert.match(styles, /\.site-page--docs\s*\{[\s\S]*?--accent:\s*#2c64a1/);
+  assert.match(styles, /\.site-page--release\s*\{[\s\S]*?--accent:\s*#8f4d65/);
+  assert.match(styles, /prefers-reduced-transparency:[\s\S]*-webkit-backdrop-filter:\s*none/);
+});
+
+test('documentation shell includes reading progress and section-aware floating navigation', async () => {
+  const docs = renderPages({ workspaceHtml })['/docs'];
+  const client = await readFile(new URL('../src/client.js', import.meta.url), 'utf8');
+  assert.match(docs, /data-doc-progress/);
+  assert.match(docs, /data-doc-link/);
+  assert.match(docs, /data-doc-section/);
+  assert.match(docs, /doc-float-actions/);
+  assert.match(client, /syncDocumentProgress/);
+  assert.match(client, /docObserver/);
+  assert.match(client, /aria-current/);
 });
 
 test('management UI keeps login and member administration in a separate shell', async () => {
@@ -85,6 +122,18 @@ test('management UI keeps login and member administration in a separate shell', 
   assert.match(profile, /MAX_SOURCE_BYTES/);
   assert.match(profile, /localStorage/);
   assert.doesNotMatch(profile, /fetch\(|\/api\/manage/);
+});
+
+test('management shell uses a distinct ice-blue functional layer and solid data surfaces', async () => {
+  const styles = await readFile(new URL('../../admin/ui/manage.css', import.meta.url), 'utf8');
+  assert.match(styles, /--primary:\s*#2f66a5/);
+  assert.match(styles, /--paper:\s*#f4f7fb/);
+  assert.match(styles, /\.manage-topbar\s*\{[\s\S]*backdrop-filter:/);
+  assert.match(styles, /\.manage-sidebar\s*\{[\s\S]*backdrop-filter:/);
+  assert.match(styles, /\.data-panel\s*\{[\s\S]*background:\s*var\(--surface\)/);
+  assert.match(styles, /\.manage-nav button\[aria-current='page'\][\s\S]*box-shadow:/);
+  assert.match(styles, /prefers-reduced-transparency:[\s\S]*backdrop-filter:\s*none/);
+  assert.doesNotMatch(styles, /--primary:\s*#176b45/);
 });
 
 test('workspace access bridge carries only a local avatar preference', async () => {

@@ -59,11 +59,11 @@ export function WorkspaceHeader() {
         ) : null}
         {isWebRuntime ? (
           <nav class="web-site-links" aria-label="站点导航">
-            <a class="btn btn-soft web-site-link" href="/" title="站点首页">
+            <a class="btn btn-soft web-site-link glass-interactive" href="/" title="站点首页">
               <Home size={WORKSPACE_ICON_SIZE} aria-hidden="true" />
               <span data-i18n="webSiteHome">站点首页</span>
             </a>
-            <a class="btn btn-soft web-site-link" href="/docs" title="使用文档">
+            <a class="btn btn-soft web-site-link glass-interactive" href="/docs" title="使用文档">
               <BookOpen size={WORKSPACE_ICON_SIZE} aria-hidden="true" />
               <span data-i18n="webSiteDocs">使用文档</span>
             </a>

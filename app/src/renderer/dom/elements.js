@@ -258,7 +258,6 @@ const elementGroups = {
     'motionFeedbackControls',
     'motionAmbient',
     'motionReduced',
-    'themePreviewCard',
     'btnResetThemeAll',
     'btnSaveTheme'
   ],

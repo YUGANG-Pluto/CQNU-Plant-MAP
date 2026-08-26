@@ -140,6 +140,8 @@ function readLocaleSource(fileName) {
   const locale = fileName.replace(/\.js$/, '');
   return readAppSources([
     `src/renderer/i18n/${locale}/core.js`,
+    `src/renderer/i18n/${locale}/project.js`,
+    `src/renderer/i18n/${locale}/appearance.js`,
     `src/renderer/i18n/${locale}/map.js`,
     `src/renderer/i18n/${locale}/species.js`,
     `src/renderer/i18n/${locale}/stats.js`,

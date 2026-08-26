@@ -49,10 +49,8 @@
   min-height: 32px;
 }
 
-.theme-liquid-glass .glass,
-.theme-liquid-glass.glass-apply-modules .panel,
-.theme-liquid-glass.glass-apply-settings .layer-modal-panel {
-  background: color-mix(in srgb, var(--glass-bg-strong, rgba(232, 243, 241, 0.72)) 72%, transparent);
+:root:not(.glass-mode-solid) :where(.app-topbar, .map-workbar, .map-overlay, .layer-modal-panel) {
+  background: var(--glass-floating-bg, rgba(232, 243, 241, 0.72));
   border-color: var(--glass-border, rgba(255, 255, 255, 0.62));
   backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturation, 148%)) brightness(103%);
   -webkit-backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturation, 148%)) brightness(103%);
@@ -62,7 +60,7 @@
     inset 0 0 0 1px color-mix(in srgb, var(--glass-highlight) 26%, transparent);
 }
 
-.glass-mode-off :where(.glass, .glass-interactive) {
+.glass-mode-solid :where(.glass, .glass-interactive) {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
