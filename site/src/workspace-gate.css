@@ -24,6 +24,30 @@
 .workspace-access-panel img { width: 46px; height: 46px; margin: 0 auto 18px; }
 .workspace-access-panel h1 { margin: 0; color: #14231c; font-size: 24px; }
 .workspace-access-panel p { margin: 10px 0 0; color: #607067; line-height: 1.65; }
+.workspace-gate-progress {
+  height: 7px;
+  margin-top: 22px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(23, 107, 69, 0.1);
+  box-shadow: inset 0 1px 2px rgba(18, 54, 35, 0.08);
+}
+.workspace-gate-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4f9e79, #176b45);
+  box-shadow: 0 0 14px rgba(23, 107, 69, 0.26);
+  transition: width 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.workspace-access-panel small {
+  display: block;
+  margin-top: 9px;
+  color: #527064;
+  font-size: 11px;
+  font-weight: 720;
+  letter-spacing: 0.04em;
+}
 .workspace-access-panel a {
   min-height: 42px;
   margin-top: 20px;
@@ -51,5 +75,6 @@ html[data-workspace-session='expired'] #modernUiRoot { pointer-events: none; fil
 @media (prefers-reduced-motion: reduce) {
   .workspace-access-gate,
   .workspace-access-panel,
-  .workspace-access-panel a { animation: none !important; transition: none !important; }
+  .workspace-access-panel a,
+  .workspace-gate-progress span { animation: none !important; transition: none !important; }
 }

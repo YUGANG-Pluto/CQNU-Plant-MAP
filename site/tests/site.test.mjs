@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { renderPages } from '../src/render.mjs';
 
-const workspaceHtml = '<!doctype html><html lang="zh-CN"><head><title>CQNU Plant MAP</title><link rel="stylesheet" href="./renderer-dist/modern-shell.css"><link rel="stylesheet" href="/assets/workspace-gate.css"></head><body data-site-workspace="true"><div class="workspace-access-gate"></div><div id="modernUiRoot"></div><script src="/assets/workspace-gate.js"></script></body></html>';
+const workspaceHtml = '<!doctype html><html lang="zh-CN"><head><title>CQNU Plant MAP</title><link rel="preload" href="/assets/legacy-runtime.js" as="script"><link rel="stylesheet" href="./renderer-dist/modern-shell.css"><link rel="stylesheet" href="/assets/workspace-gate.css"></head><body data-site-workspace="true"><div class="workspace-access-gate"></div><div id="modernUiRoot"></div><script src="/assets/workspace-gate.js"></script></body></html>';
 
 test('site routes render complete branded documents', () => {
   const pages = renderPages({ workspaceHtml });
@@ -22,6 +22,7 @@ test('workspace route receives the complete shared application document', () => 
   assert.match(workspace, /modernUiRoot/);
   assert.match(workspace, /workspace-access-gate/);
   assert.match(workspace, /assets\/workspace-gate\.js/);
+  assert.match(workspace, /assets\/legacy-runtime\.js/);
   assert.doesNotMatch(workspace, /<script src="\.\/renderer-dist\/modern-shell\.js"><\/script>/);
 });
 
@@ -79,6 +80,17 @@ test('workspace access bridge carries only a local avatar preference', async () 
   assert.match(gate, /cqnuLocalProfile\?\.read\(data\.account\.id\)/);
   assert.match(gate, /avatarDataUrl/);
   assert.doesNotMatch(gate, /avatarDataUrl[\s\S]{0,120}fetch\(/);
+});
+
+test('workspace startup uses staged progress and one bundled legacy runtime request', async () => {
+  const gate = await readFile(new URL('../src/workspace-gate.js', import.meta.url), 'utf8');
+  const build = await readFile(new URL('../scripts/build.mjs', import.meta.url), 'utf8');
+  assert.match(gate, /Promise\.all\(\[/);
+  assert.match(gate, /assets\/legacy-runtime\.js/);
+  assert.doesNotMatch(gate, /src\/renderer\/legacy-loader\.js/);
+  assert.match(gate, /updateProgress\(100/);
+  assert.match(build, /CQNU_LEGACY_RUNTIME_SOURCES/);
+  assert.match(build, /legacyRuntimeBundle/);
 });
 
 test('published pages never embed local paths or desktop bridge names', () => {

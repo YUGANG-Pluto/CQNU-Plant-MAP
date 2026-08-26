@@ -1,6 +1,4 @@
 (() => {
-  document.documentElement.dataset.runtimeStatus = 'loading';
-
   const sources = [
     './src/renderer/state/store.js',
     './src/renderer/dom/elements.js',
@@ -81,6 +79,11 @@
     './src/renderer/shell/eventBindings.js',
     './src/renderer/app.js'
   ];
+
+  globalThis.CQNU_LEGACY_RUNTIME_SOURCES = Object.freeze([...sources]);
+  if (globalThis.CQNU_LEGACY_RUNTIME_MANIFEST_ONLY === true) return;
+
+  document.documentElement.dataset.runtimeStatus = 'loading';
 
   function loadScript(source) {
     return new Promise((resolve, reject) => {

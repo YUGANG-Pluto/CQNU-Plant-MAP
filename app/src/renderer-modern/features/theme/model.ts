@@ -1,6 +1,7 @@
 export type ThemeStyleId = 'scientific-white' | 'liquid-glass';
 export type ThemeDensity = 'comfortable' | 'compact';
-export type MotionMode = 'off' | 'minimal' | 'standard';
+export type MotionMode = 'off' | 'minimal' | 'standard' | 'expressive';
+export type MotionFeedback = 'soft' | 'balanced' | 'strong';
 
 export interface ThemeTokens {
   primary: string;
@@ -57,6 +58,8 @@ export interface MotionSettings {
   modal: boolean;
   layout: boolean;
   themeTransition: boolean;
+  ambient: boolean;
+  feedback: MotionFeedback;
   reduced: boolean;
   enabled: boolean;
 }
@@ -112,10 +115,10 @@ interface ThemePreset {
 }
 
 const GLASS_SCOPE_DEFAULTS = Object.freeze({
-  modules: true,
+  modules: false,
   controls: true,
   mapBadges: true,
-  charts: true,
+  charts: false,
   settings: true
 });
 
@@ -138,7 +141,13 @@ const LIQUID_GLASS: GlassSettings = {
   highlight: 62,
   shadow: 18,
   brightness: 4,
-  apply: { ...GLASS_SCOPE_DEFAULTS }
+  apply: {
+    modules: false,
+    controls: true,
+    mapBadges: true,
+    charts: false,
+    settings: true
+  }
 };
 
 export const UI_STYLE_PRESETS: Readonly<Record<ThemeStyleId, ThemePreset>> = Object.freeze({
@@ -231,7 +240,9 @@ export const MOTION_MODE_PRESETS: Readonly<Record<MotionMode, Omit<MotionSetting
       hover: false,
       modal: false,
       layout: false,
-      themeTransition: false
+      themeTransition: false,
+      ambient: false,
+      feedback: 'soft'
     },
     minimal: {
       speedMultiplier: 1,
@@ -246,7 +257,9 @@ export const MOTION_MODE_PRESETS: Readonly<Record<MotionMode, Omit<MotionSetting
       hover: true,
       modal: true,
       layout: false,
-      themeTransition: false
+      themeTransition: false,
+      ambient: false,
+      feedback: 'soft'
     },
     standard: {
       speedMultiplier: 1,
@@ -261,7 +274,26 @@ export const MOTION_MODE_PRESETS: Readonly<Record<MotionMode, Omit<MotionSetting
       hover: true,
       modal: true,
       layout: true,
-      themeTransition: true
+      themeTransition: true,
+      ambient: true,
+      feedback: 'balanced'
+    },
+    expressive: {
+      speedMultiplier: 1,
+      fadeDuration: 620,
+      transitionDuration: 860,
+      modalDuration: 1040,
+      stagger: 92,
+      scaleEnter: 0.955,
+      scalePress: 0.965,
+      hoverLift: 3,
+      easing: 'emphasized',
+      hover: true,
+      modal: true,
+      layout: true,
+      themeTransition: true,
+      ambient: true,
+      feedback: 'strong'
     }
   });
 
@@ -322,15 +354,20 @@ export function normalizeMotionSettings(value: Record<string, unknown> = {}): Mo
     : value.strength === 'light'
       ? 'minimal'
       : value.strength === 'rich'
-        ? 'standard'
+      ? 'expressive'
         : value.mode;
-  const mode: MotionMode = legacyMode === 'off' || legacyMode === 'minimal' || legacyMode === 'standard'
+  const mode: MotionMode = legacyMode === 'off'
+    || legacyMode === 'minimal'
+    || legacyMode === 'standard'
+    || legacyMode === 'expressive'
     ? legacyMode
-    : 'standard';
+    : 'expressive';
   const preset = MOTION_MODE_PRESETS[mode];
   const reduced = booleanValue(value.reduced, false);
-  const durationFloor = mode === 'standard'
-    ? { fade: 400, transition: 500, modal: 620 }
+  const durationFloor = mode === 'expressive'
+    ? { fade: 560, transition: 720, modal: 880 }
+    : mode === 'standard'
+      ? { fade: 440, transition: 580, modal: 720 }
     : mode === 'minimal'
       ? { fade: 300, transition: 360, modal: 440 }
       : { fade: 0, transition: 0, modal: 0 };
@@ -349,6 +386,10 @@ export function normalizeMotionSettings(value: Record<string, unknown> = {}): Mo
     modal: booleanValue(value.modal, preset.modal),
     layout: booleanValue(value.layout, preset.layout),
     themeTransition: booleanValue(value.themeTransition, preset.themeTransition),
+    ambient: booleanValue(value.ambient, preset.ambient),
+    feedback: value.feedback === 'soft' || value.feedback === 'balanced' || value.feedback === 'strong'
+      ? value.feedback
+      : preset.feedback,
     reduced,
     enabled: mode !== 'off' && !reduced
   };
@@ -377,7 +418,7 @@ export function createThemeDefaults(styleId: unknown = DEFAULT_UI_STYLE_ID): The
       lightness: 42
     },
     progress: { ...DEFAULT_PROGRESS },
-    motion: createMotionSettings('standard'),
+    motion: createMotionSettings('expressive'),
     statusColors: {
       success: preset.tokens.success,
       danger: preset.tokens.danger,

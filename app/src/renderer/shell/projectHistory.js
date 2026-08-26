@@ -312,7 +312,7 @@ function handleProjectHistoryShortcut(event) {
   return true;
 }
 
-async function confirmDiscardProjectDraft() {
+function confirmDiscardProjectDraft() {
   refreshProjectDraftState();
   if (!projectHasUnappliedDraft()) return true;
   return openConfirmDialog({

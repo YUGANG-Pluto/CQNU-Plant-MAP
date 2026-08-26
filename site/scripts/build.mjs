@@ -1,6 +1,7 @@
 import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
 import { siteMeta } from '../src/content.mjs';
 import { renderPages } from '../src/render.mjs';
 
@@ -14,12 +15,13 @@ if (!distRelative || distRelative.startsWith('..') || distRelative.includes(':')
   throw new Error('Refusing to clean a dist path outside the site workspace.');
 }
 
-const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, manageHtml, manageCss, manageClient, manageApi, manageI18n, profileStorage, hostingConfig] = await Promise.all([
+const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, legacyLoaderSource, manageHtml, manageCss, manageClient, manageApi, manageI18n, profileStorage, hostingConfig] = await Promise.all([
   readFile(resolve(projectRoot, 'src/styles.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/client.js'), 'utf8'),
   readFile(resolve(projectRoot, 'src/workspace-gate.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/workspace-gate.js'), 'utf8'),
   readFile(resolve(appRoot, 'index.html'), 'utf8'),
+  readFile(resolve(appRoot, 'src/renderer/legacy-loader.js'), 'utf8'),
   readFile(resolve(adminRoot, 'ui/index.html'), 'utf8'),
   readFile(resolve(adminRoot, 'ui/manage.css'), 'utf8'),
   readFile(resolve(adminRoot, 'ui/manage.js'), 'utf8'),
@@ -30,6 +32,39 @@ const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, manageHt
 ]);
 
 JSON.parse(hostingConfig);
+
+async function buildLegacyRuntimeBundle() {
+  const context = { CQNU_LEGACY_RUNTIME_MANIFEST_ONLY: true };
+  runInNewContext(legacyLoaderSource, context, { filename: 'legacy-loader.js' });
+  const sources = Array.from(context.CQNU_LEGACY_RUNTIME_SOURCES || []);
+  if (!sources.length) throw new Error('Legacy renderer source manifest is empty.');
+
+  const modules = await Promise.all(sources.map(async source => {
+    const relativeSource = String(source).replace(/^\.\//, '');
+    const absoluteSource = resolve(appRoot, relativeSource);
+    const relativeToApp = relative(appRoot, absoluteSource);
+    if (!relativeToApp || relativeToApp.startsWith('..') || relativeToApp.includes(':')) {
+      throw new Error(`Legacy renderer source escapes app root: ${source}`);
+    }
+    return {
+      source,
+      code: await readFile(absoluteSource, 'utf8')
+    };
+  }));
+
+  return [
+    "document.documentElement.dataset.runtimeStatus = 'loading';",
+    ...modules.map(({ source, code }) => `\n/* ${source} */\n${code}\n;`),
+    "\ndocument.documentElement.dataset.runtimeStatus = 'ready';\n"
+  ].join('\n');
+}
+
+const legacyRuntimeBundle = await buildLegacyRuntimeBundle();
+const workspaceResourceHints = [
+  '<link rel="preload" href="/renderer-dist/modern-shell.js" as="script" />',
+  '<link rel="preload" href="/node_modules/leaflet/dist/leaflet.js" as="script" />',
+  '<link rel="preload" href="/assets/legacy-runtime.js" as="script" />'
+].join('\n  ');
 const workspaceHtml = appIndex
   .replace('  <script src="./renderer-dist/modern-shell.js"></script>\n', '')
   .replace('  <script src="./node_modules/leaflet/dist/leaflet.js"></script>\n', '')
@@ -39,18 +74,26 @@ const workspaceHtml = appIndex
     "script-src 'self';",
     "script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:;"
   )
-  .replace('</head>', '  <link rel="manifest" href="/workspace.webmanifest" />\n  <link rel="stylesheet" href="/assets/workspace-gate.css" />\n</head>')
+  .replace('</head>', `  ${workspaceResourceHints}\n  <link rel="manifest" href="/workspace.webmanifest" />\n  <link rel="stylesheet" href="/assets/workspace-gate.css" />\n</head>`)
   .replace('<body>', `<body data-site-workspace="true">
   <div class="workspace-access-gate" data-workspace-access-gate role="status" aria-live="polite">
     <div class="workspace-access-panel">
       <img src="/assets/cqnu-logo.svg" alt="" />
-      <h1 data-gate-title>正在核对访问权限</h1>
-      <p data-gate-message>植物项目数据仍保存在本机；管理服务只核对当前账户与会话。</p>
-      <a href="/manage?next=/workspace" data-gate-action hidden>前往登录</a>
+       <h1 data-gate-title>正在核对访问权限</h1>
+       <p data-gate-message>植物项目数据仍保存在本机；管理服务只核对当前账户与会话。</p>
+       <div class="workspace-gate-progress" role="progressbar" aria-label="工作区加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8" data-gate-progress>
+         <span data-gate-progress-bar style="width: 8%"></span>
+       </div>
+       <small data-gate-stage>安全会话</small>
+       <a href="/manage?next=/workspace" data-gate-action hidden>前往登录</a>
     </div>
   </div>`)
   .replace('</body>', '  <script src="/assets/profile-storage.js"></script>\n  <script src="/assets/workspace-gate.js"></script>\n</body>');
-const pages = { ...renderPages({ workspaceHtml }), '/manage': manageHtml };
+const managePageHtml = manageHtml.replace(
+  '</head>',
+  '  <link rel="prefetch" href="/renderer-dist/modern-shell.js" as="script" />\n  <link rel="prefetch" href="/assets/legacy-runtime.js" as="script" />\n</head>'
+);
+const pages = { ...renderPages({ workspaceHtml }), '/manage': managePageHtml };
 const { managementSchemaSql } = await import('../../admin/dist/schema.js');
 const schemaSource = `export const managementSchemaSql = ${JSON.stringify(managementSchemaSql)};\n`;
 
@@ -99,6 +142,7 @@ await Promise.all([
   writeFile(resolve(clientRoot, 'assets/client.js'), client, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/workspace-gate.css'), workspaceGateCss, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/workspace-gate.js'), workspaceGateClient, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/legacy-runtime.js'), legacyRuntimeBundle, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/manage.css'), manageCss, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/manage.js'), manageClient, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/manage-api.js'), manageApi, 'utf8'),

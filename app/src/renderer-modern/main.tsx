@@ -10,6 +10,8 @@ import { installLegacyThemeBridge } from './features/theme/runtime';
 import { installMotionKernel } from './motion/motionKernel';
 import './styles/web-capability.css';
 import './styles/design-system.css';
+import './styles/appearance-center.css';
+import './styles/appearance-preview.css';
 import './styles/research-charts.css';
 import './styles/workspace-primitives.css';
 import './styles/workspace-motion.css';

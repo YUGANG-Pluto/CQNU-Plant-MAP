@@ -72,6 +72,11 @@ function testModernVisualSystemContract() {
   const designSource = fs.readFileSync(path.join(modernStyleDir, 'design-system.css'), 'utf8');
   const capabilitySource = fs.readFileSync(path.join(modernStyleDir, 'web-capability.css'), 'utf8');
   const chartSource = fs.readFileSync(path.join(modernStyleDir, 'research-charts.css'), 'utf8');
+  const appearanceSource = [
+    'appearance-center.css',
+    'appearance-preview.css'
+  ].map(name => fs.readFileSync(path.join(modernStyleDir, name), 'utf8')).join('\n');
+  const maintainedSource = [designSource, chartSource, appearanceSource].join('\n');
   [
     'theme-scientific-white',
     'theme-liquid-glass',
@@ -79,7 +84,7 @@ function testModernVisualSystemContract() {
     '.modern-theme-panel'
   ].forEach(selector => {
     assert.ok(
-      designSource.includes(selector) || chartSource.includes(selector),
+      maintainedSource.includes(selector),
       `${selector} must stay in the maintained visual system`
     );
   });
@@ -87,13 +92,19 @@ function testModernVisualSystemContract() {
   assert.ok(chartSource.includes('border-radius: 8px'));
   assert.ok(capabilitySource.includes('.web-capability-disclosure'));
   assert.ok(capabilitySource.includes('@media (max-width: 720px)'));
-  assert.ok(!designSource.includes('vibeui'), 'removed design experiments must not remain in the maintained visual layer');
+  assert.ok(!maintainedSource.includes('vibeui'), 'removed design experiments must not remain in the maintained visual layer');
+  assert.ok(appearanceSource.includes('@keyframes appearanceAmbientDrift'));
+  assert.ok(appearanceSource.includes('@keyframes appearancePointPulse'));
+  assert.ok(appearanceSource.includes('@keyframes appearanceChartBreathe'));
 }
 
 function testModernMotionContract() {
   const globalSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/styles/32-motion.css'), 'utf8');
   const chartStyles = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/styles/research-charts.css'), 'utf8');
   const chartSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/charts.js'), 'utf8');
+  const motionConfig = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/motion/motionConfig.ts'), 'utf8');
+  const motionKernel = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/motion/motionKernel.ts'), 'utf8');
+  const motionScenes = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/motion/motionScenes.ts'), 'utf8');
   [
     '@keyframes uiDialogIn',
     '@keyframes uiPanelIn'
@@ -114,6 +125,12 @@ function testModernMotionContract() {
   assert.ok(chartSource.includes('--chart-index'));
   assert.ok(chartSource.includes('--slice-index'));
   assert.ok(chartSource.includes('--legend-index'));
+  assert.ok(motionConfig.includes('MIN_ACTIVE_MOTION_MS = 260'));
+  assert.ok(motionConfig.includes('Math.max(MIN_ACTIVE_MOTION_MS'));
+  assert.ok(motionKernel.includes('animateView'));
+  assert.ok(motionKernel.includes('transitionView'));
+  assert.ok(motionScenes.includes('workspaceEntranceScene'));
+  assert.ok(motionScenes.includes('layerCloseScene'));
 }
 
 function testModalWorkflowContract() {
@@ -276,19 +293,26 @@ function testThemeSettingsProgressiveDisclosure() {
   assert.strictEqual(componentIds.length, new Set(componentIds).size, 'component ids must stay unique');
   assert.ok(!ids.some(id => componentIds.includes(id)), 'host and component ids must not overlap');
   [
+    'themeCenterKicker',
     'themeStyleHeading',
     'themeScientificWhite',
     'themeLiquidGlass',
-    'themeDisplayHeading',
+    'themeMaterialHeading',
     'themeDensity',
+    'themeMotionHeading',
     'themeMotionHint',
+    'motionFeedbackHeading',
+    'motionAmbient',
     'themePreviewHint'
   ].forEach(key => assert.ok(themeUi.includes(`data-i18n="${key}"`), `${key} must be wired in theme settings`));
   [
     'themeStylePresets',
     'themeAccentColor',
+    'themeGlassControls',
     'themeDensityControls',
-    'motionMode',
+    'motionModeControls',
+    'motionFeedbackControls',
+    'motionAmbient',
     'motionReduced',
     'themePreviewCard',
     'btnResetThemeAll',
@@ -324,8 +348,12 @@ function testThemeSettingsProgressiveDisclosure() {
       'themeScientificWhite',
       'themeLiquidGlass',
       'themeAccentColor',
+      'themeMaterialHeading',
       'themeDensity',
+      'themeMotionHeading',
       'themeMotionHint',
+      'motionFeedbackHeading',
+      'motionAmbient',
       'themeSave'
     ].forEach(key => assert.ok(source.includes(`"${key}"`), `${name} missing ${key}`));
   });

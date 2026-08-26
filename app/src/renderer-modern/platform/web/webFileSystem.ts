@@ -1,6 +1,7 @@
 import {
   createEmptyWebProjectSession,
   createWebProjectSession,
+  selectWebProjectFolderFiles,
   selectWebProjectFiles,
   type WebProjectSession
 } from '../webProject';
@@ -383,6 +384,12 @@ export async function deleteWebProjectJsonFiles(handle: PermissionDirectoryHandl
 
 export async function importWebProjectFiles(): Promise<WebProjectSession | null> {
   const files = await selectWebProjectFiles();
+  if (!files.length) return null;
+  return createWebProjectSession(files, { sourceKind: 'import' });
+}
+
+export async function importWebProjectFolder(): Promise<WebProjectSession | null> {
+  const files = await selectWebProjectFolderFiles();
   if (!files.length) return null;
   return createWebProjectSession(files, { sourceKind: 'import' });
 }

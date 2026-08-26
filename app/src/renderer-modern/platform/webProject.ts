@@ -275,8 +275,38 @@ function applyJsonProjectPart(
 }
 
 function projectLabel(files: readonly File[]): string {
+  const folderName = files
+    .map(file => cleanText(file.webkitRelativePath).split('/').filter(Boolean)[0] || '')
+    .find(Boolean);
+  if (folderName) return folderName;
   if (files.length === 1) return files[0].name.replace(/\.(json|geojson|csv)$/i, '') || '本地项目';
   return '本地项目文件组';
+}
+
+function normalizedRelativePath(file: File): string {
+  return cleanText(file.webkitRelativePath || file.name)
+    .replaceAll('\\', '/')
+    .replace(/^\.\//, '')
+    .toLocaleLowerCase();
+}
+
+export function projectFilesFromFolder(files: readonly File[]): File[] {
+  const candidates = [...files].filter(file => /\.(json|geojson|csv)$/i.test(file.name));
+  const coreNames = new Set(['settings.json', 'zones.json', 'points.json']);
+  const coreFiles = candidates.filter(file => {
+    const path = normalizedRelativePath(file);
+    const parts = path.split('/').filter(Boolean);
+    const name = parts.at(-1) || '';
+    if (!coreNames.has(name)) return false;
+    const parent = parts.at(-2) || '';
+    return parts.length <= 2 || parent === 'information';
+  });
+  if (coreFiles.length) return coreFiles;
+
+  return candidates.filter(file => {
+    const parts = normalizedRelativePath(file).split('/').filter(Boolean);
+    return parts.length <= 2;
+  });
 }
 
 export function webProjectDir(projectId: string): string {
@@ -341,23 +371,38 @@ export async function createWebProjectSession(
   };
 }
 
-function inputFileSelection(): Promise<File[]> {
+function inputFileSelection(folder = false): Promise<File[]> {
   return new Promise(resolve => {
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
-    input.accept = '.json,.geojson,.csv,application/json,text/csv,application/geo+json';
+    if (folder) {
+      input.setAttribute('webkitdirectory', '');
+      input.setAttribute('directory', '');
+    } else {
+      input.accept = '.json,.geojson,.csv,application/json,text/csv,application/geo+json';
+    }
     input.hidden = true;
+    let settled = false;
     const finish = () => {
+      if (settled) return;
+      settled = true;
       const files = [...(input.files || [])];
+      window.removeEventListener('focus', handleWindowFocus);
       input.remove();
-      resolve(files);
+      resolve(folder ? projectFilesFromFolder(files) : files);
     };
+    const handleWindowFocus = () => window.setTimeout(finish, 420);
     input.addEventListener('change', finish, { once: true });
     input.addEventListener('cancel', finish, { once: true });
+    window.addEventListener('focus', handleWindowFocus, { once: true });
     document.body.appendChild(input);
     input.click();
   });
+}
+
+export function selectWebProjectFolderFiles(): Promise<File[]> {
+  return inputFileSelection(true);
 }
 
 export async function selectWebProjectFiles(): Promise<File[]> {

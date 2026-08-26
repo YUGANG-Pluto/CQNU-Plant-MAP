@@ -31,6 +31,8 @@ const workspaceHtml = await workspace.text();
 assert.match(workspaceHtml, /modernUiRoot/);
 assert.match(workspaceHtml, /workspace-access-gate/);
 assert.match(workspaceHtml, /assets\/workspace-gate\.js/);
+assert.match(workspaceHtml, /assets\/legacy-runtime\.js/);
+assert.match(workspaceHtml, /data-gate-progress/);
 assert.doesNotMatch(workspaceHtml, /<script src="\.\/renderer-dist\/modern-shell\.js"><\/script>/);
 assert.match(workspace.headers.get('content-security-policy') || '', /wasm-unsafe-eval/);
 assert.match(workspace.headers.get('content-security-policy') || '', /worker-src 'self' blob:/);
@@ -50,6 +52,7 @@ assert.ok((await preview.arrayBuffer()).byteLength > 1000);
 for (const asset of [
   '/renderer-dist/modern-shell.js',
   '/src/renderer/legacy-loader.js',
+  '/assets/legacy-runtime.js',
   '/assets/workspace-gate.js',
   '/assets/manage.js',
   '/assets/manage-api.js'
