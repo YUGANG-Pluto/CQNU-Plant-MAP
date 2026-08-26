@@ -1,6 +1,7 @@
 import type { StoredWebProject, WebBackupRecord, WebProjectRecord } from './webDatabaseProtocol';
 import { getWebDatabaseClient, type WebDatabaseClient } from './webDatabaseClient';
 import {
+  importWebProjectFolder,
   importWebProjectFiles,
   deleteWebProjectJsonFiles,
   recoverWebDirectoryHandle,
@@ -55,6 +56,7 @@ export interface WebProjectChooseOptions {
   allowCreate?: boolean;
   persist?: boolean;
   directoryAccessMode?: WebDirectoryAccessMode;
+  selectionMode?: 'auto' | 'directory' | 'portable-folder';
 }
 
 export interface WebProjectRepositoryOptions {
@@ -144,9 +146,10 @@ export class WebProjectRepository {
     const allowCreate = options.allowCreate ?? true;
     const persist = options.persist ?? true;
     const directoryAccessMode = options.directoryAccessMode || this.#directoryAccessMode;
+    const selectionMode = options.selectionMode || 'auto';
     let context: ProjectContext | null = null;
 
-    if (supportsWebDirectoryProjects()) {
+    if (selectionMode !== 'portable-folder' && supportsWebDirectoryProjects()) {
       // Keep the native picker as the first awaited operation so the click's
       // transient user activation remains valid in Chromium.
       const selection = await selectWebDirectoryProject(directoryAccessMode);
@@ -169,7 +172,9 @@ export class WebProjectRepository {
         directoryPermissionStatus: 'granted'
       };
     } else {
-      const session = await importWebProjectFiles();
+      const session = selectionMode === 'portable-folder' || selectionMode === 'auto'
+        ? await importWebProjectFolder()
+        : await importWebProjectFiles();
       if (!session) return null;
       if (!allowCreate && !session.points.length && !session.zones.length) {
         throw new Error('只读账户不能创建空项目。');

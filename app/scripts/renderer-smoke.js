@@ -1,4 +1,6 @@
 const { app } = require('electron');
+const { mkdir, writeFile } = require('node:fs/promises');
+const path = require('node:path');
 const { createMainWindow } = require('../main-dist/main/windowManager');
 const { registerIpc } = require('../main-dist/main/ipc/register');
 const { runRendererDomainSmoke } = require('./renderer-smoke/domain-contract');
@@ -57,7 +59,17 @@ const requiredIds = [
   'btnLocateReviewTask',
   'btnEditReviewTask',
   'trashModal',
+  'btnOpenTheme',
   'themeModal',
+  'btnCloseThemeModal',
+  'themeStylePresets',
+  'themeGlassControls',
+  'themeDensityControls',
+  'motionModeControls',
+  'motionFeedbackControls',
+  'motionAmbient',
+  'motionReduced',
+  'themePreviewCard',
   'mergeModal',
   'backupModal',
   'maintenanceModal',
@@ -94,6 +106,24 @@ function waitForLoad(window) {
       reject(new Error(`Renderer failed to load (${code}): ${description}`));
     });
   });
+}
+
+async function captureAppearanceCenter(window) {
+  const outputDirectory = process.env.CQNU_SMOKE_SCREENSHOT_DIR;
+  if (!outputDirectory) return;
+  const originalBounds = window.getBounds();
+  window.setSkipTaskbar(true);
+  window.setBounds({ ...originalBounds, width: 1440, height: 960, x: -32_000, y: -32_000 }, false);
+  window.showInactive();
+  await window.webContents.executeJavaScript(`new Promise(resolve => {
+    document.getElementById('btnOpenTheme')?.click();
+    setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(resolve)), 1250);
+  })`, true);
+  await mkdir(outputDirectory, { recursive: true });
+  const image = await window.webContents.capturePage();
+  await writeFile(path.join(outputDirectory, 'desktop-appearance-center.png'), image.toPNG());
+  await window.webContents.executeJavaScript(`document.getElementById('btnCloseThemeModal')?.click()`, true);
+  window.hide();
 }
 
 async function run() {
@@ -137,8 +167,10 @@ async function run() {
       Object.isFrozen(statsRegistry?.presets);
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     const motionCloseDelay = Math.max(
-      420,
-      (parseMs(rootStyle.getPropertyValue('--motion-duration')) || 0) + 80
+      760,
+      (parseMs(rootStyle.getPropertyValue('--motion-duration-fast')) || 0) + 120,
+      (parseMs(rootStyle.getPropertyValue('--motion-duration')) || 0) + 80,
+      (parseMs(rootStyle.getPropertyValue('--motion-duration-modal')) || 0) + 60
     );
     const queryTrigger = document.getElementById('btnOpenQuery');
     const queryModal = document.getElementById('queryModal');
@@ -157,6 +189,41 @@ async function run() {
     const queryFocusReturned = document.activeElement === queryTrigger;
 
     const appState = window.__CQNU_STATE__;
+    const originalTheme = structuredClone(appState.settings?.uiTheme || {});
+    const themeTrigger = document.getElementById('btnOpenTheme');
+    const themeModal = document.getElementById('themeModal');
+    themeTrigger.click();
+    await delay(120);
+    document.querySelector('[data-style="liquid-glass"]')?.click();
+    document.querySelector('[data-glass-mode="liquid"]')?.click();
+    document.querySelector('[data-motion-mode="expressive"]')?.click();
+    document.querySelector('[data-motion-feedback="strong"]')?.click();
+    const ambientToggle = document.getElementById('motionAmbient');
+    ambientToggle.checked = true;
+    ambientToggle.dispatchEvent(new Event('change', { bubbles: true }));
+    await delay(120);
+    const themePreview = document.getElementById('themePreviewCard');
+    const themeCenterOpened = !themeModal.classList.contains('hidden') && getTopLayerModal()?.id === 'themeModal';
+    const themeControlsApplied = document.documentElement.classList.contains('theme-liquid-glass') &&
+      document.documentElement.classList.contains('glass-mode-liquid') &&
+      document.documentElement.classList.contains('motion-mode-expressive') &&
+      document.documentElement.dataset.motionEngine === 'motion' &&
+      document.documentElement.dataset.motionFeedback === 'strong' &&
+      document.documentElement.dataset.motionAmbient === 'true';
+    const themePreviewSynchronized = themePreview.dataset.previewStyle === 'liquid-glass' &&
+      themePreview.dataset.previewGlass === 'liquid' &&
+      themePreview.dataset.previewMotion === 'expressive';
+    const themeActiveDurations = [
+      '--motion-duration-fast',
+      '--motion-duration',
+      '--motion-duration-modal'
+    ].map(name => parseMs(getComputedStyle(document.documentElement).getPropertyValue(name)));
+    document.getElementById('btnCloseThemeModal').click();
+    await delay(motionCloseDelay);
+    const themeCenterClosed = themeModal.classList.contains('hidden');
+    appState.settings.uiTheme = originalTheme;
+    ensureThemeSettings();
+    applyThemeVariables();
     const originalState = {
       projectDir: appState.projectDir,
       projectModifiedTime: appState.projectModifiedTime,
@@ -370,7 +437,7 @@ async function run() {
     commandInput.value = 'SMOKE-P2';
     commandInput.dispatchEvent(new Event('input', { bubbles: true }));
     commandInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
-    await delay(720);
+    await delay(motionCloseDelay);
     const commandObjectJumpWorked = appState.selectedPointId === 'smoke-point-2' && commandPalette.classList.contains('hidden');
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true, cancelable: true }));
@@ -450,6 +517,11 @@ async function run() {
       queryFocusTrapped,
       queryClosedByEscape: queryModal.classList.contains('hidden'),
       queryFocusReturned,
+      themeCenterOpened,
+      themeControlsApplied,
+      themePreviewSynchronized,
+      themeActiveDurations,
+      themeCenterClosed,
       pointEditorDirtyDetected,
       globalProjectDraftDetected,
       projectCloseDraftGuard,
@@ -532,6 +604,13 @@ async function run() {
   if (!result.queryFocusTrapped) failures.push('query modal does not trap keyboard focus');
   if (!result.queryClosedByEscape) failures.push('query modal did not close with Escape');
   if (!result.queryFocusReturned) failures.push('query modal did not restore focus to its opener');
+  if (!result.themeCenterOpened) failures.push('appearance center did not open as the top workflow layer');
+  if (!result.themeControlsApplied) failures.push('appearance center did not apply the shared liquid-glass and motion state');
+  if (!result.themePreviewSynchronized) failures.push('appearance center preview did not follow the selected material and motion profile');
+  if (result.themeActiveDurations.some(value => !Number.isFinite(value) || value < 260)) {
+    failures.push(`appearance center exposed an active animation below 260ms: ${result.themeActiveDurations.join(', ')}`);
+  }
+  if (!result.themeCenterClosed) failures.push('appearance center did not close through the shared motion layer');
   if (!result.pointEditorDirtyDetected) failures.push('point editor did not expose its dirty state');
   if (!result.globalProjectDraftDetected) failures.push('project save status did not expose an unapplied draft');
   if (!result.projectCloseDraftGuard) failures.push('window close was not guarded for an unapplied draft');
@@ -594,6 +673,7 @@ async function run() {
   if (!result.themeBridgeReady) failures.push('theme compatibility bridge is incomplete');
   failures.push(...errors);
 
+  await captureAppearanceCenter(window);
   window.destroy();
   if (failures.length) {
     throw new Error(failures.join('\n'));

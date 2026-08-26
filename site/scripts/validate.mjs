@@ -31,6 +31,8 @@ const workspaceHtml = await workspace.text();
 assert.match(workspaceHtml, /modernUiRoot/);
 assert.match(workspaceHtml, /workspace-access-gate/);
 assert.match(workspaceHtml, /assets\/workspace-gate\.js/);
+assert.match(workspaceHtml, /assets\/legacy-runtime\.js/);
+assert.match(workspaceHtml, /data-gate-progress/);
 assert.doesNotMatch(workspaceHtml, /<script src="\.\/renderer-dist\/modern-shell\.js"><\/script>/);
 assert.match(workspace.headers.get('content-security-policy') || '', /wasm-unsafe-eval/);
 assert.match(workspace.headers.get('content-security-policy') || '', /worker-src 'self' blob:/);
@@ -42,14 +44,15 @@ assert.equal(healthData.ok, true);
 assert.equal(healthData.version, siteMeta.version);
 assert.equal(healthData.channel, 'web/main');
 assert.equal(healthData.artifactVersion, 3);
-assert.ok(healthData.clientAssetCount > 100);
+assert.ok(healthData.clientAssetCount > 20);
+assert.ok(healthData.clientAssetCount < 80, 'Published assets should not contain the unbundled renderer source tree');
 const preview = await fetchSite('/assets/app-preview.png');
 assert.equal(preview.status, 200);
 assert.match(preview.headers.get('content-type') || '', /image\/png/);
 assert.ok((await preview.arrayBuffer()).byteLength > 1000);
 for (const asset of [
   '/renderer-dist/modern-shell.js',
-  '/src/renderer/legacy-loader.js',
+  '/assets/legacy-runtime.js',
   '/assets/workspace-gate.js',
   '/assets/manage.js',
   '/assets/manage-api.js'
@@ -61,6 +64,8 @@ for (const asset of [
   assert.ok(source.length > 1000);
   assert.doesNotMatch(source, /[A-Za-z]:\\/);
 }
+const unbundledLegacyLoader = await fetchSite('/src/renderer/legacy-loader.js');
+assert.equal(unbundledLegacyLoader.status, 404);
 const managementPage = await fetchSite('/manage');
 const managementHtml = await managementPage.text();
 assert.match(managementHtml, /data-manage-shell/);

@@ -1,5 +1,7 @@
 function bindProjectEvents() {
   ui.btnChooseDir.addEventListener('click', chooseAndLoadProject);
+  ui.btnChooseDirWelcome?.addEventListener('click', chooseAndLoadProject);
+  ui.btnImportProjectFolder?.addEventListener('click', chooseAndLoadProject);
   ui.btnSave?.addEventListener('click', async () => {
     if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('save-project')) return;
     await persistProject();

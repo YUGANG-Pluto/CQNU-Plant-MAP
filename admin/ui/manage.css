@@ -141,7 +141,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important
   font-weight: 800;
   letter-spacing: 0.08em;
 }
-.auth-intro h1 { margin: 14px 0 18px; font-size: clamp(38px, 4.5vw, 60px); line-height: 1.08; letter-spacing: 0; }
+.auth-intro h1 { max-width: 650px; margin: 14px 0 18px; font-size: clamp(38px, 4.2vw, 56px); line-height: 1.1; letter-spacing: 0; text-wrap: balance; }
 .auth-intro > p { max-width: 620px; margin: 0; color: var(--muted); font-size: 17px; }
 .auth-facts { margin: 42px 0 0; border-top: 1px solid var(--line); }
 .auth-facts > div { padding: 15px 0; display: grid; grid-template-columns: 100px 1fr; gap: 18px; border-bottom: 1px solid var(--line); }

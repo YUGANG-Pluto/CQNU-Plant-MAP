@@ -1,22 +1,61 @@
 let workspaceDrawerCloseTimer = null;
 
-async function chooseAndLoadProject() {
-  const button = ui.btnChooseDir;
-  if (button?.classList.contains('is-busy')) return;
-  if (typeof confirmDiscardProjectDraft === 'function' && !await confirmDiscardProjectDraft()) return;
-  button?.classList.add('is-busy');
-  button?.setAttribute('aria-busy', 'true');
-  if (button) button.disabled = true;
+function projectOpenButtons() {
+  return [ui.btnChooseDir, ui.btnChooseDirWelcome, ui.btnImportProjectFolder].filter(Boolean);
+}
+
+function setProjectOpenState(activeButton, busy, message = '') {
+  projectOpenButtons().forEach(button => {
+    button.classList.toggle('is-busy', busy && button === activeButton);
+    if (busy && button === activeButton) button.setAttribute('aria-busy', 'true');
+    else button.removeAttribute('aria-busy');
+    button.disabled = busy || window.platformAdapter?.capabilities.readProject !== true;
+  });
+  if (ui.webProjectOpenStatus) ui.webProjectOpenStatus.textContent = message;
+  const motionState = busy
+    ? 'opening'
+    : message === t('webProjectOpenReady')
+      ? 'ready'
+      : message === t('webProjectOpenFailed')
+        ? 'error'
+        : 'canceled';
+  window.cqnuMotionKernel?.projectOpen?.(motionState, activeButton);
+}
+
+async function chooseAndLoadProject(event) {
+  const button = event?.currentTarget || ui.btnChooseDir;
+  if (projectOpenButtons().some(candidate => candidate.classList.contains('is-busy'))) return;
+
+  const discardDecision = typeof confirmDiscardProjectDraft === 'function'
+    ? confirmDiscardProjectDraft()
+    : true;
+  if (discardDecision !== true && !await discardDecision) return;
+
+  const portable = button?.dataset?.projectOpenMode === 'portable-folder';
+  const command = portable
+    ? window.platformAdapter.project.choosePortableDir
+    : window.platformAdapter.project.chooseDir;
+  if (typeof command !== 'function') {
+    showAlert(t('webProjectFolderUnsupported'));
+    return;
+  }
+
+  setProjectOpenState(button, true, t(portable ? 'webProjectImportingFolder' : 'webProjectOpeningFolder'));
   try {
-    const result = await callIpc(window.platformAdapter.project.chooseDir());
-    if (result.canceled) return;
+    // Invoke the picker before the first await to preserve the browser's trusted user activation.
+    const pendingSelection = command();
+    const result = await callIpc(pendingSelection);
+    if (result.canceled) {
+      setProjectOpenState(button, false, t('webProjectOpenCanceled'));
+      return;
+    }
     await loadProjectIntoRenderer(result.projectDir);
+    setProjectOpenState(button, false, t('webProjectOpenReady'));
   } catch (error) {
+    setProjectOpenState(button, false, t('webProjectOpenFailed'));
     showAlert(error?.message || '本地项目目录未能打开，请检查浏览器权限后重试。');
   } finally {
-    button?.classList.remove('is-busy');
-    button?.removeAttribute('aria-busy');
-    if (button) button.disabled = window.platformAdapter?.capabilities.readProject !== true;
+    setProjectOpenState(button, false, ui.webProjectOpenStatus?.textContent || '');
   }
 }
 

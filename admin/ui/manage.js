@@ -22,6 +22,24 @@ const memberDialog = document.querySelector('[data-member-dialog]');
 const memberForm = document.querySelector('[data-member-form]');
 const tokenDialog = document.querySelector('[data-token-dialog]');
 const localProfile = window.cqnuLocalProfile;
+const workspaceWarmAssets = [
+  ['/renderer-dist/modern-shell.js', 'script'],
+  ['/node_modules/leaflet/dist/leaflet.js', 'script'],
+  ['/assets/legacy-runtime.js', 'script']
+];
+let workspaceWarmupStarted = false;
+
+function warmWorkspaceAssets() {
+  if (workspaceWarmupStarted) return;
+  workspaceWarmupStarted = true;
+  for (const [href, as] of workspaceWarmAssets) {
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = href;
+    link.as = as;
+    document.head.append(link);
+  }
+}
 
 function messageTarget(form) {
   return form.querySelector('.form-message');
@@ -198,7 +216,9 @@ function showDashboard(data, options = {}) {
   }
   const next = safeNextPath();
   if (options.followNext && next === '/workspace') {
-    location.assign('/workspace');
+    showMessage(loginForm, '验证通过，正在进入工作区…');
+    document.documentElement.dataset.authTransition = 'workspace';
+    location.replace('/workspace');
     return;
   }
   if (options.followNext && next === '/manage') state.activeView = safeRequestedView();
@@ -437,6 +457,8 @@ async function loadAuditEvents() {
 
 loginForm.addEventListener('submit', async event => {
   event.preventDefault();
+  warmWorkspaceAssets();
+  showMessage(loginForm, '正在验证并预载工作区…');
   try {
     const data = await submitWithBusy(loginForm, () => managementApi.login(
       loginForm.elements.username.value,

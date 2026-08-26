@@ -29,6 +29,7 @@ export type PlatformNoPayloadCommand<TResult = unknown> = () => Promise<Platform
 export interface PlatformServiceApi {
   project: {
     chooseDir: PlatformNoPayloadCommand;
+    choosePortableDir?: PlatformNoPayloadCommand;
     chooseMergeDir: PlatformNoPayloadCommand;
     load: PlatformCommand;
     save: PlatformCommand;

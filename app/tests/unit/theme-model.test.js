@@ -30,7 +30,11 @@ test('theme defaults use the scientific white design', () => {
   assert.equal(value.styleId, 'scientific-white');
   assert.equal(value.density, 'comfortable');
   assert.equal(value.glass.mode, 'light');
-  assert.equal(value.motion.mode, 'standard');
+  assert.equal(value.motion.mode, 'expressive');
+  assert.equal(value.motion.feedback, 'strong');
+  assert.equal(value.motion.ambient, true);
+  assert.equal(value.glass.apply.modules, false);
+  assert.equal(value.glass.apply.charts, false);
 });
 
 test('legacy style ids map to one of the two maintained designs', () => {
@@ -67,12 +71,13 @@ test('invalid values fall back without leaking display strings', () => {
   });
   assert.equal(value.styleId, 'scientific-white');
   assert.match(value.tokens.primary, /^#[0-9A-F]{6}$/);
-  assert.equal(value.motion.mode, 'standard');
+  assert.equal(value.motion.mode, 'expressive');
 });
 
 test('enabled motion presets keep perceptible and clearly separated timing tiers', () => {
   const minimal = theme.createMotionSettings('minimal');
   const standard = theme.createMotionSettings('standard');
+  const expressive = theme.createMotionSettings('expressive');
   assert.deepEqual(
     [minimal.fadeDuration, minimal.transitionDuration, minimal.modalDuration],
     [320, 400, 500]
@@ -81,6 +86,15 @@ test('enabled motion presets keep perceptible and clearly separated timing tiers
     [standard.fadeDuration, standard.transitionDuration, standard.modalDuration],
     [440, 580, 720]
   );
+  assert.deepEqual(
+    [expressive.fadeDuration, expressive.transitionDuration, expressive.modalDuration],
+    [620, 860, 1040]
+  );
+  [minimal, standard, expressive].forEach(preset => {
+    assert.ok(preset.fadeDuration >= 260);
+    assert.ok(preset.transitionDuration >= 260);
+    assert.ok(preset.modalDuration >= 260);
+  });
   assert.ok(standard.fadeDuration < standard.transitionDuration);
   assert.ok(standard.transitionDuration < standard.modalDuration);
   assert.ok(standard.stagger >= 72);
@@ -93,7 +107,7 @@ test('legacy custom motion durations are raised to the new perceptible minimum',
     transitionDuration: 120,
     modalDuration: 180
   });
-  assert.equal(motion.fadeDuration, 400);
-  assert.equal(motion.transitionDuration, 500);
-  assert.equal(motion.modalDuration, 620);
+  assert.equal(motion.fadeDuration, 440);
+  assert.equal(motion.transitionDuration, 580);
+  assert.equal(motion.modalDuration, 720);
 });

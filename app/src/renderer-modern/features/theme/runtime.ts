@@ -28,6 +28,10 @@ type LegacyWindow = Window & typeof globalThis & {
   closeLayerModal?: (element: HTMLElement | null) => void;
   persistProject?: () => Promise<void>;
   scheduleMapResize?: () => void;
+  cqnuMotionKernel?: {
+    refresh?: () => void;
+    feedback?: (target: Element, kind?: 'success' | 'error' | 'attention') => void;
+  };
   toast?: (message: string) => void;
   t?: (key: string) => string;
   [key: string]: unknown;
@@ -208,6 +212,7 @@ function applyThemeVariables(): void {
   const shadowAlpha = (0.04 + effects.shadowStrength / 1000).toFixed(3);
   const floatAlpha = (0.08 + effects.shadowStrength / 850).toFixed(3);
   const motionEnabled = motion.enabled && !motion.reduced;
+  const motionDistance = motion.mode === 'expressive' ? 30 : motion.mode === 'standard' ? 22 : 12;
   const easing = motion.easing === 'emphasized'
     ? 'cubic-bezier(0.16, 1, 0.3, 1)'
     : 'cubic-bezier(0.2, 0.8, 0.2, 1)';
@@ -219,7 +224,14 @@ function applyThemeVariables(): void {
   root.classList.remove('density-comfortable', 'density-compact');
   root.classList.remove('glass-mode-off', 'glass-mode-light', 'glass-mode-liquid');
   root.classList.remove(...GLASS_SCOPE_CLASSES);
-  root.classList.remove('motion-mode-off', 'motion-mode-minimal', 'motion-mode-standard', 'motion-mode-rich', 'motion-mode-custom');
+  root.classList.remove(
+    'motion-mode-off',
+    'motion-mode-minimal',
+    'motion-mode-standard',
+    'motion-mode-expressive',
+    'motion-mode-rich',
+    'motion-mode-custom'
+  );
   root.classList.add(`theme-${theme.styleId}`, `density-${theme.density}`, `glass-mode-${glass.mode}`, `motion-mode-${motion.mode}`);
   Object.entries(glass.apply).forEach(([scope, enabled]) => {
     if (enabled) root.classList.add(`glass-apply-${scope}`);
@@ -229,6 +241,10 @@ function applyThemeVariables(): void {
   root.classList.toggle('motion-modal', motionEnabled && motion.modal);
   root.classList.toggle('motion-layout', motionEnabled && motion.layout);
   root.classList.toggle('motion-theme', motionEnabled && motion.themeTransition);
+  root.classList.toggle('motion-ambient', motionEnabled && motion.ambient);
+  root.dataset.motionProfile = motion.mode;
+  root.dataset.motionFeedback = motion.feedback;
+  root.dataset.motionAmbient = String(motionEnabled && motion.ambient);
   root.classList.toggle('progress-mode-compact', progress.mode === 'compact');
   root.classList.toggle('progress-mode-display', progress.mode === 'display');
   root.classList.toggle('progress-glass', progress.glass);
@@ -298,11 +314,12 @@ function applyThemeVariables(): void {
   setCssVariable('--motion-ease', easing);
   setCssVariable('--motion-ease-standard', 'cubic-bezier(0.2, 0.8, 0.2, 1)');
   setCssVariable('--motion-ease-emphasized', 'cubic-bezier(0.16, 1, 0.3, 1)');
-  setCssVariable('--motion-dialog-translate-y', `${motionEnabled ? (motion.mode === 'standard' ? 22 : 12) : 0}px`);
-  setCssVariable('--motion-panel-translate-x', `${motionEnabled ? (motion.mode === 'standard' ? 30 : 18) : 0}px`);
-  setCssVariable('--motion-subpanel-translate', `${motionEnabled ? (motion.mode === 'standard' ? 18 : 10) : 0}px`);
-  setCssVariable('--motion-surface-translate-y', `${motionEnabled ? (motion.mode === 'standard' ? 18 : 10) : 0}px`);
+  setCssVariable('--motion-dialog-translate-y', `${motionEnabled ? motionDistance : 0}px`);
+  setCssVariable('--motion-panel-translate-x', `${motionEnabled ? motionDistance + 8 : 0}px`);
+  setCssVariable('--motion-subpanel-translate', `${motionEnabled ? Math.max(10, motionDistance - 4) : 0}px`);
+  setCssVariable('--motion-surface-translate-y', `${motionEnabled ? Math.max(10, motionDistance - 6) : 0}px`);
   setCssVariable('--motion-overlay-opacity', motionEnabled ? '0.34' : '0');
+  setCssVariable('--motion-feedback-strength', motion.feedback === 'strong' ? '1' : motion.feedback === 'balanced' ? '0.65' : '0.35');
   setCssVariable('--radius-sm', `${Math.max(6, radius - 2)}px`);
   setCssVariable('--radius-md', `${radius}px`);
   setCssVariable('--radius-lg', `${radius}px`);
@@ -325,6 +342,7 @@ function applyThemeVariables(): void {
   setCssVariable('--brand-logo-color', tokens.primary);
   setCssVariable('--brand-logo-shadow', `0 8px 18px ${hexToRgba(tokens.primary, 24)}`);
 
+  legacyWindow.cqnuMotionKernel?.refresh?.();
   legacyWindow.scheduleMapResize?.();
 }
 
@@ -361,6 +379,23 @@ function setDensity(density: ThemeDensity): void {
   renderThemePanel();
 }
 
+function setGlassMode(mode: ThemeSettings['glass']['mode']): void {
+  if (guard('theme-glass')) return;
+  const theme = getCurrentTheme();
+  const preset = mode === 'liquid'
+    ? UI_STYLE_PRESETS['liquid-glass'].glass
+    : mode === 'light'
+      ? UI_STYLE_PRESETS['scientific-white'].glass
+      : { ...theme.glass, mode: 'off' as const };
+  theme.glass = {
+    ...preset,
+    mode,
+    apply: { ...preset.apply }
+  };
+  applyThemeVariables();
+  renderThemePanel();
+}
+
 function setMotionMode(mode: MotionMode): void {
   if (guard('theme-motion')) return;
   const theme = getCurrentTheme();
@@ -369,10 +404,30 @@ function setMotionMode(mode: MotionMode): void {
   renderThemePanel();
 }
 
+function setMotionFeedback(feedback: ThemeSettings['motion']['feedback']): void {
+  if (guard('theme-motion')) return;
+  const theme = getCurrentTheme();
+  theme.motion.feedback = feedback;
+  applyThemeVariables();
+  renderThemePanel();
+}
+
+function setMotionAmbient(ambient: boolean): void {
+  if (guard('theme-motion')) return;
+  const theme = getCurrentTheme();
+  theme.motion.ambient = ambient;
+  applyThemeVariables();
+  renderThemePanel();
+}
+
 function setReducedMotion(reduced: boolean): void {
   if (guard('theme-motion')) return;
   const theme = getCurrentTheme();
-  theme.motion = createMotionSettings(theme.motion.mode, reduced);
+  theme.motion = {
+    ...createMotionSettings(theme.motion.mode, reduced),
+    ambient: theme.motion.ambient,
+    feedback: theme.motion.feedback
+  };
   applyThemeVariables();
   renderThemePanel();
 }
@@ -396,18 +451,35 @@ function renderThemePanel(): void {
     button.classList.toggle('active', button.dataset.density === theme.density);
     button.setAttribute('aria-pressed', String(button.dataset.density === theme.density));
   });
+  document.querySelectorAll<HTMLElement>('[data-glass-mode]').forEach(button => {
+    const active = button.dataset.glassMode === theme.glass.mode;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  document.querySelectorAll<HTMLElement>('[data-motion-mode]').forEach(button => {
+    const active = button.dataset.motionMode === theme.motion.mode;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  document.querySelectorAll<HTMLElement>('[data-motion-feedback]').forEach(button => {
+    const active = button.dataset.motionFeedback === theme.motion.feedback;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
 
   const accent = document.getElementById('themeAccentColor') as HTMLInputElement | null;
   const accentValue = document.getElementById('themeAccentValue');
-  const motionMode = document.getElementById('motionMode') as HTMLSelectElement | null;
+  const motionAmbient = document.getElementById('motionAmbient') as HTMLInputElement | null;
   const reducedMotion = document.getElementById('motionReduced') as HTMLInputElement | null;
   const preview = document.getElementById('themePreviewCard');
   if (accent) accent.value = theme.tokens.primary;
   if (accentValue) accentValue.textContent = theme.tokens.primary;
-  if (motionMode) motionMode.value = theme.motion.mode;
+  if (motionAmbient) motionAmbient.checked = theme.motion.ambient;
   if (reducedMotion) reducedMotion.checked = theme.motion.reduced;
   if (preview) {
     preview.dataset.previewStyle = theme.styleId;
+    preview.dataset.previewGlass = theme.glass.mode;
+    preview.dataset.previewMotion = theme.motion.mode;
     preview.style.setProperty('--preview-primary', theme.tokens.primary);
     preview.style.setProperty('--preview-secondary', theme.tokens.secondary);
   }
@@ -456,12 +528,26 @@ function bindThemePanelEvents(): void {
       setDensity(button.dataset.density);
     }
   });
+  document.getElementById('themeGlassControls')?.addEventListener('click', event => {
+    const button = (event.target as Element).closest<HTMLElement>('[data-glass-mode]');
+    const mode = button?.dataset.glassMode;
+    if (mode === 'off' || mode === 'light' || mode === 'liquid') setGlassMode(mode);
+  });
   document.getElementById('themeAccentColor')?.addEventListener('input', event => {
     setAccentColor((event.currentTarget as HTMLInputElement).value);
   });
-  document.getElementById('motionMode')?.addEventListener('change', event => {
-    const mode = (event.currentTarget as HTMLSelectElement).value;
-    if (mode === 'off' || mode === 'minimal' || mode === 'standard') setMotionMode(mode);
+  document.getElementById('motionModeControls')?.addEventListener('click', event => {
+    const button = (event.target as Element).closest<HTMLElement>('[data-motion-mode]');
+    const mode = button?.dataset.motionMode;
+    if (mode === 'off' || mode === 'minimal' || mode === 'standard' || mode === 'expressive') setMotionMode(mode);
+  });
+  document.getElementById('motionFeedbackControls')?.addEventListener('click', event => {
+    const button = (event.target as Element).closest<HTMLElement>('[data-motion-feedback]');
+    const feedback = button?.dataset.motionFeedback;
+    if (feedback === 'soft' || feedback === 'balanced' || feedback === 'strong') setMotionFeedback(feedback);
+  });
+  document.getElementById('motionAmbient')?.addEventListener('change', event => {
+    setMotionAmbient((event.currentTarget as HTMLInputElement).checked);
   });
   document.getElementById('motionReduced')?.addEventListener('change', event => {
     setReducedMotion((event.currentTarget as HTMLInputElement).checked);

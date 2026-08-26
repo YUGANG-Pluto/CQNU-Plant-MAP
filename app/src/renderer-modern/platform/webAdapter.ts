@@ -120,6 +120,31 @@ async function chooseProject(): Promise<PlatformResponse<UnknownRecord>> {
   }
 }
 
+async function choosePortableProject(): Promise<PlatformResponse<UnknownRecord>> {
+  try {
+    requireWorkspaceRead();
+    const session = await repository.choose(true, {
+      allowCreate: false,
+      persist: canSaveWorkspace,
+      directoryAccessMode: 'read',
+      selectionMode: 'portable-folder'
+    });
+    if (!session) return success({ canceled: true });
+    return success({
+      canceled: false,
+      projectDir: session.projectDir,
+      label: session.label,
+      storageFormat: 'sqlite',
+      portableImport: true
+    });
+  } catch (error) {
+    return failure(
+      'WEB_PROJECT_FOLDER_IMPORT_FAILED',
+      error instanceof Error ? error.message : '所选文件夹无法作为浏览器本地项目导入。'
+    );
+  }
+}
+
 async function chooseMergeProject(): Promise<PlatformResponse<UnknownRecord>> {
   try {
     requireWorkspaceRead();
@@ -545,6 +570,7 @@ export function createWebPlatformAdapter(): PlatformAdapter {
     }),
     project: Object.freeze({
       chooseDir: chooseProject,
+      choosePortableDir: choosePortableProject,
       chooseMergeDir: chooseMergeProject,
       load: loadProject,
       save: saveProject,

@@ -86,18 +86,32 @@ export function MapWorkspace() {
             </dl>
             <div class="web-project-welcome__actions">
               <button
+                id="btnChooseDirWelcome"
                 class="btn btn-primary"
                 type="button"
                 disabled={!canOpenProject}
-                onClick={() => document.getElementById('btnChooseDir')?.click()}
+                data-project-open-mode="directory"
               >
                 <FolderOpen size={17} aria-hidden="true" />
                 <span data-i18n="webOpenLocalData">打开本地项目</span>
+              </button>
+              <button
+                id="btnImportProjectFolder"
+                class="btn btn-soft"
+                type="button"
+                disabled={!canOpenProject}
+                data-project-open-mode="portable-folder"
+              >
+                <HardDrive size={17} aria-hidden="true" />
+                <span data-i18n="webImportProjectFolder">兼容导入文件夹</span>
               </button>
               <a class="btn btn-soft" href="/manage?next=/manage&view=account" data-i18n="webManageAccess">
                 管理账户权限
               </a>
             </div>
+            <p id="webProjectOpenStatus" class="web-project-welcome__status" role="status" aria-live="polite">
+              <span data-i18n="webProjectOpenHint">优先使用目录授权；浏览器不支持时可兼容导入整个文件夹。</span>
+            </p>
           </section>
         ) : null}
         <div class="map-overlay glass status-bar">

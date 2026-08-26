@@ -143,7 +143,13 @@ function closeLayerModal(modal, options = {}) {
   modal.classList.remove('is-open');
   modal.setAttribute('aria-hidden', 'true');
 
+  let closed = false;
   const finishClose = () => {
+    if (closed) return;
+    closed = true;
+    if (modal.dataset.closeTimer) {
+      clearTimeout(Number(modal.dataset.closeTimer));
+    }
     modal.classList.add('hidden');
     modal.classList.remove('is-closing');
     delete modal.dataset.closeTimer;
@@ -156,6 +162,12 @@ function closeLayerModal(modal, options = {}) {
 
   if (duration <= 1) {
     finishClose();
+    return;
+  }
+  if (typeof window.cqnuMotionKernel?.closeLayer === 'function') {
+    const timer = window.setTimeout(finishClose, duration + 120);
+    modal.dataset.closeTimer = String(timer);
+    Promise.resolve(window.cqnuMotionKernel.closeLayer(modal)).then(finishClose, finishClose);
     return;
   }
   const timer = window.setTimeout(() => {

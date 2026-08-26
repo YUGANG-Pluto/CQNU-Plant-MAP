@@ -4,11 +4,23 @@
   const gateTitle = gate?.querySelector('[data-gate-title]');
   const gateMessage = gate?.querySelector('[data-gate-message]');
   const gateAction = gate?.querySelector('[data-gate-action]');
+  const gateProgress = gate?.querySelector('[data-gate-progress]');
+  const gateProgressBar = gate?.querySelector('[data-gate-progress-bar]');
+  const gateStage = gate?.querySelector('[data-gate-stage]');
   let csrfToken = '';
   let heartbeatId = 0;
   let applicationLoaded = false;
 
   root.dataset.workspaceSession = 'checking';
+
+  function updateProgress(value, stage, title = '', message = '') {
+    const progress = Math.max(0, Math.min(100, Number(value) || 0));
+    if (gateProgress) gateProgress.setAttribute('aria-valuenow', String(progress));
+    if (gateProgressBar) gateProgressBar.style.width = `${progress}%`;
+    if (gateStage) gateStage.textContent = stage;
+    if (title) gateTitle.textContent = title;
+    if (message) gateMessage.textContent = message;
+  }
 
   function showGate(title, message, action = null) {
     gate.hidden = false;
@@ -92,11 +104,18 @@
 
   async function loadApplication() {
     if (applicationLoaded) return;
-    await loadScript('/renderer-dist/modern-shell.js');
-    await loadScript('/node_modules/leaflet/dist/leaflet.js');
+    updateProgress(34, '界面内核', '正在准备研究工作区', '正在并行载入界面与地图基础能力。');
+    await Promise.all([
+      loadScript('/renderer-dist/modern-shell.js'),
+      loadScript('/node_modules/leaflet/dist/leaflet.js')
+    ]);
+    updateProgress(62, '地图工具');
     await loadScript('/node_modules/leaflet-draw/dist/leaflet.draw.js');
-    await loadScript('/src/renderer/legacy-loader.js');
+    updateProgress(78, '数据运行时', '', '正在连接本地项目、统计与维护模块。');
+    await loadScript('/assets/legacy-runtime.js');
+    if (root.dataset.runtimeStatus !== 'ready') throw new Error('RUNTIME_NOT_READY');
     applicationLoaded = true;
+    updateProgress(100, '准备完成', '工作区已就绪', '正在恢复上次使用位置。');
   }
 
   function startHeartbeat() {
@@ -152,6 +171,7 @@
         return;
       }
       installAccess(data);
+      updateProgress(22, '权限已确认', '访问验证完成', '账户权限有效，正在启动本地应用。');
       await loadApplication();
       hideGate();
       startHeartbeat();

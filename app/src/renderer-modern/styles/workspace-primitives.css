@@ -276,6 +276,20 @@
   transform: translateY(-1px);
 }
 
+.web-project-welcome__status {
+  grid-column: 1 / -1;
+  min-height: 18px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: right;
+}
+
+.web-project-welcome__actions .is-busy {
+  cursor: progress;
+  filter: saturate(0.84);
+}
+
 @keyframes webProjectWelcomeIn {
   0% {
     opacity: 0;

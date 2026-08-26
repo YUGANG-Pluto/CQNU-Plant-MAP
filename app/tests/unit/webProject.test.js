@@ -11,6 +11,12 @@ function localFile(name, content, lastModified = 1000) {
   };
 }
 
+function folderFile(path, content = {}) {
+  const file = localFile(path.split('/').at(-1), content);
+  file.webkitRelativePath = path;
+  return file;
+}
+
 test('web project reader combines settings, zones, and points without local paths', async () => {
   const { createWebProjectSession } = await webProjectModule;
   const session = await createWebProjectSession([
@@ -51,4 +57,27 @@ test('web project reader rejects unsupported selections with a readable error', 
     createWebProjectSession([localFile('notes.txt', 'not a project')]),
     /请选择 settings\.json/
   );
+});
+
+test('folder import selects only the project data trio from an application directory', async () => {
+  const { projectFilesFromFolder } = await webProjectModule;
+  const files = projectFilesFromFolder([
+    folderFile('campus/information/settings.json'),
+    folderFile('campus/information/zones.json'),
+    folderFile('campus/information/points.json'),
+    folderFile('campus/information/logs/diagnostic.json'),
+    folderFile('campus/images/plant.jpg')
+  ]);
+
+  assert.deepEqual(files.map(file => file.name).sort(), ['points.json', 'settings.json', 'zones.json']);
+});
+
+test('folder import accepts a single portable project export at the folder root', async () => {
+  const { projectFilesFromFolder } = await webProjectModule;
+  const files = projectFilesFromFolder([
+    folderFile('campus/project.json'),
+    folderFile('campus/nested/unrelated.json')
+  ]);
+
+  assert.deepEqual(files.map(file => file.name), ['project.json']);
 });
