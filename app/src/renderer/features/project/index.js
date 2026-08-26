@@ -99,6 +99,8 @@ async function applyLoadedProjectToRenderer(data) {
   toast(t(
     data.webDirectoryReconnectRequired
       ? 'webDirectoryReconnectRequired'
+      : data.webExternalSqliteImported
+        ? 'webSqliteImportedReadOnlySource'
       : window.platformAdapter?.runtime === 'web'
         ? 'webProjectLoaded'
         : 'projectCreated'

@@ -1,4 +1,6 @@
-.layer-modal {
+.layer-modal,
+.image-modal,
+.stats-fullscreen-layer {
   z-index: calc(var(--z-layer-base, 20000) + var(--layer-order, 0));
 }
 

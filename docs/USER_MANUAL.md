@@ -8,6 +8,8 @@ Install the Windows package or run the app from source with `npm start` in the `
 
 Click `Choose Project Folder`. Select an existing project folder or an empty folder. The app creates `information/settings.json`, `zones.json`, `points.json`, and `images/` when needed.
 
+In the browser workspace, selecting a desktop project folder that contains `information/data.db`, or selecting a `.db`, `.sqlite`, or `.sqlite3` file directly, imports that database into an editable OPFS working copy. The selected source database and its directory remain unchanged. Re-select the source when a newer desktop copy needs to be imported.
+
 ## Map Workspace
 
 - Use browse mode to pan and inspect.

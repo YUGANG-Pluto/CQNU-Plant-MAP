@@ -341,6 +341,7 @@ async function toggleFullscreenMode() {
 
 function handleImagePreviewKey(event) {
   if (ui.imagePreviewModal.classList.contains('hidden')) return false;
+  if (typeof getTopLayerModal === 'function' && getTopLayerModal() !== ui.imagePreviewModal) return false;
   if (!['Escape', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return false;
   event.preventDefault();
   if (event.key === 'Escape') closeImagePreview();
@@ -361,6 +362,7 @@ function handleModalEscapeKey(event) {
     if (topModal === ui.pointEditorModal) return closePointEditor();
     if (topModal === ui.basemapWorkspaceModal) return closeBasemapWorkspacePanel();
     if (topModal === ui.mergeReviewModal && typeof settleMergeReview === 'function') return settleMergeReview(null);
+    if (topModal.id === 'statsFullscreenLayer' && typeof closeStatsFullscreen === 'function') return closeStatsFullscreen();
     closeLayerModal(topModal);
     return;
   }

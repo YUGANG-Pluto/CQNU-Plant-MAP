@@ -1,3 +1,5 @@
+import type { ExternalSqliteFormat, WebProjectSourceKind } from './web/webDatabaseProtocol';
+
 type UnknownRecord = Record<string, unknown>;
 
 export interface WebProjectSession {
@@ -5,10 +7,12 @@ export interface WebProjectSession {
   projectDir: string;
   label: string;
   modifiedAt: number;
-  sourceKind: 'opfs' | 'directory' | 'import';
+  sourceKind: WebProjectSourceKind;
   settings: UnknownRecord;
   zones: UnknownRecord[];
   points: UnknownRecord[];
+  importWarnings?: string[];
+  externalSqliteFormat?: ExternalSqliteFormat;
 }
 
 export interface WebProjectSessionOptions {
@@ -279,7 +283,7 @@ function projectLabel(files: readonly File[]): string {
     .map(file => cleanText(file.webkitRelativePath).split('/').filter(Boolean)[0] || '')
     .find(Boolean);
   if (folderName) return folderName;
-  if (files.length === 1) return files[0].name.replace(/\.(json|geojson|csv)$/i, '') || '本地项目';
+  if (files.length === 1) return files[0].name.replace(/\.(json|geojson|csv|db|sqlite|sqlite3)$/i, '') || '本地项目';
   return '本地项目文件组';
 }
 
@@ -291,6 +295,24 @@ function normalizedRelativePath(file: File): string {
 }
 
 export function projectFilesFromFolder(files: readonly File[]): File[] {
+  const sqliteCandidates = [...files]
+    .filter(file => /\.(db|sqlite|sqlite3)$/i.test(file.name))
+    .filter(file => {
+      const parts = normalizedRelativePath(file).split('/').filter(Boolean);
+      const parent = parts.at(-2) || '';
+      return parts.length <= 2 || parent === 'information';
+    })
+    .sort((left, right) => {
+      const rank = (file: File) => {
+        const path = normalizedRelativePath(file);
+        if (path.endsWith('/information/data.db') || path === 'information/data.db') return 0;
+        if (path.endsWith('/data.db') || path === 'data.db') return 1;
+        return 2;
+      };
+      return rank(left) - rank(right) || normalizedRelativePath(left).localeCompare(normalizedRelativePath(right));
+    });
+  if (sqliteCandidates.length) return [sqliteCandidates[0]];
+
   const candidates = [...files].filter(file => /\.(json|geojson|csv)$/i.test(file.name));
   const coreNames = new Set(['settings.json', 'zones.json', 'points.json']);
   const coreFiles = candidates.filter(file => {
@@ -380,7 +402,7 @@ function inputFileSelection(folder = false): Promise<File[]> {
       input.setAttribute('webkitdirectory', '');
       input.setAttribute('directory', '');
     } else {
-      input.accept = '.json,.geojson,.csv,application/json,text/csv,application/geo+json';
+      input.accept = '.db,.sqlite,.sqlite3,.json,.geojson,.csv,application/vnd.sqlite3,application/x-sqlite3,application/json,text/csv,application/geo+json';
     }
     input.hidden = true;
     let settled = false;
@@ -414,6 +436,7 @@ export async function selectWebProjectFiles(): Promise<File[]> {
       types: [{
         description: '校园植物项目数据',
         accept: {
+          'application/vnd.sqlite3': ['.db', '.sqlite', '.sqlite3'],
           'application/json': ['.json', '.geojson'],
           'text/csv': ['.csv']
         }

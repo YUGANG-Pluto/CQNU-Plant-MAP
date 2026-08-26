@@ -3,15 +3,20 @@ function testStatisticsChartVisualContract() {
     'src/renderer/features/stats/config.js',
     'src/renderer/features/stats/view.js',
     'src/renderer/features/stats/export.js',
-    'src/renderer/features/stats/index.js'
+    'src/renderer/features/stats/index.js',
+    'src/renderer/shell/eventBindings.js'
   ]);
   const statsResearchSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/statsResearch.js'), 'utf8');
   const chartSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/charts.js'), 'utf8');
   const statsRegistrySource = readAppSources([
     'src/renderer-modern/features/stats/registry.ts',
     'src/renderer-modern/features/stats/runtime.ts',
+    'src/renderer-modern/features/stats/contracts.ts',
+    'src/renderer-modern/features/stats/contractsRuntime.ts',
     'src/renderer-modern/main.tsx'
   ]);
+  const dialogSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/utils/dialogs.js'), 'utf8');
+  const modalPrimitiveCss = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/styles/modal-primitives.css'), 'utf8');
   const loaderSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/legacy-loader.js'), 'utf8');
   const coreCss = readAppSources([
     'src/renderer/styles/12-research-stats.css',
@@ -24,6 +29,9 @@ function testStatisticsChartVisualContract() {
   assert.ok(statsSource.includes('window.rendererStatsRegistry'), 'legacy statistics UI must consume the typed registry');
   assert.ok(statsRegistrySource.includes('stats-chart-registry-v1'), 'typed statistics registry must expose a versioned bridge');
   assert.ok(statsRegistrySource.includes('validateStatsChartRegistry'), 'typed statistics registry must validate chart coverage');
+  assert.ok(statsRegistrySource.includes('ResearchStatsSnapshot'), 'typed statistics registry must expose the snapshot DTO');
+  assert.ok(statsRegistrySource.includes('StatsExportDescriptor'), 'typed statistics registry must expose the export DTO');
+  assert.ok(statsRegistrySource.includes('assertResearchStatsSnapshot'), 'typed statistics boundary must reject malformed snapshots');
   assert.ok(statsRegistrySource.includes('installStatsChartRegistryBridge();'), 'modern renderer must install the statistics registry');
   [
     'normalizePointForStats',
@@ -103,7 +111,9 @@ function testStatisticsChartVisualContract() {
     '.stats-export-grid',
     '.stats-notes-list'
   ].forEach(selector => assert.ok(coreCss.includes(selector), `${selector} must support research stats UI`));
-  assert.ok(coreCss.includes('z-index: var(--z-fullscreen, 30000)'), 'statistics fullscreen overlay must use the top-level fullscreen tier');
+  assert.ok(dialogSource.includes("'.layer-modal, .image-modal, .stats-fullscreen-layer'"), 'elevated renderer surfaces must share one layer selector');
+  assert.ok(modalPrimitiveCss.includes('.stats-fullscreen-layer'));
+  assert.ok(modalPrimitiveCss.includes('var(--layer-order, 0)'), 'fullscreen layers must use dynamic open order');
   assert.ok(coreCss.includes('z-index: 1'), 'statistics fullscreen dialog must stay above its overlay backdrop');
   ['zh.js', 'en.js'].forEach(name => {
     const source = readLocaleSource(name);

@@ -1,6 +1,7 @@
 let layerOpenSequence = 0;
 let toastTimer = 0;
 const layerReturnFocusTargets = new WeakMap();
+const elevatedLayerSelector = '.layer-modal, .image-modal, .stats-fullscreen-layer';
 
 function ensureSettingsShape(settings) {
   const next = settings || {};
@@ -57,7 +58,8 @@ function firstFocusableElement(container) {
 }
 
 function visibleLayerModals() {
-  return Array.from(document.querySelectorAll('.layer-modal:not(.hidden):not(.is-closing)'));
+  return Array.from(document.querySelectorAll(elevatedLayerSelector))
+    .filter(layer => !layer.classList.contains('hidden') && !layer.classList.contains('is-closing'));
 }
 
 function getTopLayerModal() {
@@ -70,7 +72,8 @@ function getTopLayerModal() {
 }
 
 function syncLayerModalDocumentState() {
-  const hasVisibleLayer = Boolean(document.querySelector('.layer-modal:not(.hidden)'));
+  const hasVisibleLayer = Array.from(document.querySelectorAll(elevatedLayerSelector))
+    .some(layer => !layer.classList.contains('hidden'));
   document.body?.classList.toggle('has-open-layer-modal', hasVisibleLayer);
   if (!hasVisibleLayer) layerOpenSequence = 0;
 }
@@ -157,6 +160,7 @@ function closeLayerModal(modal, options = {}) {
     modal.style.removeProperty('--layer-order');
     layerReturnFocusTargets.delete(modal);
     syncLayerModalDocumentState();
+    if (typeof options.onClosed === 'function') options.onClosed(modal);
     if (options.restoreFocus !== false) restoreLayerModalFocus(returnFocus);
   };
 

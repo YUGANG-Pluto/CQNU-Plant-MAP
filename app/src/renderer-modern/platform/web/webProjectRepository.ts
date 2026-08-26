@@ -34,6 +34,7 @@ interface ProjectContext {
   session: WebProjectSession;
   directoryHandle?: PermissionDirectoryHandle;
   directoryPermissionStatus: WebDirectoryPermissionStatus;
+  mirrorMode: 'json' | 'none';
 }
 
 export interface WebProjectSaveInput {
@@ -130,13 +131,21 @@ export class WebProjectRepository {
     return context?.directoryPermissionStatus === 'granted' ? context.directoryHandle : undefined;
   }
 
+  writableDirectoryHandle(projectDir = ''): PermissionDirectoryHandle | undefined {
+    const projectId = projectIdFromDir(projectDir) || this.#activeProjectId;
+    const context = this.#contexts.get(projectId);
+    return context?.mirrorMode === 'json' && context.directoryPermissionStatus === 'granted'
+      ? context.directoryHandle
+      : undefined;
+  }
+
   directoryPermissionStatus(projectDir = ''): WebDirectoryPermissionStatus {
     const projectId = projectIdFromDir(projectDir) || this.#activeProjectId;
     return this.#contexts.get(projectId)?.directoryPermissionStatus || 'missing';
   }
 
   hasDirectoryMirror(projectDir = ''): boolean {
-    return Boolean(this.directoryHandle(projectDir));
+    return Boolean(this.writableDirectoryHandle(projectDir));
   }
 
   async choose(
@@ -169,7 +178,8 @@ export class WebProjectRepository {
       context = {
         session,
         directoryHandle: selection.directoryHandle,
-        directoryPermissionStatus: 'granted'
+        directoryPermissionStatus: 'granted',
+        mirrorMode: session.sourceKind === 'sqlite' ? 'none' : 'json'
       };
     } else {
       const session = selectionMode === 'portable-folder' || selectionMode === 'auto'
@@ -180,7 +190,7 @@ export class WebProjectRepository {
         throw new Error('只读账户不能创建空项目。');
       }
       if (persist) await (await this.database()).putProject(toStoredProject(session));
-      context = { session, directoryPermissionStatus: 'unsupported' };
+      context = { session, directoryPermissionStatus: 'unsupported', mirrorMode: 'none' };
     }
 
     this.#contexts.set(context.session.projectId, context);
@@ -192,8 +202,32 @@ export class WebProjectRepository {
     const projectId = projectIdFromDir(projectDir);
     if (!projectId) return null;
     const existingContext = this.#contexts.get(projectId);
-    if (existingContext?.directoryPermissionStatus === 'granted'
-      || existingContext?.directoryPermissionStatus === 'unsupported') {
+    if (existingContext?.directoryPermissionStatus === 'unsupported') {
+      this.#activeProjectId = projectId;
+      return clone(existingContext.session);
+    }
+    if (existingContext?.directoryPermissionStatus === 'granted') {
+      if (preferredFormat === 'json' && existingContext.directoryHandle) {
+        const jsonSession = await readWebProjectDirectory(existingContext.directoryHandle, projectId);
+        if (jsonSession) {
+          this.#contexts.set(projectId, { ...existingContext, session: jsonSession, mirrorMode: 'json' });
+          this.#activeProjectId = projectId;
+          return clone(jsonSession);
+        }
+      }
+      if (preferredFormat === 'sqlite') {
+        const stored = await (await this.database()).getProject(projectId);
+        if (stored) {
+          const session = toSession(stored);
+          this.#contexts.set(projectId, {
+            ...existingContext,
+            session,
+            mirrorMode: session.sourceKind === 'sqlite' ? 'none' : existingContext.mirrorMode
+          });
+          this.#activeProjectId = projectId;
+          return clone(session);
+        }
+      }
       this.#activeProjectId = projectId;
       return clone(existingContext.session);
     }
@@ -220,6 +254,7 @@ export class WebProjectRepository {
     this.#contexts.set(projectId, {
       session,
       directoryPermissionStatus,
+      mirrorMode: session.sourceKind === 'sqlite' ? 'none' : 'json',
       ...(readableDirectoryHandle ? { directoryHandle: readableDirectoryHandle } : {})
     });
     this.#activeProjectId = projectId;
@@ -243,7 +278,7 @@ export class WebProjectRepository {
   }
 
   async deleteDirectoryMirror(projectDir: string): Promise<number> {
-    const handle = this.directoryHandle(projectDir);
+    const handle = this.writableDirectoryHandle(projectDir);
     if (!handle) return 0;
     return deleteWebProjectJsonFiles(handle);
   }
@@ -266,7 +301,7 @@ export class WebProjectRepository {
     await (await this.database()).putProject(project);
 
     let mirrorWarning = '';
-    if (context?.directoryHandle) {
+    if (context?.mirrorMode === 'json' && context.directoryHandle) {
       try {
         await writeWebProjectDirectory(context.directoryHandle, project);
       } catch (error) {
@@ -278,6 +313,7 @@ export class WebProjectRepository {
     this.#contexts.set(projectId, {
       session,
       directoryPermissionStatus: context?.directoryPermissionStatus || 'missing',
+      mirrorMode: context?.mirrorMode || 'none',
       ...(context?.directoryHandle ? { directoryHandle: context.directoryHandle } : {})
     });
     this.#activeProjectId = projectId;
@@ -285,7 +321,7 @@ export class WebProjectRepository {
       projectDir: session.projectDir,
       projectModifiedTime: modifiedAt,
       storageFormat: 'sqlite',
-      jsonFilesExist: Boolean(context?.directoryHandle),
+      jsonFilesExist: context?.mirrorMode === 'json' && Boolean(context.directoryHandle),
       sqliteDatabaseExists: true,
       ...(mirrorWarning ? { mirrorWarning } : {})
     };
@@ -293,7 +329,7 @@ export class WebProjectRepository {
 
   async mirrorActiveProject(): Promise<void> {
     const context = this.activeContext();
-    if (!context?.directoryHandle) return;
+    if (!context?.directoryHandle || context.mirrorMode !== 'json') return;
     const project = await (await this.database()).getProject(context.session.projectId);
     if (!project) return;
     await writeWebProjectDirectory(context.directoryHandle, project);
@@ -395,7 +431,7 @@ export class WebProjectRepository {
     const projectId = projectIdFromDir(projectDir);
     if (!projectId) throw new Error('浏览器项目标识无效。');
     const safetyBackup = await this.createBackup(projectDir, 'pre_restore');
-    const sourceKind = ['directory', 'import', 'opfs'].includes(String(source.sourceKind || ''))
+    const sourceKind = ['directory', 'import', 'opfs', 'sqlite'].includes(String(source.sourceKind || ''))
       ? source.sourceKind as StoredWebProject['sourceKind']
       : 'opfs';
     const restored: StoredWebProject = {
@@ -413,25 +449,29 @@ export class WebProjectRepository {
     this.#contexts.set(projectId, {
       session,
       directoryPermissionStatus: context?.directoryPermissionStatus || 'missing',
+      mirrorMode: context?.mirrorMode || 'none',
       ...(context?.directoryHandle ? { directoryHandle: context.directoryHandle } : {})
     });
     const warnings: string[] = [];
-    let restoredDirectoryHandle = context?.directoryPermissionStatus === 'granted'
+    const readableDirectoryHandle = context?.directoryPermissionStatus === 'granted'
       ? context.directoryHandle
       : undefined;
+    let restoredDirectoryHandle = context?.mirrorMode === 'json'
+      ? readableDirectoryHandle
+      : undefined;
     let hasJsonStorage = false;
-    if (restoredDirectoryHandle) {
+    if (restoredDirectoryHandle && context?.mirrorMode === 'json') {
       try {
         await writeWebProjectDirectory(restoredDirectoryHandle, restored);
         hasJsonStorage = true;
       } catch {
         warnings.push('项目目录权限不可用，已恢复浏览器数据库，但未写回 JSON 镜像。');
         restoredDirectoryHandle = undefined;
-        this.#contexts.set(projectId, { session, directoryPermissionStatus: 'denied' });
+        this.#contexts.set(projectId, { session, directoryPermissionStatus: 'denied', mirrorMode: 'none' });
       }
     }
     const imageRestore = await restoreImages(restoredDirectoryHandle);
-    await hydrateWebImages(collectWebImageReferences(restored.points), restoredDirectoryHandle);
+    await hydrateWebImages(collectWebImageReferences(restored.points), readableDirectoryHandle);
     if (missingImageReferences.length) {
       warnings.push(`创建备份时有 ${missingImageReferences.length} 个图片引用无法读取。`);
     }

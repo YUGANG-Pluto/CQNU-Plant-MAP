@@ -11,6 +11,10 @@ import {
   type WebLogRecord,
   type WebProjectRecord
 } from './webDatabaseProtocol';
+import {
+  readExternalSqliteDatabase,
+  type ExternalSqlitePool
+} from './webExternalSqliteWorker';
 
 interface SqliteDatabase {
   exec(input: string | {
@@ -22,10 +26,9 @@ interface SqliteDatabase {
   close(): void;
 }
 
-interface SahPool {
+interface SahPool extends ExternalSqlitePool {
   OpfsSAHPoolDb: new (filename: string) => SqliteDatabase;
   exportFile(filename: string): Promise<Uint8Array>;
-  getCapacity(): number;
 }
 
 interface SqliteRuntime {
@@ -119,13 +122,23 @@ function number(value: unknown, fallback = 0): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function sourceKind(value: unknown): StoredWebProject['sourceKind'] {
+  return ['directory', 'import', 'sqlite'].includes(text(value))
+    ? text(value) as StoredWebProject['sourceKind']
+    : 'opfs';
+}
+
 function requireDatabase(): SqliteDatabase {
   if (!database) throw new Error('浏览器数据库尚未初始化。');
   return database;
 }
 
 function rows(sql: string, bind: unknown[] = []): WebProjectRecord[] {
-  const result = requireDatabase().exec({
+  return databaseRows(requireDatabase(), sql, bind);
+}
+
+function databaseRows(db: SqliteDatabase, sql: string, bind: unknown[] = []): WebProjectRecord[] {
+  const result = db.exec({
     sql,
     bind,
     rowMode: 'object',
@@ -152,9 +165,7 @@ function storedProjectFromRow(row: WebProjectRecord): StoredWebProject {
     projectId: text(row.project_id),
     label: text(row.label),
     modifiedAt: number(row.modified_at),
-    sourceKind: ['directory', 'import'].includes(text(row.source_kind))
-      ? text(row.source_kind) as 'directory' | 'import'
-      : 'opfs',
+    sourceKind: sourceKind(row.source_kind),
     settings: asRecord(project.settings),
     zones: Array.isArray(project.zones) ? project.zones.filter(item => item && typeof item === 'object') as WebProjectRecord[] : [],
     points: Array.isArray(project.points) ? project.points.filter(item => item && typeof item === 'object') as WebProjectRecord[] : []
@@ -216,9 +227,7 @@ function putProject(payload: unknown): StoredWebProject {
     projectId: text(source.projectId),
     label: text(source.label) || '浏览器本地项目',
     modifiedAt: number(source.modifiedAt, Date.now()),
-    sourceKind: ['directory', 'import'].includes(text(source.sourceKind))
-      ? text(source.sourceKind) as 'directory' | 'import'
-      : 'opfs',
+    sourceKind: sourceKind(source.sourceKind),
     settings: asRecord(project.settings),
     zones: Array.isArray(project.zones) ? project.zones.filter(item => item && typeof item === 'object') as WebProjectRecord[] : [],
     points: Array.isArray(project.points) ? project.points.filter(item => item && typeof item === 'object') as WebProjectRecord[] : []
@@ -256,9 +265,7 @@ function listProjects(): Array<Pick<StoredWebProject, 'projectId' | 'label' | 'm
       projectId: text(row.project_id),
       label: text(row.label),
       modifiedAt: number(row.modified_at),
-      sourceKind: ['directory', 'import'].includes(text(row.source_kind))
-        ? text(row.source_kind) as 'directory' | 'import'
-        : 'opfs'
+      sourceKind: sourceKind(row.source_kind)
     }));
 }
 
@@ -413,6 +420,10 @@ async function dispatch(request: WebDatabaseRequest): Promise<unknown> {
       if (!pool) throw new Error('浏览器数据库尚未初始化。');
       const bytes = await pool.exportFile(WEB_DATABASE_FILE);
       return { bytes };
+    }
+    case 'database:read-external': {
+      if (!pool) throw new Error('浏览器数据库尚未初始化。');
+      return readExternalSqliteDatabase(pool, request.payload);
     }
     default:
       throw new Error('不支持的浏览器数据库操作。');

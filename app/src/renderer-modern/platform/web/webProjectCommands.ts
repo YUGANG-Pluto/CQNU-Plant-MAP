@@ -53,7 +53,9 @@ export function createWebProjectCommands(
         canceled: false,
         projectDir: session.projectDir,
         label: session.label,
-        storageFormat: 'sqlite'
+        storageFormat: 'sqlite',
+        sourceKind: session.sourceKind,
+        externalSqliteImported: session.sourceKind === 'sqlite'
       });
     } catch (error) {
       return failure(
@@ -78,7 +80,9 @@ export function createWebProjectCommands(
         projectDir: session.projectDir,
         label: session.label,
         storageFormat: 'sqlite',
-        portableImport: true
+        portableImport: true,
+        sourceKind: session.sourceKind,
+        externalSqliteImported: session.sourceKind === 'sqlite'
       });
     } catch (error) {
       return failure(
@@ -144,6 +148,9 @@ export function createWebProjectCommands(
         webDraftOnly: Boolean(draft) || (access.canEdit && !access.canSave),
         webAccessLevel: access.managementAccess?.accessLevel || 'save',
         webStorageMode: 'opfs-sahpool',
+        webProjectSourceKind: session.sourceKind,
+        webExternalSqliteImported: session.sourceKind === 'sqlite',
+        webExternalSqliteSourceUnchanged: session.sourceKind === 'sqlite',
         webDirectoryPermissionStatus: directoryPermissionStatus,
         webDirectoryReconnectRequired: ['prompt', 'denied'].includes(directoryPermissionStatus)
       });

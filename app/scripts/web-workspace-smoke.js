@@ -8,6 +8,11 @@ const {
   setSmokeStageReporter,
   waitForRuntime
 } = require('./web-workspace-ui-smoke');
+const {
+  createDesktopSqliteFixtureBytes,
+  runExternalSqliteImportSmoke,
+  runStatsFullscreenLayerSmoke
+} = require('./web-workspace-contract-smoke');
 
 const siteRuntimePath = path.resolve(__dirname, '../../site/scripts/local-runtime.mjs');
 const host = '127.0.0.1';
@@ -316,6 +321,15 @@ async function run() {
       throw new Error(`${failure.stage}: ${failure.name}: ${failure.message}\n${failure.stack}`);
     }
 
+    markSmokeStage('primary:external-sqlite-import');
+    const externalSqliteResult = await runExternalSqliteImportSmoke(
+      window,
+      createDesktopSqliteFixtureBytes()
+    );
+
+    markSmokeStage('primary:stats-fullscreen-layer');
+    const statsFullscreenResult = await runStatsFullscreenLayerSmoke(window);
+
     markSmokeStage('primary:multi-tab-lock');
     const secondWindow = new BrowserWindow({
       show: false,
@@ -389,6 +403,32 @@ async function run() {
     if (!result.projectWorkflowReady) failures.push('typed project workflow bridge is unavailable in the web runtime');
     if (result.runtimeStatus !== 'ready') failures.push(`runtime status: ${result.runtimeStatus}`);
     if (!result.siteHomeLink) failures.push('site homepage link is missing');
+    if (!externalSqliteResult.ok
+      || !externalSqliteResult.externalSqliteImported
+      || !externalSqliteResult.sourceUnchangedFlag
+      || !externalSqliteResult.sourceHashUnchanged
+      || externalSqliteResult.writeAttempted
+      || externalSqliteResult.jsonFilesExist
+      || !externalSqliteResult.saved
+      || externalSqliteResult.zoneCount !== 1
+      || externalSqliteResult.pointCount !== 1
+      || externalSqliteResult.unknownZone !== 1
+      || externalSqliteResult.unknownPoint !== true
+      || externalSqliteResult.phenology !== '开花'
+      || externalSqliteResult.taxonomyProvider !== 'GBIF') {
+      failures.push(`external SQLite import contract: ${JSON.stringify(externalSqliteResult)}`);
+    }
+    if (!statsFullscreenResult.ok
+      || !statsFullscreenResult.mountedToBody
+      || !statsFullscreenResult.visible
+      || statsFullscreenResult.layerZ <= statsFullscreenResult.statsModalZ
+      || !statsFullscreenResult.closeHitVisible
+      || !statsFullscreenResult.bodyLocked
+      || !statsFullscreenResult.closedByEscape
+      || !statsFullscreenResult.statsModalStillVisible
+      || !statsFullscreenResult.statsModalClosed) {
+      failures.push(`statistics fullscreen layer contract: ${JSON.stringify(statsFullscreenResult)}`);
+    }
     if (lockResult?.ok !== false || lockResult?.error?.code !== 'WEB_DATABASE_LOCKED') {
       failures.push(`secondary tab lock contract: ${JSON.stringify(lockResult)}`);
     }
@@ -401,7 +441,7 @@ async function run() {
       return !/^net::ERR_ABORTED https:\/\/[abc]\.tile\.openstreetmap\.org\//.test(message);
     }));
     if (failures.length) throw new Error(failures.join('\n'));
-    process.stdout.write(`web workspace smoke passed (login-to-workspace ${managementResult.loginReadyMs}ms; bundled runtime, OPFS SQLite, trusted welcome-directory picker, local avatar, top-layer hit test, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n`);
+    process.stdout.write(`web workspace smoke passed (login-to-workspace ${managementResult.loginReadyMs}ms; bundled runtime, OPFS SQLite, read-only external SQLite import, trusted welcome-directory picker, local avatar, modal and statistics-fullscreen top-layer hit tests, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n`);
   } finally {
     markSmokeStage('primary:cleanup-window');
     window.destroy();

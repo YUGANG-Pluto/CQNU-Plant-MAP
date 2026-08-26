@@ -461,7 +461,7 @@ function testPlatformAdapterContract() {
   assert.ok(webSource.includes('readOnly: !access.capabilityReport.workspaceReady'));
   assert.ok(webProjectSource.includes('selectWebProjectFiles'));
   assert.ok(webProjectSource.includes('createWebProjectSession'));
-  assert.ok(webProjectSource.includes("input.accept = '.json,.geojson,.csv"));
+  assert.ok(webProjectSource.includes("input.accept = '.db,.sqlite,.sqlite3,.json,.geojson,.csv"));
   assert.ok(!rendererSource.includes('window.plantApp'));
   assert.ok(rendererSource.includes('window.platformAdapter'));
 }

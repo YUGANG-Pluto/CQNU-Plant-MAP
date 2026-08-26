@@ -50,6 +50,7 @@ const I18N_EN_CORE = {
   "webProjectStorageLabel": "Data location",
   "webProjectStorageValue": "This device only",
   "webProjectLoaded": "Browser-local project loaded and ready for local editing.",
+  "webSqliteImportedReadOnlySource": "SQLite was imported as a browser-local copy. Edits stay in browser storage and the source database is not modified.",
   "webDirectoryReconnectRequired": "The project was loaded from browser storage. Select Open Local Project to reconnect the original folder.",
   "confirmCreatePoint": "Confirm Point",
   "cancelCreatePoint": "Cancel Point",

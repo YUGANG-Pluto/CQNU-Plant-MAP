@@ -5,6 +5,7 @@ import {
   selectWebProjectFiles,
   type WebProjectSession
 } from '../webProject';
+import { importExternalSqliteFile, isExternalSqliteFile } from './webExternalSqlite';
 
 interface WritableFileHandle extends FileSystemFileHandle {
   createWritable(): Promise<FileSystemWritableFileStream>;
@@ -271,6 +272,27 @@ async function readProjectFiles(handle: FileSystemDirectoryHandle): Promise<File
   return files.filter((file): file is File => Boolean(file));
 }
 
+async function readPreferredSqliteFile(handle: FileSystemDirectoryHandle): Promise<File | null> {
+  const information = await optionalDirectory(handle, 'information');
+  const candidates: Array<[FileSystemDirectoryHandle | null, string]> = [
+    [information, 'data.db'],
+    [information, 'data.sqlite'],
+    [information, 'data.sqlite3'],
+    [handle, 'data.db'],
+    [handle, 'data.sqlite'],
+    [handle, 'data.sqlite3'],
+    [handle, 'project.db'],
+    [handle, 'project.sqlite'],
+    [handle, 'project.sqlite3']
+  ];
+  for (const [parent, name] of candidates) {
+    if (!parent) continue;
+    const file = await optionalFile(parent, name);
+    if (file) return file;
+  }
+  return null;
+}
+
 export async function readWebProjectDirectory(
   handle: PermissionDirectoryHandle,
   projectId: string
@@ -282,12 +304,6 @@ export async function readWebProjectDirectory(
     label: handle.name || undefined,
     sourceKind: 'directory'
   });
-}
-
-async function hasDesktopSqlite(handle: FileSystemDirectoryHandle): Promise<boolean> {
-  const information = await optionalDirectory(handle, 'information');
-  if (!information) return false;
-  return Boolean(await optionalFile(information, 'data.db'));
 }
 
 export function supportsWebDirectoryProjects(): boolean {
@@ -311,22 +327,25 @@ export async function selectWebDirectoryProject(
         : '未获得所选项目目录的读取权限。');
     }
     const projectId = await directoryProjectId(directoryHandle);
+    const sqliteFile = await readPreferredSqliteFile(directoryHandle);
     const files = await readProjectFiles(directoryHandle);
-    if (!files.length && await hasDesktopSqlite(directoryHandle)) {
-      throw new Error('所选目录仅包含桌面 SQLite 数据库。请先在桌面端导出 JSON，或使用浏览器 SQLite 导入功能。');
-    }
-    const created = files.length === 0;
-    const session = created
-      ? createEmptyWebProjectSession({
+    const created = !sqliteFile && files.length === 0;
+    const session = sqliteFile
+      ? await importExternalSqliteFile(sqliteFile, {
+        projectId,
+        label: directoryHandle.name || undefined
+      })
+      : created
+        ? createEmptyWebProjectSession({
         projectId,
         label: directoryHandle.name || '浏览器本地项目',
         sourceKind: 'directory'
       })
-      : await createWebProjectSession(files, {
-        projectId,
-        label: directoryHandle.name || undefined,
-        sourceKind: 'directory'
-      });
+        : await createWebProjectSession(files, {
+          projectId,
+          label: directoryHandle.name || undefined,
+          sourceKind: 'directory'
+        });
     return { session, directoryHandle, created };
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return null;
@@ -385,12 +404,16 @@ export async function deleteWebProjectJsonFiles(handle: PermissionDirectoryHandl
 export async function importWebProjectFiles(): Promise<WebProjectSession | null> {
   const files = await selectWebProjectFiles();
   if (!files.length) return null;
+  const sqliteFile = files.find(isExternalSqliteFile);
+  if (sqliteFile) return importExternalSqliteFile(sqliteFile);
   return createWebProjectSession(files, { sourceKind: 'import' });
 }
 
 export async function importWebProjectFolder(): Promise<WebProjectSession | null> {
   const files = await selectWebProjectFolderFiles();
   if (!files.length) return null;
+  const sqliteFile = files.find(isExternalSqliteFile);
+  if (sqliteFile) return importExternalSqliteFile(sqliteFile);
   return createWebProjectSession(files, { sourceKind: 'import' });
 }
 
