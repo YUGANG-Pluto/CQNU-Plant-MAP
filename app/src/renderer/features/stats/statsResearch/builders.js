@@ -17,7 +17,35 @@
   }
   root.StatsResearchBuilders = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function createStatsResearchBuilders(shared, diversity, similarity, quality) {
-  const { MISSING_LABEL, MISSING_SPECIES, UNASSOCIATED_ZONE_ID, UNASSOCIATED_ZONE_LABEL, EXPORT_VERSION, QUALITY_ISSUES, METRIC_DEFINITIONS, FORMULA_NOTES, DATA_SCOPE_NOTES, isBlank, cleanString, toFiniteNumber, roundNumber, percent, normalizeDate, monthKeyFromDate, firstValue, firstText, uniqueValues, formatZoneLabel, resolveZoneLabel, getDisplayZoneName, normalizeZoneForStats, getZoneId, normalizeSpeciesKey, getSpeciesMeta, getAbundanceValue, normalizeImagesArray, getPointImages, copyPhenologyEntry, getPointPhenologyEntries, normalizeTaxonomyStatus, normalizeTaxonomySource, pointNeedsTaxonomyReview, normalizePointForStats, normalizedZonesWithUnassociated, buildZoneAliasMap, groupPointsByZone, buildMatrixModel, heatLevel, formatMetricValue, validSpeciesPoints, countBy, rowsFromCountMap, speciesCountsFromPoints, calculateHillNumbers, calculateDiversityMetrics, setIntersection, setUnion, calculateSetStats, entriesFromZoneCollection, buildSetMatrix, calculateJaccardMatrix, calculateSorensenMatrix, calculateBrayCurtisMatrix, calculateWhittakerBeta, haversineMeters, detectDuplicatePoints, coordinateMissing, coordinateAbnormal, imageRefInvalid, calculateQualityLevel, zoneRefInvalid, calculateDataQuality } = { ...shared, ...diversity, ...similarity, ...quality };
+  const {
+    MISSING_LABEL,
+    MISSING_SPECIES,
+    UNASSOCIATED_ZONE_ID,
+    UNASSOCIATED_ZONE_LABEL,
+    EXPORT_VERSION,
+    METRIC_DEFINITIONS,
+    FORMULA_NOTES,
+    DATA_SCOPE_NOTES,
+    cleanString,
+    percent,
+    monthKeyFromDate,
+    uniqueValues,
+    pointNeedsTaxonomyReview,
+    normalizePointForStats,
+    normalizedZonesWithUnassociated,
+    buildZoneAliasMap,
+    buildMatrixModel,
+    validSpeciesPoints,
+    countBy,
+    rowsFromCountMap,
+    speciesCountsFromPoints,
+    calculateDiversityMetrics,
+    calculateJaccardMatrix,
+    calculateSorensenMatrix,
+    calculateBrayCurtisMatrix,
+    calculateWhittakerBeta,
+    calculateDataQuality
+  } = { ...shared, ...diversity, ...similarity, ...quality };
 
   function buildZoneSpeciesSets(zones = [], points = [], options = {}) {
     const normalizedZones = normalizedZonesWithUnassociated(zones, false);
@@ -162,6 +190,7 @@
   }
 
   function buildTaxonomyCompleteness(zones = [], points = [], options = {}) {
+    void zones;
     const normalizedPoints = points.map(point => normalizePointForStats(point, options));
     const total = normalizedPoints.length;
     const hasFamily = normalizedPoints.filter(point => point.family !== MISSING_LABEL).length;

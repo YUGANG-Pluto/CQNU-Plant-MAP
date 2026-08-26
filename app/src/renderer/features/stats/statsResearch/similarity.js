@@ -8,7 +8,7 @@
   }
   root.StatsResearchSimilarity = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function createStatsResearchSimilarity(shared) {
-  const { MISSING_LABEL, MISSING_SPECIES, UNASSOCIATED_ZONE_ID, UNASSOCIATED_ZONE_LABEL, EXPORT_VERSION, QUALITY_ISSUES, METRIC_DEFINITIONS, FORMULA_NOTES, DATA_SCOPE_NOTES, isBlank, cleanString, toFiniteNumber, roundNumber, percent, normalizeDate, monthKeyFromDate, firstValue, firstText, uniqueValues, formatZoneLabel, resolveZoneLabel, getDisplayZoneName, normalizeZoneForStats, getZoneId, normalizeSpeciesKey, getSpeciesMeta, getAbundanceValue, normalizeImagesArray, getPointImages, copyPhenologyEntry, getPointPhenologyEntries, normalizeTaxonomyStatus, normalizeTaxonomySource, pointNeedsTaxonomyReview, normalizePointForStats, normalizedZonesWithUnassociated, buildZoneAliasMap, groupPointsByZone, buildMatrixModel, heatLevel, formatMetricValue } = shared;
+  const { roundNumber, buildMatrixModel, formatMetricValue } = shared;
 
   function setIntersection(a, b) {
     return [...a].filter(value => b.has(value));

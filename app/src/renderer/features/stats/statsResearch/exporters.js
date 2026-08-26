@@ -2,17 +2,13 @@
   const shared = typeof module !== 'undefined' && module.exports
     ? require('./shared')
     : root.StatsResearchShared;
-  const builders = typeof module !== 'undefined' && module.exports
-    ? require('./builders')
-    : root.StatsResearchBuilders;
-  const api = factory(shared, builders);
+  const api = factory(shared);
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = api;
   }
   root.StatsResearchExporters = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function createStatsResearchExporters(shared, builders) {
-  const { MISSING_LABEL, MISSING_SPECIES, UNASSOCIATED_ZONE_ID, UNASSOCIATED_ZONE_LABEL, EXPORT_VERSION, QUALITY_ISSUES, METRIC_DEFINITIONS, FORMULA_NOTES, DATA_SCOPE_NOTES, isBlank, cleanString, toFiniteNumber, roundNumber, percent, normalizeDate, monthKeyFromDate, firstValue, firstText, uniqueValues, formatZoneLabel, resolveZoneLabel, getDisplayZoneName, normalizeZoneForStats, getZoneId, normalizeSpeciesKey, getSpeciesMeta, getAbundanceValue, normalizeImagesArray, getPointImages, copyPhenologyEntry, getPointPhenologyEntries, normalizeTaxonomyStatus, normalizeTaxonomySource, pointNeedsTaxonomyReview, normalizePointForStats, normalizedZonesWithUnassociated, buildZoneAliasMap, groupPointsByZone, buildMatrixModel, heatLevel, formatMetricValue } = shared;
-  const { buildZoneSpeciesSets, buildZoneSpeciesCounts, buildProjectSummary, buildZoneSummaries, buildTaxonomicComposition, buildCategoryComposition, buildTaxonomyCompleteness, buildLifeFormComposition, buildOriginComposition, buildCompositionByZone, buildPhenologyStats, buildTimeTrendStats, buildPhenologyMonthMatrix, buildQualityMatrix, buildChartDataFromStats, buildStatistics } = builders;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function createStatsResearchExporters(shared) {
+  const { heatLevel, formatMetricValue } = shared;
 
   function csvEscape(value) {
     if (value === null || value === undefined) return '';

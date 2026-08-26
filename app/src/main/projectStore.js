@@ -138,7 +138,7 @@ function removeQuietly(filePath) {
     if (filePath && fs.existsSync(filePath)) {
       fs.rmSync(filePath, { force: true });
     }
-  } catch (_error) {
+  } catch {
     // Best-effort cleanup only.
   }
 }
@@ -171,7 +171,7 @@ function writeSqliteProject(paths, project) {
     if (db) {
       try {
         db.close();
-      } catch (_error) {
+      } catch {
         // Cleanup after a failed write should continue.
       }
     }

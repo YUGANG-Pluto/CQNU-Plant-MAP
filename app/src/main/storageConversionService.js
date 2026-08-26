@@ -123,7 +123,7 @@ function removeQuietly(filePath) {
     if (filePath && fs.existsSync(filePath)) {
       fs.rmSync(filePath, { force: true });
     }
-  } catch (_error) {
+  } catch {
     // Best-effort cleanup only.
   }
 }
@@ -393,7 +393,7 @@ function createSqliteFromJson(payload) {
     if (db) {
       try {
         db.close();
-      } catch (_error) {
+      } catch {
         // Cleanup after a failed conversion should continue.
       }
     }

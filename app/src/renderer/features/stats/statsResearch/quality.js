@@ -8,7 +8,18 @@
   }
   root.StatsResearchQuality = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function createStatsResearchQuality(shared) {
-  const { MISSING_LABEL, MISSING_SPECIES, UNASSOCIATED_ZONE_ID, UNASSOCIATED_ZONE_LABEL, EXPORT_VERSION, QUALITY_ISSUES, METRIC_DEFINITIONS, FORMULA_NOTES, DATA_SCOPE_NOTES, isBlank, cleanString, toFiniteNumber, roundNumber, percent, normalizeDate, monthKeyFromDate, firstValue, firstText, uniqueValues, formatZoneLabel, resolveZoneLabel, getDisplayZoneName, normalizeZoneForStats, getZoneId, normalizeSpeciesKey, getSpeciesMeta, getAbundanceValue, normalizeImagesArray, getPointImages, copyPhenologyEntry, getPointPhenologyEntries, normalizeTaxonomyStatus, normalizeTaxonomySource, pointNeedsTaxonomyReview, normalizePointForStats, normalizedZonesWithUnassociated, buildZoneAliasMap, groupPointsByZone, buildMatrixModel, heatLevel, formatMetricValue } = shared;
+  const {
+    MISSING_LABEL,
+    MISSING_SPECIES,
+    UNASSOCIATED_ZONE_ID,
+    QUALITY_ISSUES,
+    roundNumber,
+    percent,
+    pointNeedsTaxonomyReview,
+    normalizePointForStats,
+    normalizedZonesWithUnassociated,
+    buildZoneAliasMap
+  } = shared;
 
   function haversineMeters(a, b) {
     if (a.lat === null || a.lng === null || b.lat === null || b.lng === null) return null;

@@ -53,7 +53,7 @@ function bindStatsDisplayControls() {
   });
   document.querySelectorAll('[data-heat-palette-select]').forEach(select => {
     select.addEventListener('change', () => {
-      statsHeatPalette = select.value === 'default' ? 'default' : 'warm';
+      statsViewState.heatPalette = select.value === 'default' ? 'default' : 'warm';
       renderStatsModal();
     });
   });
@@ -242,8 +242,8 @@ function renderHeatmapPaletteControl() {
   return `<div class="stats-heatmap-controls">
     <label>${escapeHtml(statsUi('statsHeatPaletteLabel', 'Color palette'))}</label>
     <select class="input" data-heat-palette-select>
-      <option value="warm" ${statsHeatPalette === 'warm' ? 'selected' : ''}>${escapeHtml(statsUi('statsHeatPaletteWarm', 'Warm: orange-red'))}</option>
-      <option value="default" ${statsHeatPalette === 'default' ? 'selected' : ''}>${escapeHtml(statsUi('statsHeatPaletteDefault', 'Default'))}</option>
+      <option value="warm" ${statsViewState.heatPalette === 'warm' ? 'selected' : ''}>${escapeHtml(statsUi('statsHeatPaletteWarm', 'Warm: orange-red'))}</option>
+      <option value="default" ${statsViewState.heatPalette === 'default' ? 'selected' : ''}>${escapeHtml(statsUi('statsHeatPaletteDefault', 'Default'))}</option>
     </select>
   </div>`;
 }
@@ -255,7 +255,7 @@ function renderHeatmapMatrix(matrix, options = {}) {
   const isAllZero = allValues.length && allValues.every(value => value === 0);
   const note = matrix.notes.map(item => `<p class="stats-chart-note subtle">${escapeHtml(item)}</p>`).join('');
   if (!hasGrid || !matrix.cells.length) {
-    return renderChartCard(matrix.title, `${note}${renderStatsEmpty(matrix.emptyMessage)}${renderMatrixExportButtons(matrix)}`, { chartId, className: `stats-heatmap-panel heat-palette-${statsHeatPalette}` });
+    return renderChartCard(matrix.title, `${note}${renderStatsEmpty(matrix.emptyMessage)}${renderMatrixExportButtons(matrix)}`, { chartId, className: `stats-heatmap-panel heat-palette-${statsViewState.heatPalette}` });
   }
   const header = `<tr><th class="stats-heatmap-corner">${escapeHtml(statsUi('statsHeatSortLabel', 'Sort: zone order / name'))}</th>${matrix.columns.map(column => {
     const label = matrixDisplayLabel(column.label, matrix);
@@ -276,7 +276,7 @@ function renderHeatmapMatrix(matrix, options = {}) {
   const legend = `<div class="stats-heatmap-legend"><span>${escapeHtml(heatLegendLabel(matrix))}</span>${[0, 1, 2, 3, 4, 5].map(level => `<i class="heat-level-${level}">${level}</i>`).join('')}</div>`;
   const emptyHint = isAllZero ? `<p class="stats-chart-note subtle">${escapeHtml(statsUi('statsHeatAllZero', 'All valid matrix values are 0; exports are still available for review.'))}</p>` : '';
   const bodyHtml = `${note}${emptyHint}${legend}<div class="stats-heatmap-scroll"><table class="stats-heatmap-table"><thead>${header}</thead><tbody>${body}</tbody></table></div>${renderMatrixExportButtons(matrix)}`;
-  return renderChartCard(matrix.title, bodyHtml, { chartId, className: `stats-heatmap-panel heat-palette-${statsHeatPalette}`, caption: statsUi('statsHeatCaption', 'Table heatmap; CSV export follows the current row and column order.') });
+  return renderChartCard(matrix.title, bodyHtml, { chartId, className: `stats-heatmap-panel heat-palette-${statsViewState.heatPalette}`, caption: statsUi('statsHeatCaption', 'Table heatmap; CSV export follows the current row and column order.') });
 }
 
 function bindHeatmapCellEvents() {

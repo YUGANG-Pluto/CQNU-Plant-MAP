@@ -17,7 +17,7 @@ function closeQuietly(fd) {
 
   try {
     fs.closeSync(fd);
-  } catch (_) {
+  } catch {
     // Preserve the original write error.
   }
 }
@@ -27,7 +27,7 @@ function removeQuietly(filePath) {
     if (filePath && fs.existsSync(filePath)) {
       fs.rmSync(filePath, { force: true });
     }
-  } catch (_) {
+  } catch {
     // Best-effort cleanup only.
   }
 }

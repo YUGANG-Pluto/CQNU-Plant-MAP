@@ -258,7 +258,7 @@ function validateSchemaTables(db) {
 function removeQuietly(targetPath) {
   try {
     fs.rmSync(targetPath, { recursive: true, force: true });
-  } catch (_error) {
+  } catch {
     // Cleanup must not hide the schema check result.
   }
 }
@@ -298,7 +298,7 @@ function checkSchemaInTemporaryDatabase(options = {}) {
       try {
         db.close();
         closed = true;
-      } catch (_error) {
+      } catch {
         closed = false;
       }
     }

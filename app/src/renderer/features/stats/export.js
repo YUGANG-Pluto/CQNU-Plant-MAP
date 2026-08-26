@@ -254,7 +254,7 @@ async function exportStatsByKey(key, format) {
       payload = { defaultPath: engine.buildExportFileName(`heatmap_${metric}`, 'md'), content: engine.matrixToMarkdown(matrix) };
       api = window.platformAdapter.project.exportMarkdown;
     } else {
-      payload = { defaultPath: engine.buildExportFileName(`heatmap_${metric}`, 'svg'), content: engine.renderHeatmapSvg(matrix, { palette: statsHeatPalette }) };
+      payload = { defaultPath: engine.buildExportFileName(`heatmap_${metric}`, 'svg'), content: engine.renderHeatmapSvg(matrix, { palette: statsViewState.heatPalette }) };
       api = window.platformAdapter.project.exportSvg;
     }
   } else if (key === 'statistics_full') {
@@ -323,11 +323,11 @@ function ensureStatsFullscreenLayer() {
   `;
   document.body.appendChild(layer);
   layer.querySelector('#btnCloseStatsFullscreen').addEventListener('click', closeStatsFullscreen);
-  if (!statsFullscreenBound) {
+  if (!statsViewState.fullscreenBound) {
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape') closeStatsFullscreen();
     });
-    statsFullscreenBound = true;
+    statsViewState.fullscreenBound = true;
   }
   return layer;
 }

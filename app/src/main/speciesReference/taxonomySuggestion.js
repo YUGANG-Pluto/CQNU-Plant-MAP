@@ -52,7 +52,6 @@ function normalizeTaxonomyCandidates(suggestions = [], rawNameUsed = '', inputNa
     .map(item => taxonomyCandidateFromSuggestion(item, rawNameUsed))
     .filter(Boolean)
     .map(candidate => {
-      const canonical = cleanText(candidate.canonicalName || candidate.scientificName || candidate.matchedName).toLowerCase();
       const rank = cleanText(candidate.rank).toLowerCase();
       const exact = !!normalizedInput && [candidate.scientificName, candidate.canonicalName, candidate.matchedName]
         .map(value => cleanText(value).toLowerCase())
