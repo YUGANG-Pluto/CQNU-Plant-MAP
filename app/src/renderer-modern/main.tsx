@@ -7,6 +7,7 @@ import { installResearchReviewBridge } from './features/review/runtime';
 import { installRendererStateFacade } from './features/state/runtime';
 import { installStatsChartRegistryBridge } from './features/stats/runtime';
 import { installLegacyThemeBridge } from './features/theme/runtime';
+import { installProjectWorkflowBridge } from './features/project/runtime';
 import { installMotionKernel } from './motion/motionKernel';
 import './styles/web-capability.css';
 import './styles/design-system.css';
@@ -21,6 +22,7 @@ import './styles/project-history.css';
 import './styles/review-workbench.css';
 
 installPlatformAdapter();
+installProjectWorkflowBridge();
 installLegacyThemeBridge();
 installRendererDomainBridge();
 installRendererStateFacade();

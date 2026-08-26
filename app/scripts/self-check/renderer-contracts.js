@@ -67,6 +67,41 @@ function testEngineeringSplitContract() {
   assert.ok(themeComponent.includes('id="themeDensityControls"'));
 }
 
+function testProjectWorkflowContract() {
+  const modernRoot = path.join(process.cwd(), 'src/renderer-modern');
+  const modelSource = fs.readFileSync(path.join(modernRoot, 'features/project/model.ts'), 'utf8');
+  const typesSource = fs.readFileSync(path.join(modernRoot, 'features/project/types.ts'), 'utf8');
+  const runtimeSource = fs.readFileSync(path.join(modernRoot, 'features/project/runtime.ts'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(modernRoot, 'main.tsx'), 'utf8');
+  const projectSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/project/index.js'), 'utf8');
+  const drawerSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/shell/workspaceDrawer.js'), 'utf8');
+  const backupSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/backup/index.js'), 'utf8');
+  const storageSource = [
+    'storageWorkflow.js',
+    'storageActions.js'
+  ].map(name => fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/maintenance', name), 'utf8')).join('\n');
+
+  assert.ok(modelSource.includes("version: 'project-workflow-v1'"));
+  assert.ok(typesSource.includes("readonly version: 'project-workflow-v1'"));
+  assert.ok(modelSource.includes("'PROJECT_WORKFLOW_BUSY'"));
+  assert.ok(modelSource.includes('const pendingSelection = services.chooseProject(mode);'));
+  assert.ok(runtimeSource.includes("document.documentElement.dataset.projectWorkflow = controller.version"));
+  assert.ok(mainSource.indexOf('installPlatformAdapter();') < mainSource.indexOf('installProjectWorkflowBridge();'));
+  assert.ok(projectSource.includes('window.projectWorkflow?.save'));
+  assert.ok(projectSource.includes('window.projectWorkflow?.load'));
+  assert.ok(projectSource.includes('function applyLoadedProjectToRenderer(data)'));
+  assert.ok(drawerSource.includes('workflow.chooseAndLoad({ mode:'));
+  assert.ok(drawerSource.includes('await applyLoadedProjectToRenderer(result.project)'));
+  assert.ok(backupSource.includes('window.projectWorkflow?.createBackup'));
+  assert.ok(storageSource.includes('window.projectWorkflow?.inspectBackup'));
+  assert.ok(storageSource.includes('window.projectWorkflow?.restoreBackup'));
+  [modelSource, typesSource, runtimeSource].forEach((source, index) => {
+    const names = ['model.ts', 'types.ts', 'runtime.ts'];
+    const lineCount = source.split(/\r?\n/).length;
+    assert.ok(lineCount <= 260, `project workflow ${names[index]} exceeds the typed module size guard (${lineCount})`);
+  });
+}
+
 function testModernVisualSystemContract() {
   const modernStyleDir = path.join(process.cwd(), 'src/renderer-modern/styles');
   const designSource = fs.readFileSync(path.join(modernStyleDir, 'design-system.css'), 'utf8');

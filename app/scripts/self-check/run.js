@@ -11,6 +11,7 @@ async function main() {
   testMaintenanceServiceImageRefGuard();
   testHtmlErrorDialogWiring();
   testEngineeringSplitContract();
+  testProjectWorkflowContract();
   testModernVisualSystemContract();
   testModernMotionContract();
   testModalWorkflowContract();

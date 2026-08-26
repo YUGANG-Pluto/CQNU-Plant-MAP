@@ -78,6 +78,7 @@ assert.equal(unavailableSessionData.ok, false);
 assert.equal(unavailableSessionData.error.code, 'MANAGEMENT_SERVICE_UNAVAILABLE');
 const modernShellResponse = await fetchSite('/renderer-dist/modern-shell.js');
 const modernShellSource = await modernShellResponse.text();
+assert.match(modernShellSource, /project-workflow-v1/, 'Modern shell should include the shared project workflow bridge');
 const databaseWorkerMatch = modernShellSource.match(/assets\/webDatabaseWorker-[A-Za-z0-9_-]+\.js/);
 assert.ok(databaseWorkerMatch, 'Modern shell should reference the browser database Worker');
 const databaseWorkerResponse = await fetchSite(`/${databaseWorkerMatch[0]}`);
