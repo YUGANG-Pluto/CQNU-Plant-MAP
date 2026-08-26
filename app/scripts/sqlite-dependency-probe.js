@@ -5,7 +5,7 @@ const path = require('path');
 function removeQuietly(filePath) {
   try {
     fs.rmSync(filePath, { recursive: true, force: true });
-  } catch (_error) {
+  } catch {
     // Probe cleanup must not hide the original database result.
   }
 }
@@ -47,7 +47,7 @@ function runProbe() {
     if (db) {
       try {
         db.close();
-      } catch (_error) {
+      } catch {
         // Ignore close errors during cleanup.
       }
     }

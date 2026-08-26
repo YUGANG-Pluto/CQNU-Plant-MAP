@@ -153,7 +153,7 @@ function getConversionTableNames() {
 function removeQuietly(targetPath) {
   try {
     fs.rmSync(targetPath, { recursive: true, force: true });
-  } catch (_error) {
+  } catch {
     // Cleanup should not mask the conversion result.
   }
 }
@@ -383,7 +383,7 @@ function runTemporaryJsonSqliteRoundTrip(project, options = {}) {
       try {
         db.close();
         closed = true;
-      } catch (_error) {
+      } catch {
         closed = false;
       }
     }

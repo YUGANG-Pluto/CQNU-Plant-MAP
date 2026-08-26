@@ -1,103 +1,18 @@
-const STATS_CHART_GROUPS = [
-  {
-    id: 'overview',
-    labelKey: 'statsChartGroupOverview',
-    charts: ['overviewCombo', 'overviewLifeDonut']
-  },
-  {
-    id: 'zone',
-    labelKey: 'statsChartGroupZone',
-    charts: ['zonePointBar', 'zoneQualityBar']
-  },
-  {
-    id: 'taxonomy',
-    labelKey: 'statsChartGroupTaxonomy',
-    charts: ['topFamilyBar', 'topGenusBar', 'topSpeciesBar', 'familyDonut', 'genusDonut']
-  },
-  {
-    id: 'life',
-    labelKey: 'statsChartGroupLife',
-    charts: ['lifeDonut', 'originDonut', 'lifeMissingBar', 'originMissingBar']
-  },
-  {
-    id: 'diversity',
-    labelKey: 'statsChartGroupDiversity',
-    charts: ['diversityCombo', 'richnessShannonCombo', 'hillCombo', 'bergerParkerBar']
-  },
-  {
-    id: 'similarity',
-    labelKey: 'statsChartGroupSimilarity',
-    charts: ['jaccardHeatmap', 'sorensenHeatmap', 'brayCurtisHeatmap']
-  },
-  {
-    id: 'phenology',
-    labelKey: 'statsChartGroupPhenology',
-    charts: ['phenologyStateDonut', 'phenologyZoneBar', 'phenologyMonthTrend', 'phenologyHeatmap']
-  },
-  {
-    id: 'quality',
-    labelKey: 'statsChartGroupQuality',
-    charts: ['qualityIssueBar', 'zoneQualityScoreBar', 'qualityHeatmap']
-  }
-];
-
-const STATS_CHART_LABELS = {
-  overviewCombo: ['statsChartOverviewCombo', 'Zone points + species combo'],
-  overviewLifeDonut: ['statsChartOverviewLifeDonut', 'Life form completeness donut'],
-  zonePointBar: ['statsChartZonePointBar', 'Zone point count bar chart'],
-  zoneQualityBar: ['statsChartZoneQualityBar', 'Zone quality score bar chart'],
-  topFamilyBar: ['statsChartTopFamilyBar', 'Top family bar chart'],
-  topGenusBar: ['statsChartTopGenusBar', 'Top genus bar chart'],
-  topSpeciesBar: ['statsChartTopSpeciesBar', 'Frequent species bar chart'],
-  familyDonut: ['statsChartFamilyDonut', 'Family composition donut'],
-  genusDonut: ['statsChartGenusDonut', 'Genus composition donut'],
-  lifeDonut: ['statsChartLifeDonut', 'Life form donut'],
-  originDonut: ['statsChartOriginDonut', 'Origin attribute donut'],
-  lifeMissingBar: ['statsChartLifeMissingBar', 'Life form missing bar chart'],
-  originMissingBar: ['statsChartOriginMissingBar', 'Origin missing bar chart'],
-  diversityCombo: ['statsChartDiversityCombo', 'Zone Shannon / Simpson / Pielou metrics'],
-  richnessShannonCombo: ['statsChartRichnessShannonCombo', 'Species richness S + Shannon diversity H′'],
-  hillCombo: ['statsChartHillCombo', 'Hill effective species numbers'],
-  bergerParkerBar: ['statsChartBergerParkerBar', 'Berger-Parker bar chart'],
-  jaccardHeatmap: ['statsChartJaccardHeatmap', 'Jaccard heatmap'],
-  sorensenHeatmap: ['statsChartSorensenHeatmap', 'Sorensen heatmap'],
-  brayCurtisHeatmap: ['statsChartBrayCurtisHeatmap', 'Bray-Curtis heatmap'],
-  phenologyStateDonut: ['statsChartPhenologyStateDonut', 'Phenology state donut'],
-  phenologyZoneBar: ['statsChartPhenologyZoneBar', 'Zone phenology bar chart'],
-  phenologyMonthTrend: ['statsChartPhenologyMonthTrend', 'Monthly phenology trend'],
-  phenologyHeatmap: ['statsChartPhenologyHeatmap', 'Month by phenology heatmap'],
-  qualityIssueBar: ['statsChartQualityIssueBar', 'Data quality issue bar chart'],
-  zoneQualityScoreBar: ['statsChartZoneQualityScoreBar', 'Zone quality score chart'],
-  qualityHeatmap: ['statsChartQualityHeatmap', 'Zone by data quality heatmap']
-};
-
-const STATS_RECOMMENDED_CHARTS = [
-  'overviewCombo',
-  'overviewLifeDonut',
-  'diversityCombo',
-  'jaccardHeatmap',
-  'qualityIssueBar',
-  'qualityHeatmap'
-];
-
-const STATS_PAPER_CHARTS = [
-  'overviewCombo',
-  'diversityCombo',
-  'richnessShannonCombo',
-  'jaccardHeatmap',
-  'sorensenHeatmap',
-  'phenologyHeatmap'
-];
-
-const STATS_QUALITY_CHARTS = [
-  'qualityIssueBar',
-  'zoneQualityScoreBar',
-  'qualityHeatmap'
-];
+const statsChartRegistry = window.rendererStatsRegistry;
+if (!statsChartRegistry) {
+  throw new Error('Typed statistics chart registry is unavailable.');
+}
+const STATS_CHART_GROUPS = statsChartRegistry.groups;
+const STATS_CHART_LABELS = statsChartRegistry.labels;
+const STATS_RECOMMENDED_CHARTS = statsChartRegistry.presets.recommended;
+const STATS_PAPER_CHARTS = statsChartRegistry.presets.paper;
+const STATS_QUALITY_CHARTS = statsChartRegistry.presets.quality;
 
 let statsVisibleChartIds = null;
-let statsHeatPalette = 'warm';
-let statsFullscreenBound = false;
+const statsViewState = {
+  heatPalette: 'warm',
+  fullscreenBound: false
+};
 
 function statsUi(key, fallback) {
   const value = typeof t === 'function' ? t(key) : key;
@@ -105,7 +20,7 @@ function statsUi(key, fallback) {
 }
 
 function allStatsChartIds() {
-  return STATS_CHART_GROUPS.flatMap(group => group.charts);
+  return [...statsChartRegistry.chartIds];
 }
 
 function ensureStatsChartPrefs() {

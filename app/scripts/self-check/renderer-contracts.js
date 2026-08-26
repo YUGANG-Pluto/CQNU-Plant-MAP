@@ -360,6 +360,11 @@ function testStatisticsChartVisualContract() {
   ]);
   const statsResearchSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/statsResearch.js'), 'utf8');
   const chartSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/stats/charts.js'), 'utf8');
+  const statsRegistrySource = readAppSources([
+    'src/renderer-modern/features/stats/registry.ts',
+    'src/renderer-modern/features/stats/runtime.ts',
+    'src/renderer-modern/main.tsx'
+  ]);
   const loaderSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/legacy-loader.js'), 'utf8');
   const coreCss = readAppSources([
     'src/renderer/styles/12-research-stats.css',
@@ -369,6 +374,10 @@ function testStatisticsChartVisualContract() {
   const visualCss = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/styles/research-charts.css'), 'utf8');
   assert.ok(statsSource.includes('function renderChartCard'), 'statistics cards should use a shared chart-card renderer');
   assert.ok(loaderSource.includes('./src/renderer/features/stats/statsResearch.js'));
+  assert.ok(statsSource.includes('window.rendererStatsRegistry'), 'legacy statistics UI must consume the typed registry');
+  assert.ok(statsRegistrySource.includes('stats-chart-registry-v1'), 'typed statistics registry must expose a versioned bridge');
+  assert.ok(statsRegistrySource.includes('validateStatsChartRegistry'), 'typed statistics registry must validate chart coverage');
+  assert.ok(statsRegistrySource.includes('installStatsChartRegistryBridge();'), 'modern renderer must install the statistics registry');
   [
     'normalizePointForStats',
     'calculateDiversityMetrics',
@@ -398,7 +407,7 @@ function testStatisticsChartVisualContract() {
     'metricDecimals',
     'rowsToLabeledCsv',
     'Escape',
-    'statsHeatPalette',
+    'statsViewState',
     'renderHeatmapMatrix',
     'matrixToCsv',
     'matrixToMarkdown',

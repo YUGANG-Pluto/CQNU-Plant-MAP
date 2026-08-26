@@ -5,6 +5,7 @@ import { installPlatformAdapter } from './platform/runtime';
 import { installProjectEditHistoryBridge } from './features/history/runtime';
 import { installResearchReviewBridge } from './features/review/runtime';
 import { installRendererStateFacade } from './features/state/runtime';
+import { installStatsChartRegistryBridge } from './features/stats/runtime';
 import { installLegacyThemeBridge } from './features/theme/runtime';
 import './styles/web-capability.css';
 import './styles/design-system.css';
@@ -22,6 +23,7 @@ installRendererDomainBridge();
 installRendererStateFacade();
 installProjectEditHistoryBridge();
 installResearchReviewBridge();
+installStatsChartRegistryBridge();
 
 const root = document.getElementById('modernUiRoot');
 if (root) {

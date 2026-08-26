@@ -122,6 +122,19 @@ async function run() {
     const rootStyle = getComputedStyle(document.documentElement);
     const parseMs = value => Number.parseFloat(String(value || '').replace('ms', ''));
     const rendererMotionContract = (${runRendererMotionSmoke.toString()})();
+    const statsRegistry = window.rendererStatsRegistry;
+    const statsRegistryIds = statsRegistry?.chartIds || [];
+    const statsRegistryReady = statsRegistry?.version === 'stats-chart-registry-v1' &&
+      statsRegistryIds.length === 27 &&
+      new Set(statsRegistryIds).size === statsRegistryIds.length &&
+      statsRegistry.groups.flatMap(group => group.charts).length === statsRegistryIds.length &&
+      statsRegistry.presets.recommended.length === 6;
+    const statsRegistryImmutable = Object.isFrozen(statsRegistry) &&
+      Object.isFrozen(statsRegistry?.chartIds) &&
+      Object.isFrozen(statsRegistry?.groups) &&
+      statsRegistry?.groups.every(group => Object.isFrozen(group) && Object.isFrozen(group.charts)) &&
+      Object.isFrozen(statsRegistry?.labels) &&
+      Object.isFrozen(statsRegistry?.presets);
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     const motionCloseDelay = Math.max(
       420,
@@ -431,6 +444,8 @@ async function run() {
         parseMs(rootStyle.getPropertyValue('--motion-duration-reveal'))
       ],
       ...rendererMotionContract,
+      statsRegistryReady,
+      statsRegistryImmutable,
       modalPrimitiveCount: document.querySelectorAll('.modal-workflow-body').length,
       queryFocusTrapped,
       queryClosedByEscape: queryModal.classList.contains('hidden'),
@@ -511,6 +526,8 @@ async function run() {
   if (!result.moduleMotionRuntimeReady) {
     failures.push(`workspace module motion is not active at runtime: ${result.moduleTransitionDurations.join(', ')}`);
   }
+  if (!result.statsRegistryReady) failures.push('typed statistics chart registry is incomplete');
+  if (!result.statsRegistryImmutable) failures.push('typed statistics chart registry exposes mutable containers');
   if (result.modalPrimitiveCount < 3) failures.push(`modal primitive count: ${result.modalPrimitiveCount}`);
   if (!result.queryFocusTrapped) failures.push('query modal does not trap keyboard focus');
   if (!result.queryClosedByEscape) failures.push('query modal did not close with Escape');

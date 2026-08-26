@@ -192,7 +192,7 @@ function parseLogLine(line, fileName) {
       ...JSON.parse(line),
       fileName
     };
-  } catch (_error) {
+  } catch {
     return {
       ts: '',
       level: 'info',
