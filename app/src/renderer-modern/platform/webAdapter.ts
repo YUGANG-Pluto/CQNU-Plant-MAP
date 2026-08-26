@@ -61,7 +61,7 @@ export function createWebPlatformAdapter(): PlatformAdapter {
     const projectDir = String(asRecord(payload).projectDir || '');
     try {
       access.requireSave();
-      return success(await importWebImage(projectDir, repository.directoryHandle(projectDir)));
+      return success(await importWebImage(projectDir, repository.writableDirectoryHandle(projectDir)));
     } catch (error) {
       return failure('WEB_IMAGE_IMPORT_FAILED', error instanceof Error ? error.message : '浏览器图片无法导入。');
     }
@@ -74,7 +74,7 @@ export function createWebPlatformAdapter(): PlatformAdapter {
       access.requireSave();
       const deleted = await deleteWebImage(
         String(source.relativePath || ''),
-        repository.directoryHandle(projectDir)
+        repository.writableDirectoryHandle(projectDir)
       );
       return success({ deleted });
     } catch (error) {

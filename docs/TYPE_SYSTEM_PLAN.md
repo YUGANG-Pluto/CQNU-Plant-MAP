@@ -27,6 +27,7 @@ The Electron application boundary, modern renderer shell, management service, an
 4. Added strict typechecking for Preact renderer components.
 5. Kept storage services under `checkJs` while preserving JSON and SQLite compatibility.
 6. Migrated the management browser controllers to TypeScript and made the site consume only clean compiler output.
+7. Added typed statistics snapshot, matrix-cell, chart-registry, and export-descriptor boundaries while preserving the legacy statistics engine API.
 
 ## Current Typecheck Scope
 
@@ -62,7 +63,7 @@ Convert another compatibility feature only when all of these pass in one local v
 - `npm run db:test-runtime`
 - `npm run dist`
 
-The next conversion should remain bounded to one feature and preserve its current global compatibility API until all callers move to explicit imports.
+The next conversion should remain bounded to one feature and preserve its current global compatibility API until all callers move to explicit imports. The statistics bridge now validates the legacy engine output at the renderer boundary; formula modules remain intentionally unchanged.
 
 ## Initial Contract Targets
 

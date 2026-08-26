@@ -5,6 +5,7 @@ The browser workspace is available at `/workspace` and uses the same renderer, d
 ## Local Storage Model
 
 - The primary browser copy is a SQLite Wasm database stored in Origin Private File System (OPFS).
+- A user-selected desktop SQLite project (`.db`, `.sqlite`, or `.sqlite3`) can be imported locally. The browser validates and reads the selected file in a Worker, then creates an editable OPFS working copy without changing the source database.
 - If the user grants a project directory, compatible `settings.json`, `zones.json`, and `points.json` files are mirrored under `information/`.
 - Images are archived under `information/images/` when directory permission is available. Otherwise, they are held in origin-scoped Cache Storage.
 - Backups and diagnostic logs are stored in the browser database and remain under explicit user control.
@@ -29,7 +30,7 @@ Authentication cookies are host-only, `HttpOnly`, `Secure`, and `SameSite=Strict
 
 The workspace reports detected capabilities instead of assuming support from the browser name. The current hidden acceptance target is Chromium. Chromium, Firefox, and Safari use the same checks for WebAssembly, Worker, OPFS, Web Locks, IndexedDB, Cache Storage, secure identifiers, file selection, downloads, and optional directory selection.
 
-When all required capabilities are present, the workspace edits the OPFS SQLite copy. Directory selection enables the additional JSON mirror; without it, the workspace falls back to explicit file selection and downloads. Missing critical local database capabilities blocks writes with a readable explanation and never falls back to remote storage.
+When all required capabilities are present, the workspace edits the OPFS SQLite copy. A JSON-backed directory enables an additional JSON mirror. A directory whose preferred source is `information/data.db`, or an explicitly selected SQLite file, remains read-only at its original location; subsequent saves are written to the OPFS working copy. Missing critical local database capabilities blocks writes with a readable explanation and never falls back to remote storage.
 
 A directory handle is remembered by the browser, but permission can be revoked by the browser or operating system. When directory access is unavailable, users can import project files and continue in the OPFS copy.
 
@@ -45,7 +46,9 @@ Only one tab can hold the browser database writer lock. If another workspace tab
 
 ## Desktop Interchange
 
-The browser OPFS database and desktop `information/data.db` are separate runtime formats. The browser does not obtain an arbitrary filesystem path and does not directly open the desktop database file. Use the compatible JSON project files for transfer between runtimes. Unknown JSON fields are preserved by the browser project model.
+The browser can import a desktop `information/data.db` through an explicit file or directory selection. It checks the SQLite signature, accepted extension, file-size limit, integrity, schema metadata, and expected project tables before deserializing the project. Unknown compatibility fields, phenology records, and taxonomy candidate summaries are preserved by the interchange model.
+
+The selected desktop database is an immutable import source. Browser edits, images, backups, and logs continue in origin-local storage and do not write back to that file or its directory. Select the source again to re-import later changes. When compatible JSON files coexist with `information/data.db`, automatic directory opening prefers SQLite; users can still select JSON explicitly when they need that copy.
 
 ## Network Boundary
 

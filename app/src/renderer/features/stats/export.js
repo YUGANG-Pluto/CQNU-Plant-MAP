@@ -277,7 +277,8 @@ async function exportStatsByKey(key, format) {
       api = window.platformAdapter.project.exportCsv;
   }
   if (!payload || !api) return showAlert(statsUi('statsExportUnavailable', 'This export item is unavailable.'));
-  const result = await api(payload);
+  const descriptor = statsChartRegistry.exportDescriptor(payload);
+  const result = await api(descriptor);
   if (result && !result.canceled) showAlert(t('exportSuccess'));
 }
 
@@ -323,12 +324,6 @@ function ensureStatsFullscreenLayer() {
   `;
   document.body.appendChild(layer);
   layer.querySelector('#btnCloseStatsFullscreen').addEventListener('click', closeStatsFullscreen);
-  if (!statsViewState.fullscreenBound) {
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape') closeStatsFullscreen();
-    });
-    statsViewState.fullscreenBound = true;
-  }
   return layer;
 }
 
@@ -344,16 +339,24 @@ function openStatsFullscreen(button) {
   const body = layer.querySelector('#statsFullscreenBody');
   body.innerHTML = '';
   body.appendChild(clone);
-  layer.classList.remove('hidden');
-  window.cqnuMotionKernel?.openLayer?.(layer);
+  statsViewState.fullscreenTrigger = button;
+  openLayerModal(layer, {
+    focusTarget: layer.querySelector('#btnCloseStatsFullscreen')
+  });
 }
 
 function closeStatsFullscreen() {
   const layer = document.getElementById('statsFullscreenLayer');
-  if (!layer) return;
-  layer.classList.add('hidden');
-  const body = layer.querySelector('#statsFullscreenBody');
-  if (body) body.innerHTML = '';
+  if (!layer || layer.classList.contains('hidden')) return;
+  const returnFocus = statsViewState.fullscreenTrigger;
+  closeLayerModal(layer, {
+    returnFocus,
+    onClosed() {
+      const body = layer.querySelector('#statsFullscreenBody');
+      if (body) body.innerHTML = '';
+      statsViewState.fullscreenTrigger = null;
+    }
+  });
 }
 
 function bindStatsFullscreenEvents() {

@@ -11,7 +11,7 @@ const STATS_QUALITY_CHARTS = statsChartRegistry.presets.quality;
 let statsVisibleChartIds = null;
 const statsViewState = {
   heatPalette: 'warm',
-  fullscreenBound: false
+  fullscreenTrigger: null
 };
 
 function statsUi(key, fallback) {
@@ -49,7 +49,9 @@ function statsChartLabel(chartId) {
 
 function getResearchStats() {
   const engine = window.StatsResearch;
-  return engine.buildStatistics(state.zones || [], state.points || [], { abundanceValueMode: false, topN: 10 });
+  return statsChartRegistry.snapshot(
+    engine.buildStatistics(state.zones || [], state.points || [], { abundanceValueMode: false, topN: 10 })
+  );
 }
 
 function safeDisplayText(value, fallback = '\u2014') {

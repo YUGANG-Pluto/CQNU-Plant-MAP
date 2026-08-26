@@ -208,6 +208,12 @@ function testWebPlatformSecurityContract() {
   ["from 'node:fs'", "from 'node:path'", "from 'node:child_process'", 'require(\'fs\')', 'ipcRenderer']
     .forEach(fragment => assert.ok(!source.includes(fragment), `Web adapter must not use ${fragment}`));
   assert.ok(source.includes('installOpfsSAHPoolVfs'));
+  assert.ok(source.includes("'database:read-external'"));
+  assert.ok(source.includes('importDb(filename, bytes)'));
+  assert.ok(source.includes("database.exec('PRAGMA query_only = ON')"));
+  assert.ok(source.includes('MAX_EXTERNAL_SQLITE_BYTES'));
+  assert.ok(source.includes("sourceKind: 'sqlite'"));
+  assert.ok(source.includes("mirrorMode: 'json' | 'none'"));
   assert.ok(source.includes('navigator as Navigator'));
   assert.ok(source.includes('showDirectoryPicker'));
   assert.ok(source.includes('Cache Storage') || source.includes('caches.open'));

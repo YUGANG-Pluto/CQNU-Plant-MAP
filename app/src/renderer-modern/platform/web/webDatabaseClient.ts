@@ -1,6 +1,7 @@
 import {
   WEB_DATABASE_CHANNEL,
   type StoredWebProject,
+  type ExternalSqliteReadResult,
   type WebBackupRecord,
   type WebDatabaseOperation,
   type WebDatabaseRequest,
@@ -68,20 +69,25 @@ export class WebDatabaseClient extends EventTarget {
     this.#pending.clear();
   }
 
-  request<T>(operation: WebDatabaseOperation, payload?: unknown): Promise<T> {
+  request<T>(
+    operation: WebDatabaseOperation,
+    payload?: unknown,
+    transfer: Transferable[] = [],
+    timeoutMs = 20_000
+  ): Promise<T> {
     const id = crypto.randomUUID();
     return new Promise<T>((resolve, reject) => {
       const timeoutId = window.setTimeout(() => {
         this.#pending.delete(id);
         reject(new Error('浏览器本地数据库操作超时。'));
-      }, 20_000);
+      }, timeoutMs);
       this.#pending.set(id, {
         resolve: value => resolve(value as T),
         reject,
         timeoutId
       });
       const request: WebDatabaseRequest = { id, operation, payload };
-      this.#worker.postMessage(request);
+      this.#worker.postMessage(request, transfer);
     });
   }
 
@@ -149,6 +155,15 @@ export class WebDatabaseClient extends EventTarget {
 
   exportDatabase(): Promise<Uint8Array> {
     return this.request<{ bytes: Uint8Array }>('database:export').then(result => result.bytes);
+  }
+
+  readExternalDatabase(bytes: ArrayBuffer): Promise<ExternalSqliteReadResult> {
+    return this.request(
+      'database:read-external',
+      { bytes },
+      [bytes],
+      60_000
+    );
   }
 
   close(): void {

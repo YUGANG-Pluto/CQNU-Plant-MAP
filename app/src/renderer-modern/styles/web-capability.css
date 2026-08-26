@@ -51,6 +51,7 @@
 
 .web-capability-popover {
   position: absolute;
+  z-index: 2;
   top: calc(100% + 8px);
   left: 0;
   width: min(420px, calc(100vw - 32px));

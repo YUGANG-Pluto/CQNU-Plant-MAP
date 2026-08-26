@@ -50,6 +50,7 @@ const I18N_ZH_CORE = {
   "webProjectStorageLabel": "数据位置",
   "webProjectStorageValue": "仅本机",
   "webProjectLoaded": "浏览器本地项目已加载，可在本机编辑和保存。",
+  "webSqliteImportedReadOnlySource": "SQLite 已导入为浏览器本地副本；编辑内容保存在浏览器中，原数据库不会被改写。",
   "webDirectoryReconnectRequired": "项目已从浏览器数据库加载；如需同步目录文件，请点击“打开本地项目”重新授权原目录。",
   "confirmCreatePoint": "确认建立点位",
   "cancelCreatePoint": "取消建立点位",

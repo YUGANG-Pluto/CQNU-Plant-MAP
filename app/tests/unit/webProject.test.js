@@ -81,3 +81,16 @@ test('folder import accepts a single portable project export at the folder root'
 
   assert.deepEqual(files.map(file => file.name), ['project.json']);
 });
+
+test('folder import prioritizes the canonical SQLite database when JSON coexists', async () => {
+  const { projectFilesFromFolder } = await webProjectModule;
+  const files = projectFilesFromFolder([
+    folderFile('campus/information/settings.json'),
+    folderFile('campus/information/zones.json'),
+    folderFile('campus/information/points.json'),
+    folderFile('campus/information/archive.sqlite'),
+    folderFile('campus/information/data.db')
+  ]);
+
+  assert.deepEqual(files.map(file => file.name), ['data.db']);
+});

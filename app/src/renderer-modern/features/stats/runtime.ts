@@ -9,6 +9,11 @@ import {
   type StatsChartLabel,
   type StatsChartPresetId
 } from './registry';
+import {
+  researchStatsSnapshot,
+  statsExportDescriptor
+} from './contractsRuntime';
+import type { ResearchStatsSnapshot, StatsExportDescriptor } from './contracts';
 
 export interface StatsChartRegistryBridge {
   readonly version: 'stats-chart-registry-v1';
@@ -16,6 +21,8 @@ export interface StatsChartRegistryBridge {
   readonly groups: readonly StatsChartGroup[];
   readonly labels: Readonly<Record<StatsChartId, StatsChartLabel>>;
   readonly presets: Readonly<Record<StatsChartPresetId, readonly StatsChartId[]>>;
+  readonly snapshot: (value: unknown) => ResearchStatsSnapshot;
+  readonly exportDescriptor: (value: unknown) => StatsExportDescriptor;
 }
 
 declare global {
@@ -31,7 +38,9 @@ export function createStatsChartRegistryBridge(): StatsChartRegistryBridge {
     chartIds: STATS_CHART_IDS,
     groups: STATS_CHART_GROUPS,
     labels: STATS_CHART_LABELS,
-    presets: STATS_CHART_PRESETS
+    presets: STATS_CHART_PRESETS,
+    snapshot: researchStatsSnapshot,
+    exportDescriptor: statsExportDescriptor
   });
 }
 

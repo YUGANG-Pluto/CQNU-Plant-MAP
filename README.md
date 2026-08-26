@@ -58,7 +58,7 @@ CQNU Campus Plant Mapping System is a local-first desktop and browser applicatio
 - 维护中心：执行项目健康检查、保守修复、日志查看、诊断导出、设置导入导出和安全模式。
 - 界面设置：切换主题、布局、玻璃效果、动效和状态颜色。
 - 中英双语：支持中文和 English 界面切换。
-- 浏览器本地工作区：完整界面位于 `/workspace`，由用户主动授权项目目录或选择文件；项目主副本保存在浏览器 OPFS SQLite 中，有目录权限时同步兼容 JSON 与图片归档，项目数据不上传到站点服务端。
+- 浏览器本地工作区：完整界面位于 `/workspace`，由用户主动授权项目目录或选择文件；可本地导入桌面端 `.db`、`.sqlite`、`.sqlite3` 数据库，原文件保持只读，编辑结果保存在浏览器 OPFS SQLite 工作副本中。JSON 项目可在获得目录权限时同步兼容文件与图片归档，项目数据不上传到站点服务端。
 - 访问管理：独立登录、首次激活、用户与管理员角色、只读/编辑草稿/编辑并保存权限、单次密码重置链接和安全审计；管理员最多 3 名。
 
 ### English
@@ -77,7 +77,7 @@ CQNU Campus Plant Mapping System is a local-first desktop and browser applicatio
 - Maintenance center: run health checks, safe repairs, log review, diagnostic export, settings import/export, and safe mode.
 - UI settings: switch themes, layouts, glass effects, motion, and status colors.
 - Bilingual UI: Chinese and English interface switching.
-- Browser-local workspace: the complete interface is available at `/workspace`. Users explicitly authorize a project directory or select files; the primary copy is stored in OPFS SQLite, with compatible JSON and image mirroring when directory permission is available. Project data is not uploaded to the site server.
+- Browser-local workspace: the complete interface is available at `/workspace`. Users explicitly authorize a project directory or select files. Desktop `.db`, `.sqlite`, and `.sqlite3` databases can be imported locally as immutable sources, while edits are stored in an OPFS SQLite working copy. JSON projects can mirror compatible files and images when directory permission is available. Project data is not uploaded to the site server.
 - Access management: separate sign-in and first-use activation, user and administrator roles, read/edit-draft/edit-and-save access, single-use password reset links, and security audit events, with at most three administrators.
 
 ---
