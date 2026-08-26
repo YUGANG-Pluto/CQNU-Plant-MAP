@@ -92,7 +92,7 @@ async function captureSmokeScreenshot(window, name, size = null) {
 async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
   markSmokeStage('read-picker:create-window');
   const partition = `web-read-picker-smoke-${Date.now()}`;
-  const isolatedSession = session.fromPartition(partition, { cache: false });
+  const isolatedSession = session.fromPartition(partition);
   const origin = new URL(baseUrl).origin;
   await isolatedSession.cookies.set({ url: origin, name: 'smoke-access', value: 'read', path: '/' });
   const errors = [];
@@ -189,9 +189,21 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
       const button = document.getElementById('btnChooseDirWelcome');
       if (!button) throw new Error('Primary welcome directory button is missing.');
       const rect = button.getBoundingClientRect();
-      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, disabled: button.disabled };
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        disabled: button.disabled,
+        readProject: window.platformAdapter?.capabilities?.readProject === true,
+        accessLevel: window.platformAdapter?.web?.managementAccess?.accessLevel || '',
+        capabilityMode: window.platformAdapter?.web?.capabilityReport?.mode || '',
+        workspaceReady: window.platformAdapter?.web?.capabilityReport?.workspaceReady === true,
+        missingRequired: window.platformAdapter?.web?.capabilityReport?.missingRequired || [],
+        workspaceSession: document.documentElement.dataset.workspaceSession || ''
+      };
     })()`, true);
-    if (buttonRect.disabled) throw new Error('read account project button is disabled');
+    if (buttonRect.disabled) {
+      throw new Error(`read account project button is disabled: ${JSON.stringify(buttonRect)}`);
+    }
     markSmokeStage('read-picker:open-import-center');
     window.webContents.sendInputEvent({ type: 'mouseMove', x: Math.round(buttonRect.x), y: Math.round(buttonRect.y) });
     window.webContents.sendInputEvent({ type: 'mouseDown', x: Math.round(buttonRect.x), y: Math.round(buttonRect.y), button: 'left', clickCount: 1 });
@@ -334,7 +346,7 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
 async function runManagementUiSmoke(baseUrl) {
   markSmokeStage('management:create-window');
   const partition = `management-ui-smoke-${Date.now()}`;
-  const isolatedSession = session.fromPartition(partition, { cache: false });
+  const isolatedSession = session.fromPartition(partition);
   const origin = new URL(baseUrl).origin;
   await isolatedSession.cookies.set({ url: origin, name: 'smoke-login', value: 'logged-out', path: '/' });
   const errors = [];

@@ -116,7 +116,7 @@ async function run() {
   await app.whenReady();
   const { server, url } = await createSiteServer();
   const partition = `web-workspace-smoke-${Date.now()}`;
-  const isolatedSession = session.fromPartition(partition, { cache: false });
+  const isolatedSession = session.fromPartition(partition);
   const errors = [];
   isolatedSession.webRequest.onCompleted(details => {
     if (details.statusCode >= 400) errors.push(`HTTP ${details.statusCode} ${details.url}`);
