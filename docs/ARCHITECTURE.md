@@ -2,7 +2,7 @@
 
 ## Overview
 
-CQNU Campus Plant Mapping System is a local-first Electron desktop application. The application stores project data in a user-selected local folder and uses online map or reference services only when the user uses those features.
+CQNU Campus Plant Mapping System is a local-first application with Electron and browser workspaces. Both runtimes keep project data in user-controlled local storage and use online map or reference services only when the user invokes those features.
 
 ## Runtime Layers
 
@@ -11,6 +11,9 @@ CQNU Campus Plant Mapping System is a local-first Electron desktop application. 
 | Main process | Window creation, file dialogs, project JSON/SQLite storage, image import, backups, logs, diagnostics, species reference requests, and controlled system actions. |
 | Preload | Exposes the `window.plantApp` business API through Electron context isolation. |
 | Renderer | Renders the map workspace, editors, query center, statistics, theme controls, maintenance center, and local UI state. |
+| Browser platform adapter | Maps the shared workspace contract to File System Access, OPFS SQLite, Cache Storage, and browser-safe backup services. |
+| Site Worker | Serves the navigation, documentation, browser workspace, and private management API without accepting project data. |
+| Management service | Provides typed accounts, sessions, CSRF, capabilities, member administration, and redacted audit events. |
 | Project folder | Holds user project files under `information/`. |
 
 ## Current Structure
@@ -29,6 +32,12 @@ app/
     renderer/
     renderer-modern/
     shared/types/
+  scripts/
+admin/
+  src/                       # management server and typed browser UI
+  ui/                        # static management markup, styles, local profile bridge
+site/
+  src/
   scripts/
 docs/
 .github/
@@ -86,6 +95,8 @@ Large renderer domains are split by responsibility. Statistics separates control
 3. `npm run build:renderer` builds the Preact shell and design-system styles.
 4. `npm run build` runs all three steps.
 5. `npm start` runs the build before Electron starts.
+6. `npm --prefix admin run build` cleans and compiles server and browser-management TypeScript.
+7. `npm --prefix site run build` runs the admin build, then publishes only compiled management modules and the browser workspace assets.
 
 Generated directories are excluded from source synchronization and recreated locally or in packaging.
 

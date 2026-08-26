@@ -4,7 +4,11 @@ Maintained releases follow `VERSION_POLICY.md`. Stable releases use `vX.Y.Z`; te
 
 ## Unreleased
 
-- No unreleased changes.
+### Changed
+
+- Migrated the private management UI controllers to strict TypeScript and made the site publish only their clean compiled output.
+- Made management UI asset discovery follow the compiled module directory so new internal modules cannot be omitted from the site package.
+- Split renderer smoke assertions, renderer self-check contracts, and workspace primitive styles by responsibility without changing runtime behavior.
 
 ## 1.1.0-beta.2 - 2026-08-23
 

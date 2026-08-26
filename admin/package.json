@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Owner-only authorization and audit contracts for the CQNU Plant MAP management system.",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test --test-isolation=none tests/*.test.mjs",
     "check": "npm run typecheck && npm test"
