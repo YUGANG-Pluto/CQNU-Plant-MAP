@@ -424,6 +424,10 @@ function testPlatformAdapterContract() {
     path.join(process.cwd(), 'src/renderer-modern/platform/webAdapter.ts'),
     'utf8'
   );
+  const webAccessSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/renderer-modern/platform/web/webWorkspaceAccess.ts'),
+    'utf8'
+  );
   const webProjectSource = fs.readFileSync(
     path.join(process.cwd(), 'src/renderer-modern/platform/webProject.ts'),
     'utf8'
@@ -448,12 +452,13 @@ function testPlatformAdapterContract() {
   assert.ok(runtimeSource.includes('createWebPlatformAdapter()'));
   assert.ok(electronSource.includes('writeProject: true'));
   assert.ok(webSource.includes("runtime: 'web'"));
-  assert.ok(webSource.includes('assessWebRuntimeCapabilities'));
-  assert.ok(webSource.includes('writeProject: webCapabilityReport.workspaceReady'));
-  assert.ok(webSource.includes('sqliteStorage: webCapabilityReport.workspaceReady'));
-  assert.ok(webSource.includes('externalBackupImport: webCapabilityReport.portableBackupAvailable'));
+  assert.ok(webSource.includes('createWebWorkspaceAccess'));
+  assert.ok(webAccessSource.includes('assessWebRuntimeCapabilities'));
+  assert.ok(webSource.includes('writeProject: access.capabilityReport.workspaceReady'));
+  assert.ok(webSource.includes('sqliteStorage: access.capabilityReport.workspaceReady'));
+  assert.ok(webSource.includes('externalBackupImport: access.capabilityReport.portableBackupAvailable'));
   assert.ok(webSource.includes('speciesReference: true'));
-  assert.ok(webSource.includes('readOnly: !webCapabilityReport.workspaceReady'));
+  assert.ok(webSource.includes('readOnly: !access.capabilityReport.workspaceReady'));
   assert.ok(webProjectSource.includes('selectWebProjectFiles'));
   assert.ok(webProjectSource.includes('createWebProjectSession'));
   assert.ok(webProjectSource.includes("input.accept = '.json,.geojson,.csv"));

@@ -32,24 +32,33 @@ async function chooseAndLoadProject(event) {
   if (discardDecision !== true && !await discardDecision) return;
 
   const portable = button?.dataset?.projectOpenMode === 'portable-folder';
+  const workflow = window.projectWorkflow;
   const command = portable
     ? window.platformAdapter.project.choosePortableDir
     : window.platformAdapter.project.chooseDir;
-  if (typeof command !== 'function') {
+  if (!workflow?.chooseAndLoad && typeof command !== 'function') {
     showAlert(t('webProjectFolderUnsupported'));
     return;
   }
 
   setProjectOpenState(button, true, t(portable ? 'webProjectImportingFolder' : 'webProjectOpeningFolder'));
   try {
-    // Invoke the picker before the first await to preserve the browser's trusted user activation.
-    const pendingSelection = command();
-    const result = await callIpc(pendingSelection);
+    // Invoke the picker before the first await to preserve Chromium's trusted user activation.
+    const pendingOpen = workflow?.chooseAndLoad
+      ? workflow.chooseAndLoad({ mode: portable ? 'portable-folder' : 'directory' })
+      : command();
+    const result = workflow?.chooseAndLoad
+      ? await pendingOpen
+      : await callIpc(pendingOpen);
     if (result.canceled) {
       setProjectOpenState(button, false, t('webProjectOpenCanceled'));
       return;
     }
-    await loadProjectIntoRenderer(result.projectDir);
+    if (workflow?.chooseAndLoad) {
+      await applyLoadedProjectToRenderer(result.project);
+    } else {
+      await loadProjectIntoRenderer(result.projectDir, { storageFormat: result.storageFormat || 'auto' });
+    }
     setProjectOpenState(button, false, t('webProjectOpenReady'));
   } catch (error) {
     setProjectOpenState(button, false, t('webProjectOpenFailed'));

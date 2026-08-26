@@ -1,5 +1,4 @@
 import type {
-  ManagementWorkspaceAccess,
   PlatformAdapter,
   PlatformResponse
 } from '../../shared/types/platform';
@@ -12,9 +11,7 @@ import type {
 } from '../../shared/types/species-reference';
 import { selectWebTextFile } from './web/webFileSystem';
 import {
-  collectWebImageReferences,
   deleteWebImage,
-  hydrateWebImages,
   importWebImage,
   inspectWebImageReferences,
   installWebImageResolver
@@ -28,553 +25,179 @@ import {
 import { createWebDiagnostics } from './web/webDiagnostics';
 import {
   asRecord,
-  clone,
-  downloadBlob,
   downloadPayload,
   failure,
-  failureFromError,
   success,
   type UnknownRecord
 } from './web/webPlatformSupport';
 import { createWebStorageMaintenance } from './web/webStorageMaintenance';
-import {
-  selectAndInspectWebBackupArchive,
-  type ImportedWebBackupArchive
-} from './web/webBackupImport';
-import {
-  assessWebRuntimeCapabilities,
-  webRuntimeUnavailableMessage
-} from './web/webCapabilities';
-
-const webCapabilityReport = Object.freeze(assessWebRuntimeCapabilities());
-const EXTERNAL_BACKUP_IMPORT_TTL = 15 * 60 * 1000;
-
-interface WebDraftProject {
-  modifiedAt: number;
-  settings: UnknownRecord;
-  zones: UnknownRecord[];
-  points: UnknownRecord[];
-}
-
-const managementAccess = window.managementAccess;
-const managementAccessRequired = document.body?.dataset.siteWorkspace === 'true';
-const managementCapabilities = new Set(managementAccess?.capabilities || []);
-const canReadWorkspace = !managementAccessRequired || managementCapabilities.has('workspace.read');
-const canEditWorkspace = !managementAccessRequired || managementCapabilities.has('workspace.edit');
-const canSaveWorkspace = !managementAccessRequired || managementCapabilities.has('workspace.save');
-const repository = new WebProjectRepository({
-  directoryAccessMode: canSaveWorkspace ? 'readwrite' : 'read'
-});
-const diagnostics = createWebDiagnostics(repository);
-const storageMaintenance = createWebStorageMaintenance(repository);
-const draftProjects = new Map<string, WebDraftProject>();
-
-let pendingExternalBackup: {
-  token: string;
-  projectDir: string;
-  expiresAt: number;
-  archive: ImportedWebBackupArchive;
-} | null = null;
-
-function requireWebWorkspace(): void {
-  if (!webCapabilityReport.workspaceReady) {
-    throw new Error(webRuntimeUnavailableMessage(webCapabilityReport));
-  }
-}
-
-function requireWorkspaceRead(): void {
-  requireWebWorkspace();
-  if (!canReadWorkspace) throw new Error('当前账户没有读取工作区的权限。');
-}
-
-function requireWorkspaceEdit(): void {
-  requireWorkspaceRead();
-  if (!canEditWorkspace) throw new Error('当前账户为只读权限，不能修改项目。');
-}
-
-function requireWorkspaceSave(): void {
-  requireWorkspaceEdit();
-  if (!canSaveWorkspace) throw new Error('当前账户只能编辑草稿，不能保存到本地项目。');
-}
-
-async function chooseProject(): Promise<PlatformResponse<UnknownRecord>> {
-  try {
-    requireWorkspaceRead();
-    const session = await repository.choose(true, {
-      allowCreate: canEditWorkspace,
-      persist: canSaveWorkspace,
-      directoryAccessMode: canSaveWorkspace ? 'readwrite' : 'read'
-    });
-    if (!session) return success({ canceled: true });
-    return success({
-      canceled: false,
-      projectDir: session.projectDir,
-      label: session.label,
-      storageFormat: 'sqlite'
-    });
-  } catch (error) {
-    return failure(
-      'WEB_PROJECT_OPEN_FAILED',
-      error instanceof Error ? error.message : '浏览器本地项目无法打开。'
-    );
-  }
-}
-
-async function choosePortableProject(): Promise<PlatformResponse<UnknownRecord>> {
-  try {
-    requireWorkspaceRead();
-    const session = await repository.choose(true, {
-      allowCreate: false,
-      persist: canSaveWorkspace,
-      directoryAccessMode: 'read',
-      selectionMode: 'portable-folder'
-    });
-    if (!session) return success({ canceled: true });
-    return success({
-      canceled: false,
-      projectDir: session.projectDir,
-      label: session.label,
-      storageFormat: 'sqlite',
-      portableImport: true
-    });
-  } catch (error) {
-    return failure(
-      'WEB_PROJECT_FOLDER_IMPORT_FAILED',
-      error instanceof Error ? error.message : '所选文件夹无法作为浏览器本地项目导入。'
-    );
-  }
-}
-
-async function chooseMergeProject(): Promise<PlatformResponse<UnknownRecord>> {
-  try {
-    requireWorkspaceRead();
-    const session = await repository.choose(false, {
-      allowCreate: false,
-      persist: false,
-      directoryAccessMode: 'read'
-    });
-    if (!session) return success({ canceled: true });
-    return success({ canceled: false, projectDir: session.projectDir, label: session.label });
-  } catch (error) {
-    return failure(
-      'WEB_MERGE_PROJECT_OPEN_FAILED',
-      error instanceof Error ? error.message : '待合并的浏览器本地项目无法打开。'
-    );
-  }
-}
-
-async function loadProject(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  const source = asRecord(payload);
-  const requestedDir = String(source.projectDir || '');
-  const requestedFormat = ['sqlite', 'json'].includes(String(source.storageFormat || ''))
-    ? String(source.storageFormat) as 'sqlite' | 'json'
-    : 'auto';
-  try {
-    requireWorkspaceRead();
-    const session = await repository.load(requestedDir, requestedFormat);
-    if (!session) {
-      return failure('WEB_PROJECT_NOT_SELECTED', '请先选择浏览器本地项目或可写项目目录。');
-    }
-    const draft = draftProjects.get(session.projectDir);
-    const effective = draft || session;
-    await hydrateWebImages(
-      collectWebImageReferences(effective.points),
-      repository.directoryHandle(session.projectDir)
-    );
-    const sqliteDatabaseExists = await repository.hasDatabaseProject(session.projectDir);
-    const jsonFilesExist = repository.hasDirectoryMirror(session.projectDir);
-    const storageFormat = jsonFilesExist
-      && (requestedFormat === 'json' || !sqliteDatabaseExists)
-      ? 'json'
-      : 'sqlite';
-    return success({
-      projectDir: session.projectDir,
-      projectModifiedTime: effective.modifiedAt,
-      storageFormat,
-      jsonFilesExist,
-      sqliteDatabaseExists,
-      settings: clone(effective.settings),
-      zones: clone(effective.zones),
-      points: clone(effective.points),
-      webReadOnly: !canEditWorkspace,
-      webDraftOnly: Boolean(draft) || (canEditWorkspace && !canSaveWorkspace),
-      webAccessLevel: managementAccess?.accessLevel || 'save',
-      webStorageMode: 'opfs-sahpool',
-      webDirectoryPermissionStatus: repository.directoryPermissionStatus(session.projectDir),
-      webDirectoryReconnectRequired: ['prompt', 'denied'].includes(
-        repository.directoryPermissionStatus(session.projectDir)
-      )
-    });
-  } catch (error) {
-    return failureFromError(
-      error,
-      'WEB_PROJECT_LOAD_FAILED',
-      '浏览器本地项目无法读取。'
-    );
-  }
-}
-
-async function saveProject(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  const source = asRecord(payload);
-  try {
-    requireWorkspaceEdit();
-    const projectDir = String(source.projectDir || '');
-    if (!canSaveWorkspace) {
-      const modifiedAt = Date.now();
-      draftProjects.set(projectDir, {
-        modifiedAt,
-        settings: clone(asRecord(source.settings)),
-        zones: clone(Array.isArray(source.zones) ? source.zones.filter(item => item && typeof item === 'object') as UnknownRecord[] : []),
-        points: clone(Array.isArray(source.points) ? source.points.filter(item => item && typeof item === 'object') as UnknownRecord[] : [])
-      });
-      return success({
-        projectDir,
-        projectModifiedTime: modifiedAt,
-        storageFormat: 'sqlite',
-        jsonFilesExist: repository.hasDirectoryMirror(projectDir),
-        sqliteDatabaseExists: await repository.hasDatabaseProject(projectDir),
-        draftOnly: true
-      });
-    }
-    const result = await repository.save({
-      projectDir,
-      settings: asRecord(source.settings),
-      zones: Array.isArray(source.zones) ? source.zones.filter(item => item && typeof item === 'object') as UnknownRecord[] : [],
-      points: Array.isArray(source.points) ? source.points.filter(item => item && typeof item === 'object') as UnknownRecord[] : []
-    });
-    draftProjects.delete(projectDir);
-    return success({ ...result });
-  } catch (error) {
-    return failureFromError(
-      error,
-      'WEB_PROJECT_SAVE_FAILED',
-      '浏览器本地项目无法保存。'
-    );
-  }
-}
-
-async function getModifiedTime(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  try {
-    const session = await repository.load(String(asRecord(payload).projectDir || ''));
-    if (!session) return failure('WEB_PROJECT_NOT_SELECTED', '当前没有已加载的浏览器项目。');
-    return success({ modifiedTime: session.modifiedAt });
-  } catch (error) {
-    return failure(
-      'WEB_PROJECT_TIME_FAILED',
-      error instanceof Error ? error.message : '无法读取浏览器项目更新时间。'
-    );
-  }
-}
-
-async function importTextFile(accept: string): Promise<PlatformResponse<UnknownRecord>> {
-  try {
-    const file = await selectWebTextFile(accept);
-    if (!file) return success({ canceled: true });
-    return success({ canceled: false, content: await file.text(), fileName: file.name });
-  } catch (error) {
-    return failure('WEB_IMPORT_FAILED', error instanceof Error ? error.message : '本地文件无法读取。');
-  }
-}
-
-async function importImage(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  const projectDir = String(asRecord(payload).projectDir || '');
-  try {
-    requireWorkspaceSave();
-    return success(await importWebImage(projectDir, repository.directoryHandle(projectDir)));
-  } catch (error) {
-    return failure('WEB_IMAGE_IMPORT_FAILED', error instanceof Error ? error.message : '浏览器图片无法导入。');
-  }
-}
-
-async function removeImage(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  const source = asRecord(payload);
-  const projectDir = String(source.projectDir || '');
-  try {
-    requireWorkspaceSave();
-    const deleted = await deleteWebImage(
-      String(source.relativePath || ''),
-      repository.directoryHandle(projectDir)
-    );
-    return success({ deleted });
-  } catch (error) {
-    return failure('WEB_IMAGE_DELETE_FAILED', error instanceof Error ? error.message : '浏览器图片无法删除。');
-  }
-}
-
-async function chooseBackupDirectory(): Promise<PlatformResponse<UnknownRecord>> {
-  return success({ canceled: false, backupDir: 'web://downloads', label: '浏览器下载与 OPFS 备份' });
-}
-
-async function createBackup(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  const source = asRecord(payload);
-  const projectDir = String(source.projectDir || '');
-  const label = String(source.label || 'manual');
-  try {
-    requireWorkspaceSave();
-    const backup = await repository.createBackup(projectDir, label);
-    let filePath = backup.name;
-    if (String(source.backupDir || '') === 'web://downloads') {
-      const archive = await repository.exportBackupArchive(projectDir, backup.name);
-      await downloadBlob(archive.blob, archive.fileName);
-      filePath = archive.fileName;
-    }
-    return success({ filePath, ...backup });
-  } catch (error) {
-    return failureFromError(error, 'WEB_BACKUP_CREATE_FAILED', '浏览器备份无法创建。');
-  }
-}
-
-async function inspectBackup(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  const source = asRecord(payload);
-  try {
-    const backup = await repository.inspectBackup(String(source.projectDir || ''), String(source.backupName || ''));
-    if (!backup) return failure('WEB_BACKUP_NOT_FOUND', '未找到所选浏览器备份。');
-    const snapshot = asRecord(backup.snapshot);
-    const imageSummary = await repository.inspectBackupImages(
-      String(source.projectDir || ''),
-      String(source.backupName || '')
-    );
-    return success({
-      ok: true,
-      backupName: String(backup.name || source.backupName || ''),
-      restoreFileCount: 3 + imageSummary.entries.length,
-      hasSqliteStorage: true,
-      hasJsonStorage: Boolean(snapshot.settings || snapshot.zones || snapshot.points),
-      imageCount: imageSummary.entries.length,
-      missingImageCount: imageSummary.missingReferences.length,
-      skippedBackupEntries: imageSummary.missingReferences.length,
-      createsSafetyBackup: true,
-      warnings: imageSummary.missingReferences.length
-        ? [`创建备份时有 ${imageSummary.missingReferences.length} 个图片引用无法读取。`]
-        : []
-    });
-  } catch (error) {
-    return failureFromError(error, 'WEB_BACKUP_INSPECT_FAILED', '浏览器备份无法检查。');
-  }
-}
-
-async function restoreBackup(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  const source = asRecord(payload);
-  if (source.confirmRestore !== true) return failure('WEB_BACKUP_CONFIRM_REQUIRED', '恢复备份需要明确确认。');
-  try {
-    requireWorkspaceSave();
-    return success(await repository.restoreBackup(
-      String(source.projectDir || ''),
-      String(source.backupName || '')
-    ));
-  } catch (error) {
-    return failureFromError(error, 'WEB_BACKUP_RESTORE_FAILED', '浏览器备份无法恢复。');
-  }
-}
-
-async function importExternalBackup(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  try {
-    requireWorkspaceSave();
-    const projectDir = String(asRecord(payload).projectDir || '');
-    if (!projectDir || repository.activeContext()?.session.projectDir !== projectDir) {
-      return failure('WEB_PROJECT_NOT_SELECTED', '请先打开当前项目，再导入外部备份。');
-    }
-    const archive = await selectAndInspectWebBackupArchive();
-    if (!archive) return success({ canceled: true });
-    const token = crypto.randomUUID();
-    pendingExternalBackup = {
-      token,
-      projectDir,
-      expiresAt: Date.now() + EXTERNAL_BACKUP_IMPORT_TTL,
-      archive
-    };
-    const snapshot = asRecord(archive.snapshot);
-    return success({
-      canceled: false,
-      ok: true,
-      importToken: token,
-      backupName: archive.fileName,
-      sourceProjectLabel: archive.manifest.projectLabel,
-      sourceGeneratedAt: archive.manifest.generatedAt,
-      archiveBytes: archive.archiveBytes,
-      uncompressedBytes: archive.uncompressedBytes,
-      restoreFileCount: 3 + archive.images.length,
-      imageCount: archive.images.length,
-      missingImageCount: archive.manifest.missingImageReferences.length,
-      zoneCount: Array.isArray(snapshot.zones) ? snapshot.zones.length : 0,
-      pointCount: Array.isArray(snapshot.points) ? snapshot.points.length : 0,
-      hasSqliteStorage: true,
-      hasJsonStorage: true,
-      skippedBackupEntries: archive.manifest.missingImageReferences.length,
-      createsSafetyBackup: true,
-      warnings: archive.warnings
-    });
-  } catch (error) {
-    pendingExternalBackup = null;
-    return failureFromError(error, 'WEB_BACKUP_IMPORT_FAILED', '外部浏览器备份无法读取。');
-  }
-}
-
-async function restoreImportedBackup(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  const source = asRecord(payload);
-  if (source.confirmRestore !== true) {
-    return failure('WEB_BACKUP_CONFIRM_REQUIRED', '恢复外部备份需要明确确认。');
-  }
-  const pending = pendingExternalBackup;
-  if (!pending
-    || pending.token !== String(source.importToken || '')
-    || pending.projectDir !== String(source.projectDir || '')
-    || pending.expiresAt <= Date.now()) {
-    pendingExternalBackup = null;
-    return failure('WEB_BACKUP_IMPORT_EXPIRED', '外部备份预览已失效，请重新选择并检测 ZIP。');
-  }
-  try {
-    requireWorkspaceSave();
-    const result = await repository.restoreImportedBackup(pending.projectDir, pending.archive);
-    pendingExternalBackup = null;
-    return success(result);
-  } catch (error) {
-    return failureFromError(error, 'WEB_BACKUP_IMPORT_RESTORE_FAILED', '外部浏览器备份无法恢复。');
-  }
-}
-
-async function listExpiredBackups(): Promise<PlatformResponse<UnknownRecord>> {
-  return success({ items: [], policy: 'manual-only' });
-}
-
-async function keepExpiredBackups(): Promise<PlatformResponse<UnknownRecord>> {
-  return success({ kept: 0, policy: 'manual-only' });
-}
-
-async function deleteExpiredBackups(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  const source = asRecord(payload);
-  const names = Array.isArray(source.paths) ? source.paths.map(String) : [];
-  try {
-    requireWorkspaceSave();
-    return success({ deleted: await repository.deleteBackupsByName(String(source.projectDir || ''), names) });
-  } catch (error) {
-    return failure('WEB_BACKUP_DELETE_FAILED', error instanceof Error ? error.message : '浏览器备份无法删除。');
-  }
-}
-
-function guardedStorageMutation(
-  operation: (payload?: unknown) => Promise<PlatformResponse<UnknownRecord>>
-): (payload?: unknown) => Promise<PlatformResponse<UnknownRecord>> {
-  return async payload => {
-    try {
-      requireWorkspaceSave();
-      return await operation(payload);
-    } catch (error) {
-      return failure(
-        'WEB_STORAGE_PERMISSION_DENIED',
-        error instanceof Error ? error.message : '当前账户不能修改浏览器项目存储。'
-      );
-    }
-  };
-}
-
-async function checkWebImageRefs(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  const refs = Array.isArray(asRecord(payload).refs) ? asRecord(payload).refs as string[] : [];
-  try {
-    const projectDir = String(asRecord(payload).projectDir || '');
-    return success({
-      items: await inspectWebImageReferences(refs, repository.directoryHandle(projectDir))
-    });
-  } catch (error) {
-    return failure('WEB_IMAGE_CHECK_FAILED', error instanceof Error ? error.message : '浏览器图片引用无法检查。');
-  }
-}
-
-async function webSpeciesReference(
-  payload: SpeciesReferenceQueryInput
-): Promise<PlatformResponse<SpeciesReferenceResult>> {
-  try {
-    return success(await queryWebSpeciesReference(payload));
-  } catch (error) {
-    return failure('WEB_SPECIES_REFERENCE_FAILED', error instanceof Error ? error.message : '物种参考服务暂不可用。');
-  }
-}
-
-async function webTaxonomySuggestion(
-  payload: TaxonomyReferenceInput
-): Promise<PlatformResponse<TaxonomyReferenceResult>> {
-  try {
-    return success(await suggestWebTaxonomy(payload));
-  } catch (error) {
-    return failure('WEB_TAXONOMY_SUGGEST_FAILED', error instanceof Error ? error.message : '科属建议暂不可用。');
-  }
-}
-
-async function webImageCompare(
-  payload: SpeciesReferenceImageCompareInput
-): Promise<PlatformResponse<SpeciesReferenceResult>> {
-  try {
-    return success(await compareWebSpeciesImage(payload));
-  } catch (error) {
-    return failure('WEB_IMAGE_COMPARE_FAILED', error instanceof Error ? error.message : '图像比对暂不可用。');
-  }
-}
-
-async function toggleBrowserFullscreen(): Promise<PlatformResponse<UnknownRecord>> {
-  try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else await document.documentElement.requestFullscreen();
-    return success({ fullscreen: Boolean(document.fullscreenElement) });
-  } catch (error) {
-    return failure(
-      'WEB_FULLSCREEN_FAILED',
-      error instanceof Error ? error.message : '浏览器无法切换全屏。'
-    );
-  }
-}
-
-async function openBrowserExternal(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
-  const rawUrl = String(asRecord(payload).url || '').trim();
-  try {
-    const url = new URL(rawUrl);
-    if (!['https:', 'http:'].includes(url.protocol)) {
-      return failure('EXTERNAL_URL_NOT_ALLOWED', '仅允许打开 HTTP 或 HTTPS 链接。');
-    }
-    const link = document.createElement('a');
-    link.href = url.href;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.hidden = true;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    return success({ opened: true });
-  } catch {
-    return failure('EXTERNAL_URL_INVALID', '链接地址无效。');
-  }
-}
+import { createWebBackupCommands } from './web/webBackupCommands';
+import { createWebProjectCommands } from './web/webProjectCommands';
+import { createWebWorkspaceAccess } from './web/webWorkspaceAccess';
 
 export function createWebPlatformAdapter(): PlatformAdapter {
+  const access = createWebWorkspaceAccess();
+  const repository = new WebProjectRepository({
+    directoryAccessMode: access.canSave ? 'readwrite' : 'read'
+  });
+  const projectCommands = createWebProjectCommands(repository, access);
+  const backupCommands = createWebBackupCommands(repository, access);
+  const diagnostics = createWebDiagnostics(repository);
+  const storageMaintenance = createWebStorageMaintenance(repository);
+
   installWebImageResolver();
+
+  async function importTextFile(accept: string): Promise<PlatformResponse<UnknownRecord>> {
+    try {
+      const file = await selectWebTextFile(accept);
+      if (!file) return success({ canceled: true });
+      return success({ canceled: false, content: await file.text(), fileName: file.name });
+    } catch (error) {
+      return failure('WEB_IMPORT_FAILED', error instanceof Error ? error.message : '本地文件无法读取。');
+    }
+  }
+
+  async function importImage(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
+    const projectDir = String(asRecord(payload).projectDir || '');
+    try {
+      access.requireSave();
+      return success(await importWebImage(projectDir, repository.directoryHandle(projectDir)));
+    } catch (error) {
+      return failure('WEB_IMAGE_IMPORT_FAILED', error instanceof Error ? error.message : '浏览器图片无法导入。');
+    }
+  }
+
+  async function removeImage(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
+    const source = asRecord(payload);
+    const projectDir = String(source.projectDir || '');
+    try {
+      access.requireSave();
+      const deleted = await deleteWebImage(
+        String(source.relativePath || ''),
+        repository.directoryHandle(projectDir)
+      );
+      return success({ deleted });
+    } catch (error) {
+      return failure('WEB_IMAGE_DELETE_FAILED', error instanceof Error ? error.message : '浏览器图片无法删除。');
+    }
+  }
+
+  async function checkWebImageRefs(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
+    const source = asRecord(payload);
+    const refs = Array.isArray(source.refs) ? source.refs as string[] : [];
+    try {
+      const projectDir = String(source.projectDir || '');
+      return success({
+        items: await inspectWebImageReferences(refs, repository.directoryHandle(projectDir))
+      });
+    } catch (error) {
+      return failure('WEB_IMAGE_CHECK_FAILED', error instanceof Error ? error.message : '浏览器图片引用无法检查。');
+    }
+  }
+
+  function guardedStorageMutation(
+    operation: (payload?: unknown) => Promise<PlatformResponse<UnknownRecord>>
+  ): (payload?: unknown) => Promise<PlatformResponse<UnknownRecord>> {
+    return async payload => {
+      try {
+        access.requireSave();
+        return await operation(payload);
+      } catch (error) {
+        return failure(
+          'WEB_STORAGE_PERMISSION_DENIED',
+          error instanceof Error ? error.message : '当前账户不能修改浏览器项目存储。'
+        );
+      }
+    };
+  }
+
+  async function webSpeciesReference(
+    payload: SpeciesReferenceQueryInput
+  ): Promise<PlatformResponse<SpeciesReferenceResult>> {
+    try {
+      return success(await queryWebSpeciesReference(payload));
+    } catch (error) {
+      return failure('WEB_SPECIES_REFERENCE_FAILED', error instanceof Error ? error.message : '物种参考服务暂不可用。');
+    }
+  }
+
+  async function webTaxonomySuggestion(
+    payload: TaxonomyReferenceInput
+  ): Promise<PlatformResponse<TaxonomyReferenceResult>> {
+    try {
+      return success(await suggestWebTaxonomy(payload));
+    } catch (error) {
+      return failure('WEB_TAXONOMY_SUGGEST_FAILED', error instanceof Error ? error.message : '科属建议暂不可用。');
+    }
+  }
+
+  async function webImageCompare(
+    payload: SpeciesReferenceImageCompareInput
+  ): Promise<PlatformResponse<SpeciesReferenceResult>> {
+    try {
+      return success(await compareWebSpeciesImage(payload));
+    } catch (error) {
+      return failure('WEB_IMAGE_COMPARE_FAILED', error instanceof Error ? error.message : '图像比对暂不可用。');
+    }
+  }
+
+  async function toggleBrowserFullscreen(): Promise<PlatformResponse<UnknownRecord>> {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+      return success({ fullscreen: Boolean(document.fullscreenElement) });
+    } catch (error) {
+      return failure(
+        'WEB_FULLSCREEN_FAILED',
+        error instanceof Error ? error.message : '浏览器无法切换全屏。'
+      );
+    }
+  }
+
+  async function openBrowserExternal(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
+    const rawUrl = String(asRecord(payload).url || '').trim();
+    try {
+      const url = new URL(rawUrl);
+      if (!['https:', 'http:'].includes(url.protocol)) {
+        return failure('EXTERNAL_URL_NOT_ALLOWED', '仅允许打开 HTTP 或 HTTPS 链接。');
+      }
+      const link = document.createElement('a');
+      link.href = url.href;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.hidden = true;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return success({ opened: true });
+    } catch {
+      return failure('EXTERNAL_URL_INVALID', '链接地址无效。');
+    }
+  }
 
   return Object.freeze({
     runtime: 'web' as const,
     capabilities: Object.freeze({
-      readProject: webCapabilityReport.workspaceReady && canReadWorkspace,
-      writeProject: webCapabilityReport.workspaceReady && canSaveWorkspace,
-      importRecords: webCapabilityReport.workspaceReady && canEditWorkspace,
-      exportFiles: webCapabilityReport.portableBackupAvailable && canReadWorkspace,
-      sqliteStorage: webCapabilityReport.workspaceReady && canReadWorkspace,
-      backups: webCapabilityReport.workspaceReady && canSaveWorkspace,
-      diagnostics: webCapabilityReport.workspaceReady && canReadWorkspace,
+      readProject: access.capabilityReport.workspaceReady && access.canRead,
+      writeProject: access.capabilityReport.workspaceReady && access.canSave,
+      importRecords: access.capabilityReport.workspaceReady && access.canEdit,
+      exportFiles: access.capabilityReport.portableBackupAvailable && access.canRead,
+      sqliteStorage: access.capabilityReport.workspaceReady && access.canRead,
+      backups: access.capabilityReport.workspaceReady && access.canSave,
+      diagnostics: access.capabilityReport.workspaceReady && access.canRead,
       speciesReference: true,
       externalLinks: true,
       nativeWindow: false,
-      readOnly: !webCapabilityReport.workspaceReady || !canEditWorkspace,
-      externalBackupImport: webCapabilityReport.portableBackupAvailable && canSaveWorkspace,
-      directoryMirror: webCapabilityReport.directoryMirrorAvailable && canSaveWorkspace
+      readOnly: !access.capabilityReport.workspaceReady || !access.canEdit,
+      externalBackupImport: access.capabilityReport.portableBackupAvailable && access.canSave,
+      directoryMirror: access.capabilityReport.directoryMirrorAvailable && access.canSave
     }),
     web: Object.freeze({
-      capabilityReport: webCapabilityReport,
-      ...(managementAccess ? { managementAccess: managementAccess as Readonly<ManagementWorkspaceAccess> } : {})
+      capabilityReport: access.capabilityReport,
+      ...(access.managementAccess ? { managementAccess: access.managementAccess } : {})
     }),
     project: Object.freeze({
-      chooseDir: chooseProject,
-      choosePortableDir: choosePortableProject,
-      chooseMergeDir: chooseMergeProject,
-      load: loadProject,
-      save: saveProject,
-      getModifiedTime,
+      ...projectCommands,
       importCsv: () => importTextFile('.csv,text/csv'),
       exportCsv: (payload: unknown) => downloadPayload(payload, 'plant_records.csv', 'text/csv;charset=utf-8'),
       importGeoJson: () => importTextFile('.json,.geojson,application/json,application/geo+json'),
@@ -587,17 +210,7 @@ export function createWebPlatformAdapter(): PlatformAdapter {
       exportJson: (payload: unknown) => downloadPayload(payload, 'statistics_full.json', 'application/json;charset=utf-8')
     }),
     image: Object.freeze({ import: importImage, delete: removeImage }),
-    backup: Object.freeze({
-      chooseDir: chooseBackupDirectory,
-      create: createBackup,
-      inspectRestore: inspectBackup,
-      restore: restoreBackup,
-      importArchive: importExternalBackup,
-      restoreImported: restoreImportedBackup,
-      listExpired: listExpiredBackups,
-      keepExpired: keepExpiredBackups,
-      deleteExpired: deleteExpiredBackups
-    }),
+    backup: backupCommands,
     log: Object.freeze({
       report: diagnostics.report,
       setLevel: diagnostics.setLevel,

@@ -377,6 +377,7 @@ function testRendererDomainModuleArchitectureContract() {
     ['settings.js', 'function buildSettingsBundle'],
     ['diagnosticsExport.js', 'function buildDiagnosticsPayload'],
     ['storageView.js', 'function renderStorageArtifacts'],
+    ['storageWorkflow.js', 'async function inspectProjectBackup'],
     ['storageActions.js', 'async function deleteSelectedStorageArtifacts'],
     ['index.js', 'function bindMaintenanceEvents']
   ].forEach(([fileName, fragment]) => {

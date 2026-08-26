@@ -3,11 +3,14 @@ function dirnameLabel(dir) {
 }
 
 async function createBackupZip(projectDir, backupDir, label) {
-  const data = await callIpc(window.platformAdapter.backup.create({
+  const payload = {
     projectDir,
     backupDir,
     label
-  }));
+  };
+  const data = window.projectWorkflow?.createBackup
+    ? await window.projectWorkflow.createBackup(payload)
+    : await callIpc(window.platformAdapter.backup.create(payload));
   return data.filePath;
 }
 

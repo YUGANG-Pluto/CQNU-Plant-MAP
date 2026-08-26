@@ -191,6 +191,12 @@ function testElectronSecurityContract() {
 function testWebPlatformSecurityContract() {
   const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
   const webRoot = path.join(process.cwd(), 'src/renderer-modern/platform');
+  const webCompositionSource = fs.readFileSync(path.join(webRoot, 'webAdapter.ts'), 'utf8');
+  const webBoundaryFiles = [
+    path.join(webRoot, 'web/webWorkspaceAccess.ts'),
+    path.join(webRoot, 'web/webProjectCommands.ts'),
+    path.join(webRoot, 'web/webBackupCommands.ts')
+  ];
   const webFiles = [
     path.join(webRoot, 'webAdapter.ts'),
     ...fs.readdirSync(path.join(webRoot, 'web'))
@@ -208,4 +214,11 @@ function testWebPlatformSecurityContract() {
   assert.ok(source.includes('scientificName'));
   assert.ok(source.includes('commonName'));
   assert.ok(!source.includes('localStorage.setItem(\'token'));
+  assert.ok(webCompositionSource.includes('createWebWorkspaceAccess'));
+  assert.ok(webCompositionSource.includes('createWebProjectCommands'));
+  assert.ok(webCompositionSource.includes('createWebBackupCommands'));
+  [path.join(webRoot, 'webAdapter.ts'), ...webBoundaryFiles].forEach(filePath => {
+    const lineCount = fs.readFileSync(filePath, 'utf8').split(/\r?\n/).length;
+    assert.ok(lineCount <= 360, `${path.relative(process.cwd(), filePath)} should stay below 360 lines`);
+  });
 }

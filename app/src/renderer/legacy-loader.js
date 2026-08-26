@@ -70,6 +70,7 @@
     './src/renderer/features/maintenance/settings.js',
     './src/renderer/features/maintenance/diagnosticsExport.js',
     './src/renderer/features/maintenance/storageView.js',
+    './src/renderer/features/maintenance/storageWorkflow.js',
     './src/renderer/features/maintenance/storageActions.js',
     './src/renderer/features/maintenance/index.js',
     './src/renderer/shell/workspaceDrawer.js',

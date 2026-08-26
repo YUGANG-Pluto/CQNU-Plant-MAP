@@ -8,13 +8,16 @@ async function persistProject() {
     state.settings.mapCenterCoordSystem = 'WGS84';
     state.settings.mapZoom = state.map.getZoom();
 
-    const data = await callIpc(window.platformAdapter.project.save({
+    const payload = {
       projectDir: state.projectDir,
       storageFormat: state.storageFormat || 'json',
       settings: state.settings,
       zones: state.zones,
       points: state.points
-    }));
+    };
+    const data = window.projectWorkflow?.save
+      ? await window.projectWorkflow.save(payload)
+      : await callIpc(window.platformAdapter.project.save(payload));
 
     state.projectModifiedTime = data.projectModifiedTime || Date.now();
     state.storageFormat = data.storageFormat || state.storageFormat || 'json';
@@ -28,11 +31,18 @@ async function persistProject() {
 }
 
 async function loadProjectIntoRenderer(projectDir, options = {}) {
-  const data = await callIpc(window.platformAdapter.project.load({
+  const payload = {
     projectDir,
     storageFormat: options.storageFormat || 'auto'
-  }));
+  };
+  const data = window.projectWorkflow?.load
+    ? await window.projectWorkflow.load(payload)
+    : await callIpc(window.platformAdapter.project.load(payload));
 
+  return applyLoadedProjectToRenderer(data);
+}
+
+async function applyLoadedProjectToRenderer(data) {
   state.projectDir = data.projectDir;
   state.projectModifiedTime = data.projectModifiedTime || Date.now();
   state.storageFormat = data.storageFormat || 'json';
@@ -93,6 +103,7 @@ async function loadProjectIntoRenderer(projectDir, options = {}) {
         ? 'webProjectLoaded'
         : 'projectCreated'
   ));
+  return data;
 }
 
 function applyI18n() {

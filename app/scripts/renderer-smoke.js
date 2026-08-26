@@ -165,6 +165,15 @@ async function run() {
       statsRegistry?.groups.every(group => Object.isFrozen(group) && Object.isFrozen(group.charts)) &&
       Object.isFrozen(statsRegistry?.labels) &&
       Object.isFrozen(statsRegistry?.presets);
+    const projectWorkflowStatus = window.projectWorkflow?.getStatus();
+    const projectWorkflowReady = window.projectWorkflow?.version === 'project-workflow-v1' &&
+      document.documentElement.dataset.projectWorkflow === 'project-workflow-v1' &&
+      Object.isFrozen(window.projectWorkflow) &&
+      Object.isFrozen(projectWorkflowStatus) &&
+      projectWorkflowStatus?.busy === false &&
+      ['idle', 'ready'].includes(projectWorkflowStatus?.phase) &&
+      ['chooseAndLoad', 'load', 'save', 'createBackup', 'inspectBackup', 'restoreBackup']
+        .every(name => typeof window.projectWorkflow?.[name] === 'function');
     const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     const motionCloseDelay = Math.max(
       760,
@@ -513,6 +522,7 @@ async function run() {
       ...rendererMotionContract,
       statsRegistryReady,
       statsRegistryImmutable,
+      projectWorkflowReady,
       modalPrimitiveCount: document.querySelectorAll('.modal-workflow-body').length,
       queryFocusTrapped,
       queryClosedByEscape: queryModal.classList.contains('hidden'),
@@ -600,6 +610,7 @@ async function run() {
   }
   if (!result.statsRegistryReady) failures.push('typed statistics chart registry is incomplete');
   if (!result.statsRegistryImmutable) failures.push('typed statistics chart registry exposes mutable containers');
+  if (!result.projectWorkflowReady) failures.push('typed project workflow bridge is incomplete');
   if (result.modalPrimitiveCount < 3) failures.push(`modal primitive count: ${result.modalPrimitiveCount}`);
   if (!result.queryFocusTrapped) failures.push('query modal does not trap keyboard focus');
   if (!result.queryClosedByEscape) failures.push('query modal did not close with Escape');

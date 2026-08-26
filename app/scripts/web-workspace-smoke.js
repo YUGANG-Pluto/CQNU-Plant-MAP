@@ -289,6 +289,13 @@ async function run() {
           && typeof window.platformAdapter.backup.restoreImported === 'function',
         externalBackupControls: Boolean(document.getElementById('btnImportExternalBackup'))
           && Boolean(document.getElementById('btnRestoreImportedBackup')),
+        projectWorkflowReady: window.projectWorkflow?.version === 'project-workflow-v1'
+          && document.documentElement.dataset.projectWorkflow === 'project-workflow-v1'
+          && Object.isFrozen(window.projectWorkflow)
+          && Object.isFrozen(window.projectWorkflow?.getStatus())
+          && window.projectWorkflow?.getStatus().busy === false
+          && ['chooseAndLoad', 'load', 'save', 'createBackup', 'inspectBackup', 'restoreBackup']
+            .every(name => typeof window.projectWorkflow?.[name] === 'function'),
         mapReady: Boolean(window.__CQNU_STATE__?.map),
         runtimeStatus: document.documentElement.dataset.runtimeStatus,
         siteHomeLink: Boolean(document.querySelector('.web-site-link[href="/"]'))
@@ -379,6 +386,7 @@ async function run() {
       failures.push(`project round trip: ${result.zoneCount} zones / ${result.pointCount} points`);
     }
     if (!result.mapReady) failures.push('Leaflet map did not initialize');
+    if (!result.projectWorkflowReady) failures.push('typed project workflow bridge is unavailable in the web runtime');
     if (result.runtimeStatus !== 'ready') failures.push(`runtime status: ${result.runtimeStatus}`);
     if (!result.siteHomeLink) failures.push('site homepage link is missing');
     if (lockResult?.ok !== false || lockResult?.error?.code !== 'WEB_DATABASE_LOCKED') {

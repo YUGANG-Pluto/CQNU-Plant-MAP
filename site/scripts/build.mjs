@@ -15,7 +15,17 @@ if (!distRelative || distRelative.startsWith('..') || distRelative.includes(':')
   throw new Error('Refusing to clean a dist path outside the site workspace.');
 }
 
-const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, legacyLoaderSource, manageHtml, manageCss, manageClient, manageApi, manageI18n, profileStorage, hostingConfig] = await Promise.all([
+const managementUiModuleNames = [
+  'manage.js',
+  'manage-context.js',
+  'manage-session.js',
+  'manage-profile.js',
+  'manage-members.js',
+  'manage-api.js',
+  'manage-i18n.js'
+];
+
+const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, legacyLoaderSource, manageHtml, manageCss, managementUiModules, profileStorage, hostingConfig] = await Promise.all([
   readFile(resolve(projectRoot, 'src/styles.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/client.js'), 'utf8'),
   readFile(resolve(projectRoot, 'src/workspace-gate.css'), 'utf8'),
@@ -24,9 +34,10 @@ const [styles, client, workspaceGateCss, workspaceGateClient, appIndex, legacyLo
   readFile(resolve(appRoot, 'src/renderer/legacy-loader.js'), 'utf8'),
   readFile(resolve(adminRoot, 'ui/index.html'), 'utf8'),
   readFile(resolve(adminRoot, 'ui/manage.css'), 'utf8'),
-  readFile(resolve(adminRoot, 'ui/manage.js'), 'utf8'),
-  readFile(resolve(adminRoot, 'ui/manage-api.js'), 'utf8'),
-  readFile(resolve(adminRoot, 'ui/manage-i18n.js'), 'utf8'),
+  Promise.all(managementUiModuleNames.map(async name => ({
+    name,
+    source: await readFile(resolve(adminRoot, 'ui', name), 'utf8')
+  }))),
   readFile(resolve(adminRoot, 'ui/profile-storage.js'), 'utf8'),
   readFile(resolve(projectRoot, '.openai/hosting.json'), 'utf8')
 ]);
@@ -166,9 +177,9 @@ await Promise.all([
   writeFile(resolve(clientRoot, 'assets/workspace-gate.js'), workspaceGateClient, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/legacy-runtime.js'), legacyRuntimeBundle, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/manage.css'), manageCss, 'utf8'),
-  writeFile(resolve(clientRoot, 'assets/manage.js'), manageClient, 'utf8'),
-  writeFile(resolve(clientRoot, 'assets/manage-api.js'), manageApi, 'utf8'),
-  writeFile(resolve(clientRoot, 'assets/manage-i18n.js'), manageI18n, 'utf8'),
+  ...managementUiModules.map(({ name, source }) => (
+    writeFile(resolve(clientRoot, 'assets', name), source, 'utf8')
+  )),
   writeFile(resolve(clientRoot, 'assets/profile-storage.js'), profileStorage, 'utf8'),
   writeFile(resolve(distRoot, 'db/schema.ts'), schemaSource, 'utf8'),
   cp(resolve(adminRoot, 'dist'), resolve(distRoot, 'server/admin'), { recursive: true }),
@@ -214,6 +225,10 @@ const siteAssetPaths = new Set([
   '/assets/workspace-gate.js',
   '/assets/manage.css',
   '/assets/manage.js',
+  '/assets/manage-context.js',
+  '/assets/manage-session.js',
+  '/assets/manage-profile.js',
+  '/assets/manage-members.js',
   '/assets/manage-api.js',
   '/assets/manage-i18n.js',
   '/assets/profile-storage.js',

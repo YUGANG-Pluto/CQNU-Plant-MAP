@@ -75,11 +75,12 @@ async function inspectSelectedBackupRestore() {
   const backupName = getSingleSelectedBackupName();
   if (!backupName) return null;
   try {
-  const plan = await callIpc(window.platformAdapter.backup.inspectRestore({
+    const payload = {
       projectDir: state.projectDir,
       backupDir: state.backupTargetDir || '',
       backupName
-    }));
+    };
+    const plan = await inspectProjectBackup(payload);
     renderBackupRestorePlan(plan);
     if (ui.maintenanceStorageSummary) {
       ui.maintenanceStorageSummary.textContent = plan.ok
@@ -126,12 +127,13 @@ async function restoreSelectedBackup() {
     const result = await withProgressTask({ type: 'maintenance', title: maintenanceText('maintenanceBackupRestoreSelected'), stage: maintenanceText('progressBackup') }, async task => {
       task.update({ percent: 15, stage: maintenanceText('progressBackup') });
       await yieldToUi();
-  const restored = await callIpc(window.platformAdapter.backup.restore({
+      const payload = {
         projectDir: state.projectDir,
         backupDir: state.backupTargetDir || '',
         backupName,
         confirmRestore: true
-      }));
+      };
+      const restored = await restoreProjectBackup(payload);
       task.update({ percent: 75, stage: maintenanceText('progressReloading') });
       await loadProjectIntoRenderer(state.projectDir, { storageFormat: 'auto' });
       task.update({ percent: 92, stage: maintenanceText('maintenanceStorageVerifying') });

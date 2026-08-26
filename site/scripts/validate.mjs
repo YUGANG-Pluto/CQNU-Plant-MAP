@@ -53,9 +53,7 @@ assert.ok((await preview.arrayBuffer()).byteLength > 1000);
 for (const asset of [
   '/renderer-dist/modern-shell.js',
   '/assets/legacy-runtime.js',
-  '/assets/workspace-gate.js',
-  '/assets/manage.js',
-  '/assets/manage-api.js'
+  '/assets/workspace-gate.js'
 ]) {
   const response = await fetchSite(asset);
   const source = await response.text();
@@ -63,6 +61,22 @@ for (const asset of [
   assert.match(response.headers.get('content-type') || '', /text\/javascript/);
   assert.ok(source.length > 1000);
   assert.doesNotMatch(source, /[A-Za-z]:\\/);
+}
+for (const asset of [
+  '/assets/manage.js',
+  '/assets/manage-context.js',
+  '/assets/manage-session.js',
+  '/assets/manage-profile.js',
+  '/assets/manage-members.js',
+  '/assets/manage-api.js',
+  '/assets/manage-i18n.js'
+]) {
+  const response = await fetchSite(asset);
+  const moduleSource = await response.text();
+  assert.equal(response.status, 200, `${asset} should return 200`);
+  assert.match(response.headers.get('content-type') || '', /text\/javascript/);
+  assert.ok(moduleSource.length > 40, `${asset} should not be empty`);
+  assert.doesNotMatch(moduleSource, /[A-Za-z]:\\/);
 }
 const unbundledLegacyLoader = await fetchSite('/src/renderer/legacy-loader.js');
 assert.equal(unbundledLegacyLoader.status, 404);
@@ -78,6 +92,7 @@ assert.equal(unavailableSessionData.ok, false);
 assert.equal(unavailableSessionData.error.code, 'MANAGEMENT_SERVICE_UNAVAILABLE');
 const modernShellResponse = await fetchSite('/renderer-dist/modern-shell.js');
 const modernShellSource = await modernShellResponse.text();
+assert.match(modernShellSource, /project-workflow-v1/, 'Modern shell should include the shared project workflow bridge');
 const databaseWorkerMatch = modernShellSource.match(/assets\/webDatabaseWorker-[A-Za-z0-9_-]+\.js/);
 assert.ok(databaseWorkerMatch, 'Modern shell should reference the browser database Worker');
 const databaseWorkerResponse = await fetchSite(`/${databaseWorkerMatch[0]}`);
