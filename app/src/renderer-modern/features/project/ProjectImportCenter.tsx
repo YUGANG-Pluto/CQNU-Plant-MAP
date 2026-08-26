@@ -8,7 +8,6 @@ import {
   RefreshCw,
   ShieldCheck
 } from 'lucide-preact';
-import { useEffect, useState } from 'preact/hooks';
 import { LayerModal } from '../../components/LayerModal';
 import {
   buildProjectImportOptions,
@@ -16,10 +15,7 @@ import {
   type ProjectImportOption,
   type ProjectSourceInput
 } from './importCenterModel';
-
-interface ProjectLoadedEventDetail extends ProjectSourceInput {
-  projectDir?: string;
-}
+import { useProjectSession } from './useProjectSession';
 
 declare global {
   interface Window {
@@ -49,14 +45,14 @@ const optionIcons = {
   btnImportProjectBackup: ArchiveRestore
 };
 
-function initialSource(): ProjectLoadedEventDetail | null {
-  if (document.documentElement.dataset.projectLoaded !== 'true') return null;
+function sourceFromSession(session: ReturnType<typeof useProjectSession>): ProjectSourceInput | null {
+  if (!session.loaded) return null;
   return {
-    sourceKind: document.documentElement.dataset.projectSourceKind || '',
-    storageFormat: document.documentElement.dataset.projectStorageFormat as ProjectSourceInput['storageFormat'],
-    directoryPermissionStatus: document.documentElement.dataset.projectDirectoryPermission || '',
-    directoryReconnectRequired: document.documentElement.dataset.projectDirectoryReconnect === 'true',
-    externalSqliteImported: document.documentElement.dataset.projectExternalSqlite === 'true'
+    sourceKind: session.sourceKind,
+    storageFormat: session.storageFormat,
+    directoryPermissionStatus: session.directoryPermissionStatus,
+    directoryReconnectRequired: session.directoryReconnectRequired,
+    externalSqliteImported: session.externalSqliteImported
   };
 }
 
@@ -85,15 +81,7 @@ function ProjectImportOptionButton({ option }: { option: ProjectImportOption }) 
 }
 
 export function ProjectSourceStatus() {
-  const [source, setSource] = useState<ProjectLoadedEventDetail | null>(initialSource);
-
-  useEffect(() => {
-    const handleLoaded = (event: Event) => {
-      setSource((event as CustomEvent<ProjectLoadedEventDetail>).detail || {});
-    };
-    window.addEventListener('cqnu:project-loaded', handleLoaded);
-    return () => window.removeEventListener('cqnu:project-loaded', handleLoaded);
-  }, []);
+  const source = sourceFromSession(useProjectSession());
 
   if (window.platformAdapter?.runtime !== 'web' || !source) return null;
   const description = describeProjectSource(source);
@@ -112,7 +100,7 @@ export function ProjectSourceStatus() {
       </span>
       <button
         id="btnReopenProjectImportCenter"
-        class="modern-icon-button project-source-status__action"
+        class="modern-icon-button project-source-status__action glass-interactive"
         type="button"
         onClick={openImportCenter}
         title="切换项目来源"
@@ -128,15 +116,7 @@ export function ProjectSourceStatus() {
 
 export function ProjectImportCenter() {
   const adapter = window.platformAdapter;
-  const [source, setSource] = useState<ProjectLoadedEventDetail | null>(initialSource);
-
-  useEffect(() => {
-    const handleLoaded = (event: Event) => {
-      setSource((event as CustomEvent<ProjectLoadedEventDetail>).detail || {});
-    };
-    window.addEventListener('cqnu:project-loaded', handleLoaded);
-    return () => window.removeEventListener('cqnu:project-loaded', handleLoaded);
-  }, []);
+  const source = sourceFromSession(useProjectSession());
 
   if (adapter?.runtime !== 'web') return null;
   const options = buildProjectImportOptions({

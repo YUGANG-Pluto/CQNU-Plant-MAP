@@ -58,6 +58,43 @@ const syncHeader = () => header?.classList.toggle('is-scrolled', window.scrollY 
 syncHeader();
 window.addEventListener('scroll', syncHeader, { passive: true });
 
+const docProgress = document.querySelector('[data-doc-progress]');
+const docLinks = [...document.querySelectorAll('[data-doc-link]')];
+const docSections = [...document.querySelectorAll('[data-doc-section]')];
+let docProgressFrame = 0;
+
+function syncDocumentProgress() {
+  docProgressFrame = 0;
+  if (!docProgress) return;
+  const scrollRange = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+  const progress = Math.min(1, Math.max(0, window.scrollY / scrollRange));
+  docProgress.style.transform = `scaleX(${progress})`;
+}
+
+if (docProgress) {
+  syncDocumentProgress();
+  window.addEventListener('scroll', () => {
+    if (docProgressFrame) return;
+    docProgressFrame = window.requestAnimationFrame(syncDocumentProgress);
+  }, { passive: true });
+}
+
+if (docSections.length && 'IntersectionObserver' in window) {
+  const docObserver = new IntersectionObserver(entries => {
+    const visible = entries
+      .filter(entry => entry.isIntersecting)
+      .sort((left, right) => Math.abs(left.boundingClientRect.top - 126) - Math.abs(right.boundingClientRect.top - 126))[0];
+    if (!visible) return;
+    docLinks.forEach(link => {
+      const current = link.getAttribute('href') === `#${visible.target.id}`;
+      link.classList.toggle('is-current', current);
+      if (current) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
+  }, { rootMargin: '-12% 0px -68% 0px', threshold: 0.05 });
+  docSections.forEach(section => docObserver.observe(section));
+}
+
 const hubSearch = document.querySelector('[data-hub-search]');
 const hubItems = [...document.querySelectorAll('[data-hub-item]')];
 const hubGroups = [...document.querySelectorAll('[data-hub-group]')];

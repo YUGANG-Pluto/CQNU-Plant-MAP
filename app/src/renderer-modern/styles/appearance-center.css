@@ -1,11 +1,11 @@
 .modern-theme-panel {
-  width: min(1120px, calc(100vw - 40px));
-  max-height: min(920px, calc(100vh - 40px));
+  width: min(860px, calc(100vw - 32px));
+  max-height: min(820px, calc(100vh - 32px));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--glass-highlight, #ffffff) 72%, var(--text-secondary, #5e6b67));
-  border-radius: 8px;
+  border-radius: var(--radius-window, 18px);
   background: color-mix(in srgb, var(--panel-bg, #ffffff) 94%, transparent);
   box-shadow:
     0 28px 80px rgba(31, 72, 64, 0.2),
@@ -20,7 +20,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 22px;
+  padding: 14px 18px;
   background: color-mix(in srgb, var(--glass-bg-strong, #f8fcfb) 82%, transparent);
   backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 132%));
   -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 132%));
@@ -87,7 +87,7 @@
   flex: 0 0 auto;
   color: var(--primary, #2f6f62);
   border: 1px solid color-mix(in srgb, var(--primary, #2f6f62) 22%, transparent);
-  border-radius: 8px;
+  border-radius: var(--radius-functional, 14px);
   background: color-mix(in srgb, var(--primary-soft, #e6f1ee) 86%, #ffffff);
   box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 78%, transparent);
 }
@@ -111,10 +111,8 @@
 }
 
 .modern-theme-content {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.82fr);
-  gap: 24px;
-  padding: 22px;
+  display: block;
+  padding: 16px 18px;
   overflow: auto;
   background: var(--app-bg-soft, #fbfcfc);
 }
@@ -122,18 +120,24 @@
 .modern-theme-settings-stack {
   min-width: 0;
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-content: start;
-  gap: 0;
+  gap: 0 20px;
 }
 
 .modern-theme-section {
   min-width: 0;
-  padding: 0 0 22px;
+  padding: 0 0 16px;
   border-bottom: 1px solid color-mix(in srgb, var(--text-secondary, #5e6b67) 14%, transparent);
 }
 
 .modern-theme-section + .modern-theme-section {
-  padding-top: 22px;
+  padding-top: 0;
+}
+
+.modern-theme-motion-section {
+  grid-column: 1 / -1;
+  padding-top: 16px !important;
 }
 
 .modern-theme-section:last-child {
@@ -142,7 +146,7 @@
 }
 
 .modern-theme-section-heading {
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .modern-theme-section-heading h3 {
@@ -157,13 +161,13 @@
 .modern-theme-choice-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .modern-theme-choice {
   position: relative;
   width: 100%;
-  min-height: 86px;
+  min-height: 72px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
@@ -172,7 +176,7 @@
   text-align: left;
   color: var(--text-main, #1f2a27);
   border: 1px solid color-mix(in srgb, var(--text-secondary, #5e6b67) 18%, transparent);
-  border-radius: 8px;
+  border-radius: var(--radius-functional, 14px);
   background: color-mix(in srgb, var(--panel-bg, #ffffff) 96%, var(--app-bg, #f4f7f6));
   box-shadow: 0 6px 18px rgba(31, 52, 47, 0.045);
   cursor: pointer;
@@ -211,8 +215,8 @@
 }
 
 .modern-theme-choice-icon {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
 }
 
 .modern-theme-choice-icon.liquid {
@@ -253,7 +257,7 @@
 }
 
 .modern-theme-control-row {
-  min-height: 62px;
+  min-height: 54px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -264,6 +268,29 @@
 
 .modern-theme-control-row:last-child {
   border-bottom: 0;
+}
+
+.modern-material-row {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modern-material-segmented {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 0.72fr 1.2fr 1.15fr;
+}
+
+.modern-material-segmented button {
+  min-width: 0;
+  min-height: 42px;
+  padding-inline: 8px;
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .modern-theme-label {
@@ -283,7 +310,7 @@
   height: 36px;
   padding: 4px;
   border: 1px solid color-mix(in srgb, var(--text-secondary, #5e6b67) 22%, transparent);
-  border-radius: 8px;
+  border-radius: var(--radius-functional, 12px);
   background: var(--panel-bg, #ffffff);
   cursor: pointer;
 }
@@ -292,7 +319,7 @@
   display: inline-flex;
   padding: 3px;
   border: 1px solid color-mix(in srgb, var(--text-secondary, #5e6b67) 17%, transparent);
-  border-radius: 8px;
+  border-radius: var(--radius-functional, 12px);
   background: color-mix(in srgb, var(--panel-bg-soft, #f7faf9) 88%, transparent);
   box-shadow: inset 0 1px 2px rgba(31, 52, 47, 0.035);
 }
@@ -302,7 +329,7 @@
   padding: 5px 11px;
   color: var(--text-secondary, #5e6b67);
   border: 0;
-  border-radius: 6px;
+  border-radius: calc(var(--radius-functional, 12px) - 4px);
   background: transparent;
   cursor: pointer;
   transition:
@@ -333,7 +360,7 @@
   padding: 8px 6px;
   color: var(--text-secondary, #5e6b67);
   border: 1px solid color-mix(in srgb, var(--text-secondary, #5e6b67) 16%, transparent);
-  border-radius: 8px;
+  border-radius: var(--radius-functional, 12px);
   background: var(--panel-bg, #ffffff);
   cursor: pointer;
   transition:
@@ -395,4 +422,56 @@
 
 .modern-switch:checked::after {
   transform: translateX(20px);
+}
+
+@media (max-width: 760px) {
+  .modern-theme-panel {
+    width: min(640px, calc(100vw - 20px));
+    max-height: calc(100vh - 20px);
+  }
+
+  .modern-theme-settings-stack {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .modern-theme-motion-section {
+    grid-column: auto;
+  }
+
+  .modern-theme-section + .modern-theme-section,
+  .modern-theme-motion-section {
+    padding-top: 16px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .modern-theme-header,
+  .modern-theme-footer {
+    padding: 12px 14px;
+  }
+
+  .modern-theme-heading p,
+  .modern-theme-kicker,
+  .modern-theme-section-heading p {
+    display: none;
+  }
+
+  .modern-theme-content {
+    padding: 14px;
+  }
+
+  .modern-theme-choice-grid,
+  .modern-motion-profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .modern-theme-control-row:not(.modern-theme-toggle-row) {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .modern-material-segmented {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

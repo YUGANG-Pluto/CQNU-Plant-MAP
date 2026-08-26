@@ -208,7 +208,7 @@ function applyThemeVariables(): void {
   const { tokens, effects, glass, motion, progress, statusColors } = theme;
   const root = document.documentElement;
   const radius = effects.radius;
-  const glassAlpha = glass.mode === 'off' ? 0 : glass.opacity;
+  const glassAlpha = glass.mode === 'solid' ? 100 : glass.opacity;
   const shadowAlpha = (0.04 + effects.shadowStrength / 1000).toFixed(3);
   const floatAlpha = (0.08 + effects.shadowStrength / 850).toFixed(3);
   const motionEnabled = motion.enabled && !motion.reduced;
@@ -222,7 +222,14 @@ function applyThemeVariables(): void {
   root.dataset.uiDensity = theme.density;
   root.classList.remove(...LEGACY_STYLE_CLASSES);
   root.classList.remove('density-comfortable', 'density-compact');
-  root.classList.remove('glass-mode-off', 'glass-mode-light', 'glass-mode-liquid');
+  root.classList.remove(
+    'glass-mode-off',
+    'glass-mode-light',
+    'glass-mode-liquid',
+    'glass-mode-solid',
+    'glass-mode-regular',
+    'glass-mode-clear'
+  );
   root.classList.remove(...GLASS_SCOPE_CLASSES);
   root.classList.remove(
     'motion-mode-off',
@@ -258,6 +265,8 @@ function applyThemeVariables(): void {
   setCssVariable('--glass-base', tokens.glassBase);
   setCssVariable('--glass-bg', hexToRgba(tokens.glassBase, glassAlpha));
   setCssVariable('--glass-bg-strong', hexToRgba(tokens.glassBase, Math.min(96, glassAlpha + 14)));
+  setCssVariable('--glass-control-bg', hexToRgba(tokens.glassBase, glass.mode === 'solid' ? 96 : 82));
+  setCssVariable('--glass-floating-bg', hexToRgba(tokens.glassBase, glass.mode === 'clear' ? 48 : Math.min(92, glassAlpha)));
   setCssVariable('--glass-highlight', hexToRgba(tokens.glassHighlight, glass.highlight));
   setCssVariable('--glass-border', hexToRgba(tokens.glassHighlight, Math.max(18, glass.highlight)));
   setCssVariable('--glass-border-soft', hexToRgba(tokens.glassHighlight, Math.max(12, glass.highlight - 18)));
@@ -325,6 +334,8 @@ function applyThemeVariables(): void {
   setCssVariable('--radius-lg', `${radius}px`);
   setCssVariable('--radius-xl', `${radius}px`);
   setCssVariable('--radius-control', `${radius}px`);
+  setCssVariable('--radius-functional', `${Math.max(12, radius + 2)}px`);
+  setCssVariable('--radius-window', `${Math.max(16, radius + 6)}px`);
   setCssVariable('--shadow-soft', `0 8px 24px rgba(31, 52, 47, ${shadowAlpha})`);
   setCssVariable('--shadow-card', `0 14px 36px rgba(31, 52, 47, ${floatAlpha})`);
   setCssVariable('--shadow-float', `0 20px 52px rgba(31, 52, 47, ${Math.min(0.18, Number(floatAlpha) + 0.04)})`);
@@ -382,11 +393,12 @@ function setDensity(density: ThemeDensity): void {
 function setGlassMode(mode: ThemeSettings['glass']['mode']): void {
   if (guard('theme-glass')) return;
   const theme = getCurrentTheme();
-  const preset = mode === 'liquid'
-    ? UI_STYLE_PRESETS['liquid-glass'].glass
-    : mode === 'light'
-      ? UI_STYLE_PRESETS['scientific-white'].glass
-      : { ...theme.glass, mode: 'off' as const };
+  const base = UI_STYLE_PRESETS['liquid-glass'].glass;
+  const preset = mode === 'clear'
+    ? { ...base, mode, opacity: 50, blur: 28, saturate: 150, highlight: 68, shadow: 18 }
+    : mode === 'regular'
+      ? { ...base, mode }
+      : { ...UI_STYLE_PRESETS['scientific-white'].glass, mode };
   theme.glass = {
     ...preset,
     mode,
@@ -471,18 +483,10 @@ function renderThemePanel(): void {
   const accentValue = document.getElementById('themeAccentValue');
   const motionAmbient = document.getElementById('motionAmbient') as HTMLInputElement | null;
   const reducedMotion = document.getElementById('motionReduced') as HTMLInputElement | null;
-  const preview = document.getElementById('themePreviewCard');
   if (accent) accent.value = theme.tokens.primary;
   if (accentValue) accentValue.textContent = theme.tokens.primary;
   if (motionAmbient) motionAmbient.checked = theme.motion.ambient;
   if (reducedMotion) reducedMotion.checked = theme.motion.reduced;
-  if (preview) {
-    preview.dataset.previewStyle = theme.styleId;
-    preview.dataset.previewGlass = theme.glass.mode;
-    preview.dataset.previewMotion = theme.motion.mode;
-    preview.style.setProperty('--preview-primary', theme.tokens.primary);
-    preview.style.setProperty('--preview-secondary', theme.tokens.secondary);
-  }
 }
 
 function openThemeCenter(): void {
@@ -531,7 +535,7 @@ function bindThemePanelEvents(): void {
   document.getElementById('themeGlassControls')?.addEventListener('click', event => {
     const button = (event.target as Element).closest<HTMLElement>('[data-glass-mode]');
     const mode = button?.dataset.glassMode;
-    if (mode === 'off' || mode === 'light' || mode === 'liquid') setGlassMode(mode);
+    if (mode === 'solid' || mode === 'regular' || mode === 'clear') setGlassMode(mode);
   });
   document.getElementById('themeAccentColor')?.addEventListener('input', event => {
     setAccentColor((event.currentTarget as HTMLInputElement).value);

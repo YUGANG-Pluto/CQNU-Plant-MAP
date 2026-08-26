@@ -61,7 +61,6 @@ module.exports = Object.freeze([
   'motionFeedbackControls',
   'motionAmbient',
   'motionReduced',
-  'themePreviewCard',
   'mergeModal',
   'backupModal',
   'maintenanceModal',

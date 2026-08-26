@@ -115,12 +115,14 @@ function testThemeSettingsProgressiveDisclosure() {
     'themeScientificWhite',
     'themeLiquidGlass',
     'themeMaterialHeading',
+    'themeMaterialSolid',
+    'themeMaterialRegular',
+    'themeMaterialClear',
     'themeDensity',
     'themeMotionHeading',
     'themeMotionHint',
     'motionFeedbackHeading',
-    'motionAmbient',
-    'themePreviewHint'
+    'motionAmbient'
   ].forEach(key => assert.ok(themeUi.includes(`data-i18n="${key}"`), `${key} must be wired in theme settings`));
   [
     'themeStylePresets',
@@ -131,7 +133,6 @@ function testThemeSettingsProgressiveDisclosure() {
     'motionFeedbackControls',
     'motionAmbient',
     'motionReduced',
-    'themePreviewCard',
     'btnResetThemeAll',
     'btnSaveTheme'
   ].forEach(id => {

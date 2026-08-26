@@ -2,6 +2,7 @@ export type ThemeStyleId = 'scientific-white' | 'liquid-glass';
 export type ThemeDensity = 'comfortable' | 'compact';
 export type MotionMode = 'off' | 'minimal' | 'standard' | 'expressive';
 export type MotionFeedback = 'soft' | 'balanced' | 'strong';
+export type GlassMaterial = 'solid' | 'regular' | 'clear';
 
 export interface ThemeTokens {
   primary: string;
@@ -33,7 +34,7 @@ export interface ThemeEffects {
 }
 
 export interface GlassSettings {
-  mode: 'off' | 'light' | 'liquid';
+  mode: GlassMaterial;
   opacity: number;
   blur: number;
   saturate: number;
@@ -123,24 +124,24 @@ const GLASS_SCOPE_DEFAULTS = Object.freeze({
 });
 
 const SCIENTIFIC_GLASS: GlassSettings = {
-  mode: 'light',
-  opacity: 92,
-  blur: 8,
-  saturate: 108,
-  highlight: 34,
-  shadow: 8,
-  brightness: 2,
+  mode: 'solid',
+  opacity: 96,
+  blur: 0,
+  saturate: 100,
+  highlight: 24,
+  shadow: 6,
+  brightness: 0,
   apply: { ...GLASS_SCOPE_DEFAULTS, controls: false, charts: false }
 };
 
 const LIQUID_GLASS: GlassSettings = {
-  mode: 'liquid',
-  opacity: 58,
-  blur: 24,
-  saturate: 148,
-  highlight: 62,
-  shadow: 18,
-  brightness: 4,
+  mode: 'regular',
+  opacity: 78,
+  blur: 22,
+  saturate: 138,
+  highlight: 58,
+  shadow: 15,
+  brightness: 3,
   apply: {
     modules: false,
     controls: true,
@@ -215,7 +216,7 @@ export const UI_STYLE_PRESETS: Readonly<Record<ThemeStyleId, ThemePreset>> = Obj
     effects: {
       glassOpacity: 58,
       glassBlur: 24,
-      radius: 8,
+      radius: 12,
       shadowStrength: 26,
       contrast: 78
     },
@@ -472,11 +473,18 @@ export function normalizeThemeSettings(value: unknown): ThemeSettings {
     ? incoming.statusColors as Record<string, unknown>
     : {};
 
-  const glassMode = glassInput.mode === 'off' || glassInput.mode === 'light' || glassInput.mode === 'liquid'
-    ? glassInput.mode
-    : glassInput.mode === 'dark'
-      ? 'liquid'
-      : defaults.glass.mode;
+  const legacyGlassModes: Record<string, GlassMaterial> = {
+    off: 'solid',
+    light: 'regular',
+    standard: 'regular',
+    liquid: 'clear',
+    dark: 'regular',
+    bright: 'regular',
+    solid: 'solid',
+    regular: 'regular',
+    clear: 'clear'
+  };
+  const glassMode = legacyGlassModes[String(glassInput.mode ?? '')] ?? defaults.glass.mode;
   const glassApply = glassInput.apply && typeof glassInput.apply === 'object'
     ? glassInput.apply as Record<string, unknown>
     : {};

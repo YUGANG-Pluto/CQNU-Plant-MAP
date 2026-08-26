@@ -29,7 +29,7 @@ test('theme defaults use the scientific white design', () => {
   const value = theme.createThemeDefaults();
   assert.equal(value.styleId, 'scientific-white');
   assert.equal(value.density, 'comfortable');
-  assert.equal(value.glass.mode, 'light');
+  assert.equal(value.glass.mode, 'solid');
   assert.equal(value.motion.mode, 'expressive');
   assert.equal(value.motion.feedback, 'strong');
   assert.equal(value.motion.ambient, true);
@@ -42,6 +42,12 @@ test('legacy style ids map to one of the two maintained designs', () => {
   assert.equal(theme.normalizeThemeStyleId('linear-minimal'), 'scientific-white');
   assert.equal(theme.normalizeThemeStyleId('glass-blue'), 'liquid-glass');
   assert.equal(theme.normalizeThemeStyleId('deep-slate'), 'liquid-glass');
+});
+
+test('legacy glass values normalize to the official material variants', () => {
+  assert.equal(theme.normalizeThemeSettings({ glass: { mode: 'off' } }).glass.mode, 'solid');
+  assert.equal(theme.normalizeThemeSettings({ glass: { mode: 'light' } }).glass.mode, 'regular');
+  assert.equal(theme.normalizeThemeSettings({ glass: { mode: 'liquid' } }).glass.mode, 'clear');
 });
 
 test('normalization preserves valid custom tokens and legacy aliases', () => {

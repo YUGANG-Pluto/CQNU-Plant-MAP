@@ -29,6 +29,7 @@ export function CommandButton({
   const classes = [
     'btn',
     'ui-command-button',
+    'glass-interactive',
     moduleAction ? 'ui-module-button' : '',
     className
   ].filter(Boolean).join(' ');
@@ -70,7 +71,7 @@ export function SegmentedControl({
           <button
             {...dataProps}
             key={option.value}
-            class={`seg-btn${option.active ? ' active' : ''}`}
+            class={`seg-btn glass-interactive${option.active ? ' active' : ''}`}
             type="button"
           >
             {option.label}

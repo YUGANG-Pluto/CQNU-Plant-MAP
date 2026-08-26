@@ -1,25 +1,17 @@
 import { FolderOpen, HardDrive, LockKeyhole, Settings2 } from 'lucide-preact';
-import { useEffect, useState } from 'preact/hooks';
 import {
   CommandButton,
   StatusChip,
   WORKSPACE_ICON_SIZE
 } from '../../components/ui/WorkspacePrimitives';
 import { ProjectSourceStatus } from '../project/ProjectImportCenter';
+import { useProjectSession } from '../project/useProjectSession';
 
 export function MapWorkspace() {
   const isWebRuntime = window.platformAdapter?.runtime === 'web';
   const access = window.platformAdapter?.web?.managementAccess;
   const canOpenProject = window.platformAdapter?.capabilities.readProject === true;
-  const [projectLoaded, setProjectLoaded] = useState(
-    document.documentElement.dataset.projectLoaded === 'true'
-  );
-
-  useEffect(() => {
-    const handleProjectLoaded = () => setProjectLoaded(true);
-    window.addEventListener('cqnu:project-loaded', handleProjectLoaded);
-    return () => window.removeEventListener('cqnu:project-loaded', handleProjectLoaded);
-  }, []);
+  const projectSession = useProjectSession();
 
   const accessKey = access?.accessLevel === 'read'
     ? 'webAccessRead'
@@ -60,7 +52,7 @@ export function MapWorkspace() {
       </div>
       <div class="map-canvas-wrap">
         <div id="map" data-i18n-aria-label="mapCanvasLabel" aria-label="校园植物地图" />
-        {isWebRuntime && !projectLoaded ? (
+        {isWebRuntime && !projectSession.loaded ? (
           <section class="web-project-welcome glass" aria-labelledby="webProjectWelcomeTitle">
             <div class="web-project-welcome__icon" aria-hidden="true">
               <HardDrive size={26} />
