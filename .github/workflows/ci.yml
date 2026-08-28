@@ -6,6 +6,7 @@ on:
       - main
       - desktop/main
       - web/main
+      - site/main
       - admin/foundation
     tags:
       - 'v*'
@@ -14,6 +15,7 @@ on:
       - main
       - desktop/main
       - web/main
+      - site/main
       - admin/foundation
   workflow_dispatch:
 
