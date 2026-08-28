@@ -1,6 +1,6 @@
 # CQNU Plant MAP Site
 
-The site is the restricted-access release, documentation, and browser application surface for CQNU Plant MAP. It remains isolated from Electron main-process capabilities. The browser workspace is local-first through explicit file access, OPFS, SQLite Wasm, Cache Storage, and controlled downloads. An authenticated user may also explicitly create, read, and version an account-scoped cloud project snapshot.
+The site is the restricted-access release, documentation, and browser application surface for CQNU Plant MAP. It remains isolated from Electron main-process capabilities. The browser workspace is local-first through explicit file access, OPFS, SQLite Wasm, Cache Storage, and controlled downloads. An authenticated user may also explicitly create, read, rename, version, restore, and delete an account-scoped cloud project snapshot.
 
 ## Commands
 
@@ -52,6 +52,9 @@ Publishing a new version does not remove older saved versions. Rollback redeploy
 - Before upload, service credentials, credential-bearing URL parameters, and device-absolute paths are removed from the snapshot. Relative image references may remain for record compatibility, while SQLite/JSON source files, backups, logs, directory handles, service tokens, and image bytes remain local.
 - Cloud projects are owner-scoped, require the existing authenticated session, enforce `workspace.read`/`workspace.save`, use exact-origin CSRF protection, and reject stale revisions.
 - Project snapshots are capped at 8 MiB, split across bounded D1 rows, versioned, and verified with SHA-256 before a browser working copy is opened.
+- A cloud “database” is an account-owned logical project inside the shared D1 binding, not a separately provisioned D1 database. Each account may own up to 25 cloud projects.
+- Version history is readable with `workspace.read`. Rename, restore, and permanent deletion require `workspace.save`; restore appends a new revision, while deletion removes every retained cloud revision after two user confirmations.
+- The management storage view shows administrators only account identities, project counts, and byte totals. It does not expose project names, points, zones, settings, or coordinates.
 - Browser project writes use an OPFS SQLite primary copy and, when granted, a compatible JSON directory mirror.
 - The workspace reports detected browser capabilities. Missing directory-picker support falls back to explicit file selection and downloads; missing critical OPFS database capabilities blocks writes with a readable explanation.
 - External browser backup ZIP files are inspected for format, safe paths, encryption, entry and expansion limits, JSON shape, bitmap signatures, and CRC integrity before a restore token is issued.

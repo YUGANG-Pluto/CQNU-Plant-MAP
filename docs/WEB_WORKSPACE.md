@@ -19,8 +19,8 @@ The site uses a separate account and session service to decide who may enter the
 
 - `read` allows local and owner-scoped cloud project opening, browsing, queries, statistics, diagnostics, and exports.
 - `edit` adds in-memory editing, but changes remain a session draft and are not written to the local project.
-- `save` adds local persistence, explicit cloud project creation/upload, image changes, backups, restore, and storage conversion.
-- Administrators can manage members, access levels, activation links, password-reset links, and security audit events. Administrative status always includes `save` access and is limited to three enabled accounts.
+- `save` adds local persistence, explicit cloud project creation/upload/rename/version restore/delete, image changes, backup management, and storage conversion.
+- Administrators can manage members, access levels, activation links, password-reset links, security audit events, and account-level cloud storage usage. The storage view exposes counts and byte totals, not project content. Administrative status always includes `save` access and is limited to three enabled accounts.
 - Bootstrap and newly created accounts require activation before normal access. Deployment-provided temporary credentials are never stored in source files.
 - An active browser renews a short online lease through a heartbeat. Losing that lease ends the session, and every continuously active session has an absolute 24-hour lifetime.
 
@@ -40,9 +40,12 @@ Only one tab can hold the browser database writer lock. If another workspace tab
 
 - Cloud operations exist only on `site/main`; Electron and `desktop/main` expose no cloud project IPC or UI.
 - The client sanitizes the visible snapshot before upload, and the Worker independently rejects credentials or device-absolute paths that bypass the client.
-- `GET /api/projects` and project reads require `workspace.read`. Creating a database or uploading a version requires `workspace.save` plus exact-origin CSRF validation.
+- Project listing, usage, reads, and version-history reads require `workspace.read`. Creating, uploading, renaming, restoring, or deleting a cloud project requires `workspace.save` plus exact-origin CSRF validation.
 - Projects are isolated by authenticated account. A project owned by another account is returned as not found rather than exposing its existence.
 - Each upload creates a monotonically increasing revision. A stale expected revision is rejected so a browser cannot silently overwrite a newer version.
+- Restoring a historical revision verifies its stored digest and writes that snapshot as the next revision. Existing history remains immutable.
+- Permanent deletion requires two UI confirmations and removes the owner-scoped project, revisions, and chunks transactionally. It does not erase an OPFS working copy already open in the browser.
+- “Create database” creates one logical cloud project in the configured D1 binding. It does not provision a separate physical D1 database.
 - A snapshot is capped at 8 MiB, split into bounded D1 rows, and protected by SHA-256. Integrity is verified before records are imported into an OPFS working copy.
 - Cloud opening and upload are user commands, not background synchronization. Images remain local and missing image bytes do not block record access.
 

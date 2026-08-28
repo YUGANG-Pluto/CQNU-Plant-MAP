@@ -1,6 +1,7 @@
 import type {
   ManagementApi,
   ManagementAuditData,
+  ManagementCloudUsageData,
   ManagementCredentialGrant,
   ManagementMembersData,
   ManagementSessionData
@@ -108,7 +109,8 @@ export const managementApi = Object.freeze({
   ),
   listAuditEvents: (limit = 100) => request<ManagementAuditData>(
     `/audit-events?limit=${encodeURIComponent(limit)}`
-  )
+  ),
+  getCloudUsage: () => request<ManagementCloudUsageData>('/cloud-projects/usage')
 } satisfies ManagementApi);
 
 export function clearCsrfToken(): void {

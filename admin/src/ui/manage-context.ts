@@ -3,7 +3,7 @@ import type { AdminCapability, AdminSession } from '../contracts.js';
 import { ManagementApiError } from './manage-api.js';
 import { requiredElement } from './manage-dom.js';
 
-export type ManagementView = 'overview' | 'members' | 'audit' | 'account';
+export type ManagementView = 'overview' | 'members' | 'storage' | 'audit' | 'account';
 
 interface LocalProfileStorage {
   read(accountId: string): string;
@@ -34,7 +34,7 @@ export function safeNextPath(): '/workspace' | '/manage' {
 }
 
 export function isManagementView(value: string | undefined): value is ManagementView {
-  return value !== undefined && ['overview', 'members', 'audit', 'account'].includes(value);
+  return value !== undefined && ['overview', 'members', 'storage', 'audit', 'account'].includes(value);
 }
 
 export function safeRequestedView(): ManagementView {

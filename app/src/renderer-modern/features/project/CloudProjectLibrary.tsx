@@ -4,12 +4,18 @@ import {
   CloudDownload,
   CloudUpload,
   Database,
+  History,
+  Pencil,
   Plus,
   RefreshCw,
+  RotateCcw,
+  Trash2,
   ShieldCheck
 } from 'lucide-preact';
 import type {
   CloudProjectMetadata,
+  CloudProjectRevisionMetadata,
+  CloudProjectUsage,
   ProjectRendererBridge,
   SiteCloudProjectClient
 } from '../../../shared/types/cloud-projects';
@@ -49,6 +55,15 @@ function formatDate(value: string): string {
     : '—';
 }
 
+const EMPTY_USAGE: CloudProjectUsage = Object.freeze({
+  projectCount: 0,
+  maxProjects: 25,
+  currentBytes: 0,
+  versionBytes: 0,
+  maxSnapshotBytes: 8 * 1024 * 1024,
+  updatedAt: null
+});
+
 export function openCloudProjectLibrary(): void {
   window.dispatchEvent(new CustomEvent('cqnu:cloud-projects-open'));
   const modal = document.getElementById('cloudProjectLibraryModal');
@@ -62,6 +77,12 @@ export function CloudProjectLibrary() {
   const client = window.siteCloudProjects;
   const canSave = Boolean(window.managementAccess?.capabilities.includes('workspace.save'));
   const [projects, setProjects] = useState<CloudProjectMetadata[]>([]);
+  const [usage, setUsage] = useState<CloudProjectUsage>(EMPTY_USAGE);
+  const [historyProjectId, setHistoryProjectId] = useState('');
+  const [revisions, setRevisions] = useState<CloudProjectRevisionMetadata[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [renameId, setRenameId] = useState('');
+  const [renameValue, setRenameValue] = useState('');
   const [name, setName] = useState('');
   const [status, setStatus] = useState('');
   const [tone, setTone] = useState<'neutral' | 'busy' | 'success' | 'error'>('neutral');
@@ -75,8 +96,9 @@ export function CloudProjectLibrary() {
     setTone('busy');
     setStatus(text('cloudProjectLoading', '正在读取云项目列表…'));
     try {
-      const result = await client.list();
+      const [result, nextUsage] = await Promise.all([client.list(), client.usage()]);
       setProjects(result);
+      setUsage(nextUsage || EMPTY_USAGE);
       setTone('neutral');
       setStatus(result.length
         ? text('cloudProjectReady', '云项目已更新。')
@@ -99,8 +121,31 @@ export function CloudProjectLibrary() {
     () => [...projects].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
     [projects]
   );
+  const historyProject = projects.find(project => project.id === historyProjectId) || null;
 
   if (!client) return null;
+
+  function replaceProject(updated: CloudProjectMetadata) {
+    setProjects(current => current.map(item => item.id === updated.id ? updated : item));
+  }
+
+  async function refreshUsage() {
+    try {
+      setUsage(await client!.usage());
+    } catch {
+      // The primary action remains successful if the supplemental usage read fails.
+    }
+  }
+
+  async function refreshRevisions(projectId: string) {
+    const nextRevisions = await client!.revisions(projectId);
+    if (historyProjectId === projectId) setRevisions(nextRevisions);
+    return nextRevisions;
+  }
+
+  function refreshOpenHistory(projectId: string): Promise<CloudProjectRevisionMetadata[]> | Promise<void> {
+    return historyProjectId === projectId ? refreshRevisions(projectId) : Promise.resolve();
+  }
 
   async function createProject(event: Event) {
     event.preventDefault();
@@ -113,6 +158,7 @@ export function CloudProjectLibrary() {
       const created = await client!.create(nextName);
       setProjects(current => [created, ...current]);
       setName('');
+      await refreshUsage();
       setTone('success');
       setStatus(text('cloudProjectCreated', '云项目已创建，可上传当前记录或打开空工作副本。'));
     } catch (error) {
@@ -131,12 +177,136 @@ export function CloudProjectLibrary() {
     setStatus(text('cloudProjectUploading', '正在上传当前项目记录…'));
     try {
       const updated = await client!.save(project.id, project.revision, snapshot);
-      setProjects(current => current.map(item => item.id === updated.id ? updated : item));
+      replaceProject(updated);
+      await Promise.all([refreshUsage(), refreshOpenHistory(updated.id)]);
       setTone('success');
       setStatus(text('cloudProjectUploaded', '当前记录已保存为新的云端版本。'));
     } catch (error) {
       setTone('error');
       setStatus(error instanceof Error ? error.message : text('cloudProjectUploadFailed', '云项目上传失败。'));
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  function beginRename(project: CloudProjectMetadata) {
+    setRenameId(project.id);
+    setRenameValue(project.name);
+  }
+
+  function cancelRename() {
+    setRenameId('');
+    setRenameValue('');
+  }
+
+  async function renameProject(event: Event, project: CloudProjectMetadata) {
+    event.preventDefault();
+    const nextName = renameValue.trim();
+    if (!nextName || nextName === project.name || !canSave) {
+      cancelRename();
+      return;
+    }
+    setBusyId(`${project.id}:rename`);
+    setTone('busy');
+    setStatus(text('cloudProjectRenaming', '正在重命名云项目…'));
+    try {
+      const updated = await client!.rename(project.id, project.revision, nextName);
+      replaceProject(updated);
+      cancelRename();
+      setTone('success');
+      setStatus(text('cloudProjectRenamed', '云项目名称已更新。'));
+    } catch (error) {
+      setTone('error');
+      setStatus(error instanceof Error ? error.message : text('cloudProjectRenameFailed', '云项目重命名失败。'));
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  async function toggleHistory(project: CloudProjectMetadata) {
+    if (historyProjectId === project.id) {
+      setHistoryProjectId('');
+      setRevisions([]);
+      return;
+    }
+    setHistoryProjectId(project.id);
+    setRevisions([]);
+    setHistoryLoading(true);
+    try {
+      setRevisions(await client!.revisions(project.id));
+    } catch (error) {
+      setTone('error');
+      setStatus(error instanceof Error ? error.message : text('cloudProjectHistoryFailed', '版本历史读取失败。'));
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  async function restoreRevision(project: CloudProjectMetadata, revision: CloudProjectRevisionMetadata) {
+    if (!canSave || revision.revision === project.revision) return;
+    const proceed = await window.openConfirmDialog?.({
+      title: text('cloudProjectRestoreTitle', '恢复历史版本'),
+      message: text(
+        'cloudProjectRestoreConfirm',
+        `将版本 v${revision.revision} 恢复为新的云端版本，现有版本历史不会被覆盖。是否继续？`
+      ).replace('{revision}', String(revision.revision)),
+      acceptLabel: text('cloudProjectRestore', '恢复为新版本'),
+      cancelLabel: text('cancelAction', '取消')
+    });
+    if (!proceed) return;
+    setBusyId(`${project.id}:restore:${revision.revision}`);
+    setTone('busy');
+    setStatus(text('cloudProjectRestoring', '正在校验并恢复历史版本…'));
+    try {
+      const updated = await client!.restore(project.id, revision.revision, project.revision);
+      replaceProject(updated);
+      await Promise.all([refreshUsage(), refreshOpenHistory(updated.id)]);
+      setTone('success');
+      setStatus(text('cloudProjectRestored', '历史记录已恢复为新的云端版本。'));
+    } catch (error) {
+      setTone('error');
+      setStatus(error instanceof Error ? error.message : text('cloudProjectRestoreFailed', '历史版本恢复失败。'));
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  async function deleteProject(project: CloudProjectMetadata) {
+    if (!canSave || !window.openConfirmDialog) return;
+    const firstConfirmation = await window.openConfirmDialog({
+      title: text('cloudProjectDeleteTitle', '删除云项目'),
+      message: text(
+        'cloudProjectDeleteConfirm',
+        '删除后，该云项目及其全部历史版本将永久移除。当前浏览器中已打开的本地工作副本不会被删除。'
+      ),
+      acceptLabel: text('cloudProjectDeleteContinue', '继续删除'),
+      cancelLabel: text('cancelAction', '取消')
+    });
+    if (!firstConfirmation) return;
+    const finalConfirmation = await window.openConfirmDialog({
+      title: text('cloudProjectDeleteFinalTitle', '再次确认删除'),
+      message: text('cloudProjectDeleteFinalConfirm', `确定永久删除“${project.name}”及全部版本吗？`)
+        .replace('{name}', project.name),
+      acceptLabel: text('cloudProjectDelete', '永久删除'),
+      cancelLabel: text('cancelAction', '取消')
+    });
+    if (!finalConfirmation) return;
+    setBusyId(`${project.id}:delete`);
+    setTone('busy');
+    setStatus(text('cloudProjectDeleting', '正在删除云项目及其版本历史…'));
+    try {
+      await client!.remove(project.id, project.revision);
+      setProjects(current => current.filter(item => item.id !== project.id));
+      if (historyProjectId === project.id) {
+        setHistoryProjectId('');
+        setRevisions([]);
+      }
+      await refreshUsage();
+      setTone('success');
+      setStatus(text('cloudProjectDeleted', '云项目及其版本历史已删除；本地工作副本保持不变。'));
+    } catch (error) {
+      setTone('error');
+      setStatus(error instanceof Error ? error.message : text('cloudProjectDeleteFailed', '云项目删除失败。'));
     } finally {
       setBusyId('');
     }
@@ -195,6 +365,35 @@ export function CloudProjectLibrary() {
         </div>
       </div>
 
+      <section class="cloud-project-usage" aria-label={text('cloudProjectUsageTitle', '云存储用量')}>
+        <div>
+          <span data-i18n="cloudProjectUsageProjects">项目配额</span>
+          <strong>{usage.projectCount} / {usage.maxProjects}</strong>
+        </div>
+        <div>
+          <span data-i18n="cloudProjectUsageCurrent">当前版本数据</span>
+          <strong>{formatBytes(usage.currentBytes)}</strong>
+        </div>
+        <div>
+          <span data-i18n="cloudProjectUsageVersions">全部版本数据</span>
+          <strong>{formatBytes(usage.versionBytes)}</strong>
+        </div>
+        <div>
+          <span data-i18n="cloudProjectUsageLimit">单版本上限</span>
+          <strong>{formatBytes(usage.maxSnapshotBytes)}</strong>
+        </div>
+        <span
+          class="cloud-project-usage-meter"
+          role="progressbar"
+          aria-label={text('cloudProjectUsageProjects', '项目配额')}
+          aria-valuemin={0}
+          aria-valuemax={usage.maxProjects}
+          aria-valuenow={usage.projectCount}
+        >
+          <i style={{ width: `${Math.min(100, (usage.projectCount / Math.max(1, usage.maxProjects)) * 100)}%` }} />
+        </span>
+      </section>
+
       <div class="cloud-project-toolbar">
         {canSave ? (
           <form class="cloud-project-create" onSubmit={createProject}>
@@ -230,12 +429,38 @@ export function CloudProjectLibrary() {
       {sortedProjects.length ? (
         <div class="cloud-project-grid" role="list">
           {sortedProjects.map((project, index) => (
-            <article key={project.id} class="cloud-project-card" role="listitem" style={{ '--cloud-card-order': String(index) }}>
+            <article
+              key={project.id}
+              class={`cloud-project-card${historyProjectId === project.id ? ' has-history' : ''}`}
+              role="listitem"
+              style={{ '--cloud-card-order': String(index) }}
+            >
               <header>
                 <span class="cloud-project-icon" aria-hidden="true"><Database size={19} /></span>
-                <div>
-                  <h3 title={project.name}>{project.name}</h3>
-                  <p>v{project.revision} · {formatBytes(project.byteSize)}</p>
+                <div class="cloud-project-heading">
+                  {renameId === project.id ? (
+                    <form class="cloud-project-rename" onSubmit={event => void renameProject(event, project)}>
+                      <input
+                        value={renameValue}
+                        onInput={event => setRenameValue(event.currentTarget.value)}
+                        maxLength={80}
+                        aria-label={text('cloudProjectRenameLabel', '云项目名称')}
+                        disabled={Boolean(busyId)}
+                        autoFocus
+                      />
+                      <button class="btn btn-primary btn-compact" type="submit" disabled={!renameValue.trim() || Boolean(busyId)}>
+                        <span data-i18n="saveAction">保存</span>
+                      </button>
+                      <button class="btn btn-soft btn-compact" type="button" onClick={cancelRename} disabled={Boolean(busyId)}>
+                        <span data-i18n="cancelAction">取消</span>
+                      </button>
+                    </form>
+                  ) : (
+                    <>
+                      <h3 title={project.name}>{project.name}</h3>
+                      <p>v{project.revision} · {formatBytes(project.byteSize)}</p>
+                    </>
+                  )}
                 </div>
               </header>
               <dl>
@@ -265,7 +490,81 @@ export function CloudProjectLibrary() {
                     <span data-i18n="cloudProjectUpload">上传当前项目</span>
                   </button>
                 ) : null}
+                <button
+                  class="btn btn-soft cloud-project-utility"
+                  type="button"
+                  data-cloud-project-history
+                  aria-expanded={historyProjectId === project.id}
+                  disabled={Boolean(busyId) || historyLoading}
+                  onClick={() => void toggleHistory(project)}
+                >
+                  <History size={16} aria-hidden="true" />
+                  <span data-i18n="cloudProjectHistory">版本历史</span>
+                </button>
+                {canSave ? (
+                  <>
+                    <button
+                      class="btn btn-soft cloud-project-utility"
+                      type="button"
+                      disabled={Boolean(busyId)}
+                      onClick={() => beginRename(project)}
+                    >
+                      <Pencil size={16} aria-hidden="true" />
+                      <span data-i18n="cloudProjectRename">重命名</span>
+                    </button>
+                    <button
+                      class="btn btn-soft cloud-project-utility is-danger"
+                      type="button"
+                      disabled={Boolean(busyId)}
+                      onClick={() => void deleteProject(project)}
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                      <span data-i18n="cloudProjectDelete">永久删除</span>
+                    </button>
+                  </>
+                ) : null}
               </div>
+              {historyProjectId === project.id ? (
+                <section class="cloud-project-history" aria-label={text('cloudProjectHistoryTitle', `${project.name} 的版本历史`)}>
+                  <header>
+                    <div>
+                      <strong data-i18n="cloudProjectHistory">版本历史</strong>
+                      <span>{historyProject?.name}</span>
+                    </div>
+                    <small data-i18n="cloudProjectHistoryHint">恢复操作会创建新版本，不覆盖已有记录。</small>
+                  </header>
+                  {historyLoading ? (
+                    <p class="cloud-project-history-state" data-i18n="cloudProjectHistoryLoading">正在读取版本历史…</p>
+                  ) : revisions.length ? (
+                    <ol>
+                      {revisions.map(revision => (
+                        <li key={revision.revision}>
+                          <div>
+                            <strong>v{revision.revision}</strong>
+                            <span>{formatDate(revision.createdAt)} · {formatBytes(revision.byteSize)}</span>
+                            <small title={revision.contentSha256}>{revision.contentSha256.slice(0, 12)}</small>
+                          </div>
+                          {revision.revision === project.revision ? (
+                            <span class="cloud-project-current" data-i18n="cloudProjectCurrentVersion">当前版本</span>
+                          ) : canSave ? (
+                            <button
+                              class="btn btn-soft btn-compact"
+                              type="button"
+                              disabled={Boolean(busyId)}
+                              onClick={() => void restoreRevision(project, revision)}
+                            >
+                              <RotateCcw size={15} aria-hidden="true" />
+                              <span data-i18n="cloudProjectRestore">恢复为新版本</span>
+                            </button>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p class="cloud-project-history-state" data-i18n="cloudProjectHistoryEmpty">尚无已保存版本。</p>
+                  )}
+                </section>
+              ) : null}
             </article>
           ))}
         </div>

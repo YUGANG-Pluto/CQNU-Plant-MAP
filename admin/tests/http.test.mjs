@@ -210,7 +210,7 @@ test('session refresh rotates CSRF material without exposing session token in JS
   assert.equal(JSON.stringify(refreshed.payload).includes('mgs.k1.'), false);
 });
 
-test('save-level account can create, upload, and read an owner-scoped cloud project', async () => {
+test('save-level account can manage an owner-scoped cloud project lifecycle', async () => {
   const handler = await harness();
   const login = await call(handler, '/api/manage/login', {
     method: 'POST', body: { username: 'admin', password: '000000' }
@@ -255,6 +255,79 @@ test('save-level account can create, upload, and read an owner-scoped cloud proj
   assert.equal(loaded.response.status, 200);
   assert.equal(loaded.payload.data.snapshot.zones[0].name, '一区');
   assert.equal(JSON.stringify(loaded.payload).includes('ownerId'), false);
+
+  const second = await call(handler, `/api/projects/${created.payload.data.project.id}/snapshot`, {
+    method: 'PUT',
+    headers: { cookie: active.cookie, origin: 'https://example.test', 'x-cqnu-csrf': active.csrf },
+    body: {
+      expectedRevision: 1,
+      snapshot: {
+        settings: { language: 'en' },
+        zones: [{ id: 'zone-1', name: 'Zone One' }],
+        points: [{ id: 'point-2', zoneId: 'zone-1' }]
+      }
+    }
+  });
+  assert.equal(second.payload.data.project.revision, 2);
+
+  const usage = await call(handler, '/api/projects/usage', { headers: { cookie: active.cookie } });
+  assert.equal(usage.response.status, 200);
+  assert.equal(usage.payload.data.usage.projectCount, 1);
+  assert.equal(usage.payload.data.usage.currentBytes, second.payload.data.project.byteSize);
+  assert.ok(usage.payload.data.usage.versionBytes > usage.payload.data.usage.currentBytes);
+
+  const history = await call(
+    handler,
+    `/api/projects/${created.payload.data.project.id}/revisions`,
+    { headers: { cookie: active.cookie } }
+  );
+  assert.deepEqual(history.payload.data.revisions.map(item => item.revision), [2, 1]);
+
+  const renamed = await call(handler, `/api/projects/${created.payload.data.project.id}`, {
+    method: 'PATCH',
+    headers: { cookie: active.cookie, origin: 'https://example.test', 'x-cqnu-csrf': active.csrf },
+    body: { expectedRevision: 2, name: 'Renamed campus survey' }
+  });
+  assert.equal(renamed.payload.data.project.name, 'Renamed campus survey');
+  assert.equal(renamed.payload.data.project.revision, 2);
+
+  const restored = await call(
+    handler,
+    `/api/projects/${created.payload.data.project.id}/revisions/1/restore`,
+    {
+      method: 'POST',
+      headers: { cookie: active.cookie, origin: 'https://example.test', 'x-cqnu-csrf': active.csrf },
+      body: { expectedRevision: 2 }
+    }
+  );
+  assert.equal(restored.payload.data.project.revision, 3);
+  const restoredDocument = await call(handler, `/api/projects/${created.payload.data.project.id}`, {
+    headers: { cookie: active.cookie }
+  });
+  assert.equal(restoredDocument.payload.data.snapshot.settings.language, 'zh');
+
+  const adminUsage = await call(handler, '/api/manage/cloud-projects/usage', {
+    headers: { cookie: active.cookie }
+  });
+  assert.equal(adminUsage.response.status, 200);
+  assert.equal(adminUsage.payload.data.summary.projectCount, 1);
+  assert.equal(adminUsage.payload.data.accounts.length, 2);
+  assert.equal(JSON.stringify(adminUsage.payload).includes('Zone One'), false);
+  assert.equal(JSON.stringify(adminUsage.payload).includes('points'), false);
+
+  const deleted = await call(handler, `/api/projects/${created.payload.data.project.id}`, {
+    method: 'DELETE',
+    headers: { cookie: active.cookie, origin: 'https://example.test', 'x-cqnu-csrf': active.csrf },
+    body: { expectedRevision: 3 }
+  });
+  assert.equal(deleted.response.status, 200);
+  assert.equal(deleted.payload.data.deleted, true);
+  const missingHistory = await call(
+    handler,
+    `/api/projects/${created.payload.data.project.id}/revisions`,
+    { headers: { cookie: active.cookie } }
+  );
+  assert.equal(missingHistory.response.status, 404);
 });
 
 test('read-only account can list cloud projects but cannot create or upload one', async () => {
@@ -283,4 +356,18 @@ test('read-only account can list cloud projects but cannot create or upload one'
   });
   assert.equal(denied.response.status, 403);
   assert.equal(denied.payload.error.code, 'CAPABILITY_DENIED');
+
+  for (const mutation of [
+    { method: 'PATCH', path: '/api/projects/other-project', body: { expectedRevision: 0, name: 'Denied' } },
+    { method: 'DELETE', path: '/api/projects/other-project', body: { expectedRevision: 0 } },
+    { method: 'POST', path: '/api/projects/other-project/revisions/1/restore', body: { expectedRevision: 0 } }
+  ]) {
+    const result = await call(handler, mutation.path, {
+      method: mutation.method,
+      headers: { cookie: security.cookie, origin: 'https://example.test', 'x-cqnu-csrf': security.csrf },
+      body: mutation.body
+    });
+    assert.equal(result.response.status, 403);
+    assert.equal(result.payload.error.code, 'CAPABILITY_DENIED');
+  }
 });

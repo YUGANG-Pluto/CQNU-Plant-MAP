@@ -97,6 +97,7 @@ for (const asset of [
   '/assets/manage-session.js',
   '/assets/manage-profile.js',
   '/assets/manage-members.js',
+  '/assets/manage-cloud.js',
   '/assets/manage-api.js',
   '/assets/manage-i18n.js',
   '/assets/manage-dom.js'

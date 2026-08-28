@@ -6,8 +6,11 @@ import {
   type CloudProjectClock,
   type CloudProjectMetadata,
   type CloudProjectRecord,
+  type CloudProjectRevisionMetadata,
   type CloudProjectSnapshot,
-  type CloudProjectStore
+  type CloudProjectStore,
+  type CloudProjectUsage,
+  type StoredCloudProjectUsage
 } from './cloud-project-contracts.js';
 import { randomBase64Url } from './keyring.js';
 import { assertCloudProjectSnapshotSafe } from './cloud-project-safety.js';
@@ -83,6 +86,34 @@ async function sha256Hex(text: string): Promise<string> {
   return [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('');
 }
 
+async function verifiedSnapshot(
+  serializedSnapshot: string,
+  metadata: { byteSize: number; contentSha256: string }
+): Promise<CloudProjectSnapshot> {
+  const bytes = new TextEncoder().encode(serializedSnapshot).byteLength;
+  if (bytes !== metadata.byteSize) throw new Error('CLOUD_PROJECT_INTEGRITY_FAILED');
+  if (await sha256Hex(serializedSnapshot) !== metadata.contentSha256) {
+    throw new Error('CLOUD_PROJECT_INTEGRITY_FAILED');
+  }
+  try {
+    return normalizeSnapshot(JSON.parse(serializedSnapshot) as unknown);
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('CLOUD_PROJECT_')) throw error;
+    throw new Error('CLOUD_PROJECT_INTEGRITY_FAILED');
+  }
+}
+
+function publicUsage(usage: StoredCloudProjectUsage): CloudProjectUsage {
+  return {
+    projectCount: usage.projectCount,
+    maxProjects: CLOUD_PROJECT_MAX_PER_ACCOUNT,
+    currentBytes: usage.currentBytes,
+    versionBytes: usage.versionBytes,
+    maxSnapshotBytes: CLOUD_PROJECT_MAX_BYTES,
+    updatedAt: usage.updatedAt
+  };
+}
+
 function chunks(text: string): string[] {
   const result: string[] = [];
   for (let index = 0; index < text.length; index += CLOUD_PROJECT_CHUNK_UNITS) {
@@ -102,6 +133,17 @@ export class CloudProjectService {
 
   async list(ownerId: string): Promise<CloudProjectMetadata[]> {
     return (await this.#store.listOwned(ownerId)).map(publicMetadata);
+  }
+
+  async usage(ownerId: string): Promise<CloudProjectUsage> {
+    return publicUsage(await this.#store.usageOwned(ownerId));
+  }
+
+  async listUsage(): Promise<Array<CloudProjectUsage & { ownerId: string }>> {
+    return (await this.#store.listUsage()).map(item => ({
+      ownerId: item.ownerId,
+      ...publicUsage(item)
+    }));
   }
 
   async create(ownerId: string, name: unknown): Promise<CloudProjectMetadata> {
@@ -130,20 +172,54 @@ export class CloudProjectService {
     if (!document.metadata.revision) {
       return { metadata: publicMetadata(document.metadata), snapshot: null };
     }
-    const bytes = new TextEncoder().encode(document.serializedSnapshot).byteLength;
-    if (bytes !== document.metadata.byteSize) throw new Error('CLOUD_PROJECT_INTEGRITY_FAILED');
-    if (await sha256Hex(document.serializedSnapshot) !== document.metadata.contentSha256) {
-      throw new Error('CLOUD_PROJECT_INTEGRITY_FAILED');
+    return {
+      metadata: publicMetadata(document.metadata),
+      snapshot: await verifiedSnapshot(document.serializedSnapshot, document.metadata)
+    };
+  }
+
+  async revisions(ownerId: string, projectId: string): Promise<CloudProjectRevisionMetadata[]> {
+    if (!await this.#store.getOwned(ownerId, projectId)) throw new Error('CLOUD_PROJECT_NOT_FOUND');
+    return this.#store.listRevisionsOwned(ownerId, projectId);
+  }
+
+  async rename(
+    ownerId: string,
+    projectId: string,
+    expectedRevision: number,
+    name: unknown
+  ): Promise<CloudProjectMetadata> {
+    if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
+      throw new Error('CLOUD_PROJECT_INVALID');
     }
-    try {
-      return {
-        metadata: publicMetadata(document.metadata),
-        snapshot: normalizeSnapshot(JSON.parse(document.serializedSnapshot) as unknown)
-      };
-    } catch (error) {
-      if (error instanceof Error && error.message.startsWith('CLOUD_PROJECT_')) throw error;
-      throw new Error('CLOUD_PROJECT_INTEGRITY_FAILED');
+    return publicMetadata(await this.#store.renameOwned(
+      ownerId,
+      projectId,
+      expectedRevision,
+      normalizedName(name),
+      this.#clock.now().toISOString()
+    ));
+  }
+
+  async delete(ownerId: string, projectId: string, expectedRevision: number): Promise<void> {
+    if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
+      throw new Error('CLOUD_PROJECT_INVALID');
     }
+    await this.#store.deleteOwned(ownerId, projectId, expectedRevision);
+  }
+
+  async restore(
+    ownerId: string,
+    actorId: string,
+    projectId: string,
+    revision: number,
+    expectedRevision: number
+  ): Promise<CloudProjectMetadata> {
+    if (!Number.isInteger(revision) || revision < 1) throw new Error('CLOUD_PROJECT_REVISION_INVALID');
+    const stored = await this.#store.readRevisionOwned(ownerId, projectId, revision);
+    if (!stored) throw new Error('CLOUD_PROJECT_REVISION_NOT_FOUND');
+    const snapshot = await verifiedSnapshot(stored.serializedSnapshot, stored.metadata);
+    return this.save({ ownerId, actorId, projectId, expectedRevision, snapshot });
   }
 
   async save(input: SaveCloudProjectInput): Promise<CloudProjectMetadata> {

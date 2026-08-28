@@ -29,6 +29,30 @@ export interface ManagementAuditData {
   events: AdminAuditEvent[];
 }
 
+export interface ManagementCloudUsageAccount {
+  accountId: string;
+  username: string;
+  displayName: string;
+  accountKind: 'user' | 'admin';
+  accessLevel: 'read' | 'edit' | 'save';
+  projectCount: number;
+  currentBytes: number;
+  versionBytes: number;
+  updatedAt: string | null;
+}
+
+export interface ManagementCloudUsageData {
+  summary: {
+    accountCount: number;
+    projectCount: number;
+    currentBytes: number;
+    versionBytes: number;
+    maxProjectsPerAccount: number;
+    maxSnapshotBytes: number;
+  };
+  accounts: ManagementCloudUsageAccount[];
+}
+
 export interface ManagementAccountData {
   account: PublicManagementAccount;
 }
@@ -76,4 +100,5 @@ export interface ManagementApi {
   updateMember(memberId: string, input: UpdateMemberInput): Promise<ManagementAccountData>;
   resetMemberPassword(memberId: string): Promise<ManagementCredentialGrant>;
   listAuditEvents(limit?: number): Promise<ManagementAuditData>;
+  getCloudUsage(): Promise<ManagementCloudUsageData>;
 }

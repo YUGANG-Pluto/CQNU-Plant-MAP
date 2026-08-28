@@ -1,8 +1,11 @@
 import type {
+  CloudProjectRevisionMetadata,
   CloudProjectRevisionWrite,
   CloudProjectStore,
   StoredCloudProjectDocument,
-  StoredCloudProjectMetadata
+  StoredCloudProjectMetadata,
+  StoredCloudProjectRevisionDocument,
+  StoredCloudProjectUsage
 } from './cloud-project-contracts.js';
 import { CLOUD_PROJECT_SCHEMA_STATEMENTS } from './cloud-project-schema.js';
 import type { D1DatabaseLike, D1RunResult } from './d1-store.js';
@@ -21,6 +24,23 @@ interface CloudProjectRow {
 
 interface CloudProjectChunkRow {
   content_text: string;
+}
+
+interface CloudProjectRevisionRow {
+  project_id: string;
+  revision: number;
+  format_version: number;
+  byte_size: number;
+  content_sha256: string;
+  created_at: string;
+}
+
+interface CloudProjectUsageRow {
+  owner_id: string;
+  project_count: number;
+  current_bytes: number;
+  version_bytes: number;
+  updated_at: string | null;
 }
 
 function changes(result: D1RunResult | undefined): number {
@@ -43,6 +63,27 @@ function metadataFromRow(row: CloudProjectRow): StoredCloudProjectMetadata {
 
 function cloneMetadata(metadata: StoredCloudProjectMetadata): StoredCloudProjectMetadata {
   return { ...metadata };
+}
+
+function revisionMetadataFromRow(row: CloudProjectRevisionRow): CloudProjectRevisionMetadata {
+  return {
+    projectId: row.project_id,
+    revision: Number(row.revision),
+    formatVersion: 1,
+    byteSize: Number(row.byte_size),
+    contentSha256: row.content_sha256,
+    createdAt: row.created_at
+  };
+}
+
+function usageFromRow(row: CloudProjectUsageRow): StoredCloudProjectUsage {
+  return {
+    ownerId: row.owner_id,
+    projectCount: Number(row.project_count || 0),
+    currentBytes: Number(row.current_bytes || 0),
+    versionBytes: Number(row.version_bytes || 0),
+    updatedAt: row.updated_at || null
+  };
 }
 
 export async function ensureCloudProjectSchema(database: D1DatabaseLike): Promise<void> {
@@ -72,6 +113,35 @@ export class D1CloudProjectStore implements CloudProjectStore {
       .bind(ownerId)
       .all<CloudProjectRow>();
     return (result.results || []).map(metadataFromRow);
+  }
+
+  async usageOwned(ownerId: string): Promise<StoredCloudProjectUsage> {
+    const row = await this.#database.prepare(`SELECT ? AS owner_id,
+      (SELECT COUNT(*) FROM cloud_projects WHERE owner_id = ?) AS project_count,
+      COALESCE((SELECT SUM(byte_size) FROM cloud_projects WHERE owner_id = ?), 0) AS current_bytes,
+      COALESCE((SELECT SUM(byte_size) FROM cloud_project_revisions WHERE owner_id = ?), 0) AS version_bytes,
+      (SELECT MAX(updated_at) FROM cloud_projects WHERE owner_id = ?) AS updated_at`)
+      .bind(ownerId, ownerId, ownerId, ownerId, ownerId)
+      .first<CloudProjectUsageRow>();
+    return usageFromRow(row || {
+      owner_id: ownerId,
+      project_count: 0,
+      current_bytes: 0,
+      version_bytes: 0,
+      updated_at: null
+    });
+  }
+
+  async listUsage(): Promise<StoredCloudProjectUsage[]> {
+    const result = await this.#database.prepare(`SELECT p.owner_id,
+      COUNT(*) AS project_count,
+      COALESCE(SUM(p.byte_size), 0) AS current_bytes,
+      COALESCE((SELECT SUM(r.byte_size) FROM cloud_project_revisions r WHERE r.owner_id = p.owner_id), 0) AS version_bytes,
+      MAX(p.updated_at) AS updated_at
+      FROM cloud_projects p
+      GROUP BY p.owner_id
+      ORDER BY MAX(p.updated_at) DESC, p.owner_id`).all<CloudProjectUsageRow>();
+    return (result.results || []).map(usageFromRow);
   }
 
   async create(metadata: StoredCloudProjectMetadata): Promise<void> {
@@ -112,6 +182,75 @@ export class D1CloudProjectStore implements CloudProjectStore {
       metadata,
       serializedSnapshot: (result.results || []).map(row => row.content_text).join('')
     };
+  }
+
+  async listRevisionsOwned(ownerId: string, projectId: string): Promise<CloudProjectRevisionMetadata[]> {
+    const result = await this.#database.prepare(`SELECT project_id, revision, format_version,
+      byte_size, content_sha256, created_at
+      FROM cloud_project_revisions
+      WHERE owner_id = ? AND project_id = ?
+      ORDER BY revision DESC`).bind(ownerId, projectId).all<CloudProjectRevisionRow>();
+    return (result.results || []).map(revisionMetadataFromRow);
+  }
+
+  async readRevisionOwned(
+    ownerId: string,
+    projectId: string,
+    revision: number
+  ): Promise<StoredCloudProjectRevisionDocument | null> {
+    const row = await this.#database.prepare(`SELECT project_id, revision, format_version,
+      byte_size, content_sha256, created_at
+      FROM cloud_project_revisions
+      WHERE owner_id = ? AND project_id = ? AND revision = ? LIMIT 1`)
+      .bind(ownerId, projectId, revision)
+      .first<CloudProjectRevisionRow>();
+    if (!row) return null;
+    const chunks = await this.#database.prepare(`SELECT content_text
+      FROM cloud_project_chunks
+      WHERE project_id = ? AND revision = ?
+      ORDER BY chunk_index`).bind(projectId, revision).all<CloudProjectChunkRow>();
+    return {
+      metadata: revisionMetadataFromRow(row),
+      serializedSnapshot: (chunks.results || []).map(item => item.content_text).join('')
+    };
+  }
+
+  async renameOwned(
+    ownerId: string,
+    projectId: string,
+    expectedRevision: number,
+    name: string,
+    updatedAt: string
+  ): Promise<StoredCloudProjectMetadata> {
+    const result = await this.#database.prepare(`UPDATE cloud_projects
+      SET name = ?, updated_at = ?
+      WHERE id = ? AND owner_id = ? AND revision = ?`)
+      .bind(name, updatedAt, projectId, ownerId, expectedRevision)
+      .run();
+    if (changes(result) !== 1) {
+      if (await this.getOwned(ownerId, projectId)) throw new Error('CLOUD_PROJECT_CONFLICT');
+      throw new Error('CLOUD_PROJECT_NOT_FOUND');
+    }
+    const metadata = await this.getOwned(ownerId, projectId);
+    if (!metadata) throw new Error('CLOUD_PROJECT_NOT_FOUND');
+    return metadata;
+  }
+
+  async deleteOwned(ownerId: string, projectId: string, expectedRevision: number): Promise<void> {
+    const ownedProject = `SELECT id FROM cloud_projects
+      WHERE id = ? AND owner_id = ? AND revision = ?`;
+    const results = await this.#database.batch([
+      this.#database.prepare(`DELETE FROM cloud_project_chunks
+        WHERE project_id IN (${ownedProject})`).bind(projectId, ownerId, expectedRevision),
+      this.#database.prepare(`DELETE FROM cloud_project_revisions
+        WHERE project_id IN (${ownedProject})`).bind(projectId, ownerId, expectedRevision),
+      this.#database.prepare(`DELETE FROM cloud_projects
+        WHERE id = ? AND owner_id = ? AND revision = ?`).bind(projectId, ownerId, expectedRevision)
+    ]);
+    if (changes(results.at(-1)) !== 1) {
+      if (await this.getOwned(ownerId, projectId)) throw new Error('CLOUD_PROJECT_CONFLICT');
+      throw new Error('CLOUD_PROJECT_NOT_FOUND');
+    }
   }
 
   async writeRevision(input: CloudProjectRevisionWrite): Promise<StoredCloudProjectMetadata> {
@@ -157,9 +296,15 @@ export class D1CloudProjectStore implements CloudProjectStore {
 export class InMemoryCloudProjectStore implements CloudProjectStore {
   readonly #projects = new Map<string, StoredCloudProjectMetadata>();
   readonly #documents = new Map<string, string>();
+  readonly #revisionMetadata = new Map<string, CloudProjectRevisionMetadata>();
+  readonly #revisionDocuments = new Map<string, string>();
 
   #key(ownerId: string, projectId: string): string {
     return `${ownerId}\u0000${projectId}`;
+  }
+
+  #revisionKey(ownerId: string, projectId: string, revision: number): string {
+    return `${this.#key(ownerId, projectId)}\u0000${revision}`;
   }
 
   async countOwned(ownerId: string): Promise<number> {
@@ -171,6 +316,25 @@ export class InMemoryCloudProjectStore implements CloudProjectStore {
       .filter(item => item.ownerId === ownerId)
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || left.id.localeCompare(right.id))
       .map(cloneMetadata);
+  }
+
+  async usageOwned(ownerId: string): Promise<StoredCloudProjectUsage> {
+    const projects = [...this.#projects.values()].filter(item => item.ownerId === ownerId);
+    const revisions = [...this.#revisionMetadata.entries()]
+      .filter(([key]) => key.startsWith(`${ownerId}\u0000`))
+      .map(([, metadata]) => metadata);
+    return {
+      ownerId,
+      projectCount: projects.length,
+      currentBytes: projects.reduce((sum, item) => sum + item.byteSize, 0),
+      versionBytes: revisions.reduce((sum, item) => sum + item.byteSize, 0),
+      updatedAt: projects.map(item => item.updatedAt).sort().at(-1) || null
+    };
+  }
+
+  async listUsage(): Promise<StoredCloudProjectUsage[]> {
+    const owners = new Set([...this.#projects.values()].map(item => item.ownerId));
+    return Promise.all([...owners].map(ownerId => this.usageOwned(ownerId)));
   }
 
   async create(metadata: StoredCloudProjectMetadata): Promise<void> {
@@ -193,6 +357,59 @@ export class InMemoryCloudProjectStore implements CloudProjectStore {
     };
   }
 
+  async listRevisionsOwned(ownerId: string, projectId: string): Promise<CloudProjectRevisionMetadata[]> {
+    const prefix = `${this.#key(ownerId, projectId)}\u0000`;
+    return [...this.#revisionMetadata.entries()]
+      .filter(([key]) => key.startsWith(prefix))
+      .map(([, metadata]) => ({ ...metadata }))
+      .sort((left, right) => right.revision - left.revision);
+  }
+
+  async readRevisionOwned(
+    ownerId: string,
+    projectId: string,
+    revision: number
+  ): Promise<StoredCloudProjectRevisionDocument | null> {
+    const key = this.#revisionKey(ownerId, projectId, revision);
+    const metadata = this.#revisionMetadata.get(key);
+    if (!metadata) return null;
+    return {
+      metadata: { ...metadata },
+      serializedSnapshot: this.#revisionDocuments.get(key) || ''
+    };
+  }
+
+  async renameOwned(
+    ownerId: string,
+    projectId: string,
+    expectedRevision: number,
+    name: string,
+    updatedAt: string
+  ): Promise<StoredCloudProjectMetadata> {
+    const key = this.#key(ownerId, projectId);
+    const current = this.#projects.get(key);
+    if (!current) throw new Error('CLOUD_PROJECT_NOT_FOUND');
+    if (current.revision !== expectedRevision) throw new Error('CLOUD_PROJECT_CONFLICT');
+    const updated = { ...current, name, updatedAt };
+    this.#projects.set(key, updated);
+    return cloneMetadata(updated);
+  }
+
+  async deleteOwned(ownerId: string, projectId: string, expectedRevision: number): Promise<void> {
+    const key = this.#key(ownerId, projectId);
+    const current = this.#projects.get(key);
+    if (!current) throw new Error('CLOUD_PROJECT_NOT_FOUND');
+    if (current.revision !== expectedRevision) throw new Error('CLOUD_PROJECT_CONFLICT');
+    this.#projects.delete(key);
+    this.#documents.delete(key);
+    const revisionPrefix = `${key}\u0000`;
+    for (const revisionKey of [...this.#revisionMetadata.keys()]) {
+      if (!revisionKey.startsWith(revisionPrefix)) continue;
+      this.#revisionMetadata.delete(revisionKey);
+      this.#revisionDocuments.delete(revisionKey);
+    }
+  }
+
   async writeRevision(input: CloudProjectRevisionWrite): Promise<StoredCloudProjectMetadata> {
     const key = this.#key(input.ownerId, input.projectId);
     const current = this.#projects.get(key);
@@ -210,6 +427,16 @@ export class InMemoryCloudProjectStore implements CloudProjectStore {
     };
     this.#projects.set(key, updated);
     this.#documents.set(key, input.chunks.join(''));
+    const revisionKey = this.#revisionKey(input.ownerId, input.projectId, input.revision);
+    this.#revisionMetadata.set(revisionKey, {
+      projectId: input.projectId,
+      revision: input.revision,
+      formatVersion: input.formatVersion,
+      byteSize: input.byteSize,
+      contentSha256: input.contentSha256,
+      createdAt: input.createdAt
+    });
+    this.#revisionDocuments.set(revisionKey, input.chunks.join(''));
     return cloneMetadata(updated);
   }
 }

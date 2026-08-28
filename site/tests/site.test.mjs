@@ -135,12 +135,15 @@ test('management UI keeps login and member administration in a separate shell', 
   const context = await readFile(new URL('../../admin/src/ui/manage-context.ts', import.meta.url), 'utf8');
   const session = await readFile(new URL('../../admin/src/ui/manage-session.ts', import.meta.url), 'utf8');
   const members = await readFile(new URL('../../admin/src/ui/manage-members.ts', import.meta.url), 'utf8');
+  const cloudController = await readFile(new URL('../../admin/src/ui/manage-cloud.ts', import.meta.url), 'utf8');
   const profileController = await readFile(new URL('../../admin/src/ui/manage-profile.ts', import.meta.url), 'utf8');
   const dom = await readFile(new URL('../../admin/src/ui/manage-dom.ts', import.meta.url), 'utf8');
   const profile = await readFile(new URL('../../admin/ui/profile-storage.js', import.meta.url), 'utf8');
   assert.match(source, /data-auth-stage/);
   assert.match(source, /data-manage-shell/);
   assert.match(source, /data-member-rows/);
+  assert.match(source, /data-view="storage"/);
+  assert.match(source, /data-cloud-usage-rows/);
   assert.match(source, /data-avatar-input/);
   assert.match(source, /minlength="6"/);
   assert.doesNotMatch(source, /minlength="12"/);
@@ -152,8 +155,10 @@ test('management UI keeps login and member administration in a separate shell', 
   assert.match(context, /\^\\\/\(workspace\|manage\)\$/);
   assert.match(session, /location\.replace\('\/workspace'\)/);
   assert.match(members, /managementApi\.listMembers/);
+  assert.match(cloudController, /managementApi\.getCloudUsage/);
+  assert.doesNotMatch(cloudController, /settings|zones|points|snapshot/);
   assert.match(profileController, /cqnuLocalProfile|localProfile/);
-  for (const moduleSource of [context, session, members, profileController, dom]) {
+  for (const moduleSource of [context, session, members, cloudController, profileController, dom]) {
     assert.ok(moduleSource.split(/\r?\n/).length <= 360, 'Management UI modules should stay below 360 lines');
   }
   assert.match(profile, /MAX_SOURCE_BYTES/);
@@ -188,11 +193,20 @@ test('site cloud project client is same-origin, CSRF protected, and explicit', a
   assert.match(client, /credentials:\s*'same-origin'/);
   assert.match(client, /x-cqnu-csrf/);
   assert.match(client, /AbortController/);
+  assert.match(client, /\/api\/projects\/usage/);
+  assert.match(client, /method:\s*'PATCH'/);
+  assert.match(client, /method:\s*'DELETE'/);
+  assert.match(client, /\/revisions/);
+  assert.match(client, /\/restore/);
   assert.doesNotMatch(client, /showDirectoryPicker|FileReader|webkitdirectory|better-sqlite3/);
   assert.match(gate, /installSiteCloudProjectClient/);
   assert.match(library, /cloudProjectUpload/);
   assert.match(library, /projectRendererBridge\?\.snapshot/);
   assert.match(library, /workspace\.save/);
+  assert.match(library, /cloudProjectHistory/);
+  assert.match(library, /cloudProjectRestore/);
+  assert.match(library, /cloudProjectDeleteFinalConfirm/);
+  assert.match(library, /client!\.usage/);
   assert.doesNotMatch(library, /window\.plantApp|ipcRenderer|child_process/);
 });
 
@@ -207,6 +221,8 @@ test('cloud project schema is versioned, bounded, and owner scoped', async () =>
   assert.match(schema, /CLOUD_PROJECT_CONFLICT/);
   assert.match(service, /SHA-256/);
   assert.match(service, /ownerId/);
+  assert.match(service, /async restore/);
+  assert.match(service, /expectedRevision/);
 });
 
 test('workspace startup uses staged progress and one bundled legacy runtime request', async () => {

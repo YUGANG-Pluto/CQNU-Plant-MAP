@@ -20,6 +20,12 @@ function nonNegativeInteger(value: unknown): number {
   return Number(value);
 }
 
+function positiveInteger(value: unknown): number {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 1) throw new Error('CLOUD_PROJECT_REVISION_INVALID');
+  return number;
+}
+
 export async function handleCloudProjectHttp(input: CloudProjectHttpInput): Promise<Response> {
   const { route, request, path, ownerId, service, headers, respond } = input;
   if (route.id === 'cloud-projects.list') {
@@ -33,10 +39,34 @@ export async function handleCloudProjectHttp(input: CloudProjectHttpInput): Prom
     return respond({ ok: true, data: { project } }, 201, headers);
   }
 
+  if (route.id === 'cloud-projects.usage') {
+    return respond({ ok: true, data: { usage: await service.usage(ownerId) } }, 200, headers);
+  }
+
   const projectId = routeParameter(route, path, 'projectId');
   if (!projectId) throw new Error('REQUEST_BODY_INVALID');
   if (route.id === 'cloud-projects.read') {
     return respond({ ok: true, data: await service.read(ownerId, projectId) }, 200, headers);
+  }
+
+
+  if (route.id === 'cloud-projects.rename') {
+    const body = await readJson(request);
+    const project = await service.rename(
+      ownerId,
+      projectId,
+      nonNegativeInteger(body.expectedRevision),
+      body.name
+    );
+    await input.audit(project.id, 200);
+    return respond({ ok: true, data: { project } }, 200, headers);
+  }
+
+  if (route.id === 'cloud-projects.delete') {
+    const body = await readJson(request);
+    await service.delete(ownerId, projectId, nonNegativeInteger(body.expectedRevision));
+    await input.audit(projectId, 200);
+    return respond({ ok: true, data: { deleted: true, projectId } }, 200, headers);
   }
 
   if (route.id === 'cloud-projects.save') {
@@ -48,6 +78,27 @@ export async function handleCloudProjectHttp(input: CloudProjectHttpInput): Prom
       expectedRevision: nonNegativeInteger(body.expectedRevision),
       snapshot: body.snapshot
     });
+    await input.audit(project.id, 200);
+    return respond({ ok: true, data: { project } }, 200, headers);
+  }
+
+  if (route.id === 'cloud-projects.revisions') {
+    return respond({
+      ok: true,
+      data: { revisions: await service.revisions(ownerId, projectId) }
+    }, 200, headers);
+  }
+
+  if (route.id === 'cloud-projects.restore') {
+    const revision = positiveInteger(routeParameter(route, path, 'revision'));
+    const body = await readJson(request);
+    const project = await service.restore(
+      ownerId,
+      ownerId,
+      projectId,
+      revision,
+      nonNegativeInteger(body.expectedRevision)
+    );
     await input.audit(project.id, 200);
     return respond({ ok: true, data: { project } }, 200, headers);
   }

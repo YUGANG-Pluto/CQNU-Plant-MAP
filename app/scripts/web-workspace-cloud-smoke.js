@@ -14,34 +14,82 @@ function sendJson(response, status, body, headers = {}) {
 }
 
 function seedCloudProjects() {
-  return new Map([[
-    'cloud-project-smoke',
-    {
-      metadata: {
-        id: 'cloud-project-smoke',
-        name: 'Cloud smoke project',
-        revision: 1,
-        formatVersion: 1,
-        byteSize: 128,
-        contentSha256: 'a'.repeat(64),
-        createdAt: '2026-08-28T08:00:00.000Z',
-        updatedAt: '2026-08-28T08:00:00.000Z'
-      },
-      snapshot: {
-        formatVersion: 1,
-        settings: { projectName: 'Cloud smoke project' },
-        zones: [{ id: 'cloud-zone', name: 'Cloud Zone' }],
-        points: [{ id: 'cloud-point', zoneId: 'cloud-zone', plantNameSci: 'Planta cloudensis' }]
-      }
-    }
-  ]]);
+  const snapshot = {
+    formatVersion: 1,
+    settings: { projectName: 'Cloud smoke project' },
+    zones: [{ id: 'cloud-zone', name: 'Cloud Zone' }],
+    points: [{ id: 'cloud-point', zoneId: 'cloud-zone', plantNameSci: 'Planta cloudensis' }]
+  };
+  const metadata = {
+    id: 'cloud-project-smoke',
+    name: 'Cloud smoke project',
+    revision: 1,
+    formatVersion: 1,
+    byteSize: 128,
+    contentSha256: 'a'.repeat(64),
+    createdAt: '2026-08-28T08:00:00.000Z',
+    updatedAt: '2026-08-28T08:00:00.000Z'
+  };
+  return new Map([['cloud-project-smoke', {
+    metadata,
+    snapshot,
+    revisions: new Map([[1, { metadata: revisionMetadata(metadata), snapshot }]])
+  }]]);
+}
+
+function revisionMetadata(metadata) {
+  return {
+    projectId: metadata.id,
+    revision: metadata.revision,
+    formatVersion: metadata.formatVersion,
+    byteSize: metadata.byteSize,
+    contentSha256: metadata.contentSha256,
+    createdAt: metadata.updatedAt
+  };
+}
+
+function usage(projects) {
+  const entries = [...projects.values()];
+  return {
+    projectCount: entries.length,
+    maxProjects: 25,
+    currentBytes: entries.reduce((sum, item) => sum + item.metadata.byteSize, 0),
+    versionBytes: entries.reduce(
+      (sum, item) => sum + [...item.revisions.values()]
+        .reduce((revisionSum, revision) => revisionSum + revision.metadata.byteSize, 0),
+      0
+    ),
+    maxSnapshotBytes: 8 * 1024 * 1024,
+    updatedAt: entries.map(item => item.metadata.updatedAt).sort().at(-1) || null
+  };
+}
+
+function saveRevision(project, snapshot) {
+  const revision = project.metadata.revision + 1;
+  const now = new Date().toISOString();
+  project.snapshot = snapshot;
+  project.metadata = {
+    ...project.metadata,
+    revision,
+    byteSize: Buffer.byteLength(JSON.stringify(snapshot)),
+    contentSha256: String(revision % 10).repeat(64),
+    updatedAt: now
+  };
+  project.revisions.set(revision, {
+    metadata: revisionMetadata(project.metadata),
+    snapshot
+  });
+  return project.metadata;
 }
 
 function createCloudProjectSmokeApi() {
   const projects = seedCloudProjects();
   return {
     async handle(request, response, target, context) {
-      if (target.pathname !== '/api/projects' && !target.pathname.startsWith('/api/projects/')) {
+      const isProjectRoute = target.pathname === '/api/projects'
+        || target.pathname.startsWith('/api/projects/');
+      const isAdminUsageRoute = target.pathname === '/api/manage/cloud-projects/usage';
+      if (!isProjectRoute && !isAdminUsageRoute) {
         return false;
       }
       if (context.loggedOut) {
@@ -51,11 +99,57 @@ function createCloudProjectSmokeApi() {
 
       const segments = target.pathname.split('/').filter(Boolean);
       const projectId = segments[2] || '';
+      if (request.method === 'GET' && isAdminUsageRoute) {
+        const currentUsage = usage(projects);
+        sendJson(response, 200, {
+          ok: true,
+          data: {
+            summary: {
+              accountCount: 1,
+              projectCount: currentUsage.projectCount,
+              currentBytes: currentUsage.currentBytes,
+              versionBytes: currentUsage.versionBytes,
+              maxProjectsPerAccount: currentUsage.maxProjects,
+              maxSnapshotBytes: currentUsage.maxSnapshotBytes
+            },
+            accounts: [{
+              accountId: 'acct_web_smoke_save',
+              username: 'web.smoke',
+              displayName: 'Web smoke',
+              accountKind: 'admin',
+              accessLevel: 'save',
+              projectCount: currentUsage.projectCount,
+              currentBytes: currentUsage.currentBytes,
+              versionBytes: currentUsage.versionBytes,
+              updatedAt: currentUsage.updatedAt
+            }]
+          }
+        });
+        return true;
+      }
       if (request.method === 'GET' && target.pathname === '/api/projects') {
         sendJson(response, 200, {
           ok: true,
           data: { projects: [...projects.values()].map(item => item.metadata) }
         });
+        return true;
+      }
+      if (request.method === 'GET' && target.pathname === '/api/projects/usage') {
+        sendJson(response, 200, { ok: true, data: { usage: usage(projects) } });
+        return true;
+      }
+      if (request.method === 'GET' && projectId && segments[3] === 'revisions') {
+        const project = projects.get(projectId);
+        sendJson(response, project ? 200 : 404, project
+          ? {
+            ok: true,
+            data: {
+              revisions: [...project.revisions.values()]
+                .map(item => item.metadata)
+                .sort((left, right) => right.revision - left.revision)
+            }
+          }
+          : { ok: false, error: { code: 'CLOUD_PROJECT_NOT_FOUND', message: 'Not found' } });
         return true;
       }
       if (request.method === 'GET' && projectId && segments.length === 3) {
@@ -84,7 +178,8 @@ function createCloudProjectSmokeApi() {
             createdAt: now,
             updatedAt: now
           },
-          snapshot: null
+          snapshot: null,
+          revisions: new Map()
         };
         projects.set(id, project);
         sendJson(response, 201, { ok: true, data: { project: project.metadata } });
@@ -103,15 +198,57 @@ function createCloudProjectSmokeApi() {
           });
           return true;
         }
-        project.snapshot = body.snapshot;
+        sendJson(response, 200, { ok: true, data: { project: saveRevision(project, body.snapshot) } });
+        return true;
+      }
+      if (request.method === 'PATCH' && projectId && segments.length === 3) {
+        const project = projects.get(projectId);
+        const body = await requestJson(request);
+        if (!project || Number(body.expectedRevision) !== project.metadata.revision) {
+          sendJson(response, project ? 409 : 404, {
+            ok: false,
+            error: { code: project ? 'CLOUD_PROJECT_CONFLICT' : 'CLOUD_PROJECT_NOT_FOUND', message: 'Rename conflict' }
+          });
+          return true;
+        }
         project.metadata = {
           ...project.metadata,
-          revision: project.metadata.revision + 1,
-          byteSize: Buffer.byteLength(JSON.stringify(body.snapshot)),
-          contentSha256: 'b'.repeat(64),
+          name: String(body.name || project.metadata.name),
           updatedAt: new Date().toISOString()
         };
         sendJson(response, 200, { ok: true, data: { project: project.metadata } });
+        return true;
+      }
+      if (request.method === 'POST' && projectId && segments[3] === 'revisions' && segments[5] === 'restore') {
+        const project = projects.get(projectId);
+        const revision = Number(segments[4]);
+        const body = await requestJson(request);
+        const historical = project?.revisions.get(revision);
+        if (!project || !historical || Number(body.expectedRevision) !== project.metadata.revision) {
+          sendJson(response, project ? 409 : 404, {
+            ok: false,
+            error: { code: project ? 'CLOUD_PROJECT_CONFLICT' : 'CLOUD_PROJECT_NOT_FOUND', message: 'Restore conflict' }
+          });
+          return true;
+        }
+        sendJson(response, 200, {
+          ok: true,
+          data: { project: saveRevision(project, structuredClone(historical.snapshot)) }
+        });
+        return true;
+      }
+      if (request.method === 'DELETE' && projectId && segments.length === 3) {
+        const project = projects.get(projectId);
+        const body = await requestJson(request);
+        if (!project || Number(body.expectedRevision) !== project.metadata.revision) {
+          sendJson(response, project ? 409 : 404, {
+            ok: false,
+            error: { code: project ? 'CLOUD_PROJECT_CONFLICT' : 'CLOUD_PROJECT_NOT_FOUND', message: 'Delete conflict' }
+          });
+          return true;
+        }
+        projects.delete(projectId);
+        sendJson(response, 200, { ok: true, data: { deleted: true, projectId } });
         return true;
       }
 
@@ -126,6 +263,7 @@ async function runCloudProjectRoundtrip(window) {
     `(async () => {
       const client = window.siteCloudProjects;
       const listed = await client.list();
+      const initialUsage = await client.usage();
       const remote = await client.read(listed[0].id);
       await window.projectRendererBridge.importCloudProject(remote);
       window.__CQNU_STATE__.settings.baseMaps = [{
@@ -138,6 +276,12 @@ async function runCloudProjectRoundtrip(window) {
       window.__CQNU_STATE__.points[0].images = ['images/cloud-point.jpg'];
       const snapshot = window.projectRendererBridge.snapshot();
       const saved = await client.save(remote.metadata.id, remote.metadata.revision, snapshot);
+      const history = await client.revisions(remote.metadata.id);
+      const restored = await client.restore(remote.metadata.id, 1, saved.revision);
+      const renamed = await client.rename(remote.metadata.id, restored.revision, 'Renamed cloud smoke');
+      const temporary = await client.create('Temporary cloud smoke');
+      await client.remove(temporary.id, temporary.revision);
+      const finalUsage = await client.usage();
       window.cqnuLayerManager.open(document.getElementById('projectImportModal'));
       document.getElementById('btnOpenCloudProjectLibrary')?.click();
       await new Promise(resolve => setTimeout(resolve, 80));
@@ -150,7 +294,12 @@ async function runCloudProjectRoundtrip(window) {
       return {
         clientReady: client?.version === 'site-cloud-projects-v1',
         listed: listed.length,
+        initialUsageProjects: initialUsage.projectCount,
         savedRevision: saved.revision,
+        historyRevisions: history.map(item => item.revision),
+        restoredRevision: restored.revision,
+        renamedName: renamed.name,
+        finalUsageProjects: finalUsage.projectCount,
         sourceKind: window.projectSessionStore?.getSnapshot().sourceKind,
         pointCount: window.__CQNU_STATE__?.points?.length || 0,
         sensitiveDataRemoved: snapshot.settings.baseMaps[0].key === ''

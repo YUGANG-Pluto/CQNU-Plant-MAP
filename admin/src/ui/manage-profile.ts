@@ -54,7 +54,9 @@ export function renderAccountSummary(): void {
   };
   requiredElement<HTMLElement>('[data-overview-access-note]').textContent = accessNotes[account.accessLevel];
   for (const element of document.querySelectorAll<HTMLElement>('[data-admin-only]')) {
-    element.hidden = !hasCapability('member.read') && !hasCapability('audit.read');
+    element.hidden = !hasCapability('member.read')
+      && !hasCapability('audit.read')
+      && !hasCapability('site.read');
   }
   const usernameForm = requiredElement<HTMLFormElement>('[data-username-form]');
   formControl<HTMLInputElement>(usernameForm, 'username').value = account.username;

@@ -38,7 +38,10 @@ function managementSessionFixture(accessLevel = 'save') {
       ? ['workspace.read']
       : accessLevel === 'edit'
         ? ['workspace.read', 'workspace.edit']
-        : ['workspace.read', 'workspace.edit', 'workspace.save', 'member.read', 'member.manage', 'audit.read'];
+        : [
+          'workspace.read', 'workspace.edit', 'workspace.save',
+          'member.read', 'member.manage', 'audit.read', 'site.read'
+        ];
   return {
     ok: true,
     data: {
@@ -426,6 +429,15 @@ async function run() {
     if (!cloudResult.clientReady || cloudResult.listed < 1 || cloudResult.savedRevision !== 2) {
       failures.push(`cloud project API round trip: ${JSON.stringify(cloudResult)}`);
     }
+    if (
+      cloudResult.initialUsageProjects !== 1 ||
+      JSON.stringify(cloudResult.historyRevisions) !== JSON.stringify([2, 1]) ||
+      cloudResult.restoredRevision !== 3 ||
+      cloudResult.renamedName !== 'Renamed cloud smoke' ||
+      cloudResult.finalUsageProjects !== 1
+    ) {
+      failures.push(`cloud project lifecycle: ${JSON.stringify(cloudResult)}`);
+    }
     if (cloudResult.sourceKind !== 'cloud' || cloudResult.pointCount !== 1) {
       failures.push(`cloud project working copy: ${cloudResult.sourceKind} / ${cloudResult.pointCount}`);
     }
@@ -484,7 +496,7 @@ async function run() {
     );
     if (failures.length) throw new Error(failures.join('\n'));
     process.stdout.write(
-      `web workspace smoke passed (login-to-workspace ${managementResult.loginReadyMs}ms; typed import center, OPFS SQLite, direct read-only SQLite picker, lazy SQLite worker, trusted directory picker, local avatar, modal and statistics-fullscreen top-layer hit tests, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n`
+      `web workspace smoke passed (login-to-workspace ${managementResult.loginReadyMs}ms; cloud project versions and lifecycle, typed import center, OPFS SQLite, direct read-only SQLite picker, lazy SQLite worker, trusted directory picker, local avatar, modal and statistics-fullscreen top-layer hit tests, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n`
     );
   } finally {
     markSmokeStage('primary:cleanup-window');

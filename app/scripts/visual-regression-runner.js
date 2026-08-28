@@ -17,6 +17,8 @@ const REQUIRED_SCENES = Object.freeze([
   'management-login-mobile',
   'management-account',
   'management-account-mobile',
+  'management-storage',
+  'management-storage-mobile',
   'site-home',
   'site-home-mobile',
   'site-docs',

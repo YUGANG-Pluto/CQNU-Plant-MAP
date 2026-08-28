@@ -46,16 +46,40 @@
       async list() {
         return (await request('/api/projects')).projects || [];
       },
+      async usage() {
+        return (await request('/api/projects/usage')).usage;
+      },
       async create(name) {
         return (await request('/api/projects', { method: 'POST', body: { name } })).project;
       },
       async read(projectId) {
         return request(`/api/projects/${encodeURIComponent(projectId)}`);
       },
+      async rename(projectId, expectedRevision, name) {
+        return (await request(`/api/projects/${encodeURIComponent(projectId)}`, {
+          method: 'PATCH',
+          body: { expectedRevision, name }
+        })).project;
+      },
+      async remove(projectId, expectedRevision) {
+        return request(`/api/projects/${encodeURIComponent(projectId)}`, {
+          method: 'DELETE',
+          body: { expectedRevision }
+        });
+      },
       async save(projectId, expectedRevision, snapshot) {
         return (await request(`/api/projects/${encodeURIComponent(projectId)}/snapshot`, {
           method: 'PUT',
           body: { expectedRevision, snapshot }
+        })).project;
+      },
+      async revisions(projectId) {
+        return (await request(`/api/projects/${encodeURIComponent(projectId)}/revisions`)).revisions || [];
+      },
+      async restore(projectId, revision, expectedRevision) {
+        return (await request(`/api/projects/${encodeURIComponent(projectId)}/revisions/${encodeURIComponent(revision)}/restore`, {
+          method: 'POST',
+          body: { expectedRevision }
         })).project;
       }
     });

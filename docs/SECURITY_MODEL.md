@@ -10,12 +10,14 @@ The browser site separates management data from plant project data.
 | --- | --- |
 | Management Worker | Account activation, authentication, member permissions, session lease, password reset, and allowlisted audit events. |
 | Management database | Account, keyed credential digest, single-use token digest, session digest, and security audit metadata only. |
-| Cloud project service | Explicit, account-scoped, versioned `settings`, `zones`, and `points` snapshots with bounded upload and integrity checks. |
+| Cloud project service | Explicit, account-scoped, versioned `settings`, `zones`, and `points` snapshots with bounded upload, lifecycle controls, and integrity checks. |
 | Cloud project tables | Sanitized record chunks and revision metadata; no image bytes, source databases, credentials, or device-absolute paths. |
 | Browser platform adapter | Enforces `read`, `edit`, and `save` capabilities before local project operations. |
 | Browser local storage | OPFS SQLite, optional authorized-directory mirror, images, backups, and diagnostics for the plant project. |
 
 Account, session, and audit routes do not accept plant project content. The site-only cloud project routes accept a record snapshot only after an explicit user command. The browser removes service credentials, credential-bearing URL parameters, and device-absolute paths before upload, and the Worker independently rejects them. Coordinates and relative image references may remain in records; image bytes, source databases, backups, logs, directory handles, and full third-party API responses remain local.
+
+Cloud project reads are owner-scoped. Upload, rename, restore, and delete operations require `workspace.save`, exact-origin CSRF validation, and the current expected revision. Restore appends a verified historical snapshot as a new revision. Delete removes the owner-scoped project and all retained chunks in a transactional D1 batch, but does not reach into browser-local OPFS storage. The administrator storage endpoint returns account identities, project counts, and byte totals only; it does not return project names or plant records.
 
 Passwords use salted PBKDF2-HMAC-SHA-256 with a deployment-provided HMAC pepper. The shared implementation defaults to 600,000 iterations; the Sites Worker uses the Cloudflare runtime ceiling of 100,000 iterations. Every verifier stores its iteration count so the cost can be raised transparently when the platform permits it. The Worker limit is additionally bounded by mandatory first-use password replacement, a weak-password blocklist, login lockout, purpose-separated keys, and owner-only hosting access. Purpose-separated HMAC keys sign or digest session, CSRF, activation, and password-reset material. Production cookies are host-only, `HttpOnly`, `Secure`, and `SameSite=Strict`; state-changing account requests also require a same-origin CSRF token.
 

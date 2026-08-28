@@ -17,6 +17,7 @@ import {
   type ManagementView
 } from './manage-context.js';
 import { eventElement, formControl, requiredElement } from './manage-dom.js';
+import { installCloudUsageController, loadCloudUsage } from './manage-cloud.js';
 import { installMemberController, loadAuditEvents, loadMembers } from './manage-members.js';
 import { installProfileController, renderAccountSummary, renderCapabilities } from './manage-profile.js';
 
@@ -96,6 +97,7 @@ function switchView(requestedView: ManagementView, options: ViewOptions = {}): v
   }
   elements.manageContent.focus({ preventScroll: true });
   if (viewName === 'members') void loadMembers(resetToLogin);
+  if (viewName === 'storage') void loadCloudUsage(resetToLogin);
   if (viewName === 'audit') void loadAuditEvents();
 }
 
@@ -276,6 +278,7 @@ async function boot(): Promise<void> {
 export function initializeManagementUi(): void {
   installProfileController(showDashboard);
   installMemberController(resetToLogin);
+  installCloudUsageController(resetToLogin);
   installAuthHandlers();
   installShellHandlers();
   void boot();

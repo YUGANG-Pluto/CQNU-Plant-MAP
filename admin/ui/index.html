@@ -146,6 +146,7 @@
         <nav class="manage-nav" aria-label="管理模块">
           <button type="button" data-view-target="overview" aria-current="page">概览</button>
           <button type="button" data-view-target="members" data-admin-only>成员与权限</button>
+          <button type="button" data-view-target="storage" data-admin-only>云存储用量</button>
           <button type="button" data-view-target="audit" data-admin-only>安全审计</button>
           <button type="button" data-view-target="account">账户设置</button>
         </nav>
@@ -176,7 +177,7 @@
               <div class="panel-heading"><div><span>数据边界</span><h2>本地项目与管理域分离</h2></div></div>
               <ol>
                 <li><strong>浏览器本地</strong><span>项目 SQLite、JSON、图片与备份</span></li>
-                <li><strong>管理数据库</strong><span>账户、权限、会话摘要与安全审计</span></li>
+                <li><strong>管理数据库</strong><span>账户、权限、会话、审计与显式上传的云项目版本</span></li>
                 <li><strong>主动联网</strong><span>物种参考查询仅发送必要名称</span></li>
               </ol>
             </section>
@@ -200,6 +201,28 @@
               </table>
             </div>
             <p class="empty-state" data-member-empty hidden>没有符合筛选条件的成员。</p>
+          </section>
+        </section>
+
+        <section class="manage-view" data-view="storage" hidden>
+          <div class="view-heading">
+            <div><span>CLOUD STORAGE</span><h1>云存储用量</h1><p>只展示账户级项目数量与字节统计，不读取或展示植物项目内容。</p></div>
+            <button class="secondary-button compact" type="button" data-refresh-cloud-usage>刷新</button>
+          </div>
+          <div class="summary-grid cloud-usage-summary">
+            <article><span>云项目总数</span><strong data-cloud-summary-projects>0</strong><small>每个账户最多 25 个</small></article>
+            <article><span>当前快照体积</span><strong data-cloud-summary-current>0 B</strong><small>各项目最新版本合计</small></article>
+            <article><span>保留版本体积</span><strong data-cloud-summary-versions>0 B</strong><small>包括可恢复的历史修订</small></article>
+            <article><span>账户数量</span><strong data-cloud-summary-accounts>0</strong><small>无项目账户也列入审计</small></article>
+          </div>
+          <section class="data-panel table-panel cloud-usage-panel">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>账户</th><th>类型与权限</th><th>项目数</th><th>当前快照</th><th>保留版本</th><th>最近更新</th></tr></thead>
+                <tbody data-cloud-usage-rows></tbody>
+              </table>
+            </div>
+            <p class="empty-state" data-cloud-usage-empty hidden>当前没有可显示的账户用量。</p>
           </section>
         </section>
 

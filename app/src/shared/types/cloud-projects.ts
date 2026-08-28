@@ -21,16 +21,39 @@ export interface CloudProjectDocument {
   snapshot: CloudProjectSnapshot | null;
 }
 
+export interface CloudProjectRevisionMetadata {
+  projectId: string;
+  revision: number;
+  formatVersion: 1;
+  byteSize: number;
+  contentSha256: string;
+  createdAt: string;
+}
+
+export interface CloudProjectUsage {
+  projectCount: number;
+  maxProjects: number;
+  currentBytes: number;
+  versionBytes: number;
+  maxSnapshotBytes: number;
+  updatedAt: string | null;
+}
+
 export interface SiteCloudProjectClient {
   readonly version: 'site-cloud-projects-v1';
   list(): Promise<CloudProjectMetadata[]>;
+  usage(): Promise<CloudProjectUsage>;
   create(name: string): Promise<CloudProjectMetadata>;
   read(projectId: string): Promise<CloudProjectDocument>;
+  rename(projectId: string, expectedRevision: number, name: string): Promise<CloudProjectMetadata>;
+  remove(projectId: string, expectedRevision: number): Promise<{ deleted: true; projectId: string }>;
   save(
     projectId: string,
     expectedRevision: number,
     snapshot: CloudProjectSnapshot
   ): Promise<CloudProjectMetadata>;
+  revisions(projectId: string): Promise<CloudProjectRevisionMetadata[]>;
+  restore(projectId: string, revision: number, expectedRevision: number): Promise<CloudProjectMetadata>;
 }
 
 export interface ProjectRendererBridge {

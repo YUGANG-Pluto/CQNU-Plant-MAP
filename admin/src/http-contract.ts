@@ -29,10 +29,16 @@ export const ADMIN_ROUTES = Object.freeze<AdminRouteContract[]>([
   { id: 'site.publish', method: 'POST', path: '/api/manage/site/publish', capability: 'site.publish', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },
   { id: 'releases.list', method: 'GET', path: '/api/manage/releases', capability: 'release.read', mutatesState: false, csrfProtected: false, sessionRequired: true, allowPendingActivation: false },
   { id: 'releases.manage', method: 'POST', path: '/api/manage/releases', capability: 'release.manage', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },
+  { id: 'cloud-projects.admin-usage', method: 'GET', path: '/api/manage/cloud-projects/usage', capability: 'site.read', mutatesState: false, csrfProtected: false, sessionRequired: true, allowPendingActivation: false },
   { id: 'cloud-projects.list', method: 'GET', path: '/api/projects', capability: 'workspace.read', mutatesState: false, csrfProtected: false, sessionRequired: true, allowPendingActivation: false },
   { id: 'cloud-projects.create', method: 'POST', path: '/api/projects', capability: 'workspace.save', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },
+  { id: 'cloud-projects.usage', method: 'GET', path: '/api/projects/usage', capability: 'workspace.read', mutatesState: false, csrfProtected: false, sessionRequired: true, allowPendingActivation: false },
   { id: 'cloud-projects.read', method: 'GET', path: '/api/projects/:projectId', capability: 'workspace.read', mutatesState: false, csrfProtected: false, sessionRequired: true, allowPendingActivation: false },
-  { id: 'cloud-projects.save', method: 'PUT', path: '/api/projects/:projectId/snapshot', capability: 'workspace.save', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false }
+  { id: 'cloud-projects.rename', method: 'PATCH', path: '/api/projects/:projectId', capability: 'workspace.save', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },
+  { id: 'cloud-projects.delete', method: 'DELETE', path: '/api/projects/:projectId', capability: 'workspace.save', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },
+  { id: 'cloud-projects.save', method: 'PUT', path: '/api/projects/:projectId/snapshot', capability: 'workspace.save', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },
+  { id: 'cloud-projects.revisions', method: 'GET', path: '/api/projects/:projectId/revisions', capability: 'workspace.read', mutatesState: false, csrfProtected: false, sessionRequired: true, allowPendingActivation: false },
+  { id: 'cloud-projects.restore', method: 'POST', path: '/api/projects/:projectId/revisions/:revision/restore', capability: 'workspace.save', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false }
 ]);
 
 function pathMatches(pattern: string, path: string): boolean {

@@ -72,6 +72,11 @@ async function run() {
       mobile: true
     });
 
+    await captureScene(window, origin, 'management-storage', '/manage?next=/manage&view=storage', {
+      selector: '[data-view="storage"]',
+      mobile: true
+    });
+
     await captureScene(window, origin, 'workspace', '/workspace', {
       runtime: true,
       mobile: true,
@@ -97,6 +102,16 @@ async function run() {
             const card = document.querySelector('.cloud-project-card');
             if (modal?.classList.contains('is-open') && card) return resolve();
             if (Date.now() - startedAt > 8000) return reject(new Error('Cloud project library timed out.'));
+            setTimeout(poll, 40);
+          };
+          poll();
+        });
+        document.querySelector('[data-cloud-project-history]')?.click();
+        await new Promise((resolve, reject) => {
+          const startedAt = Date.now();
+          const poll = () => {
+            if (document.querySelector('.cloud-project-history li')) return resolve();
+            if (Date.now() - startedAt > 8000) return reject(new Error('Cloud project history timed out.'));
             setTimeout(poll, 40);
           };
           poll();

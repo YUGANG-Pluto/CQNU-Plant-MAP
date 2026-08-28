@@ -1,6 +1,10 @@
 import type { PublicManagementAccount } from './account-contracts.js';
 import { authorizeAdminRequest } from './access.js';
 import { handleCloudProjectHttp } from './cloud-project-http.js';
+import {
+  CLOUD_PROJECT_MAX_BYTES,
+  CLOUD_PROJECT_MAX_PER_ACCOUNT
+} from './cloud-project-contracts.js';
 import type {
   AdminAuditAction,
   AdminAuditEvent,
@@ -58,7 +62,7 @@ function errorStatus(code: string): number {
   if (code === 'LOGIN_FAILED' || code === 'SESSION_REQUIRED') return 401;
   if (code === 'ADMIN_ACCESS_DENIED' || code === 'CAPABILITY_DENIED' || code === 'CSRF_DENIED') return 403;
   if (code === 'ACCOUNT_NOT_FOUND' || code === 'ROUTE_DENIED') return 404;
-  if (code === 'CLOUD_PROJECT_NOT_FOUND') return 404;
+  if (code === 'CLOUD_PROJECT_NOT_FOUND' || code === 'CLOUD_PROJECT_REVISION_NOT_FOUND') return 404;
   if (code.includes('CONFLICT') || code === 'ADMIN_LIMIT_REACHED' || code === 'LAST_ADMIN_REQUIRED' || code === 'CLOUD_PROJECT_LIMIT_REACHED') return 409;
   if (code === 'REQUEST_BODY_TOO_LARGE' || code === 'CLOUD_PROJECT_TOO_LARGE') return 413;
   if (code === 'MANAGEMENT_SERVICE_UNAVAILABLE') return 503;
@@ -94,6 +98,8 @@ function publicError(code: string): { code: string; message: string } {
     CLOUD_PROJECT_LIMIT_REACHED: '每个账户最多可建立 25 个云项目。',
     CLOUD_PROJECT_INTEGRITY_FAILED: '云项目完整性校验失败，未载入数据。',
     CLOUD_PROJECT_SENSITIVE_DATA: '云项目包含服务凭据或设备绝对路径，请清理后重试。',
+    CLOUD_PROJECT_REVISION_INVALID: '云项目版本号无效。',
+    CLOUD_PROJECT_REVISION_NOT_FOUND: '未找到该云项目历史版本。',
     CLOUD_PROJECT_STORAGE_UNAVAILABLE: '云项目存储暂不可用。'
   };
   return { code, message: messages[code] || '请求未完成，请检查输入后重试。' };
@@ -192,8 +198,14 @@ function actionForRoute(route: AdminRouteContract): AdminAuditAction {
     'members.reset': 'account.password.reset.issue',
     'cloud-projects.list': 'workspace.read',
     'cloud-projects.read': 'workspace.read',
+    'cloud-projects.usage': 'workspace.read',
+    'cloud-projects.revisions': 'workspace.read',
+    'cloud-projects.admin-usage': 'site.read',
     'cloud-projects.create': 'workspace.save',
-    'cloud-projects.save': 'workspace.save'
+    'cloud-projects.save': 'workspace.save',
+    'cloud-projects.rename': 'workspace.save',
+    'cloud-projects.delete': 'workspace.save',
+    'cloud-projects.restore': 'workspace.save'
   };
   return mapped[route.id] || route.capability || 'workspace.read';
 }
@@ -467,7 +479,42 @@ export function createManagementRequestHandler(runtime: ManagementRequestRuntime
 
       if (route.id.startsWith('cloud-projects.')) {
         if (!runtime.cloudProjects) throw new Error('CLOUD_PROJECT_STORAGE_UNAVAILABLE');
-        return handleCloudProjectHttp({
+        if (route.id === 'cloud-projects.admin-usage') {
+          const [accounts, storedUsage] = await Promise.all([
+            runtime.accountStore.listAccounts(),
+            runtime.cloudProjects.listUsage()
+          ]);
+          const usageByOwner = new Map(storedUsage.map(item => [item.ownerId, item]));
+          const accountUsage = accounts.map(member => {
+            const usage = usageByOwner.get(member.id);
+            return {
+              accountId: member.id,
+              username: member.username,
+              displayName: member.displayName,
+              accountKind: member.accountKind,
+              accessLevel: member.accessLevel,
+              projectCount: usage?.projectCount || 0,
+              currentBytes: usage?.currentBytes || 0,
+              versionBytes: usage?.versionBytes || 0,
+              updatedAt: usage?.updatedAt || null
+            };
+          });
+          return jsonResponse({
+            ok: true,
+            data: {
+              summary: {
+                accountCount: accountUsage.length,
+                projectCount: accountUsage.reduce((sum, item) => sum + item.projectCount, 0),
+                currentBytes: accountUsage.reduce((sum, item) => sum + item.currentBytes, 0),
+                versionBytes: accountUsage.reduce((sum, item) => sum + item.versionBytes, 0),
+                maxProjectsPerAccount: CLOUD_PROJECT_MAX_PER_ACCOUNT,
+                maxSnapshotBytes: CLOUD_PROJECT_MAX_BYTES
+              },
+              accounts: accountUsage
+            }
+          }, 200, commonHeaders);
+        }
+        return await handleCloudProjectHttp({
           route,
           path,
           request,

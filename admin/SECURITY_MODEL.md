@@ -13,7 +13,7 @@
 
 The browser remains local-first. Only an explicit cloud project operation sends `settings`, `zones`, and `points` record snapshots, which may include coordinates and relative image references already present in point records. The client removes service credentials, credential-bearing URL parameters, and device-absolute paths before upload; the Worker independently rejects them. Projects are scoped to the authenticated account and require `workspace.read` or `workspace.save`. The service does not receive image bytes, browser directory handles, SQLite/JSON source files, backups, logs, or third-party service tokens.
 
-Each snapshot is size-bounded, split across bounded D1 rows, assigned an immutable revision record, and verified with SHA-256 before it is returned. Optimistic revision checks reject stale writes. The API has no delete, sharing, background synchronization, or cross-account administration route in this stage.
+Each snapshot is size-bounded, split across bounded D1 rows, assigned an immutable revision record, and verified with SHA-256 before it is returned. Optimistic revision checks reject stale uploads, renames, restores, and deletions. Restoring an older revision appends a new revision instead of rewriting history. Owner-triggered deletion removes the project and all of its version chunks in one D1 batch; a browser-local working copy already opened by the user is not deleted. Administrators can read account-level project counts and byte totals without receiving project names or snapshot content. The API has no sharing, background synchronization, cross-account project read, or cross-account project mutation route.
 
 ## Password Controls
 

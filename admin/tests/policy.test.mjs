@@ -68,9 +68,17 @@ test('management routes expose only bounded cloud project operations and protect
   assert.ok(findAdminRoute('POST', '/api/manage/site/publish'));
   assert.ok(findAdminRoute('PATCH', '/api/manage/members/account-1'));
   assert.equal(findAdminRoute('GET', '/api/projects')?.capability, 'workspace.read');
+  assert.equal(findAdminRoute('GET', '/api/projects/usage')?.capability, 'workspace.read');
+  assert.equal(findAdminRoute('GET', '/api/projects/cloud-project-1/revisions')?.capability, 'workspace.read');
+  assert.equal(findAdminRoute('GET', '/api/manage/cloud-projects/usage')?.capability, 'site.read');
   assert.equal(findAdminRoute('PUT', '/api/projects/cloud-project-1/snapshot')?.capability, 'workspace.save');
+  assert.equal(findAdminRoute('PATCH', '/api/projects/cloud-project-1')?.capability, 'workspace.save');
+  assert.equal(findAdminRoute('DELETE', '/api/projects/cloud-project-1')?.capability, 'workspace.save');
+  assert.equal(
+    findAdminRoute('POST', '/api/projects/cloud-project-1/revisions/2/restore')?.capability,
+    'workspace.save'
+  );
   assert.equal(ADMIN_ROUTES.some(route => /point|zone|coordinate|image|local-path/i.test(route.path)), false);
-  assert.equal(findAdminRoute('DELETE', '/api/projects/cloud-project-1'), null);
   assert.equal(ADMIN_ROUTES
     .filter(route => route.sessionRequired && route.mutatesState)
     .every(route => route.csrfProtected), true);
