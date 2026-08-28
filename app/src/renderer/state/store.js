@@ -101,14 +101,16 @@ const state = {
   currentBaseMapCoordSystem: 'WGS84',
   businessLayerGroups: null,
   businessLayerRegistry: new Map(),
+  businessLayerVisibility: {
+    zones: true,
+    points: true
+  },
   mapRenderToken: 0,
   lastBusinessLayerRender: null,
   currentMode: 'browse',
   currentBasemapEditId: null,
   currentOverlayEditId: null,
-  rightPanelMode: 'stack',
   activeRightDrawerModule: '',
-  rightPanelDiagnostics: null,
   drawHandler: null,
   zoneLayers: new Map(),
   pointLayers: new Map(),

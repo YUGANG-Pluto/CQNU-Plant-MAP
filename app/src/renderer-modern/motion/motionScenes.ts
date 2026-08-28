@@ -25,9 +25,9 @@ function control(value: unknown): MotionControl {
 export function workspaceEntranceScene(config: MotionRuntimeConfig): MotionSceneRun {
   if (!config.enabled) return sceneRun([]);
   const controls: MotionControl[] = [];
-  const header = document.querySelectorAll('.app-brand-block, .app-topbar-actions');
-  const launchers = document.querySelectorAll('.ui-module-launcher .ui-module-button');
-  const surfaces = document.querySelectorAll('.map-workbar, .context-inspector, .web-project-welcome');
+  const header = document.querySelectorAll('.app-brand-block, .workspace-context-rail, .app-topbar-actions');
+  const launchers = document.querySelectorAll('.workspace-tool-rail > .workspace-tool-group .ui-command-button');
+  const surfaces = document.querySelectorAll('.workspace-tool-rail, .panel-right, .web-project-welcome');
 
   if (header.length) controls.push(control(animate(
     header,

@@ -14,15 +14,10 @@
   scrollbar-width: thin;
 }
 
-.panel-left,
 .panel-right {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-
-.panel-left {
-  background: rgba(255, 255, 255, 0.7);
 }
 
 .panel-header {

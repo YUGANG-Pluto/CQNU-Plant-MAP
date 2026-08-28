@@ -462,6 +462,43 @@ async function runManagementUiSmoke(baseUrl) {
       `Boolean(document.querySelector('.web-profile-avatar img')?.getAttribute('src')?.startsWith('data:image/'))`,
       true
     );
+    const workspaceShellResult = await window.webContents.executeJavaScript(`(async () => {
+      const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const layersButton = document.querySelector('[aria-controls="mapLayerPopover"]');
+      const modulesButton = document.querySelector('[aria-controls="workspaceModuleLauncher"]');
+      layersButton?.click();
+      await nextFrame();
+      const layerPopover = document.querySelector('#mapLayerPopover');
+      const layerRect = layerPopover?.getBoundingClientRect();
+      const layerHit = layerRect
+        ? document.elementFromPoint(layerRect.left + Math.min(32, layerRect.width / 2), layerRect.top + Math.min(32, layerRect.height / 2))
+        : null;
+      const layerPopoverVisible = Boolean(layerPopover && !layerPopover.hidden && layerRect?.width && layerRect?.height);
+      const zoneToggle = document.querySelector('#btnToggleZoneLayer');
+      zoneToggle?.click();
+      const zoneHidden = zoneToggle?.getAttribute('aria-checked') === 'false';
+      zoneToggle?.click();
+      const zoneRestored = zoneToggle?.getAttribute('aria-checked') === 'true';
+      layersButton?.click();
+      modulesButton?.click();
+      await nextFrame();
+      const modulePopover = document.querySelector('#workspaceModuleLauncher');
+      const moduleRect = modulePopover?.getBoundingClientRect();
+      const moduleHit = moduleRect
+        ? document.elementFromPoint(moduleRect.left + Math.min(32, moduleRect.width / 2), moduleRect.top + Math.min(32, moduleRect.height / 2))
+        : null;
+      return {
+        layerPopoverVisible,
+        layerPopoverTopmost: Boolean(layerPopover && layerHit && layerPopover.contains(layerHit)),
+        zoneHidden,
+        zoneRestored,
+        modulePopoverVisible: Boolean(modulePopover && !modulePopover.hidden && moduleRect?.width && moduleRect?.height),
+        modulePopoverTopmost: Boolean(modulePopover && moduleHit && modulePopover.contains(moduleHit)),
+        siteHomeLink: Boolean(modulePopover?.querySelector('.web-site-link[href="/"]')),
+        docsLink: Boolean(modulePopover?.querySelector('.web-site-link[href="/docs"]')),
+        capabilityDisclosure: Boolean(modulePopover?.querySelector('.web-capability-disclosure'))
+      };
+    })()`, true);
     await captureSmokeScreenshot(window, 'workspace');
     await captureSmokeScreenshot(window, 'workspace-mobile', { width: 390, height: 844 });
     const failures = [];
@@ -474,6 +511,17 @@ async function runManagementUiSmoke(baseUrl) {
     if (!avatarResult.stored || !avatarResult.previewVisible || !workspaceAvatarVisible) {
       failures.push(`avatar workflow failed: ${JSON.stringify(avatarResult)} / ${workspaceAvatarVisible}`);
     }
+    if (!workspaceShellResult.layerPopoverVisible
+      || !workspaceShellResult.layerPopoverTopmost
+      || !workspaceShellResult.zoneHidden
+      || !workspaceShellResult.zoneRestored
+      || !workspaceShellResult.modulePopoverVisible
+      || !workspaceShellResult.modulePopoverTopmost
+      || !workspaceShellResult.siteHomeLink
+      || !workspaceShellResult.docsLink
+      || !workspaceShellResult.capabilityDisclosure) {
+      failures.push(`workspace shell contract failed: ${JSON.stringify(workspaceShellResult)}`);
+    }
     failures.push(...errors);
     if (failures.length) throw new Error(failures.join('\n'));
     markSmokeStage('management:complete');
@@ -484,7 +532,8 @@ async function runManagementUiSmoke(baseUrl) {
       legacyBundlePaths,
       unbundledLegacyPaths,
       ...avatarResult,
-      workspaceAvatarVisible
+      workspaceAvatarVisible,
+      workspaceShellResult
     };
   } finally {
     markSmokeStage('management:cleanup');

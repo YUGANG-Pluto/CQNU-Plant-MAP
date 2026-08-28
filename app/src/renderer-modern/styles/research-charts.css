@@ -12,9 +12,10 @@
 }
 
 :root.theme-scientific-white .app-topbar,
-:root.theme-scientific-white .panel,
-:root.theme-scientific-white .map-shell,
-:root.theme-scientific-white .map-workbar,
+:root.theme-scientific-white .workspace-tool-rail,
+:root.theme-scientific-white .workspace-module-popover,
+:root.theme-scientific-white .map-layer-popover,
+:root.theme-scientific-white .right-inspector-module,
 :root.theme-scientific-white .card,
 :root.theme-scientific-white .chart-card,
 :root.theme-scientific-white .stats-control-card,
@@ -28,12 +29,9 @@
 }
 
 :root.theme-liquid-glass .app-topbar,
-:root.theme-liquid-glass .panel,
-:root.theme-liquid-glass .map-shell,
-:root.theme-liquid-glass .map-workbar,
-:root.theme-liquid-glass .card,
-:root.theme-liquid-glass .chart-card,
-:root.theme-liquid-glass .stats-control-card,
+:root.theme-liquid-glass .workspace-tool-rail,
+:root.theme-liquid-glass .workspace-module-popover,
+:root.theme-liquid-glass .map-layer-popover,
 :root.theme-liquid-glass .layer-modal-panel,
 :root.theme-liquid-glass .confirm-panel {
   border-color: var(--glass-border);
@@ -41,6 +39,16 @@
   background: var(--glass-bg);
   box-shadow: var(--glass-shadow);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+}
+
+:root.theme-scientific-white .panel-right,
+:root.theme-liquid-glass .panel-right,
+:root.theme-scientific-white .map-shell,
+:root.theme-liquid-glass .map-shell {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 :root.theme-scientific-white :where(.btn, .input, select, textarea),

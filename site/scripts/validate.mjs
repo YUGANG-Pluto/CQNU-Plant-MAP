@@ -26,6 +26,20 @@ for (const route of ['/', '/workspace', '/manage', '/docs', '/web', '/release', 
   assert.doesNotMatch(html, /undefined|null|NaN/);
 }
 
+const pagePresentationContracts = new Map([
+  ['/', ['site-page--home', '#f7fbf8']],
+  ['/docs', ['site-page--docs', '#f7f9fc']],
+  ['/web', ['site-page--architecture', '#f6fafb']],
+  ['/release', ['site-page--release', '#fbf8f9']],
+  ['/privacy', ['site-page--privacy', '#f7faf8']]
+]);
+for (const [route, [pageClass, themeColor]] of pagePresentationContracts) {
+  const response = await fetchSite(route);
+  const html = await response.text();
+  assert.match(html, new RegExp(`class="site-page ${pageClass}"`));
+  assert.match(html, new RegExp(`name="theme-color" content="${themeColor}"`));
+}
+
 const workspace = await fetchSite('/workspace');
 const workspaceHtml = await workspace.text();
 assert.match(workspaceHtml, /modernUiRoot/);

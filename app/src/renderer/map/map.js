@@ -47,15 +47,60 @@ function ensureBusinessLayerGroups() {
   if (!state.map || state.businessLayerGroups) return state.businessLayerGroups;
 
   state.businessLayerGroups = {
-    zones: L.layerGroup().addTo(state.map),
-    points: L.layerGroup().addTo(state.map),
+    zones: L.layerGroup(),
+    points: L.layerGroup(),
     photoMarkers: L.layerGroup().addTo(state.map),
     labels: L.layerGroup().addTo(state.map),
     tempPreview: L.layerGroup().addTo(state.map)
   };
 
+  ['zones', 'points'].forEach(key => {
+    if (state.businessLayerVisibility?.[key] !== false) {
+      state.businessLayerGroups[key].addTo(state.map);
+    }
+  });
+
   state.businessLayerRegistry = new Map();
+  syncBusinessLayerVisibilityUi();
   return state.businessLayerGroups;
+}
+
+function businessLayerIsVisible(key) {
+  return state.businessLayerVisibility?.[key] !== false;
+}
+
+function syncBusinessLayerVisibilityUi() {
+  const definitions = [
+    { key: 'zones', button: ui?.btnToggleZoneLayer, count: ui?.zoneLayerCount, total: state.zones.length },
+    { key: 'points', button: ui?.btnTogglePointLayer, count: ui?.pointLayerCount, total: state.points.length }
+  ];
+  definitions.forEach(item => {
+    const visible = businessLayerIsVisible(item.key);
+    item.button?.setAttribute('aria-checked', visible ? 'true' : 'false');
+    item.button?.classList.toggle('is-hidden-layer', !visible);
+    const status = item.button?.querySelector('.layer-visibility-copy small');
+    if (status) {
+      status.textContent = typeof t === 'function' ? t(visible ? 'layerVisible' : 'layerHidden') : (visible ? '可见' : '已隐藏');
+      status.dataset.i18n = visible ? 'layerVisible' : 'layerHidden';
+    }
+    if (item.count) item.count.textContent = String(item.total);
+  });
+}
+
+function setBusinessLayerVisibility(key, visible) {
+  if (!['zones', 'points'].includes(key)) return false;
+  ensureBusinessLayerGroups();
+  const group = state.businessLayerGroups?.[key];
+  if (!group || !state.map) return false;
+  state.businessLayerVisibility[key] = Boolean(visible);
+  if (visible && !state.map.hasLayer(group)) group.addTo(state.map);
+  if (!visible && state.map.hasLayer(group)) state.map.removeLayer(group);
+  syncBusinessLayerVisibilityUi();
+  return true;
+}
+
+function toggleBusinessLayerVisibility(key) {
+  return setBusinessLayerVisibility(key, !businessLayerIsVisible(key));
 }
 
 function removeBusinessLayer(layer) {
@@ -174,6 +219,7 @@ function rerenderBusinessLayers(reason = 'unknown', options = {}) {
     pointCount: state.pointLayers.size,
     duplicateCount: countDuplicateBusinessLayers()
   };
+  syncBusinessLayerVisibilityUi();
 }
 
 function countDuplicateBusinessLayers() {

@@ -104,7 +104,10 @@ async function run() {
       (parseMs(rootStyle.getPropertyValue('--motion-duration-modal')) || 0) + 60
     );
     const queryTrigger = document.getElementById('btnOpenQuery');
+    const queryLauncherButton = document.querySelector('[aria-controls="workspaceModuleLauncher"]');
     const queryModal = document.getElementById('queryModal');
+    queryLauncherButton.click();
+    await delay(60);
     queryTrigger.focus();
     queryTrigger.click();
     await delay(60);
@@ -117,7 +120,7 @@ async function run() {
     const queryFocusTrapped = document.activeElement === firstFocusable;
     document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     await delay(motionCloseDelay);
-    const queryFocusReturned = document.activeElement === queryTrigger;
+    const queryFocusReturned = document.activeElement === queryTrigger || document.activeElement === queryLauncherButton;
 
     const appState = window.__CQNU_STATE__;
     const originalTheme = structuredClone(appState.settings?.uiTheme || {});
@@ -432,7 +435,7 @@ async function run() {
       missingIds: requiredIds.filter(id => !document.getElementById(id)),
       duplicateIds: Array.from(new Set(duplicateIds)),
       modernChildCount: document.getElementById('modernUiRoot')?.children.length || 0,
-      workspaceSurfaceCount: document.querySelectorAll('.app-shell > .app-topbar, .app-shell > .panel-left, .app-shell > .map-shell, .app-shell > .panel-right').length,
+      workspaceSurfaceCount: document.querySelectorAll('.app-shell > .app-topbar, .app-shell > .workspace-tool-rail, .app-shell > .map-shell, .app-shell > .panel-right').length,
       moduleButtonCount: document.querySelectorAll('.ui-module-button').length,
       motionDurations: [
         parseMs(rootStyle.getPropertyValue('--motion-duration-fast')),

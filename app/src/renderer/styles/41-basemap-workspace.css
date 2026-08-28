@@ -188,22 +188,12 @@
 }
 
 @media (max-width: 1280px) {
-  .map-basemap-toolbar {
-    grid-template-columns: auto minmax(160px, 1fr) auto;
-  }
-
-  .map-basemap-toolbar .basemap-quick-summary {
-    grid-column: 1 / -1;
-  }
-
   .basemap-state-strip {
     grid-template-columns: repeat(3, minmax(90px, 1fr));
   }
 }
 
 @media (max-width: 1040px) {
-  .map-workbar-status,
-  .map-basemap-toolbar,
   .basemap-state-strip {
     grid-template-columns: 1fr;
     flex-basis: 100%;

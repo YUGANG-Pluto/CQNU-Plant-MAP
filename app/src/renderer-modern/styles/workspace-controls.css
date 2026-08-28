@@ -40,6 +40,27 @@
   transform: scale(0.94);
 }
 
+.ui-command-button--icon-only {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+  padding: 8px;
+}
+
+.ui-command-button--icon-only .ui-command-button__icon {
+  width: 24px;
+  height: 24px;
+}
+
+.ui-command-button[aria-expanded="true"],
+.ui-command-button.is-panel-open {
+  color: var(--primary-contrast);
+  background: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 70%, white);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 26%, transparent);
+}
+
 .ui-command-button:focus-visible,
 .ui-segmented-control .seg-btn:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--primary) 28%, transparent);
@@ -62,13 +83,6 @@
   border-color: color-mix(in srgb, var(--primary) 22%, var(--glass-border));
   box-shadow: var(--glass-lens-shadow), var(--glass-specular);
   transform: translateY(-1px);
-}
-
-.web-site-links {
-  display: flex;
-  gap: 4px;
-  padding-right: 4px;
-  border-right: 1px solid var(--border-light);
 }
 
 .web-site-link {

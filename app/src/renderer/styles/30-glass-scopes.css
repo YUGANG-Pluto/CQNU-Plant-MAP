@@ -70,7 +70,9 @@
 }
 
 :root.glass-apply-mapBadges :where(
-  .map-workbar,
+  .map-project-source,
+  .map-operation-strip,
+  .map-canvas-wrap .status-bar,
   .map-overlay,
   .map-status-hint,
   .leaflet-popup-content-wrapper,

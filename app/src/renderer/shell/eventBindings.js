@@ -39,6 +39,8 @@ function bindMapEvents() {
     if (!getSelectedZone()) return showAlert(t('chooseZoneThenAddPoint'));
     setMode('addPoint');
   });
+  ui.btnToggleZoneLayer?.addEventListener('click', () => toggleBusinessLayerVisibility('zones'));
+  ui.btnTogglePointLayer?.addEventListener('click', () => toggleBusinessLayerVisibility('points'));
 
   ui.btnConfirmPoint.addEventListener('click', confirmPendingPoint);
   ui.btnCancelPoint.addEventListener('click', cancelPendingPoint);

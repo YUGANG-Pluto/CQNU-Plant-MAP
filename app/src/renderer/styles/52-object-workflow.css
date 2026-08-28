@@ -50,6 +50,22 @@
   white-space: nowrap;
 }
 
+.object-command-divider {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: var(--border-light);
+}
+
+.object-delete-action:not([hidden]) {
+  grid-column: 1 / -1;
+  justify-content: center;
+}
+
+.object-delete-action[hidden],
+.panel-right[data-selection-type="none"] .object-command-divider {
+  display: none !important;
+}
+
 .object-workflow-feedback {
   display: grid;
   grid-template-columns: 8px minmax(0, 1fr);

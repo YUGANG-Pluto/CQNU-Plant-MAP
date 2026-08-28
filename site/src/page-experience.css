@@ -56,6 +56,44 @@
 .site-page--release .page-hero { background: #f8eef2; }
 .site-page--privacy .page-hero { background: #edf6f1; }
 
+/* Home groups use content-specific accents while preserving the botanical navigation identity. */
+.site-page--home #research-workspaces {
+  --group-accent: #176b45;
+  --group-soft: #eaf6ef;
+}
+
+.site-page--home #project-services {
+  --group-accent: #2c64a1;
+  --group-soft: #eaf2fc;
+}
+
+.site-page--home #future-research {
+  --group-accent: #4f7378;
+  --group-soft: #eaf3f4;
+}
+
+.site-page--home .hub-group .hub-group-heading > div > span,
+.site-page--home .hub-group .hub-card-meta b,
+.site-page--home .hub-group .hub-card-action {
+  color: var(--group-accent, var(--accent));
+}
+
+.site-page--home .hub-group .hub-card-meta i {
+  color: var(--group-accent, var(--accent-strong));
+  background: var(--group-soft, var(--accent-soft));
+}
+
+.site-page--home .hub-group a.hub-card:hover,
+.site-page--home .hub-group a.hub-card:focus-visible {
+  border-color: color-mix(in srgb, var(--group-accent, var(--accent)) 34%, var(--line));
+  box-shadow: 0 16px 38px color-mix(in srgb, var(--group-accent, var(--accent)) 13%, transparent);
+}
+
+.site-page--home .hub-group a.hub-card:hover > strong,
+.site-page--home .hub-group a.hub-card:focus-visible > strong {
+  color: var(--group-accent, var(--accent-strong));
+}
+
 .doc-reading-progress {
   position: fixed;
   top: 0;

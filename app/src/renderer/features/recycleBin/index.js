@@ -86,6 +86,7 @@ function renderAllDerived() {
   updateStatusBar();
   updatePointSummaryBox();
   if (typeof updateBasemapWorkStatus === 'function') updateBasemapWorkStatus();
+  if (typeof syncBusinessLayerVisibilityUi === 'function') syncBusinessLayerVisibilityUi();
   if (typeof refreshRightPanelDisplayMode === 'function') refreshRightPanelDisplayMode('derived-render');
   if (typeof syncMaintenanceSafeModeUi === 'function') syncMaintenanceSafeModeUi();
   if (typeof refreshReviewWorkbench === 'function') refreshReviewWorkbench();

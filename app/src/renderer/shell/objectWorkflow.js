@@ -265,6 +265,8 @@ function pulseSelectionStatus() {
 function syncObjectSelectionUi(reason = 'sync', options = {}) {
   const selection = getSelectedObjectDescriptor();
   const contextZoneId = selection?.type === 'point' ? state.selectedZoneId : null;
+  const deleteLocked = window.platformAdapter?.runtime === 'web'
+    && window.platformAdapter?.capabilities?.importRecords === false;
 
   document.querySelectorAll('[data-object-type][data-object-id]').forEach(node => {
     const selected = Boolean(
@@ -310,11 +312,22 @@ function syncObjectSelectionUi(reason = 'sync', options = {}) {
   if (ui.btnPreviousObject) ui.btnPreviousObject.disabled = !canNavigate;
   if (ui.btnNextObject) ui.btnNextObject.disabled = !canNavigate;
   if (ui.btnFocusSelection) ui.btnFocusSelection.disabled = !selection;
+  if (ui.btnDeleteZone) {
+    ui.btnDeleteZone.hidden = selection?.type !== 'zone';
+    ui.btnDeleteZone.disabled = deleteLocked || selection?.type !== 'zone';
+  }
+  if (ui.btnDeletePoint) {
+    ui.btnDeletePoint.hidden = selection?.type !== 'point';
+    ui.btnDeletePoint.disabled = deleteLocked || selection?.type !== 'point';
+  }
 
   if (ui.rightInspectorPanel) {
     ui.rightInspectorPanel.dataset.selectionType = selection?.type || 'none';
   }
   document.documentElement.dataset.objectSelection = selection?.type || 'none';
+  if (typeof refreshRightPanelDisplayMode === 'function') {
+    refreshRightPanelDisplayMode(`selection:${reason}`);
+  }
 
   if (options.announce) {
     setObjectWorkflowFeedback(

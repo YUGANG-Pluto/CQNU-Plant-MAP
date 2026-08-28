@@ -47,6 +47,10 @@ const elementGroups = {
     'btnModeBrowse',
     'btnModeDrawZone',
     'btnModeAddPoint',
+    'btnToggleZoneLayer',
+    'btnTogglePointLayer',
+    'zoneLayerCount',
+    'pointLayerCount',
     'btnConfirmPoint',
     'btnCancelPoint',
     'pendingPointHint'

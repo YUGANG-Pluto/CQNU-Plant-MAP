@@ -13,6 +13,11 @@ interface CommandButtonProps {
   shortcut?: string;
   disabled?: boolean;
   title?: string;
+  iconOnly?: boolean;
+  expanded?: boolean;
+  controls?: string;
+  pressed?: boolean;
+  onClick?: () => void;
 }
 
 export function CommandButton({
@@ -24,20 +29,42 @@ export function CommandButton({
   moduleAction = false,
   shortcut,
   disabled = false,
-  title
+  title,
+  iconOnly = false,
+  expanded,
+  controls,
+  pressed,
+  onClick
 }: CommandButtonProps) {
   const classes = [
     'btn',
     'ui-command-button',
     'glass-interactive',
     moduleAction ? 'ui-module-button' : '',
+    iconOnly ? 'ui-command-button--icon-only' : '',
     className
   ].filter(Boolean).join(' ');
 
   return (
-    <button id={id} class={classes} type="button" disabled={disabled} title={title}>
+    <button
+      id={id}
+      class={classes}
+      type="button"
+      disabled={disabled}
+      title={title || (iconOnly ? label : undefined)}
+      aria-label={iconOnly ? label : undefined}
+      aria-expanded={expanded}
+      aria-controls={controls}
+      aria-pressed={pressed}
+      onClick={onClick}
+    >
       {icon ? <span class="ui-command-button__icon">{icon}</span> : null}
-      <span class="ui-command-button__label" data-i18n={i18nKey}>{label}</span>
+      <span
+        class={`ui-command-button__label${iconOnly ? ' sr-only' : ''}`}
+        data-i18n={i18nKey}
+      >
+        {label}
+      </span>
       {shortcut ? <kbd class="ui-command-shortcut">{shortcut}</kbd> : null}
       {moduleAction ? <ChevronRight class="ui-module-button__trailing" size={14} aria-hidden="true" /> : null}
     </button>

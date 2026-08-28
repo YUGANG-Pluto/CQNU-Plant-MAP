@@ -1,10 +1,14 @@
-import { ChevronDown, ChevronUp, LocateFixed } from 'lucide-preact';
+import { ChevronDown, ChevronUp, LocateFixed, Trash2 } from 'lucide-preact';
 import {
   CommandButton,
   WORKSPACE_ICON_SIZE
 } from '../../components/ui/WorkspacePrimitives';
 
 export function ObjectCommandBar() {
+  const isWebReadOnly = window.platformAdapter?.runtime === 'web'
+    && window.platformAdapter.capabilities.importRecords === false;
+  const readOnlyTitle = isWebReadOnly ? '当前账户为只读权限，不能删除地图记录。' : undefined;
+
   return (
     <section class="object-command-center" aria-labelledby="objectSelectionLabel">
       <div class="object-command-summary">
@@ -41,6 +45,25 @@ export function ObjectCommandBar() {
           label="下一个"
           i18nKey="objectNext"
           className="btn-soft"
+        />
+        <span class="object-command-divider" aria-hidden="true" />
+        <CommandButton
+          id="btnDeleteZone"
+          icon={<Trash2 size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
+          label="删除当前分区"
+          i18nKey="deleteZone"
+          className="btn-danger-soft object-delete-action object-delete-zone"
+          disabled={isWebReadOnly}
+          title={readOnlyTitle}
+        />
+        <CommandButton
+          id="btnDeletePoint"
+          icon={<Trash2 size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
+          label="删除当前点位"
+          i18nKey="deletePoint"
+          className="btn-danger-soft object-delete-action object-delete-point"
+          disabled={isWebReadOnly}
+          title={readOnlyTitle}
         />
       </div>
       <div

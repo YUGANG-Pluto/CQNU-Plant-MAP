@@ -14,12 +14,15 @@ These references inform local layout and interaction decisions. Their component 
 
 ## Task-Specific Languages
 
+The three product domains share engineering primitives, not one visual theme. Spacing, focus behavior, motion timing, accessibility, and component quality stay consistent; palette, density, surface treatment, and information hierarchy follow each domain's work.
+
 ### Research Navigation
 
 - Use a searchable directory and clear module groups rather than a marketing landing page.
 - Available modules are actionable; planned modules remain visibly disabled and never use placeholder links.
 - Use restrained glass material for the pinned navigation and search toolbar only.
 - Keep the first viewport focused on navigation, current release state, and the next operational action.
+- Use content-specific accents: botanical green for the research directory, blue for documentation, cyan for architecture, rose for release information, and green for privacy guidance.
 
 ### Map Workspace
 
@@ -27,13 +30,21 @@ These references inform local layout and interaction decisions. Their component 
 - Use translucent material only for command surfaces and map overlays where spatial context remains useful.
 - Keep forms, tables, statistics, and long-form records on opaque scientific-white surfaces.
 - Collapse or relocate side tools at narrow widths instead of compressing the map into an unusable area.
+- Use botanical green as the primary accent, supported by neutral white and cool gray surfaces. Do not inherit the management palette.
 
 ### Access Management
 
-- Use a dense scientific-white operational layout with explicit page headings, toolbar search, status chips, and full-width tables.
+- Use a dense ice-blue and graphite operational layout with explicit page headings, toolbar search, status chips, and full-width tables.
 - Keep row heights, header heights, and column alignment consistent. Long content stays inside the table scroll container.
 - Keep primary actions in the table toolbar and member-specific actions in their row.
 - Do not use decorative glass effects behind security, account, audit, or permission data.
+- Reserve translucent material for navigation and transient controls; keep security and account records on opaque, high-contrast surfaces.
+
+### Documentation And Release Pages
+
+- Choose the accent from the subject instead of inheriting the map or management theme.
+- Documentation uses blue, architecture uses cyan, release information uses restrained rose, and privacy guidance uses green.
+- Keep article bodies on clean white surfaces with readable line lengths. Accent color supports navigation and status only; it does not tint long-form content.
 
 ### Authentication And Activation
 
@@ -55,8 +66,10 @@ These references inform local layout and interaction decisions. Their component 
 
 ## Theme Boundary
 
-- `theme-scientific-white` is the default for research data, management, forms, and documentation.
-- `theme-liquid-glass` is an optional presentation layer for navigation, command bars, and transient overlays.
+- `theme-scientific-white` is the default content surface for research data and map-workspace forms.
+- Access management uses its own ice-blue and graphite operational palette.
+- Site and documentation pages select a content-specific accent and do not mirror the workspace or management palette.
+- `theme-liquid-glass` is an optional material layer for navigation, command bars, hover tools, and transient overlays in each domain; its tint follows that domain.
 - Glass material never reduces text contrast, obscures data, or replaces a semantic boundary.
 - Avoid decorative gradients, floating color blobs, oversized rounded cards, and one-color page treatments.
 

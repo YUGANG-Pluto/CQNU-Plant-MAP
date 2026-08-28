@@ -70,10 +70,31 @@ export function createLayerManager(): LayerManagerController {
     if (!hasVisibleLayer) openSequence = 0;
   }
 
+  function isVisibleFocusTarget(target: HTMLElement | null | undefined): boolean {
+    return Boolean(target?.isConnected && target.getClientRects().length > 0 && !target.closest('[inert]'));
+  }
+
+  function resolveFocusReturnTarget(target: HTMLElement | null | undefined): HTMLElement | null {
+    if (isVisibleFocusTarget(target)) return target ?? null;
+    let ancestor = target?.parentElement || null;
+    const controllers = Array.from(document.querySelectorAll<HTMLElement>('[aria-controls]'));
+    while (ancestor) {
+      if (ancestor.id) {
+        const controller = controllers.find(candidate => (
+          candidate.getAttribute('aria-controls') === ancestor?.id && isVisibleFocusTarget(candidate)
+        ));
+        if (controller) return controller;
+      }
+      ancestor = ancestor.parentElement;
+    }
+    return null;
+  }
+
   function restoreFocus(target: HTMLElement | null | undefined): void {
-    if (!target?.isConnected || target.getClientRects().length === 0) return;
+    const focusTarget = resolveFocusReturnTarget(target);
+    if (!focusTarget) return;
     const topLayer = getTopLayer();
-    if (!topLayer || topLayer.contains(target)) target.focus({ preventScroll: true });
+    if (!topLayer || topLayer.contains(focusTarget)) focusTarget.focus({ preventScroll: true });
   }
 
   function open(layer: HTMLElement | null | undefined, options: LayerOpenOptions = {}): void {

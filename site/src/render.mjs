@@ -45,23 +45,23 @@ function footer() {
     </footer>`;
 }
 
+const pagePresentations = {
+  '/': { className: 'site-page--home', themeColor: '#f7fbf8' },
+  '/docs': { className: 'site-page--docs', themeColor: '#f7f9fc' },
+  '/web': { className: 'site-page--architecture', themeColor: '#f6fafb' },
+  '/release': { className: 'site-page--release', themeColor: '#fbf8f9' },
+  '/privacy': { className: 'site-page--privacy', themeColor: '#f7faf8' }
+};
+
 function layout({ activePath, title, description, body }) {
-  const pageClass = activePath === '/'
-    ? 'site-page--home'
-    : activePath === '/docs'
-      ? 'site-page--docs'
-      : activePath === '/web'
-        ? 'site-page--architecture'
-        : activePath === '/release'
-          ? 'site-page--release'
-          : 'site-page--privacy';
+  const presentation = pagePresentations[activePath] ?? pagePresentations['/'];
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="${escapeHtml(description || siteMeta.description)}" />
-  <meta name="theme-color" content="#f7fbf8" />
+  <meta name="theme-color" content="${presentation.themeColor}" />
   <title>${escapeHtml(title)} · CQNU Plant MAP</title>
   <link rel="icon" href="/assets/cqnu-logo.svg" />
   <link rel="stylesheet" href="/assets/styles.css" />
@@ -69,7 +69,7 @@ function layout({ activePath, title, description, body }) {
   <link rel="stylesheet" href="/assets/responsive.css" />
   <script src="/assets/client.js" defer></script>
 </head>
-<body class="site-page ${pageClass}">
+<body class="site-page ${presentation.className}">
   <a class="skip-link" href="#mainContent">跳至主要内容</a>
   ${nav(activePath)}
   <main id="mainContent">${body}</main>
@@ -211,7 +211,7 @@ function releasePage() {
         <article data-reveal><span>数据工作流</span><h2>受控 JSON / SQLite 互换</h2><p>转换前备份、转换日志、数据源选择、数据库清理确认和兼容字段保留形成完整闭环。</p></article>
         <article data-reveal><span>研究能力</span><h2>模块化统计中心</h2><p>覆盖分区、分类组成、多样性、相似性、物候、趋势、数据质量与多格式导出。</p></article>
         <article data-reveal><span>工程质量</span><h2>TypeScript 与运行边界</h2><p>主进程、preload、IPC 契约、renderer 领域模型和自动检查逐步形成可维护结构。</p></article>
-        <article data-reveal><span>交互体验</span><h2>科研白底与液态玻璃</h2><p>统一控件、模态层级、图表全屏、动效节奏、响应式布局和可访问状态反馈。</p></article>
+        <article data-reveal><span>交互体验</span><h2>按场景编排的界面主题</h2><p>地图工作区使用科研白底与植物绿，管理端使用冰蓝与石墨色，文档和发布页面按内容语义独立配色；三者共享动效与可访问规范。</p></article>
       </div></section>
       <section class="content-band band-soft"><div class="content-wrap release-note" data-reveal><h2>发布说明</h2><p>${siteMeta.releaseTag} 为 Beta 测试标签，不替代 ${siteMeta.stableVersion} 稳定版。Windows 安装程序如未完成个人代码签名，系统可能显示未知发布者提示；请仅从项目官方发布页获取文件，并核对版本与校验信息。</p></div></section>`
   });
@@ -219,7 +219,7 @@ function releasePage() {
 
 function privacyPage() {
   return layout({
-    activePath: '',
+    activePath: '/privacy',
     title: '隐私与网络',
     body: `
       <section class="page-hero"><div class="content-wrap" data-reveal><span>PRIVACY & NETWORK</span><h1>本地优先，网络请求由用户触发</h1><p>发布站点不接收桌面项目数据，桌面端也不会自动上传完整项目。</p></div></section>

@@ -1,42 +1,52 @@
-import { BookOpen, FolderOpen, Home, Save, Search } from 'lucide-preact';
+import { FolderOpen, Save, Search } from 'lucide-preact';
 import {
   CommandButton,
-  SegmentedControl,
+  StatusChip,
   WORKSPACE_ICON_SIZE
 } from '../../components/ui/WorkspacePrimitives';
 import { ProjectHistoryControls } from '../history/ProjectHistoryControls';
-import { WebCapabilityDisclosure } from './WebCapabilityDisclosure';
+import { useProjectSession } from '../project/useProjectSession';
+
+function projectLabel(path: string, loaded: boolean): string {
+  if (!loaded || !path) return '未打开项目';
+  const parts = path.replaceAll('\\', '/').split('/').filter(Boolean);
+  return parts.at(-1) || path;
+}
 
 export function WorkspaceHeader() {
   const isWebRuntime = window.platformAdapter?.runtime === 'web';
   const managementAccess = window.platformAdapter?.web?.managementAccess;
+  const projectSession = useProjectSession();
   const accessKey = managementAccess?.accessLevel === 'read'
     ? 'webAccessRead'
     : managementAccess?.accessLevel === 'edit'
       ? 'webAccessEdit'
       : 'webAccessSave';
   const draftOnly = managementAccess?.accessLevel === 'edit';
+  const currentProject = projectLabel(projectSession.projectDir, projectSession.loaded);
+
   return (
     <header class="app-topbar glass">
-      <div class="app-brand-block app-brand">
+      <a class="app-brand-block app-brand" href={isWebRuntime ? '/' : undefined} aria-label="CQNU Plant MAP">
         <img
           class="app-brand__icon brand-logo-mark"
           src="./src/renderer/assets/brand/cqnu-logo.svg"
           alt=""
           aria-hidden="true"
         />
-        <div class="app-brand__text">
-          <span class="app-kicker">CQNU · V1.1 BETA</span>
-          <h1 data-i18n="appTitle">校园植物分区管理系统</h1>
-          <p class="subtle" data-i18n="appSubtitle">分区绘制、点位管理、植物信息与图片归档</p>
-          {isWebRuntime ? (
-            <div class="web-runtime-disclosures">
-              <WebCapabilityDisclosure />
-            </div>
-          ) : null}
-        </div>
+        <span class="app-brand__text">
+          <strong>CQNU Plant MAP</strong>
+          <small title={projectSession.projectDir || currentProject}>{currentProject}</small>
+        </span>
+      </a>
+
+      <div class="workspace-context-rail" aria-label="当前地图上下文" data-i18n-aria-label="workspaceContext">
+        <StatusChip label="工具" labelKey="mode" valueId="currentModeText" value="浏览 / 选择" />
+        <StatusChip label="分区" labelKey="selectedZone" valueId="selectedZoneText" value="—" />
+        <StatusChip label="点位" labelKey="selectedPoint" valueId="selectedPointText" value="—" />
       </div>
-      <div class="app-topbar-actions ui-command-bar">
+
+      <div class="app-topbar-actions">
         {isWebRuntime && managementAccess ? (
           <a
             class="web-profile-control glass-interactive"
@@ -57,18 +67,7 @@ export function WorkspaceHeader() {
             </span>
           </a>
         ) : null}
-        {isWebRuntime ? (
-          <nav class="web-site-links" aria-label="站点导航">
-            <a class="btn btn-soft web-site-link glass-interactive" href="/" title="站点首页">
-              <Home size={WORKSPACE_ICON_SIZE} aria-hidden="true" />
-              <span data-i18n="webSiteHome">站点首页</span>
-            </a>
-            <a class="btn btn-soft web-site-link glass-interactive" href="/docs" title="使用文档">
-              <BookOpen size={WORKSPACE_ICON_SIZE} aria-hidden="true" />
-              <span data-i18n="webSiteDocs">使用文档</span>
-            </a>
-          </nav>
-        ) : null}
+
         <CommandButton
           id="btnOpenCommandPalette"
           icon={<Search size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
@@ -78,29 +77,20 @@ export function WorkspaceHeader() {
           shortcut="Ctrl K"
         />
         <ProjectHistoryControls />
-        <SegmentedControl
-          className="lang-toggle"
-          ariaLabel="界面语言 / Interface language"
-          dataAttribute="lang"
-          options={[
-            { value: 'zh', label: '中文', active: true },
-            { value: 'en', label: 'English' }
-          ]}
-        />
         <CommandButton
           id="btnChooseDir"
           icon={<FolderOpen size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
           label={isWebRuntime ? '打开项目' : '选择项目目录'}
           i18nKey={isWebRuntime ? 'webChooseProjectSource' : 'chooseProject'}
-          className="btn-primary"
+          className="btn-soft topbar-project-action"
           disabled={isWebRuntime && window.platformAdapter?.capabilities.readProject !== true}
         />
         <CommandButton
           id="btnSave"
           icon={<Save size={WORKSPACE_ICON_SIZE} aria-hidden="true" />}
-          label={draftOnly ? '仅会话草稿' : '保存项目'}
+          label={draftOnly ? '仅会话草稿' : '保存'}
           i18nKey={draftOnly ? 'webDraftOnly' : 'saveProject'}
-          className="btn-primary"
+          className="btn-primary topbar-save-action"
           disabled={isWebRuntime && window.platformAdapter?.capabilities.writeProject !== true}
         />
       </div>

@@ -207,7 +207,7 @@ function testResearchReviewWorkbenchContract() {
   const styleSource = fs.readFileSync(path.join(modernRoot, 'styles/review-workbench.css'), 'utf8');
   const appSource = fs.readFileSync(path.join(modernRoot, 'App.tsx'), 'utf8');
   const mainSource = fs.readFileSync(path.join(modernRoot, 'main.tsx'), 'utf8');
-  const launcherSource = fs.readFileSync(path.join(modernRoot, 'features/shell/WorkspaceToolsPanel.tsx'), 'utf8');
+  const launcherSource = fs.readFileSync(path.join(modernRoot, 'features/shell/WorkspaceModuleLauncher.tsx'), 'utf8');
   const runtimeSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/features/review/index.js'), 'utf8');
   const loaderSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/legacy-loader.js'), 'utf8');
   const eventSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/shell/eventBindings.js'), 'utf8');
@@ -231,7 +231,11 @@ function testResearchReviewWorkbenchContract() {
   assert.ok(mainSource.includes('installResearchReviewBridge()'));
   assert.ok(mainSource.includes("./styles/review-workbench.css"));
   assert.ok(appSource.includes('<ReviewWorkbenchModal />'));
-  assert.ok(launcherSource.includes("id: 'btnOpenReviewWorkbench'"));
+  assert.match(
+    launcherSource,
+    /id:\s*['"]btnOpenReviewWorkbench['"]/,
+    'review launcher must preserve the stable event-binding id'
+  );
 
   [
     'reviewWorkbenchModal',

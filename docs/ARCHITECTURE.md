@@ -97,6 +97,7 @@ Large renderer domains are split by responsibility. Statistics separates control
 5. `npm start` runs the build before Electron starts.
 6. `npm --prefix admin run build` cleans and compiles server and browser-management TypeScript.
 7. `npm --prefix site run build` runs the admin build, then publishes only compiled management modules and the browser workspace assets.
+8. `npm run smoke:web` rebuilds the renderer and site through `presmoke:web` before browser smoke testing, preventing stale shared-workspace assets from being tested.
 
 Generated directories are excluded from source synchronization and recreated locally or in packaging.
 
