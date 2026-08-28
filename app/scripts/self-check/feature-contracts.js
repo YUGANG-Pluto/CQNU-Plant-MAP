@@ -400,7 +400,8 @@ function testSpeciesReferenceContract() {
   });
   assert.ok(html.includes('queryCompleteness'), 'query UI missing queryCompleteness');
   assert.ok(elementsSource.includes('queryCompleteness'), 'query element missing queryCompleteness');
-  assert.ok(querySource.includes('pointCompletenessFlags'));
+  assert.ok(querySource.includes('window.researchQuery?.run'));
+  assert.ok(!querySource.includes('function pointCompletenessFlags'));
   assert.ok(querySource.includes('openReferenceFromQueryResult'));
   assert.ok(querySource.includes('openSpeciesReferenceCenter()'));
   assert.ok(querySource.includes('query-reference-btn'));

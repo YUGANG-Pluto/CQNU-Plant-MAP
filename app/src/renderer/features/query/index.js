@@ -12,34 +12,6 @@ function pointImageCount(point) {
   return [...entryImages, ...legacyImages].length;
 }
 
-function pointHasPhenologyInfo(point) {
-  return getPhenologyEntries(point).some(entry => [
-    entry.label,
-    entry.floweringState,
-    entry.surveyDate,
-    entry.habitat,
-    entry.observer,
-    entry.growthForm,
-    entry.cultivatedStatus,
-    entry.abundance,
-    entry.note
-  ].some(Boolean));
-}
-
-function pointCompletenessFlags(point) {
-  return {
-    missingScientificName: !String(point?.plantNameSci || '').trim(),
-    missingCommonName: !String(point?.plantNameCn || '').trim(),
-    missingPhenology: !pointHasPhenologyInfo(point),
-    missingImage: pointImageCount(point) === 0
-  };
-}
-
-function pointMatchesCompleteness(point, filter) {
-  if (!filter) return true;
-  return !!pointCompletenessFlags(point)[filter];
-}
-
 function queryFlagLabels(flags = {}) {
   return [
     flags.missingScientificName ? t('queryMissingScientificName') : '',
@@ -121,81 +93,45 @@ function populateQueryFilters(){
   ui.queryZone.value = current;
 }
 
-function getQueryResults(){
-  const q = String(ui.queryText?.value || '').trim().toLowerCase();
-  const filters = {
+function readQueryFilters() {
+  return {
+    text: ui.queryText?.value || '',
     zoneId: ui.queryZone?.value || '',
     completeness: ui.queryCompleteness?.value || '',
-    growthForm: String(ui.queryGrowthForm?.value || '').trim().toLowerCase(),
-    floweringState: String(ui.queryFloweringState?.value || '').trim().toLowerCase(),
-    cultivatedStatus: String(ui.queryCultivatedStatus?.value || '').trim().toLowerCase(),
-    habitat: String(ui.queryHabitat?.value || '').trim().toLowerCase(),
-    observer: String(ui.queryObserver?.value || '').trim().toLowerCase(),
+    growthForm: ui.queryGrowthForm?.value || '',
+    floweringState: ui.queryFloweringState?.value || '',
+    cultivatedStatus: ui.queryCultivatedStatus?.value || '',
+    habitat: ui.queryHabitat?.value || '',
+    observer: ui.queryObserver?.value || '',
     start: ui.queryDateStart?.value || '',
     end: ui.queryDateEnd?.value || ''
   };
-  const hasEntryFilters = !!(
-    filters.growthForm ||
-    filters.floweringState ||
-    filters.cultivatedStatus ||
-    filters.habitat ||
-    filters.observer ||
-    filters.start ||
-    filters.end
-  );
-  const pointHits = state.points.filter(point => {
-    const zone = state.zones.find(z=>z.id===point.zoneRef);
-    const entries = getPhenologyEntries(point);
-    const haystack = [
-      point.pointId,
-      point.plantNameCn,
-      point.plantNameSci,
-      zone?.zoneId,
-      zone?.name,
-      ...entries.flatMap(entry => [
-        entry.label,
-        entry.floweringState,
-        entry.note,
-        entry.habitat,
-        entry.observer,
-        entry.growthForm,
-        entry.cultivatedStatus,
-        ...(entry.images||[])
-      ])
-    ].join(' ').toLowerCase();
-    if(q && !haystack.includes(q)) return false;
-    if(filters.zoneId && point.zoneRef !== filters.zoneId) return false;
-    if(!pointMatchesCompleteness(point, filters.completeness)) return false;
-    if(!hasEntryFilters) return true;
-    return entries.some(entry => {
-      if(filters.growthForm && !String(entry.growthForm||'').toLowerCase().includes(filters.growthForm)) return false;
-      if(filters.floweringState && !(`${entry.label||''} ${entry.floweringState||''}`).toLowerCase().includes(filters.floweringState)) return false;
-      if(filters.cultivatedStatus && !String(entry.cultivatedStatus||'').toLowerCase().includes(filters.cultivatedStatus)) return false;
-      if(filters.habitat && !String(entry.habitat||'').toLowerCase().includes(filters.habitat)) return false;
-      if(filters.observer && !String(entry.observer||'').toLowerCase().includes(filters.observer)) return false;
-      if(filters.start && (!entry.surveyDate || entry.surveyDate < filters.start)) return false;
-      if(filters.end && (!entry.surveyDate || entry.surveyDate > filters.end)) return false;
-      return true;
-    });
-  }).map(point => {
-    const zone = state.zones.find(z=>z.id===point.zoneRef);
-    const labels = pointPhenologyLabels(point);
-    const flags = pointCompletenessFlags(point);
-    return {
-      type:'point',
-      id:point.id,
-      title:pointDisplayName(point),
-      meta:[zoneDisplayName(zone), labels].filter(Boolean).join(' / '),
-      flags
-    };
+}
+
+function getQueryResults() {
+  const items = window.researchQuery?.run(state.zones, state.points, readQueryFilters()) || [];
+  return items.map(item => {
+    const record =
+      item.type === 'point'
+        ? state.points.find(point => point.id === item.id)
+        : state.zones.find(zone => zone.id === item.id);
+    const title =
+      item.type === 'point'
+        ? record
+          ? pointDisplayName(record)
+          : item.displayName || t('unnamedPoint')
+        : record
+          ? zoneDisplayName(record)
+          : item.displayName || t('unnamedZone');
+    const zone = item.type === 'point' ? state.zones.find(candidate => candidate.id === item.zoneInternalId) : null;
+    const meta =
+      item.type === 'point'
+        ? [zone ? zoneDisplayName(zone) : item.zoneName || t('unassignedZone'), item.phenologyLabels]
+            .filter(Boolean)
+            .join(' / ')
+        : item.zoneCode;
+    return { ...item, title, meta };
   });
-  const zoneHits = state.zones.filter(zone => {
-    const haystack = [zone.zoneId, zone.name, zone.description].join(' ').toLowerCase();
-    if(q && !haystack.includes(q)) return false;
-    if(filters.zoneId && zone.id !== filters.zoneId) return false;
-    return !filters.completeness && !hasEntryFilters;
-  }).map(zone => ({ type:'zone', id:zone.id, title:zoneDisplayName(zone), meta:zone.zoneId || '', flags: {} }));
-  return [...zoneHits, ...pointHits];
 }
 
 function renderQueryFlags(flags) {

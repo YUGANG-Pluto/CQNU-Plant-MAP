@@ -30,6 +30,7 @@ The Electron application boundary, modern renderer shell, management service, an
 7. Added typed statistics snapshot, matrix-cell, chart-registry, and export-descriptor boundaries while preserving the legacy statistics engine API.
 8. Added focused typed domain adapters for project records, phenology drafts, taxonomy candidates, maintenance issues, and species-reference panel state.
 9. Added a typed object-selection store for selected zones, points, phenology records, hover state, and list-tab state while preserving the legacy state mirror.
+10. Moved query filtering, completeness evaluation, and immutable result modeling into a typed read-only query bridge while retaining the existing query modal and object-selection actions.
 
 ## Current Typecheck Scope
 
@@ -65,7 +66,7 @@ Convert another compatibility feature only when all of these pass in one local v
 - `npm run db:test-runtime`
 - `npm run dist`
 
-The next conversion should remain bounded to one feature and preserve its current global compatibility API until all callers move to explicit imports. The statistics bridge validates legacy engine output at the renderer boundary, and the object-selection store provides the same strategy for map and inspector selection. Formula modules and persisted project records remain intentionally unchanged.
+The next conversion should remain bounded to one feature and preserve its current global compatibility API until all callers move to explicit imports. The statistics bridge validates legacy engine output at the renderer boundary, the object-selection store provides the same strategy for map and inspector selection, and the query bridge now owns read-only filtering without owning DOM or persistence. Formula modules and persisted project records remain intentionally unchanged.
 
 ## Initial Contract Targets
 

@@ -51,6 +51,10 @@ function collectRendererSmokeFailures(result, runtimeErrors = []) {
     failures.push('typed object selection store is missing, mutable, or did not publish selection changes');
   if (!result.objectSelectionCompatibilityMirrored)
     failures.push('typed object selection store did not mirror the legacy renderer state');
+  if (!result.typedQueryUiRendered)
+    failures.push('typed research query did not render the expected compatibility result');
+  if (!result.typedQuerySelectionWorked)
+    failures.push('typed research query result did not update object selection');
   if (!result.speciesReferenceModalOpened)
     failures.push('species reference modal did not open as the top workflow layer');
   if (!result.speciesReferenceInputsPrefilled)
@@ -78,6 +82,8 @@ function collectRendererSmokeFailures(result, runtimeErrors = []) {
     failures.push('typed maintenance issue model returned invalid counts or ordering');
   if (!result.rendererDomainSpeciesReferenceReady)
     failures.push('typed species reference panel model returned invalid session state');
+  if (!result.researchQueryBridgeReady) failures.push('typed research query bridge is missing or mutable');
+  if (!result.researchQueryModelReady) failures.push('typed research query model returned invalid or mutable results');
   if (!result.historyUndoButtonEnabled) failures.push('project history did not enable undo after a supported edit');
   if (!result.historyUndoWorked) failures.push('Ctrl+Z did not restore the previous project edit snapshot');
   if (!result.historyRedoWorked) failures.push('Ctrl+Shift+Z did not restore the redone project edit snapshot');

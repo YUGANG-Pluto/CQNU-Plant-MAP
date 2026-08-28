@@ -253,6 +253,23 @@ async function run() {
       appState.selectedZoneId === objectSelectionSnapshot?.selectedZoneId &&
       appState.selectedPointId === objectSelectionSnapshot?.selectedPointId;
 
+    queryTrigger.click();
+    await delay(80);
+    const queryTextInput = document.getElementById('queryText');
+    queryTextInput.value = '测试植物二';
+    document.getElementById('btnRunQuery').click();
+    await delay(80);
+    const typedQueryResult = document.querySelector('#queryResults [data-object-id="smoke-point-2"]');
+    const typedQueryUiRendered = document.getElementById('queryResultCount').textContent === '1' &&
+      Boolean(typedQueryResult) &&
+      document.getElementById('queryResults').textContent.includes('测试植物二');
+    typedQueryResult?.click();
+    await delay(motionCloseDelay);
+    const typedQuerySelectionWorked = appState.selectedPointId === 'smoke-point-2' &&
+      queryModal.classList.contains('hidden');
+    queryTextInput.value = '';
+    selectPoint('smoke-point');
+
     const speciesReferenceTrigger = document.getElementById('btnOpenSpeciesReference');
     const speciesReferenceExpectedInput = currentSpeciesReferenceInput();
     speciesReferenceTrigger.click();
@@ -500,6 +517,8 @@ async function run() {
       objectFocusCompleted,
       objectSelectionStoreReady,
       objectSelectionCompatibilityMirrored,
+      typedQueryUiRendered,
+      typedQuerySelectionWorked,
       speciesReferenceModalOpened,
       speciesReferenceInputsPrefilled,
       speciesReferenceSessionIdle,

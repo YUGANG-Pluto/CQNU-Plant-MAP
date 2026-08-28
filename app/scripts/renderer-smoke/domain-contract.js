@@ -121,6 +121,25 @@ function runRendererDomainSmoke() {
     Object.isFrozen(speciesReferenceReady.suggestionIds) &&
     JSON.stringify(speciesReferenceInput) === speciesReferenceBefore;
 
+  const queryInputBefore = JSON.stringify(pointInput);
+  const queryResults = window.researchQuery?.run(
+    [{ id: 'domain-zone', zoneId: 'DZ', name: '领域分区' }],
+    [pointInput],
+    { text: '领域', completeness: 'missingScientificName' }
+  );
+  const researchQueryBridgeReady =
+    window.researchQuery?.version === 'research-query-v1' && Object.isFrozen(window.researchQuery);
+  const researchQueryModelReady =
+    queryResults?.length === 1 &&
+    queryResults[0]?.type === 'point' &&
+    queryResults[0]?.id === 'domain-point' &&
+    queryResults[0]?.zoneName === '领域分区' &&
+    queryResults[0]?.flags.missingScientificName === true &&
+    Object.isFrozen(queryResults) &&
+    Object.isFrozen(queryResults[0]) &&
+    Object.isFrozen(queryResults[0].flags) &&
+    JSON.stringify(pointInput) === queryInputBefore;
+
   return {
     rendererDomainBridgeReady,
     rendererDomainAdapterReady,
@@ -129,7 +148,9 @@ function runRendererDomainSmoke() {
     rendererDomainDraftReady,
     rendererDomainTaxonomyReady,
     rendererDomainMaintenanceReady,
-    rendererDomainSpeciesReferenceReady
+    rendererDomainSpeciesReferenceReady,
+    researchQueryBridgeReady,
+    researchQueryModelReady
   };
 }
 

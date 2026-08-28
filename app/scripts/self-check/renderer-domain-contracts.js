@@ -130,6 +130,25 @@ function testRendererDomainModuleArchitectureContract() {
     'typed object selection state must remain path-neutral and outside network, IPC, and file APIs'
   );
 
+  const queryModel = read('src/renderer-modern/features/query/model.ts');
+  const queryRuntime = read('src/renderer-modern/features/query/runtime.ts');
+  const queryLegacy = read('src/renderer/features/query/index.js');
+  const querySources = `${queryModel}\n${queryRuntime}`;
+  assert.ok(queryModel.includes('function runProjectQuery'));
+  assert.ok(queryModel.includes('function getPointQueryCompleteness'));
+  assert.ok(queryRuntime.includes("version: 'research-query-v1'"));
+  assert.ok(queryRuntime.includes("Object.defineProperty(window, 'researchQuery'"));
+  assert.ok(modernMain.includes('installResearchQueryBridge()'));
+  assert.ok(modernMain.indexOf('installRendererDomainBridge()') < modernMain.indexOf('installResearchQueryBridge()'));
+  assert.ok(queryLegacy.includes('window.researchQuery?.run(state.zones, state.points, readQueryFilters())'));
+  assert.ok(!queryLegacy.includes('function pointMatchesCompleteness'));
+  assert.ok(queryModel.split(/\r?\n/).length <= 260, 'query model must remain focused');
+  assert.ok(queryRuntime.split(/\r?\n/).length <= 80, 'query runtime bridge must remain focused');
+  assert.ok(
+    !/\b(fetch|ipcRenderer|readFile|writeFile|child_process|projectDir)\b/.test(querySources),
+    'typed research query must remain path-neutral and outside network, IPC, and file APIs'
+  );
+
   const domainFiles = [
     'src/renderer-modern/domain/project/types.ts',
     'src/renderer-modern/domain/project/adapters.ts',
@@ -173,6 +192,7 @@ function testRendererDomainModuleArchitectureContract() {
   assert.ok(rendererSmokeSource.includes('runRendererDomainSmoke.toString()'));
   assert.ok(domainSmokeSource.includes('function runRendererDomainSmoke'));
   assert.ok(domainSmokeSource.includes('rendererDomainAdapterInputUnchanged'));
+  assert.ok(domainSmokeSource.includes('researchQueryModelReady'));
   assert.ok(domainSmokeSource.split(/\r?\n/).length <= 180, 'renderer domain smoke contract must remain focused');
   assert.ok(
     !/\b(fetch|ipcRenderer|readFile|writeFile|child_process|projectDir)\b/.test(domainSource),
