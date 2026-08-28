@@ -30,6 +30,7 @@ export interface WebProjectCommands {
   readonly choosePortableDir: PlatformNoPayloadCommand;
   readonly chooseSqliteFile: PlatformNoPayloadCommand;
   readonly chooseJsonFiles: PlatformNoPayloadCommand;
+  readonly importCloudSnapshot: PlatformCommand;
   readonly chooseMergeDir: PlatformNoPayloadCommand;
   readonly load: PlatformCommand;
   readonly save: PlatformCommand;
@@ -137,6 +138,45 @@ export function createWebProjectCommands(
         'WEB_MERGE_PROJECT_OPEN_FAILED',
         error instanceof Error ? error.message : '待合并的浏览器本地项目无法打开。'
       );
+    }
+  }
+
+  async function importCloudSnapshot(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
+    try {
+      access.requireRead();
+      const source = asRecord(payload);
+      const document = asRecord(source.document);
+      const metadata = asRecord(document.metadata);
+      const snapshot = document.snapshot === null ? null : asRecord(document.snapshot);
+      const session = await repository.importCloudProject({
+        metadata: {
+          id: String(metadata.id || ''),
+          name: String(metadata.name || ''),
+          revision: Number(metadata.revision || 0),
+          formatVersion: 1,
+          byteSize: Number(metadata.byteSize || 0),
+          contentSha256: String(metadata.contentSha256 || ''),
+          createdAt: String(metadata.createdAt || ''),
+          updatedAt: String(metadata.updatedAt || '')
+        },
+        snapshot: snapshot ? {
+          formatVersion: 1,
+          settings: asRecord(snapshot.settings),
+          zones: Array.isArray(snapshot.zones) ? snapshot.zones.filter(item => item && typeof item === 'object') as UnknownRecord[] : [],
+          points: Array.isArray(snapshot.points) ? snapshot.points.filter(item => item && typeof item === 'object') as UnknownRecord[] : []
+        } : null
+      }, access.canSave);
+      return success({
+        canceled: false,
+        projectDir: session.projectDir,
+        label: session.label,
+        storageFormat: 'sqlite',
+        sourceKind: 'cloud',
+        cloudProjectId: metadata.id,
+        cloudRevision: metadata.revision
+      });
+    } catch (error) {
+      return failureFromError(error, 'WEB_CLOUD_PROJECT_IMPORT_FAILED', '云项目无法载入本地工作副本。');
     }
   }
 
@@ -248,6 +288,7 @@ export function createWebProjectCommands(
     choosePortableDir: choosePortableProject,
     chooseSqliteFile: () => chooseImportedProject('sqlite-file'),
     chooseJsonFiles: () => chooseImportedProject('json-files'),
+    importCloudSnapshot,
     chooseMergeDir: chooseMergeProject,
     load: loadProject,
     save: saveProject,

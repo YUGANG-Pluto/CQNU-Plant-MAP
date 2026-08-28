@@ -81,6 +81,17 @@ test('offline and recovery transitions preserve project source and dirty state',
   assert.equal(store.getSnapshot().sourceKind, 'opfs');
 });
 
+test('cloud projects remain an explicit browser working-copy source', () => {
+  const store = createProjectSessionStore('web', true);
+  store.setLoadedProject(loadedProject({
+    projectDir: 'web://project/cloud-project-test',
+    webProjectSourceKind: 'cloud',
+    webDirectoryPermissionStatus: 'unsupported'
+  }));
+  assert.equal(store.getSnapshot().sourceKind, 'cloud');
+  assert.equal(store.getSnapshot().connection, 'connected');
+});
+
 test('workflow and save transitions expose busy, error, and saved states', () => {
   const store = createProjectSessionStore('electron', true);
   store.setLoadedProject(loadedProject({ webProjectSourceKind: undefined }));

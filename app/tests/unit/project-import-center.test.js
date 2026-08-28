@@ -76,4 +76,9 @@ test('project source descriptions distinguish immutable SQLite sources', () => {
     'projectSourceDirectoryReconnect'
   );
   assert.equal(describeProjectSource({ sourceKind: 'import' }).kind, 'import');
+  assert.deepEqual(describeProjectSource({ sourceKind: 'cloud' }), {
+    kind: 'cloud',
+    labelKey: 'projectSourceCloud',
+    detailKey: 'projectSourceCloudDetail'
+  });
 });

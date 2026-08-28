@@ -27,6 +27,8 @@ Published tools must use static, repository-owned scripts. A manifest cannot add
 - Tools must not use `fetch`, `XMLHttpRequest`, `WebSocket`, or remote script injection unless a future manifest contract explicitly permits and reviews that capability.
 - Output is returned through browser downloads or another declared local capability.
 
+The site-only cloud project library belongs to the authenticated `/workspace`, not to this small-tool host. Hosted `/apps/*` tools do not inherit its API or upload permissions.
+
 ## Project Inspector
 
 `/apps/project-inspector` is the first hosted tool. It accepts a selected project folder or files, then performs a non-mutating preflight:

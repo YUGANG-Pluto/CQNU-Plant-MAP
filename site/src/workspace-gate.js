@@ -89,6 +89,17 @@
     });
     root.dataset.managementAccessLevel = access.accessLevel;
     root.dataset.workspaceSession = 'active';
+    if (!window.siteCloudProjects && typeof window.installSiteCloudProjectClient === 'function') {
+      Object.defineProperty(window, 'siteCloudProjects', {
+        configurable: false,
+        enumerable: false,
+        writable: false,
+        value: window.installSiteCloudProjectClient(
+          () => csrfToken,
+          value => { csrfToken = String(value || csrfToken); }
+        )
+      });
+    }
   }
 
   function loadScript(source) {

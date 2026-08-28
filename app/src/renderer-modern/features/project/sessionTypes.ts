@@ -6,7 +6,7 @@ import type {
   ProjectWorkflowStatus
 } from './types';
 
-export type ProjectSessionSource = 'desktop' | 'directory' | 'import' | 'opfs' | 'sqlite' | 'json' | 'unknown';
+export type ProjectSessionSource = 'desktop' | 'directory' | 'import' | 'opfs' | 'sqlite' | 'cloud' | 'json' | 'unknown';
 export type ProjectSessionAccess = 'read' | 'edit' | 'save' | 'unknown';
 export type ProjectDirectoryPermission = 'granted' | 'prompt' | 'denied' | 'unavailable' | 'unknown';
 export type ProjectSessionConnection = 'local' | 'connected' | 'offline' | 'reconnect-required' | 'unknown';

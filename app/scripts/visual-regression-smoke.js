@@ -83,6 +83,28 @@ async function run() {
       })()`
     });
 
+    await captureScene(window, origin, 'cloud-project-library', '/workspace', {
+      runtime: true,
+      mobile: true,
+      prepare: `(async () => {
+        document.getElementById('btnReopenProjectImportCenter')?.click();
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        document.getElementById('btnOpenCloudProjectLibrary')?.click();
+        await new Promise((resolve, reject) => {
+          const startedAt = Date.now();
+          const poll = () => {
+            const modal = document.getElementById('cloudProjectLibraryModal');
+            const card = document.querySelector('.cloud-project-card');
+            if (modal?.classList.contains('is-open') && card) return resolve();
+            if (Date.now() - startedAt > 8000) return reject(new Error('Cloud project library timed out.'));
+            setTimeout(poll, 40);
+          };
+          poll();
+        });
+        return true;
+      })()`
+    });
+
     await captureScene(window, origin, 'site-home', '/', { mobile: true });
     await captureScene(window, origin, 'site-docs', '/docs', { mobile: true });
     await captureScene(window, origin, 'site-architecture', '/web');

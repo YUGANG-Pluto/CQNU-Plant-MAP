@@ -1,6 +1,6 @@
 # CQNU Plant MAP Site
 
-The site is the restricted-access release, documentation, and browser application surface for CQNU Plant MAP. It remains isolated from Electron main-process capabilities. The browser workspace uses explicit directory or file selection, OPFS, SQLite Wasm, Cache Storage, and controlled downloads; project data remains on the user's device.
+The site is the restricted-access release, documentation, and browser application surface for CQNU Plant MAP. It remains isolated from Electron main-process capabilities. The browser workspace is local-first through explicit file access, OPFS, SQLite Wasm, Cache Storage, and controlled downloads. An authenticated user may also explicitly create, read, and version an account-scoped cloud project snapshot.
 
 ## Commands
 
@@ -20,6 +20,13 @@ The source has no runtime dependency installation step. The build produces the s
 
 The Worker remains small because renderer bundles, SQLite Wasm, maps, styles, and images are served as static client assets instead of being embedded in Worker source.
 
+## Deployment configuration
+
+- `.openai/hosting.json` binds the site D1 database as `DB`; the Worker creates the account, session, audit, and cloud-project tables idempotently on first use.
+- `CQNU_MANAGEMENT_AUTH_KEYRING` is required and must be a deployment secret containing JSON shaped as `{ "activeKeyId": "...", "keys": { "...": "base64url-key" } }`. Each key decodes to 32–64 random bytes; never store a real value in source control.
+- On an empty database, `CQNU_BOOTSTRAP_ADMIN_PASSWORD` and `CQNU_BOOTSTRAP_USER_PASSWORD` are required. Optional `CQNU_BOOTSTRAP_ADMIN_USERNAME` and `CQNU_BOOTSTRAP_USER_USERNAME` default to `admin` and `user`. Bootstrap accounts must replace temporary credentials before normal workspace access.
+- Existing D1 data is reused on later deployments. Removing bootstrap variables after first initialization does not remove accounts, while rotating the key ring must retain old keys until existing keyed records have expired or been replaced.
+
 ```powershell
 npm run package:sites
 ```
@@ -28,7 +35,7 @@ This validates the build and creates an ignored deployment archive under `.sites
 
 ## Private deployment and rollback
 
-1. Commit and push the exact source state on `web/main`.
+1. Commit and push the exact source state on `site/main`.
 2. Run `npm run package:sites` from the same source state.
 3. Save a Sites version with the pushed commit SHA and generated archive.
 4. Deploy the saved version with restricted owner-only access.
@@ -41,8 +48,10 @@ Publishing a new version does not remove older saved versions. Rollback redeploy
 - Desktop installers and source releases remain on GitHub Releases.
 - This site keeps the documentation homepage and serves the full browser application from `/workspace`.
 - Small browser-local research tools are registered through a versioned app manifest and served from dedicated `/apps/*` routes. `/apps/project-inspector` performs a local, non-mutating project preflight without uploading selected files.
-- User-selected project directories, JSON, CSV, GeoJSON, and images remain on the user's device and are not uploaded by the site.
-- Project records, local paths, service tokens, coordinates, and user images are not bundled with the published site.
+- User-selected project directories and source files remain on the device. Cloud upload sends only the explicitly selected `settings`, `zones`, and `points` record snapshot; point fields may include coordinates.
+- Before upload, service credentials, credential-bearing URL parameters, and device-absolute paths are removed from the snapshot. Relative image references may remain for record compatibility, while SQLite/JSON source files, backups, logs, directory handles, service tokens, and image bytes remain local.
+- Cloud projects are owner-scoped, require the existing authenticated session, enforce `workspace.read`/`workspace.save`, use exact-origin CSRF protection, and reject stale revisions.
+- Project snapshots are capped at 8 MiB, split across bounded D1 rows, versioned, and verified with SHA-256 before a browser working copy is opened.
 - Browser project writes use an OPFS SQLite primary copy and, when granted, a compatible JSON directory mirror.
 - The workspace reports detected browser capabilities. Missing directory-picker support falls back to explicit file selection and downloads; missing critical OPFS database capabilities blocks writes with a readable explanation.
 - External browser backup ZIP files are inspected for format, safe paths, encryption, entry and expansion limits, JSON shape, bitmap signatures, and CRC integrity before a restore token is issued.

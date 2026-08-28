@@ -6,10 +6,11 @@ This directory contains the TypeScript account, authorization, session, CSRF, au
 
 - Hosting access control remains the outer gate for the private deployment.
 - Accounts support user and administrator roles, read/edit/save workspace access, first-use activation, password reset, and a maximum of three administrators.
-- Durable production accounts, sessions, credential grants, and audit events use the configured D1 binding.
+- Durable production accounts, sessions, credential grants, audit events, and account-scoped cloud project versions use the configured D1 binding.
 - Browser management controllers live under `src/ui/` and compile to `dist/ui/`; the site build publishes those compiled modules instead of parallel hand-written JavaScript.
-- There is no remote project store and no project-data API.
-- The contracts do not accept point records, zone records, coordinates, images, local paths, browser file handles, or desktop project databases.
+- The site-only cloud project API lists, creates, reads, and versions `settings`, `zones`, and `points` record snapshots for the authenticated owner.
+- Cloud project requests reject service credentials, credential-bearing URL parameters, and device-absolute paths. Relative image references may remain in records, but browser file handles, image bytes, backup archives, logs, and desktop SQLite/JSON source files are never accepted.
+- Snapshots are bounded to 8 MiB, split below D1 row limits, protected by optimistic revisions, and verified with SHA-256 on read.
 - Identity assertions are accepted only after a configured provider verifier has validated them. The adapter never trusts a role supplied by the browser.
 - Session tokens and CSRF tokens are random opaque values; only SHA-256 digests are stored server-side.
 - Sessions have idle and absolute expiry, periodic token rotation, single-session revocation, and principal-wide revocation.
@@ -20,11 +21,19 @@ This directory contains the TypeScript account, authorization, session, CSRF, au
 ## Deliberate Boundaries
 
 - Public registration, open invitations, or multi-tenant organizations.
-- Remote synchronization of browser or desktop project data.
+- Background synchronization, desktop cloud access, shared projects, or organization-wide project visibility.
 - Provider-specific OIDC or WebAuthn authentication.
-- Any endpoint that accepts project records, images, coordinates, paths, file handles, or database contents.
+- Any endpoint that accepts images, paths, file handles, backup archives, logs, or database-file contents.
 
 The in-memory stores remain test fixtures. Production changes must retain deny-by-default authorization, `HttpOnly`/`Secure`/`SameSite=Strict` cookies, exact-origin CSRF protection, bounded credentials, session expiry and rotation, administrator-count guards, and redacted audit events.
+
+## Production environment
+
+- Bind D1 as `DB`.
+- Set `CQNU_MANAGEMENT_AUTH_KEYRING` as a deployment secret. Its JSON contains `activeKeyId` and a `keys` map of base64url-encoded 32–64 byte random keys.
+- For the first request against an empty D1 database, set `CQNU_BOOTSTRAP_ADMIN_PASSWORD` and `CQNU_BOOTSTRAP_USER_PASSWORD`. Usernames are optional and default to `admin` and `user`.
+- Bootstrap credentials are temporary and force first-use activation. Do not commit key-ring material or deployment passwords.
+- Schema setup is idempotent. The production runtime reuses existing accounts and cloud project versions instead of reseeding them.
 
 ## Validation
 

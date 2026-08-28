@@ -37,13 +37,18 @@ Do not use a plain `vX.Y` tag for maintained releases. Do not mark a Beta releas
 
 - Maintains the Electron desktop application and desktop-specific adapters.
 - Desktop storage, preload, IPC, packaging, and installer changes are developed here.
-- Shared domain changes must remain compatible with `web/main` before integration.
+- Shared domain changes must remain compatible with `web/main` and `site/main` before integration.
 
 ### `web/main`
 
-- Maintains the browser application, PWA runtime, and release site deployment.
-- The documentation homepage remains the public entry point; the full browser application is served from `/workspace`.
+- Maintains the shared browser application, PWA runtime, and browser-local storage adapters.
 - Browser persistence and file access use browser capabilities and must not depend on Electron APIs.
+
+### `site/main`
+
+- Maintains the restricted deployment, documentation homepage, authenticated `/workspace`, and site-only cloud project library.
+- Cloud project records use the D1 service boundary and must not add Electron IPC, preload, or desktop UI capabilities.
+- The full browser application remains available from `/workspace`; documentation routes remain independent.
 
 ### `admin/foundation`
 
@@ -53,7 +58,7 @@ Do not use a plain `vX.Y` tag for maintained releases. Do not mark a Beta releas
 
 ### Short-Lived Work Branches
 
-Use `desktop/<topic>`, `web/<topic>`, `admin/<topic>`, or `shared/<topic>` for focused review. These branches are temporary and must converge through their corresponding maintained branch and then `main` before release. They must not establish independent product versions or incompatible shared behavior.
+Use `desktop/<topic>`, `web/<topic>`, `site/<topic>`, `admin/<topic>`, or `shared/<topic>` for focused review. These branches are temporary and must converge through their corresponding maintained branch and then `main` before release. They must not establish independent product versions or incompatible shared behavior.
 
 Cross-platform behavior belongs in shared modules. Platform-specific code belongs behind the platform adapter boundary. A change that affects both desktop and browser behavior must be validated on both maintained branches before it reaches `main`.
 
@@ -70,7 +75,7 @@ The earlier `v8.0` and `v9.0.1-beta.1` tags are legacy archive markers from the 
 ## Release Flow
 
 1. Select the next stable target and Beta sequence.
-2. Integrate reviewed `desktop/main` and `web/main` changes into `main`.
+2. Integrate reviewed `desktop/main`, `web/main`, and `site/main` changes into `main`.
 3. Update application and site package versions together.
 4. Record user-visible changes and compatibility notes in `CHANGELOG.md`.
 5. Run the desktop, site, test, storage, and repository checks.

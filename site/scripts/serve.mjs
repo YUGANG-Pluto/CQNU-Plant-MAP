@@ -8,8 +8,21 @@ const port = Number(process.env.PORT || 4173);
 const server = createServer(async (request, response) => {
   try {
     const target = new URL(request.url || '/', `http://${host}:${port}`);
+    const chunks = [];
+    if (!['GET', 'HEAD'].includes(request.method || 'GET')) {
+      for await (const chunk of request) chunks.push(chunk);
+    }
+    const headers = new Headers();
+    for (const [name, value] of Object.entries(request.headers)) {
+      if (Array.isArray(value)) value.forEach(item => headers.append(name, item));
+      else if (value !== undefined) headers.set(name, value);
+    }
     const siteResponse = await worker.fetch(
-      new Request(target, { method: request.method || 'GET' }),
+      new Request(target, {
+        method: request.method || 'GET',
+        headers,
+        body: chunks.length ? Buffer.concat(chunks) : undefined
+      }),
       env
     );
     response.writeHead(siteResponse.status, Object.fromEntries(siteResponse.headers));

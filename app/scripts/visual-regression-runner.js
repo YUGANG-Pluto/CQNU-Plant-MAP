@@ -11,6 +11,8 @@ const mode = process.argv[2] === 'update' ? 'update' : 'check';
 const REQUIRED_SCENES = Object.freeze([
   'workspace',
   'workspace-mobile',
+  'cloud-project-library',
+  'cloud-project-library-mobile',
   'management-login',
   'management-login-mobile',
   'management-account',
@@ -125,6 +127,13 @@ function compareLayout(name, actual, expected, failures) {
   }
 }
 
+function serializeBaseline(value) {
+  return JSON.stringify(value, null, 2).replace(
+    /\[\n((?:\s+-?\d+(?:\.\d+)?(?:,)?\n)+)\s*\]/gu,
+    (_, body) => `[${body.match(/-?\d+(?:\.\d+)?/gu).join(', ')}]`
+  );
+}
+
 async function main() {
   await rm(evidenceDirectory, { recursive: true, force: true });
   await mkdir(evidenceDirectory, { recursive: true });
@@ -133,7 +142,7 @@ async function main() {
 
   if (mode === 'update') {
     await mkdir(path.dirname(baselinePath), { recursive: true });
-    await writeFile(baselinePath, `${JSON.stringify({ version: 1, scenes }, null, 2)}\n`, 'utf8');
+    await writeFile(baselinePath, `${serializeBaseline({ version: 1, scenes })}\n`, 'utf8');
     process.stdout.write(`visual baseline updated (${REQUIRED_SCENES.length} scenes)\n`);
     return;
   }

@@ -128,8 +128,18 @@ test('access control is deny-by-default and protects authenticated mutations wit
     sessionToken: grant.sessionToken,
     allowedOrigins: ['https://admin.example.test']
   };
-  const unknown = await authorizeAdminRequest({ ...base, method: 'GET', path: '/api/projects' }, manager);
+  const unknown = await authorizeAdminRequest({ ...base, method: 'GET', path: '/api/unknown' }, manager);
   assert.equal(unknown.code, 'ROUTE_DENIED');
+
+  const projectRead = await authorizeAdminRequest({ ...base, method: 'GET', path: '/api/projects' }, manager);
+  assert.equal(projectRead.allowed, true);
+  const projectWriteDenied = await authorizeAdminRequest({
+    ...base,
+    method: 'POST',
+    path: '/api/projects',
+    origin: 'https://admin.example.test'
+  }, manager);
+  assert.equal(projectWriteDenied.code, 'CSRF_DENIED');
 
   const read = await authorizeAdminRequest({ ...base, method: 'GET', path: '/api/manage/site' }, manager);
   assert.equal(read.allowed, true);

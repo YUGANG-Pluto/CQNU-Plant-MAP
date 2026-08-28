@@ -140,6 +140,36 @@ async function applyLoadedProjectToRenderer(data) {
   return data;
 }
 
+if (typeof window !== 'undefined' && window.platformAdapter?.runtime === 'web' && !window.projectRendererBridge) {
+  const cloneCloudValue = value => (
+    typeof structuredClone === 'function'
+      ? structuredClone(value)
+      : JSON.parse(JSON.stringify(value))
+  );
+  Object.defineProperty(window, 'projectRendererBridge', {
+    configurable: false,
+    enumerable: false,
+    writable: false,
+    value: Object.freeze({
+      version: 'project-renderer-bridge-v1',
+      snapshot() {
+        if (!state.settings) return null;
+        return cloneCloudValue(buildCloudProjectSnapshot({
+          settings: state.settings,
+          zones: state.zones,
+          points: state.points
+        }));
+      },
+      async importCloudProject(document) {
+        const command = window.platformAdapter?.project?.importCloudSnapshot;
+        if (typeof command !== 'function') throw new Error('当前工作区不支持云项目工作副本。');
+        const selected = await callIpc(command({ document }));
+        await loadProjectIntoRenderer(selected.projectDir, { storageFormat: 'sqlite' });
+      }
+    })
+  });
+}
+
 function applyI18n() {
   applyThemeVariables();
 

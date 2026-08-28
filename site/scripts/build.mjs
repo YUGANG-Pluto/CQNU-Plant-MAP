@@ -31,6 +31,7 @@ const [
   appsStyles,
   client,
   projectInspectorClient,
+  cloudProjectsClient,
   workspaceGateCss,
   workspaceGateClient,
   appIndex,
@@ -47,6 +48,7 @@ const [
   readFile(resolve(projectRoot, 'src/apps.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/client.js'), 'utf8'),
   readFile(resolve(projectRoot, 'src/apps/project-inspector.js'), 'utf8'),
+  readFile(resolve(projectRoot, 'src/cloud-projects.js'), 'utf8'),
   readFile(resolve(projectRoot, 'src/workspace-gate.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/workspace-gate.js'), 'utf8'),
   readFile(resolve(appRoot, 'index.html'), 'utf8'),
@@ -118,7 +120,7 @@ const workspaceHtml = appIndex
     <div class="workspace-access-panel">
       <img src="/assets/cqnu-logo.svg" alt="" />
        <h1 data-gate-title>正在核对访问权限</h1>
-       <p data-gate-message>植物项目数据仍保存在本机；管理服务只核对当前账户与会话。</p>
+       <p data-gate-message>项目默认保存在本机；云项目记录仅在用户主动操作时传输。</p>
        <div class="workspace-gate-progress" role="progressbar" aria-label="工作区加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8" data-gate-progress>
          <span data-gate-progress-bar style="width: 8%"></span>
        </div>
@@ -129,7 +131,7 @@ const workspaceHtml = appIndex
   )
   .replace(
     '</body>',
-    '  <script src="/assets/profile-storage.js"></script>\n  <script src="/assets/workspace-gate.js"></script>\n</body>'
+    '  <script src="/assets/profile-storage.js"></script>\n  <script src="/assets/cloud-projects.js"></script>\n  <script src="/assets/workspace-gate.js"></script>\n</body>'
   );
 const managePageHtml = manageHtml.replace(
   '</head>',
@@ -137,7 +139,14 @@ const managePageHtml = manageHtml.replace(
 );
 const pages = { ...renderPages({ workspaceHtml }), '/manage': managePageHtml };
 const { managementSchemaSql } = await import('../../admin/dist/schema.js');
-const schemaSource = `export const managementSchemaSql = ${JSON.stringify(managementSchemaSql)};\n`;
+const { cloudProjectSchemaSql } = await import('../../admin/dist/cloud-project-schema.js');
+const siteSchemaSql = `${managementSchemaSql};\n${cloudProjectSchemaSql}`;
+const schemaSource = [
+  `export const managementSchemaSql = ${JSON.stringify(managementSchemaSql)};`,
+  `export const cloudProjectSchemaSql = ${JSON.stringify(cloudProjectSchemaSql)};`,
+  `export const siteSchemaSql = ${JSON.stringify(siteSchemaSql)};`,
+  ''
+].join('\n');
 
 async function copyRendererAssets() {
   const rendererDist = resolve(appRoot, 'renderer-dist');
@@ -222,6 +231,7 @@ await Promise.all([
   writeFile(resolve(clientRoot, 'assets/apps.css'), appsStyles, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/client.js'), client, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/project-inspector.js'), projectInspectorClient, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/cloud-projects.js'), cloudProjectsClient, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/workspace-gate.css'), workspaceGateCss, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/workspace-gate.js'), workspaceGateClient, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/legacy-runtime.js'), legacyRuntimeBundle, 'utf8'),
@@ -244,8 +254,8 @@ const workerSource = `import { handleManagementRequest } from './admin/site-hand
 
 const PAGES = ${JSON.stringify(pages)};
 const SITE_VERSION = ${JSON.stringify(siteMeta.version)};
-const SITE_CHANNEL = 'web/main';
-const ARTIFACT_VERSION = 3;
+const SITE_CHANNEL = 'site/main';
+const ARTIFACT_VERSION = 4;
 const CLIENT_ASSET_COUNT = ${clientMetrics.count};
 
 const documentSecurityHeaders = {
@@ -273,6 +283,7 @@ const siteAssetPaths = new Set([
   '/assets/apps.css',
   '/assets/client.js',
   '/assets/project-inspector.js',
+  '/assets/cloud-projects.js',
   '/assets/workspace-gate.css',
   '/assets/workspace-gate.js',
   '/assets/manage.css',
@@ -328,7 +339,7 @@ export default {
     const path = url.pathname.length > 1 && url.pathname.endsWith('/')
       ? url.pathname.slice(0, -1)
       : url.pathname;
-    if (path.startsWith('/api/manage/')) {
+    if (path.startsWith('/api/manage/') || path === '/api/projects' || path.startsWith('/api/projects/')) {
       return handleManagementRequest(request, env);
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') {

@@ -11,15 +11,15 @@ The browser workspace is available at `/workspace` and uses the same renderer, d
 - Backups and diagnostic logs are stored in the browser database and remain under explicit user control.
 - Export commands download visible CSV, JSON, Markdown, SVG, diagnostics, or backup content through the browser.
 
-The site server does not receive project records, coordinates, images, local directory handles, or local paths. Clearing the site's browser data removes OPFS, IndexedDB handle references, Cache Storage images, and internal browser backups that have not been exported or mirrored elsewhere.
+The local workflow does not transmit project content. On `site/main`, a separate cloud project library can explicitly upload the current `settings`, `zones`, and `points` snapshot, including coordinates and relative image references present in point records. Before upload, service credentials, credential-bearing URL parameters, and device-absolute paths are removed. Source SQLite/JSON files, image bytes, backups, logs, and local directory handles remain local. Clearing browser data removes OPFS, IndexedDB handles, Cache Storage images, and internal backups, but does not delete cloud versions the user already saved.
 
 ## Access Management
 
-The site uses a separate account and session service to decide who may enter the workspace. The service does not store or proxy plant project records.
+The site uses a separate account and session service to decide who may enter the workspace. Its cloud project service stores only explicit, owner-scoped record snapshots.
 
-- `read` allows project opening, browsing, queries, statistics, diagnostics, and exports.
+- `read` allows local and owner-scoped cloud project opening, browsing, queries, statistics, diagnostics, and exports.
 - `edit` adds in-memory editing, but changes remain a session draft and are not written to the local project.
-- `save` adds local project persistence, image changes, backups, restore, and storage conversion.
+- `save` adds local persistence, explicit cloud project creation/upload, image changes, backups, restore, and storage conversion.
 - Administrators can manage members, access levels, activation links, password-reset links, and security audit events. Administrative status always includes `save` access and is limited to three enabled accounts.
 - Bootstrap and newly created accounts require activation before normal access. Deployment-provided temporary credentials are never stored in source files.
 - An active browser renews a short online lease through a heartbeat. Losing that lease ends the session, and every continuously active session has an absolute 24-hour lifetime.
@@ -35,6 +35,16 @@ When all required capabilities are present, the workspace edits the OPFS SQLite 
 A directory handle is remembered by the browser, but permission can be revoked by the browser or operating system. When directory access is unavailable, users can import project files and continue in the OPFS copy.
 
 Only one tab can hold the browser database writer lock. If another workspace tab already owns the lock, close it before opening the project in a second tab.
+
+## Cloud Project Library
+
+- Cloud operations exist only on `site/main`; Electron and `desktop/main` expose no cloud project IPC or UI.
+- The client sanitizes the visible snapshot before upload, and the Worker independently rejects credentials or device-absolute paths that bypass the client.
+- `GET /api/projects` and project reads require `workspace.read`. Creating a database or uploading a version requires `workspace.save` plus exact-origin CSRF validation.
+- Projects are isolated by authenticated account. A project owned by another account is returned as not found rather than exposing its existence.
+- Each upload creates a monotonically increasing revision. A stale expected revision is rejected so a browser cannot silently overwrite a newer version.
+- A snapshot is capped at 8 MiB, split into bounded D1 rows, and protected by SHA-256. Integrity is verified before records are imported into an OPFS working copy.
+- Cloud opening and upload are user commands, not background synchronization. Images remain local and missing image bytes do not block record access.
 
 ## Portable Backup ZIP
 

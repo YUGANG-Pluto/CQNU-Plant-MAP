@@ -32,6 +32,7 @@ import {
 } from './webBackupArchive';
 import type { ImportedWebBackupArchive } from './webBackupImport';
 import { webProjectDir, type WebProjectSession } from '../webProject';
+import type { CloudProjectDocument } from '../../../shared/types/cloud-projects';
 
 interface ProjectContext {
   session: WebProjectSession;
@@ -203,6 +204,35 @@ export class WebProjectRepository {
     this.#contexts.set(context.session.projectId, context);
     if (makeActive) this.#activeProjectId = context.session.projectId;
     return clone(context.session);
+  }
+
+  async importCloudProject(
+    document: CloudProjectDocument,
+    persist = true
+  ): Promise<WebProjectSession> {
+    const remoteId = String(document.metadata.id || '').trim();
+    if (!remoteId || !/^[A-Za-z0-9_-]{1,80}$/u.test(remoteId)) {
+      throw new Error('云项目标识无效。');
+    }
+    const snapshot = document.snapshot || { settings: {}, zones: [], points: [] };
+    const project: StoredWebProject = {
+      projectId: `cloud-${remoteId}`,
+      label: String(document.metadata.name || '').trim() || '云项目工作副本',
+      modifiedAt: Date.parse(document.metadata.updatedAt) || Date.now(),
+      sourceKind: 'cloud',
+      settings: clone(snapshot.settings || {}),
+      zones: clone(Array.isArray(snapshot.zones) ? snapshot.zones : []),
+      points: clone(Array.isArray(snapshot.points) ? snapshot.points : [])
+    };
+    if (persist) await (await this.database()).putProject(project);
+    const session = toSession(project);
+    this.#contexts.set(project.projectId, {
+      session,
+      directoryPermissionStatus: 'unsupported',
+      mirrorMode: 'none'
+    });
+    this.#activeProjectId = project.projectId;
+    return clone(session);
   }
 
   async load(projectDir: string, preferredFormat: 'auto' | 'sqlite' | 'json' = 'auto'): Promise<WebProjectSession | null> {
@@ -438,7 +468,7 @@ export class WebProjectRepository {
     const projectId = projectIdFromDir(projectDir);
     if (!projectId) throw new Error('浏览器项目标识无效。');
     const safetyBackup = await this.createBackup(projectDir, 'pre_restore');
-    const sourceKind = ['directory', 'import', 'opfs', 'sqlite'].includes(String(source.sourceKind || ''))
+    const sourceKind = ['directory', 'import', 'opfs', 'sqlite', 'cloud'].includes(String(source.sourceKind || ''))
       ? source.sourceKind as StoredWebProject['sourceKind']
       : 'opfs';
     const restored: StoredWebProject = {

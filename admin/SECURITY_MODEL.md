@@ -9,24 +9,26 @@
 5. Every state-changing route requires an exact allowed Origin and a session-bound CSRF token.
 6. Audit events accept only allowlisted action metadata after credential-shaped values and local paths are redacted.
 
-## Data Exclusion Boundary
+## Cloud Project Boundary
 
-The management system does not receive or store plant points, zones, coordinates, images, browser directory handles, desktop paths, SQLite project databases, JSON project files, or third-party species tokens. The browser workspace keeps those values on the user's device.
+The browser remains local-first. Only an explicit cloud project operation sends `settings`, `zones`, and `points` record snapshots, which may include coordinates and relative image references already present in point records. The client removes service credentials, credential-bearing URL parameters, and device-absolute paths before upload; the Worker independently rejects them. Projects are scoped to the authenticated account and require `workspace.read` or `workspace.save`. The service does not receive image bytes, browser directory handles, SQLite/JSON source files, backups, logs, or third-party service tokens.
+
+Each snapshot is size-bounded, split across bounded D1 rows, assigned an immutable revision record, and verified with SHA-256 before it is returned. Optimistic revision checks reject stale writes. The API has no delete, sharing, background synchronization, or cross-account administration route in this stage.
 
 ## Password Controls
 
 - Password verifiers use a random salt, PBKDF2-HMAC-SHA-256, and a deployment-provided HMAC pepper.
 - The shared implementation defaults to 600,000 iterations. Cloudflare-hosted Workers use the platform ceiling of 100,000 iterations and retain the iteration count for future transparent upgrades.
-- Bootstrap passwords are accepted only for forced first-use activation. Normal password policy rejects common values and requires at least 12 characters.
+- Bootstrap passwords are accepted only for forced first-use activation. Normal password policy rejects common values and requires at least 6 characters.
 - Five failed logins lock the account for 10 minutes. Credential, identity, and permission changes revoke active sessions.
 
 ## Required Controls Before Production Identity
 
-- Replace the in-memory session and audit fixtures with durable, atomic, revocable server-side stores.
+- Retain the D1-backed account, session, audit, and cloud project stores; in-memory stores remain test fixtures only.
 - OIDC or WebAuthn through a maintained identity provider for a future public or multi-tenant deployment.
 - Provider-specific signature, issuer, audience, nonce, replay, and callback-state validation before the identity adapter is called.
 - Request and authentication rate limits.
 - Step-up authentication for publication, release, and member changes.
 - Immutable, redacted audit events with request correlation identifiers.
 - Secret injection from the deployment platform; no repository or browser-bundle secrets.
-- Independent review before adding any endpoint that could access project data.
+- Independent review before adding deletion, sharing, image upload, database-file upload, or cross-account project access.

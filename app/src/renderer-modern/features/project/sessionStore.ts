@@ -20,7 +20,7 @@ function cleanTime(value: unknown, fallback = 0): number {
 
 function normalizeSource(value: unknown, storageFormat: string, runtime: PlatformRuntime): ProjectSessionSource {
   const source = cleanText(value);
-  if (source === 'directory' || source === 'import' || source === 'opfs' || source === 'sqlite' || source === 'json') {
+  if (source === 'directory' || source === 'import' || source === 'opfs' || source === 'sqlite' || source === 'cloud' || source === 'json') {
     return source;
   }
   if (runtime === 'electron') return 'desktop';

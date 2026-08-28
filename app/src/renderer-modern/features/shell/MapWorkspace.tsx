@@ -35,7 +35,7 @@ export function MapWorkspace() {
             <div class="web-project-welcome__copy">
               <span class="web-project-welcome__kicker" data-i18n="webProjectWelcomeKicker">浏览器本地工作区</span>
               <h2 id="webProjectWelcomeTitle" data-i18n="webProjectWelcomeTitle">从本机打开植物项目</h2>
-              <p data-i18n="webProjectWelcomeBody">项目数据保留在本机浏览器数据库或您授权的目录中，不上传到管理服务。</p>
+              <p data-i18n="webProjectWelcomeBody">项目默认保存在本机浏览器数据库或授权目录；只有主动使用云项目库时才上传记录快照。</p>
             </div>
             <dl class="web-project-welcome__facts">
               <div>

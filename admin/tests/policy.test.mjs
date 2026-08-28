@@ -64,11 +64,13 @@ test('audit metadata allowlist redacts credentials and local paths', () => {
   });
 });
 
-test('management routes are project-free, deny unknown paths, and protect authenticated mutations', () => {
+test('management routes expose only bounded cloud project operations and protect authenticated mutations', () => {
   assert.ok(findAdminRoute('POST', '/api/manage/site/publish'));
   assert.ok(findAdminRoute('PATCH', '/api/manage/members/account-1'));
-  assert.equal(findAdminRoute('GET', '/api/projects'), null);
-  assert.equal(ADMIN_ROUTES.some(route => /project|point|zone|coordinate|image/i.test(route.path)), false);
+  assert.equal(findAdminRoute('GET', '/api/projects')?.capability, 'workspace.read');
+  assert.equal(findAdminRoute('PUT', '/api/projects/cloud-project-1/snapshot')?.capability, 'workspace.save');
+  assert.equal(ADMIN_ROUTES.some(route => /point|zone|coordinate|image|local-path/i.test(route.path)), false);
+  assert.equal(findAdminRoute('DELETE', '/api/projects/cloud-project-1'), null);
   assert.equal(ADMIN_ROUTES
     .filter(route => route.sessionRequired && route.mutatesState)
     .every(route => route.csrfProtected), true);

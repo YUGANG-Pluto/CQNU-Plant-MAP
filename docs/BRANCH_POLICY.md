@@ -6,7 +6,8 @@
 |---|---|---|
 | `main` | Reviewed integration, documentation, and release history | Sole source of stable and Beta tags |
 | `desktop/main` | Electron application, desktop adapters, local storage, packaging, and installers | Desktop candidate line |
-| `web/main` | Browser application, PWA, browser storage adapters, and Sites deployment | Web candidate line |
+| `web/main` | Shared browser application, PWA, and browser-local storage adapters | Browser-local candidate line |
+| `site/main` | Restricted site deployment, cloud project D1 API, site-only project library, and deployment documentation | Site candidate line |
 | `admin/foundation` | Management service, authorization boundaries, account UI, audit contracts, and database schema | Management candidate line |
 
 ## Shared Behavior
@@ -16,7 +17,7 @@
 - Browser-only access remains behind the Web Platform Adapter and must use explicit browser permissions.
 - Platform adapters may differ internally, but the same supported operation must preserve its user-visible meaning and data contract.
 - Site documentation routes and the documentation homepage remain available when `/workspace` changes.
-- The management service controls access only. Browser plant records remain in local browser storage or a user-authorized directory.
+- Browser plant records remain local by default. Only `site/main` may add an explicit, authenticated cloud snapshot workflow; it must not be merged into Electron capabilities by implication.
 
 ## Integration Rules
 
@@ -29,5 +30,5 @@
 ## Data And Artifact Rules
 
 - Do not commit project records, images, logs, backups, credentials, tokens, local file handles, installers, or generated build directories.
-- Browser project data remains local to the browser unless the user explicitly exports or synchronizes a visible file or directory.
-- Management-system foundation work does not access raw project data in its preparation phase.
+- Browser project data remains local unless the user explicitly exports, mirrors, or uploads a visible cloud project snapshot.
+- Site cloud snapshots may contain `settings`, `zones`, and `points` records, including coordinates and relative image references. The upload sanitizer removes service credentials and device-absolute paths; source databases, image bytes, backups, logs, and browser handles remain local.

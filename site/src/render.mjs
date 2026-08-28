@@ -186,7 +186,7 @@ function homePage() {
     body: `
       <section class="hub-intro">
         <div class="hub-intro-inner" data-reveal>
-          <div><span class="eyebrow">RESEARCH NAVIGATION · ${siteMeta.version}</span><h1>CQNU Research Hub</h1><p>从一个入口进入校园植物研究工具、项目服务、文档与后续科研模块。项目数据继续保存在本机。</p></div>
+          <div><span class="eyebrow">RESEARCH NAVIGATION · ${siteMeta.version}</span><h1>CQNU Research Hub</h1><p>从一个入口进入校园植物研究工具、项目服务、文档与后续科研模块。数据默认保存在本机，也可由用户显式保存到本人云项目。</p></div>
           <a class="button button-primary" href="/workspace">进入植物地图工作区</a>
         </div>
       </section>
@@ -275,11 +275,11 @@ function webPage() {
       <section class="content-band band-soft"><div class="content-wrap architecture-grid">${layers}</div></section>
       <section class="content-band band-white"><div class="content-wrap comparison" data-reveal>
         <div><span>可直接共用</span><h2>界面、统计与领域模型</h2><p>组件、主题、动画、统计计算、图表数据、表格和导出内容生成保持同源。</p></div>
-        <div><span>按平台实现</span><h2>存储、系统与网络边界</h2><p>桌面端使用白名单 IPC；浏览器端使用用户授权目录、OPFS、SQLite WASM 与受控下载，不访问任意本地路径。</p></div>
+        <div><span>按平台实现</span><h2>存储、系统与网络边界</h2><p>桌面端使用白名单 IPC；浏览器端默认使用授权目录、OPFS 与 SQLite WASM，并可由用户显式使用按账户隔离的 D1 云项目快照。</p></div>
       </div></section>
       <section class="content-band band-plain"><div class="content-wrap roadmap" data-reveal>
         <span>实施顺序</span><h2>共享应用界面，按平台收束系统能力</h2>
-        <ol><li>发布文档与版本站</li><li>浏览器授权目录与 OPFS 主库</li><li>本地编辑、备份和研究导出</li><li>跨平台一致性和数据回归验证</li></ol>
+        <ol><li>发布文档与版本站</li><li>浏览器授权目录与 OPFS 主库</li><li>账户隔离的版本化云项目</li><li>跨平台一致性和数据回归验证</li></ol>
       </div></section>`
   });
 }
@@ -305,11 +305,11 @@ function privacyPage() {
     activePath: '/privacy',
     title: '隐私与网络',
     body: `
-      <section class="page-hero"><div class="content-wrap" data-reveal><span>PRIVACY & NETWORK</span><h1>本地优先，网络请求由用户触发</h1><p>发布站点不接收桌面项目数据，桌面端也不会自动上传完整项目。</p></div></section>
+      <section class="page-hero"><div class="content-wrap" data-reveal><span>PRIVACY & NETWORK</span><h1>本地优先，云端保存由用户触发</h1><p>桌面端不包含云项目功能；浏览器端只有在用户选择云项目操作时才发送记录快照。</p></div></section>
       <section class="content-band band-plain"><div class="content-wrap policy-grid">
-        <article data-reveal><h2>保留在本地</h2><p>项目记录、SQLite、JSON、备份、日志、本地路径、坐标和用户图片。</p></article>
-        <article data-reveal><h2>按需发送</h2><p>用户主动查询物种参考时，仅发送必要的中文名或学名；地图服务按用户配置访问。</p></article>
-        <article data-reveal><h2>不会发布</h2><p>服务 Token、完整第三方响应、未经选择的项目数据和用户目录信息。</p></article>
+        <article data-reveal><h2>始终留在本地</h2><p>SQLite 原文件、JSON 文件、备份、日志、本地路径、目录句柄和用户图片字节。</p></article>
+        <article data-reveal><h2>按需发送</h2><p>云项目上传已清除服务凭据与设备路径的 settings、zones、points 记录快照；物种参考仅发送用户选择的名称；地图服务按配置访问。</p></article>
+        <article data-reveal><h2>不会自动发送</h2><p>未经选择的项目、桌面数据、服务 Token、完整第三方响应、用户目录信息和图片文件。</p></article>
       </div></section>`
   });
 }

@@ -180,11 +180,42 @@ test('workspace access bridge carries only a local avatar preference', async () 
   assert.doesNotMatch(gate, /avatarDataUrl[\s\S]{0,120}fetch\(/);
 });
 
+test('site cloud project client is same-origin, CSRF protected, and explicit', async () => {
+  const client = await readFile(new URL('../src/cloud-projects.js', import.meta.url), 'utf8');
+  const gate = await readFile(new URL('../src/workspace-gate.js', import.meta.url), 'utf8');
+  const library = await readFile(new URL('../../app/src/renderer-modern/features/project/CloudProjectLibrary.tsx', import.meta.url), 'utf8');
+  assert.match(client, /\/api\/projects/);
+  assert.match(client, /credentials:\s*'same-origin'/);
+  assert.match(client, /x-cqnu-csrf/);
+  assert.match(client, /AbortController/);
+  assert.doesNotMatch(client, /showDirectoryPicker|FileReader|webkitdirectory|better-sqlite3/);
+  assert.match(gate, /installSiteCloudProjectClient/);
+  assert.match(library, /cloudProjectUpload/);
+  assert.match(library, /projectRendererBridge\?\.snapshot/);
+  assert.match(library, /workspace\.save/);
+  assert.doesNotMatch(library, /window\.plantApp|ipcRenderer|child_process/);
+});
+
+test('cloud project schema is versioned, bounded, and owner scoped', async () => {
+  const contracts = await readFile(new URL('../../admin/src/cloud-project-contracts.ts', import.meta.url), 'utf8');
+  const schema = await readFile(new URL('../../admin/src/cloud-project-schema.ts', import.meta.url), 'utf8');
+  const service = await readFile(new URL('../../admin/src/cloud-project-service.ts', import.meta.url), 'utf8');
+  assert.match(contracts, /8 \* 1024 \* 1024/);
+  assert.match(schema, /cloud_projects/);
+  assert.match(schema, /cloud_project_revisions/);
+  assert.match(schema, /cloud_project_chunks/);
+  assert.match(schema, /CLOUD_PROJECT_CONFLICT/);
+  assert.match(service, /SHA-256/);
+  assert.match(service, /ownerId/);
+});
+
 test('workspace startup uses staged progress and one bundled legacy runtime request', async () => {
   const gate = await readFile(new URL('../src/workspace-gate.js', import.meta.url), 'utf8');
   const build = await readFile(new URL('../scripts/build.mjs', import.meta.url), 'utf8');
   assert.match(gate, /Promise\.all\(\[/);
   assert.match(gate, /assets\/legacy-runtime\.js/);
+  assert.match(build, /assets\/cloud-projects\.js/);
+  assert.match(build, /SITE_CHANNEL = 'site\/main'/);
   assert.doesNotMatch(gate, /src\/renderer\/legacy-loader\.js/);
   assert.match(gate, /updateProgress\(100/);
   assert.match(build, /CQNU_LEGACY_RUNTIME_SOURCES/);
@@ -214,7 +245,9 @@ test('documentation states browser degradation and external ZIP safety boundarie
   const docs = renderPages({ workspaceHtml })['/docs'];
   assert.match(docs, /Chromium、Firefox 与 Safari/);
   assert.match(docs, /路径、加密、条目数量、解压体积、JSON 结构、图片类型与 CRC 校验/);
-  assert.match(docs, /不会静默改用远程存储/);
-  assert.match(docs, /只读权限可打开项目、浏览、查询、统计和导出/);
-  assert.match(docs, /账户服务只保存认证、权限和安全审计信息/);
+  assert.match(docs, /不会静默上传项目/);
+  assert.match(docs, /只读权限可打开本地或本人云项目/);
+  assert.match(docs, /云项目按账户隔离/);
+  assert.match(docs, /已清除凭据与设备路径/);
+  assert.match(docs, /不接收图片字节、目录句柄或桌面数据库文件/);
 });

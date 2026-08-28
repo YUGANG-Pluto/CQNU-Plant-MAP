@@ -1,67 +1,40 @@
-import type {
-  AccountStore,
-  PublicManagementAccount
-} from './account-contracts.js';
-import { ManagementAccountService } from './account-service.js';
+import type { PublicManagementAccount } from './account-contracts.js';
 import { authorizeAdminRequest } from './access.js';
+import { handleCloudProjectHttp } from './cloud-project-http.js';
 import type {
   AdminAuditAction,
   AdminAuditEvent,
   AdminCapability,
-  AdminSession,
-  AuditSink,
-  SessionStore
+  AdminSession
 } from './contracts.js';
 import { ADMIN_CAPABILITIES } from './contracts.js';
-import {
-  D1ManagementStore,
-  ensureManagementSchema,
-  type D1DatabaseLike
-} from './d1-store.js';
 import {
   findAdminRoute,
   routeParameter,
   type AdminRouteContract
 } from './http-contract.js';
-import { AuthKeyRing, parseAuthKeyRingConfig, randomBase64Url } from './keyring.js';
+import { readJson, type JsonObject } from './http-json.js';
+import { randomBase64Url } from './keyring.js';
+import {
+  productionManagementRuntime,
+  type ManagementRequestRuntime,
+  type ManagementWorkerEnvironment
+} from './management-runtime.js';
 import type { ManagementSessionData } from './management-ui-contracts.js';
-import { PBKDF2_EDGE_ITERATIONS, Pbkdf2PasswordHasher } from './password.js';
 import { principalAllows } from './policy.js';
 import {
   ADMIN_CSRF_HEADER_NAME,
   ADMIN_SESSION_COOKIE_NAME,
-  AdminSessionManager,
   clearAdminSessionCookie,
-  defaultAdminSessionRuntime,
   type AdminSessionAccess,
   type AdminSessionGrant
 } from './session.js';
 
-const MAX_REQUEST_BODY_BYTES = 32 * 1024;
-
-export interface ManagementAuditReader {
-  listAuditEvents(limit?: number): Promise<AdminAuditEvent[]>;
-}
-
-export interface ManagementRequestRuntime {
-  accounts: ManagementAccountService;
-  accountStore: AccountStore;
-  sessions: AdminSessionManager;
-  audit: AuditSink & ManagementAuditReader;
-}
-
-export interface ManagementWorkerEnvironment {
-  DB?: D1DatabaseLike;
-  CQNU_MANAGEMENT_AUTH_KEYRING?: string;
-  CQNU_BOOTSTRAP_ADMIN_USERNAME?: string;
-  CQNU_BOOTSTRAP_ADMIN_PASSWORD?: string;
-  CQNU_BOOTSTRAP_USER_USERNAME?: string;
-  CQNU_BOOTSTRAP_USER_PASSWORD?: string;
-}
-
-type JsonObject = Record<string, unknown>;
-
-const productionRuntimes = new WeakMap<object, Promise<ManagementRequestRuntime>>();
+export type {
+  ManagementAuditReader,
+  ManagementRequestRuntime,
+  ManagementWorkerEnvironment
+} from './management-runtime.js';
 
 function jsonResponse(
   body: unknown,
@@ -85,8 +58,11 @@ function errorStatus(code: string): number {
   if (code === 'LOGIN_FAILED' || code === 'SESSION_REQUIRED') return 401;
   if (code === 'ADMIN_ACCESS_DENIED' || code === 'CAPABILITY_DENIED' || code === 'CSRF_DENIED') return 403;
   if (code === 'ACCOUNT_NOT_FOUND' || code === 'ROUTE_DENIED') return 404;
-  if (code.includes('CONFLICT') || code === 'ADMIN_LIMIT_REACHED' || code === 'LAST_ADMIN_REQUIRED') return 409;
+  if (code === 'CLOUD_PROJECT_NOT_FOUND') return 404;
+  if (code.includes('CONFLICT') || code === 'ADMIN_LIMIT_REACHED' || code === 'LAST_ADMIN_REQUIRED' || code === 'CLOUD_PROJECT_LIMIT_REACHED') return 409;
+  if (code === 'REQUEST_BODY_TOO_LARGE' || code === 'CLOUD_PROJECT_TOO_LARGE') return 413;
   if (code === 'MANAGEMENT_SERVICE_UNAVAILABLE') return 503;
+  if (code === 'CLOUD_PROJECT_STORAGE_UNAVAILABLE') return 503;
   return 400;
 }
 
@@ -108,13 +84,25 @@ function publicError(code: string): { code: string; message: string } {
     ACCOUNT_USERNAME_CONFLICT: '该用户名已被使用。',
     ACCOUNT_UPDATE_CONFLICT: '账户信息已更新，请刷新后重试。',
     USERNAME_INVALID: '用户名需为 3 至 32 位字母、数字、点、下划线或短横线。',
-    MANAGEMENT_SERVICE_UNAVAILABLE: '管理服务尚未完成安全配置。'
+    MANAGEMENT_SERVICE_UNAVAILABLE: '管理服务尚未完成安全配置。',
+    REQUEST_BODY_TOO_LARGE: '提交的数据超过允许大小。',
+    CLOUD_PROJECT_NAME_INVALID: '云项目名称需为 1 至 80 个可见字符。',
+    CLOUD_PROJECT_INVALID: '云项目数据结构无效。',
+    CLOUD_PROJECT_NOT_FOUND: '未找到该云项目，或当前账户无权访问。',
+    CLOUD_PROJECT_CONFLICT: '云项目已被更新，请重新载入后再保存。',
+    CLOUD_PROJECT_TOO_LARGE: '云项目记录快照超过 8 MiB，请精简记录后重试。',
+    CLOUD_PROJECT_LIMIT_REACHED: '每个账户最多可建立 25 个云项目。',
+    CLOUD_PROJECT_INTEGRITY_FAILED: '云项目完整性校验失败，未载入数据。',
+    CLOUD_PROJECT_SENSITIVE_DATA: '云项目包含服务凭据或设备绝对路径，请清理后重试。',
+    CLOUD_PROJECT_STORAGE_UNAVAILABLE: '云项目存储暂不可用。'
   };
   return { code, message: messages[code] || '请求未完成，请检查输入后重试。' };
 }
 
 function normalizedFailureCode(error: unknown): string {
   if (!(error instanceof Error)) return 'REQUEST_FAILED';
+  const embedded = error.message.match(/\b(CLOUD_PROJECT_CONFLICT|CLOUD_PROJECT_LIMIT_REACHED|ADMIN_LIMIT_REACHED|LAST_ADMIN_REQUIRED|ACCOUNT_UPDATE_CONFLICT)\b/u);
+  if (embedded?.[1]) return embedded[1];
   const exact = error.message.match(/^([A-Z][A-Z0-9_]{2,63})(?::|$)/u);
   if (exact?.[1]) return exact[1];
   const errorName = error.name.replace(/([a-z])([A-Z])/gu, '$1_$2').toUpperCase();
@@ -124,23 +112,6 @@ function normalizedFailureCode(error: unknown): string {
 function failure(error: unknown): Response {
   const code = normalizedFailureCode(error);
   return jsonResponse({ ok: false, error: publicError(code) }, errorStatus(code));
-}
-
-async function readJson(request: Request): Promise<JsonObject> {
-  const declaredLength = Number(request.headers.get('content-length') || 0);
-  if (declaredLength > MAX_REQUEST_BODY_BYTES) throw new Error('REQUEST_BODY_TOO_LARGE');
-  const text = await request.text();
-  if (new TextEncoder().encode(text).byteLength > MAX_REQUEST_BODY_BYTES) {
-    throw new Error('REQUEST_BODY_TOO_LARGE');
-  }
-  if (!text) return {};
-  try {
-    const value = JSON.parse(text) as unknown;
-    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
-    return value as JsonObject;
-  } catch {
-    throw new Error('REQUEST_BODY_INVALID');
-  }
 }
 
 function textField(body: JsonObject, name: string, maxLength = 256): string {
@@ -202,7 +173,10 @@ function responseForGrant(result: {
 }
 
 function responseHeadersForAccess(access?: AdminSessionAccess): Record<string, string> {
-  return access?.setCookie ? { 'set-cookie': access.setCookie } : {};
+  return {
+    ...(access?.setCookie ? { 'set-cookie': access.setCookie } : {}),
+    ...(access?.replacement?.csrfToken ? { 'x-cqnu-csrf': access.replacement.csrfToken } : {})
+  };
 }
 
 function actionForRoute(route: AdminRouteContract): AdminAuditAction {
@@ -215,7 +189,11 @@ function actionForRoute(route: AdminRouteContract): AdminAuditAction {
     'account.activate': 'account.activate',
     'profile.username': 'account.username.change',
     'profile.password': 'account.password.change',
-    'members.reset': 'account.password.reset.issue'
+    'members.reset': 'account.password.reset.issue',
+    'cloud-projects.list': 'workspace.read',
+    'cloud-projects.read': 'workspace.read',
+    'cloud-projects.create': 'workspace.save',
+    'cloud-projects.save': 'workspace.save'
   };
   return mapped[route.id] || route.capability || 'workspace.read';
 }
@@ -230,6 +208,7 @@ async function appendAudit(
     statusCode: number;
     reasonCode?: string;
     targetAccountId?: string;
+    targetProjectId?: string;
   }
 ): Promise<void> {
   await runtime.audit.append({
@@ -243,60 +222,10 @@ async function appendAudit(
       route: input.route.path,
       statusCode: input.statusCode,
       ...(input.reasonCode ? { reasonCode: input.reasonCode } : {}),
-      ...(input.targetAccountId ? { targetAccountId: input.targetAccountId } : {})
+      ...(input.targetAccountId ? { targetAccountId: input.targetAccountId } : {}),
+      ...(input.targetProjectId ? { targetProjectId: input.targetProjectId } : {})
     }
   });
-}
-
-async function productionRuntime(env: ManagementWorkerEnvironment): Promise<ManagementRequestRuntime> {
-  if (!env.DB || !env.CQNU_MANAGEMENT_AUTH_KEYRING) {
-    throw new Error('MANAGEMENT_SERVICE_UNAVAILABLE');
-  }
-  const existing = productionRuntimes.get(env.DB as object);
-  if (existing) return existing;
-  const initializing = (async () => {
-    const keyRing = new AuthKeyRing(parseAuthKeyRingConfig(env.CQNU_MANAGEMENT_AUTH_KEYRING || ''));
-    await ensureManagementSchema(env.DB as D1DatabaseLike);
-    const store = new D1ManagementStore(env.DB as D1DatabaseLike);
-    const sessions = new AdminSessionManager(store as SessionStore, {
-      runtime: defaultAdminSessionRuntime(keyRing)
-    });
-    const accounts = new ManagementAccountService({
-      store,
-      sessions,
-      passwordHasher: new Pbkdf2PasswordHasher(keyRing, PBKDF2_EDGE_ITERATIONS),
-      keyRing
-    });
-    if (!(await store.listAccounts()).length) {
-      if (!env.CQNU_BOOTSTRAP_ADMIN_PASSWORD || !env.CQNU_BOOTSTRAP_USER_PASSWORD) {
-        throw new Error('MANAGEMENT_SERVICE_UNAVAILABLE');
-      }
-      await accounts.ensureBootstrapAccounts({
-        administrator: {
-          username: env.CQNU_BOOTSTRAP_ADMIN_USERNAME || 'admin',
-          password: env.CQNU_BOOTSTRAP_ADMIN_PASSWORD,
-          displayName: 'Administrator',
-          accountKind: 'admin',
-          accessLevel: 'save'
-        },
-        user: {
-          username: env.CQNU_BOOTSTRAP_USER_USERNAME || 'user',
-          password: env.CQNU_BOOTSTRAP_USER_PASSWORD,
-          displayName: 'Research user',
-          accountKind: 'user',
-          accessLevel: 'read'
-        }
-      });
-    }
-    return { accounts, accountStore: store, sessions, audit: store };
-  })();
-  productionRuntimes.set(env.DB as object, initializing);
-  try {
-    return await initializing;
-  } catch (error) {
-    productionRuntimes.delete(env.DB as object);
-    throw error;
-  }
 }
 
 async function accountForSession(
@@ -536,6 +465,27 @@ export function createManagementRequestHandler(runtime: ManagementRequestRuntime
         return jsonResponse({ ok: true, data: { events: await runtime.audit.listAuditEvents(limit) } }, 200, commonHeaders);
       }
 
+      if (route.id.startsWith('cloud-projects.')) {
+        if (!runtime.cloudProjects) throw new Error('CLOUD_PROJECT_STORAGE_UNAVAILABLE');
+        return handleCloudProjectHttp({
+          route,
+          path,
+          request,
+          ownerId: account.id,
+          service: runtime.cloudProjects,
+          headers: commonHeaders,
+          respond: jsonResponse,
+          audit: (targetProjectId, statusCode) => appendAudit(runtime, {
+            principalId: account.id,
+            route,
+            outcome: 'allowed',
+            requestId,
+            statusCode,
+            targetProjectId
+          })
+        });
+      }
+
       if (route.id === 'site.read') {
         return jsonResponse({ ok: true, data: { access: 'private', projectDataStorage: 'browser-local' } }, 200, commonHeaders);
       }
@@ -567,7 +517,7 @@ export async function handleManagementRequest(
   env: ManagementWorkerEnvironment
 ): Promise<Response> {
   try {
-    return await createManagementRequestHandler(await productionRuntime(env))(request);
+    return await createManagementRequestHandler(await productionManagementRuntime(env))(request);
   } catch (error) {
     console.error(JSON.stringify({
       event: 'management.request.failed',

@@ -64,6 +64,7 @@
     './src/renderer/features/backup/index.js',
     './src/renderer/features/progress/index.js',
     './src/renderer/features/merge/index.js',
+    './src/renderer/features/project/cloudSnapshot.js',
     './src/renderer/features/project/index.js',
     './src/renderer/shell/projectHistory.js',
     './src/renderer/features/maintenance/core.js',

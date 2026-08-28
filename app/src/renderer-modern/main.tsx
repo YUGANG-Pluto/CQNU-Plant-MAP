@@ -23,6 +23,7 @@ import './styles/modal-primitives.css';
 import './styles/command-palette.css';
 import './styles/project-history.css';
 import './styles/project-import-center.css';
+import './styles/cloud-project-library.css';
 import './styles/review-workbench.css';
 
 installPlatformAdapter();

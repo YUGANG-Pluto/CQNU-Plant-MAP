@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import {
   AdminSessionManager,
   AuthKeyRing,
+  CloudProjectService,
   InMemoryAccountStore,
   InMemoryAuditSink,
+  InMemoryCloudProjectStore,
   InMemorySessionStore,
   ManagementAccountService,
   bytesToBase64Url,
@@ -72,7 +74,16 @@ async function harness() {
     }
   });
   const audit = new TestAuditSink();
-  return createManagementRequestHandler({ accounts, accountStore, sessions, audit });
+  return createManagementRequestHandler({
+    accounts,
+    accountStore,
+    sessions,
+    audit,
+    cloudProjects: new CloudProjectService(new InMemoryCloudProjectStore(), {
+      now: () => new Date('2026-08-25T12:00:00.000Z'),
+      randomId: prefix => `${prefix}-http-${++id}`
+    })
+  });
 }
 
 async function call(handler, path, options = {}) {
@@ -181,11 +192,95 @@ test('session refresh rotates CSRF material without exposing session token in JS
   const login = await call(handler, '/api/manage/login', {
     method: 'POST', body: { username: 'user', password: '123456' }
   });
-  const security = sessionSecurity(login);
+  const pending = sessionSecurity(login);
+  const activation = await call(handler, '/api/manage/account/activate', {
+    method: 'POST',
+    headers: { cookie: pending.cookie, origin: 'https://example.test', 'x-cqnu-csrf': pending.csrf },
+    body: {
+      currentPassword: '123456', username: 'user', displayName: 'Research user',
+      password: 'A secure research reader passphrase'
+    }
+  });
+  const security = sessionSecurity(activation);
   const refreshed = await call(handler, '/api/manage/session', {
     headers: { cookie: security.cookie }
   });
   assert.equal(refreshed.response.status, 200);
   assert.ok(refreshed.payload.data.csrfToken);
   assert.equal(JSON.stringify(refreshed.payload).includes('mgs.k1.'), false);
+});
+
+test('save-level account can create, upload, and read an owner-scoped cloud project', async () => {
+  const handler = await harness();
+  const login = await call(handler, '/api/manage/login', {
+    method: 'POST', body: { username: 'admin', password: '000000' }
+  });
+  const pending = sessionSecurity(login);
+  const activation = await call(handler, '/api/manage/account/activate', {
+    method: 'POST',
+    headers: { cookie: pending.cookie, origin: 'https://example.test', 'x-cqnu-csrf': pending.csrf },
+    body: {
+      currentPassword: '000000', username: 'admin', displayName: 'Administrator',
+      password: 'A secure administrator passphrase'
+    }
+  });
+  const active = sessionSecurity(activation);
+  const created = await call(handler, '/api/projects', {
+    method: 'POST',
+    headers: { cookie: active.cookie, origin: 'https://example.test', 'x-cqnu-csrf': active.csrf },
+    body: { name: 'Campus survey' }
+  });
+  assert.equal(created.response.status, 201);
+  assert.equal(created.payload.data.project.revision, 0);
+
+  const saved = await call(handler, `/api/projects/${created.payload.data.project.id}/snapshot`, {
+    method: 'PUT',
+    headers: { cookie: active.cookie, origin: 'https://example.test', 'x-cqnu-csrf': active.csrf },
+    body: {
+      expectedRevision: 0,
+      snapshot: {
+        settings: { language: 'zh' },
+        zones: [{ id: 'zone-1', name: '一区' }],
+        points: [{ id: 'point-1', zoneId: 'zone-1' }]
+      }
+    }
+  });
+  assert.equal(saved.response.status, 200);
+  assert.equal(saved.payload.data.project.revision, 1);
+  assert.match(saved.payload.data.project.contentSha256, /^[a-f0-9]{64}$/);
+
+  const loaded = await call(handler, `/api/projects/${created.payload.data.project.id}`, {
+    headers: { cookie: active.cookie }
+  });
+  assert.equal(loaded.response.status, 200);
+  assert.equal(loaded.payload.data.snapshot.zones[0].name, '一区');
+  assert.equal(JSON.stringify(loaded.payload).includes('ownerId'), false);
+});
+
+test('read-only account can list cloud projects but cannot create or upload one', async () => {
+  const handler = await harness();
+  const login = await call(handler, '/api/manage/login', {
+    method: 'POST', body: { username: 'user', password: '123456' }
+  });
+  const pending = sessionSecurity(login);
+  const activation = await call(handler, '/api/manage/account/activate', {
+    method: 'POST',
+    headers: { cookie: pending.cookie, origin: 'https://example.test', 'x-cqnu-csrf': pending.csrf },
+    body: {
+      currentPassword: '123456', username: 'user', displayName: 'Research user',
+      password: 'A secure research reader passphrase'
+    }
+  });
+  const security = sessionSecurity(activation);
+  const listed = await call(handler, '/api/projects', { headers: { cookie: security.cookie } });
+  assert.equal(listed.response.status, 200);
+  assert.deepEqual(listed.payload.data.projects, []);
+
+  const denied = await call(handler, '/api/projects', {
+    method: 'POST',
+    headers: { cookie: security.cookie, origin: 'https://example.test', 'x-cqnu-csrf': security.csrf },
+    body: { name: 'Denied project' }
+  });
+  assert.equal(denied.response.status, 403);
+  assert.equal(denied.payload.error.code, 'CAPABILITY_DENIED');
 });

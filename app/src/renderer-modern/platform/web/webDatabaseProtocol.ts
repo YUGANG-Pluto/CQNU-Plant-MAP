@@ -3,7 +3,7 @@ export const WEB_DATABASE_FILE = '/cqnu-plant-map-web.sqlite3';
 export const WEB_DATABASE_LOCK = 'cqnu-plant-map-web-database';
 export const WEB_DATABASE_CHANNEL = 'cqnu-plant-map-web-updates';
 
-export type WebProjectSourceKind = 'opfs' | 'directory' | 'import' | 'sqlite';
+export type WebProjectSourceKind = 'opfs' | 'directory' | 'import' | 'sqlite' | 'cloud';
 
 export type WebProjectRecord = Record<string, unknown>;
 

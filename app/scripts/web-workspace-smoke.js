@@ -13,6 +13,10 @@ const {
   runExternalSqliteImportSmoke,
   runStatsFullscreenLayerSmoke
 } = require('./web-workspace-contract-smoke');
+const {
+  createCloudProjectSmokeApi,
+  runCloudProjectRoundtrip
+} = require('./web-workspace-cloud-smoke');
 
 const siteRuntimePath = path.resolve(__dirname, '../../site/scripts/local-runtime.mjs');
 const host = '127.0.0.1';
@@ -57,6 +61,8 @@ function managementSessionFixture(accessLevel = 'save') {
 async function createSiteServer() {
   const { createLocalSiteRuntime } = await import(pathToFileURL(siteRuntimePath).href);
   const { worker, env } = await createLocalSiteRuntime();
+  const cloudProjectApi = createCloudProjectSmokeApi();
+
   const server = http.createServer(async (request, response) => {
     try {
       const address = server.address();
@@ -65,6 +71,7 @@ async function createSiteServer() {
       const cookies = String(request.headers.cookie || '');
       const loggedOut = cookies.includes('smoke-login=logged-out');
       const accessLevel = cookies.includes('smoke-access=read') ? 'read' : 'save';
+      if (await cloudProjectApi.handle(request, response, target, { loggedOut, accessLevel })) return;
       if (target.pathname === '/api/manage/login' && request.method === 'POST') {
         response.writeHead(200, {
           'content-type': 'application/json; charset=utf-8',
@@ -326,6 +333,9 @@ async function run() {
       throw new Error(`${failure.stage}: ${failure.name}: ${failure.message}\n${failure.stack}`);
     }
 
+    markSmokeStage('primary:cloud-project-roundtrip');
+    const cloudResult = await runCloudProjectRoundtrip(window);
+
     markSmokeStage('primary:external-sqlite-import');
     const externalSqliteResult = await runExternalSqliteImportSmoke(window, createDesktopSqliteFixtureBytes());
 
@@ -413,6 +423,18 @@ async function run() {
     }
     if (!result.mapReady) failures.push('Leaflet map did not initialize');
     if (!result.projectWorkflowReady) failures.push('typed project workflow bridge is unavailable in the web runtime');
+    if (!cloudResult.clientReady || cloudResult.listed < 1 || cloudResult.savedRevision !== 2) {
+      failures.push(`cloud project API round trip: ${JSON.stringify(cloudResult)}`);
+    }
+    if (cloudResult.sourceKind !== 'cloud' || cloudResult.pointCount !== 1) {
+      failures.push(`cloud project working copy: ${cloudResult.sourceKind} / ${cloudResult.pointCount}`);
+    }
+    if (!cloudResult.sensitiveDataRemoved || !cloudResult.relativeImageReferencePreserved) {
+      failures.push(`cloud project sanitizer: ${JSON.stringify(cloudResult)}`);
+    }
+    if (!cloudResult.libraryOpen || cloudResult.libraryCards < 1) {
+      failures.push(`cloud project library UI: ${cloudResult.libraryOpen} / ${cloudResult.libraryCards}`);
+    }
     if (result.runtimeStatus !== 'ready') failures.push(`runtime status: ${result.runtimeStatus}`);
     if (!result.siteHomeLink) failures.push('site homepage link is missing');
     if (

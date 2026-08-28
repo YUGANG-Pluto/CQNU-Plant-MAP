@@ -33,7 +33,7 @@ export interface ProjectSourceInput {
 }
 
 export interface ProjectSourceDescription {
-  kind: 'sqlite' | 'directory' | 'import' | 'browser' | 'json' | 'unknown';
+  kind: 'sqlite' | 'directory' | 'import' | 'browser' | 'cloud' | 'json' | 'unknown';
   labelKey: string;
   detailKey: string;
   warningKey?: string;
@@ -93,6 +93,13 @@ export function buildProjectImportOptions(context: ProjectImportOptionContext): 
 }
 
 export function describeProjectSource(input: ProjectSourceInput): ProjectSourceDescription {
+  if (input.sourceKind === 'cloud') {
+    return {
+      kind: 'cloud',
+      labelKey: 'projectSourceCloud',
+      detailKey: 'projectSourceCloudDetail'
+    };
+  }
   if (input.externalSqliteImported || input.sourceKind === 'sqlite') {
     return {
       kind: 'sqlite',

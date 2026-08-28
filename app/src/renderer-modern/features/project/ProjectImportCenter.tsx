@@ -1,5 +1,6 @@
 import {
   ArchiveRestore,
+  Cloud,
   Database,
   FileJson2,
   FolderOpen,
@@ -16,6 +17,7 @@ import {
   type ProjectSourceInput
 } from './importCenterModel';
 import { useProjectSession } from './useProjectSession';
+import { openCloudProjectLibrary } from './CloudProjectLibrary';
 
 declare global {
   interface Window {
@@ -28,6 +30,7 @@ const fallbackText: Record<string, string> = {
   projectSourceDirectory: '授权项目目录',
   projectSourceImportedFiles: '导入文件副本',
   projectSourceBrowserDatabase: '浏览器本地数据库',
+  projectSourceCloud: '云项目工作副本',
   projectSourceJson: 'JSON 项目',
   projectSourceLocal: '本地项目'
 };
@@ -134,9 +137,9 @@ export function ProjectImportCenter() {
       id="projectImportModal"
       closeButtonId="btnCloseProjectImportModal"
       titleKey="projectImportTitle"
-      title="打开本地植物项目"
+      title="打开植物项目"
       subtitleKey="projectImportSubtitle"
-      subtitle="选择一种本地读取方式；原始文件不会上传到管理服务。"
+      subtitle="选择本地读取方式或云项目库；原始文件不会上传到管理服务。"
       panelClass="project-import-panel"
       contentClass="project-import-content"
     >
@@ -163,6 +166,21 @@ export function ProjectImportCenter() {
 
       <div class="project-import-options" role="list" aria-label="项目读取方式" data-i18n-aria-label="projectImportOptionsLabel">
         {options.map(option => <ProjectImportOptionButton key={option.id} option={option} />)}
+        {window.siteCloudProjects ? (
+          <button
+            id="btnOpenCloudProjectLibrary"
+            class="project-import-option project-import-option--cloud"
+            type="button"
+            onClick={openCloudProjectLibrary}
+          >
+            <span class="project-import-option__icon" aria-hidden="true"><Cloud size={22} /></span>
+            <span class="project-import-option__copy">
+              <strong data-i18n="cloudProjectOpenLibrary">云项目库</strong>
+              <small data-i18n="cloudProjectOpenLibraryHint">读取本人云端项目，或将当前记录显式保存为版本化快照。</small>
+            </span>
+            <span class="pill" data-i18n="cloudProjectSiteOnly">站点</span>
+          </button>
+        ) : null}
       </div>
       <p id="projectImportStatus" class="project-import-status" role="status" aria-live="polite" data-i18n="projectImportReady">
         请选择项目来源。切换项目之前会检查尚未应用的编辑。

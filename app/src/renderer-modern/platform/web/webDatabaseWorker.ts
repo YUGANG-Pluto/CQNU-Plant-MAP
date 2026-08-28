@@ -123,7 +123,7 @@ function number(value: unknown, fallback = 0): number {
 }
 
 function sourceKind(value: unknown): StoredWebProject['sourceKind'] {
-  return ['directory', 'import', 'sqlite'].includes(text(value))
+  return ['directory', 'import', 'sqlite', 'cloud'].includes(text(value))
     ? text(value) as StoredWebProject['sourceKind']
     : 'opfs';
 }

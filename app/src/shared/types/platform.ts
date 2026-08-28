@@ -32,6 +32,7 @@ export interface PlatformServiceApi {
     choosePortableDir?: PlatformNoPayloadCommand;
     chooseSqliteFile?: PlatformNoPayloadCommand;
     chooseJsonFiles?: PlatformNoPayloadCommand;
+    importCloudSnapshot?: PlatformCommand;
     chooseMergeDir: PlatformNoPayloadCommand;
     load: PlatformCommand;
     save: PlatformCommand;
