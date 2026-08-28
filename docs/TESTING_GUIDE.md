@@ -113,7 +113,7 @@ Use temporary or synthetic data only. Do not commit real survey records, private
 - image archive paths;
 - CSV and GeoJSON fields;
 - safe mode locks;
-- map selection, typed query filtering, completeness flags, and redraw behavior;
+- map selection, typed query filtering, review queue control, completeness flags, and redraw behavior;
 - backup creation and cleanup;
 - species reference source links, token-page opening, and temporary cache behavior.
 - SQLite readiness table-model round-trip, temporary schema database check, temporary conversion database check, project storage conversion check, runtime acceptance check, conversion report, and backup preflight plan.

@@ -31,6 +31,7 @@ The Electron application boundary, modern renderer shell, management service, an
 8. Added focused typed domain adapters for project records, phenology drafts, taxonomy candidates, maintenance issues, and species-reference panel state.
 9. Added a typed object-selection store for selected zones, points, phenology records, hover state, and list-tab state while preserving the legacy state mirror.
 10. Moved query filtering, completeness evaluation, and immutable result modeling into a typed read-only query bridge while retaining the existing query modal and object-selection actions.
+11. Added a typed review-workbench controller for immutable queue views, issue/zone/severity/search filters, current-task selection, and cyclic navigation while retaining existing review rendering and edit commands.
 
 ## Current Typecheck Scope
 

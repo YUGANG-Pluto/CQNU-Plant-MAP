@@ -223,6 +223,7 @@ function testProjectEditHistoryContract() {
 function testResearchReviewWorkbenchContract() {
   const modernRoot = path.join(process.cwd(), 'src/renderer-modern');
   const modelSource = fs.readFileSync(path.join(modernRoot, 'features/review/model.ts'), 'utf8');
+  const controllerSource = fs.readFileSync(path.join(modernRoot, 'features/review/controller.ts'), 'utf8');
   const bridgeSource = fs.readFileSync(path.join(modernRoot, 'features/review/runtime.ts'), 'utf8');
   const componentSource = fs.readFileSync(path.join(modernRoot, 'features/review/ReviewWorkbenchModal.tsx'), 'utf8');
   const styleSource = fs.readFileSync(path.join(modernRoot, 'styles/review-workbench.css'), 'utf8');
@@ -247,8 +248,18 @@ function testResearchReviewWorkbenchContract() {
     'missingPhenology',
     'missingImage'
   ].forEach(fragment => assert.ok(modelSource.includes(fragment), `review model missing ${fragment}`));
-  assert.ok(modelSource.includes('points.map(asRecord)'), 'review model must derive tasks without mutating points');
+  assert.match(modelSource, /points\s*\.map\(asRecord\)/, 'review model must derive tasks without mutating points');
+  [
+    'createReviewWorkbenchController',
+    "version: 'review-workbench-controller-v1'",
+    'setFilters(patch)',
+    'resetFilters()',
+    'navigate(direction)'
+  ].forEach(fragment => assert.ok(controllerSource.includes(fragment), `review controller missing ${fragment}`));
+  assert.ok(controllerSource.split(/\r?\n/).length <= 260, 'review controller must remain focused');
   assert.ok(bridgeSource.includes("Object.defineProperty(window, 'researchReview'"));
+  assert.ok(bridgeSource.includes('createController: createReviewWorkbenchController'));
+  assert.ok(bridgeSource.includes("version: 'research-review-v1'"));
   assert.ok(mainSource.includes('installResearchReviewBridge()'));
   assert.ok(mainSource.includes('./styles/review-workbench.css'));
   assert.ok(appSource.includes('<ReviewWorkbenchModal />'));
@@ -287,7 +298,9 @@ function testResearchReviewWorkbenchContract() {
     'openPointEditor()',
     'function bindReviewWorkbenchEvents'
   ].forEach(fragment => assert.ok(runtimeSource.includes(fragment), `review runtime missing ${fragment}`));
-  const restrictedSurface = `${modelSource}\n${bridgeSource}\n${runtimeSource}`;
+  assert.ok(runtimeSource.includes('window.researchReview.createController()'));
+  assert.ok(!runtimeSource.includes('const reviewWorkbenchSession = {'));
+  const restrictedSurface = `${modelSource}\n${controllerSource}\n${bridgeSource}\n${runtimeSource}`;
   assert.ok(
     !/\b(fetch|ipcRenderer|readFile|writeFile|child_process)\b/.test(restrictedSurface),
     'review workbench must remain local, read-only, and outside IPC or file APIs'

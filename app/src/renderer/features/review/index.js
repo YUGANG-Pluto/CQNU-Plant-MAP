@@ -1,9 +1,4 @@
-const reviewWorkbenchSession = {
-  queue: null,
-  visibleTasks: [],
-  selectedTaskId: '',
-  filters: { issue: '', zone: '', severity: '', search: '' }
-};
+const reviewWorkbenchSession = window.researchReview.createController();
 
 function isReviewWorkbenchOpen() {
   return Boolean(ui.reviewWorkbenchModal && !ui.reviewWorkbenchModal.classList.contains('hidden'));
@@ -11,7 +6,7 @@ function isReviewWorkbenchOpen() {
 
 function buildReviewWorkbenchQueue() {
   const bridge = window.researchReview;
-  reviewWorkbenchSession.queue = bridge?.build(state.zones, state.points) || {
+  const queue = bridge?.build(state.zones, state.points) || {
     totalPoints: state.points.length,
     readyPoints: state.points.length,
     pendingPoints: 0,
@@ -20,6 +15,11 @@ function buildReviewWorkbenchQueue() {
     tasks: [],
     issueCounts: {}
   };
+  const searchAliases = Object.fromEntries(queue.tasks.map(task => [
+    task.id,
+    `${reviewZoneLabel(task)} ${task.issues.map(reviewIssueLabel).join(' ')}`
+  ]));
+  reviewWorkbenchSession.replace(queue, searchAliases);
   return reviewWorkbenchSession.queue;
 }
 
@@ -56,16 +56,17 @@ function setReviewSelectOptions(select, options, currentValue = '') {
 }
 
 function populateReviewFilters(queue) {
+  const currentFilters = reviewWorkbenchSession.filters;
   const issueOptions = [{ value: '', label: t('reviewAllIssues') }];
   window.researchReview?.definitions.forEach(definition => {
     const count = Number(queue.issueCounts?.[definition.id] || 0);
     if (!count) return;
     issueOptions.push({ value: definition.id, label: `${t(definition.labelKey)} (${count})` });
   });
-  reviewWorkbenchSession.filters.issue = setReviewSelectOptions(
+  const issue = setReviewSelectOptions(
     ui.reviewIssueFilter,
     issueOptions,
-    reviewWorkbenchSession.filters.issue
+    currentFilters.issue
   );
 
   const zoneIds = new Set(queue.tasks.map(task => task.zoneInternalId || '__unassigned__'));
@@ -74,28 +75,17 @@ function populateReviewFilters(queue) {
     if (zoneIds.has(zone.id)) zoneOptions.push({ value: zone.id, label: zoneDisplayName(zone) });
   });
   if (zoneIds.has('__unassigned__')) zoneOptions.push({ value: '__unassigned__', label: t('unassignedZone') });
-  reviewWorkbenchSession.filters.zone = setReviewSelectOptions(
+  const zone = setReviewSelectOptions(
     ui.reviewZoneFilter,
     zoneOptions,
-    reviewWorkbenchSession.filters.zone
+    currentFilters.zone
   );
-  if (ui.reviewSeverityFilter) ui.reviewSeverityFilter.value = reviewWorkbenchSession.filters.severity;
-  if (ui.reviewSearch && ui.reviewSearch.value !== reviewWorkbenchSession.filters.search) {
-    ui.reviewSearch.value = reviewWorkbenchSession.filters.search;
-  }
-}
-
-function reviewTaskMatchesFilters(task) {
+  reviewWorkbenchSession.setFilters({ issue, zone });
   const filters = reviewWorkbenchSession.filters;
-  if (filters.issue && !task.issues.some(issue => issue.id === filters.issue)) return false;
-  if (filters.zone && (task.zoneInternalId || '__unassigned__') !== filters.zone) return false;
-  if (filters.severity && task.severity !== filters.severity) return false;
-  if (filters.search) {
-    const zoneLabel = reviewZoneLabel(task).toLocaleLowerCase();
-    const issueLabels = task.issues.map(reviewIssueLabel).join(' ').toLocaleLowerCase();
-    if (!`${task.searchText} ${zoneLabel} ${issueLabels}`.includes(filters.search)) return false;
+  if (ui.reviewSeverityFilter) ui.reviewSeverityFilter.value = filters.severity;
+  if (ui.reviewSearch && ui.reviewSearch.value !== filters.search) {
+    ui.reviewSearch.value = filters.search;
   }
-  return true;
 }
 
 function updateReviewOverview(queue) {
@@ -147,7 +137,7 @@ function createReviewTaskCard(task) {
 }
 
 function currentReviewTask() {
-  return reviewWorkbenchSession.visibleTasks.find(task => task.id === reviewWorkbenchSession.selectedTaskId) || null;
+  return reviewWorkbenchSession.currentTask;
 }
 
 function renderReviewTaskDetail() {
@@ -218,9 +208,8 @@ function renderReviewTaskList() {
 }
 
 function setReviewTaskSelection(taskId, options = {}) {
-  const task = reviewWorkbenchSession.visibleTasks.find(item => item.id === taskId);
+  const task = reviewWorkbenchSession.select(taskId);
   if (!task) return false;
-  reviewWorkbenchSession.selectedTaskId = task.id;
   Array.from(ui.reviewTaskList?.querySelectorAll('[data-review-task-id]') || []).forEach(node => {
     const selected = node.dataset.reviewTaskId === task.id;
     node.classList.toggle('is-selected', selected);
@@ -235,11 +224,6 @@ function setReviewTaskSelection(taskId, options = {}) {
 }
 
 function applyReviewFilters() {
-  const queue = reviewWorkbenchSession.queue || buildReviewWorkbenchQueue();
-  reviewWorkbenchSession.visibleTasks = queue.tasks.filter(reviewTaskMatchesFilters);
-  if (!reviewWorkbenchSession.visibleTasks.some(task => task.id === reviewWorkbenchSession.selectedTaskId)) {
-    reviewWorkbenchSession.selectedTaskId = reviewWorkbenchSession.visibleTasks[0]?.id || '';
-  }
   renderReviewTaskList();
 }
 
@@ -266,11 +250,8 @@ function closeReviewWorkbench() {
 }
 
 function navigateReviewTask(direction) {
-  const tasks = reviewWorkbenchSession.visibleTasks;
-  if (!tasks.length) return false;
-  const index = tasks.findIndex(task => task.id === reviewWorkbenchSession.selectedTaskId);
-  const nextIndex = (Math.max(index, 0) + direction + tasks.length) % tasks.length;
-  return setReviewTaskSelection(tasks[nextIndex].id);
+  const task = reviewWorkbenchSession.navigate(direction);
+  return task ? setReviewTaskSelection(task.id) : false;
 }
 
 function locateCurrentReviewTask() {
@@ -290,16 +271,18 @@ function editCurrentReviewTask() {
 }
 
 function resetReviewFilters() {
-  reviewWorkbenchSession.filters = { issue: '', zone: '', severity: '', search: '' };
-  populateReviewFilters(reviewWorkbenchSession.queue || buildReviewWorkbenchQueue());
+  reviewWorkbenchSession.resetFilters();
+  populateReviewFilters(reviewWorkbenchSession.queue);
   applyReviewFilters();
 }
 
 function syncReviewFilterState() {
-  reviewWorkbenchSession.filters.issue = ui.reviewIssueFilter?.value || '';
-  reviewWorkbenchSession.filters.zone = ui.reviewZoneFilter?.value || '';
-  reviewWorkbenchSession.filters.severity = ui.reviewSeverityFilter?.value || '';
-  reviewWorkbenchSession.filters.search = String(ui.reviewSearch?.value || '').trim().toLocaleLowerCase();
+  reviewWorkbenchSession.setFilters({
+    issue: ui.reviewIssueFilter?.value || '',
+    zone: ui.reviewZoneFilter?.value || '',
+    severity: ui.reviewSeverityFilter?.value || '',
+    search: ui.reviewSearch?.value || ''
+  });
   applyReviewFilters();
 }
 

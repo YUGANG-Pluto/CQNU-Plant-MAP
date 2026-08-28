@@ -34,7 +34,7 @@ export interface ResearchReviewTask {
   scientificName: string;
   zoneInternalId: string;
   severity: ReviewSeverity;
-  issues: ResearchReviewIssue[];
+  issues: readonly ResearchReviewIssue[];
   searchText: string;
 }
 
@@ -44,8 +44,8 @@ export interface ResearchReviewQueue {
   pendingPoints: number;
   openIssueCount: number;
   progressPercent: number;
-  tasks: ResearchReviewTask[];
-  issueCounts: Record<ReviewIssueId, number>;
+  tasks: readonly ResearchReviewTask[];
+  issueCounts: Readonly<Record<ReviewIssueId, number>>;
 }
 
 export interface ResearchReviewBridge {
@@ -181,7 +181,7 @@ function taskIssues(point: UnknownRecord, aliases: Map<string, string>): Researc
   return REVIEW_ISSUE_DEFINITIONS.filter(issue => matches[issue.id]);
 }
 
-function taskSeverity(issues: ResearchReviewIssue[]): ReviewSeverity {
+function taskSeverity(issues: readonly ResearchReviewIssue[]): ReviewSeverity {
   return issues.reduce<ReviewSeverity>((current, issue) => (
     SEVERITY_ORDER[issue.severity] < SEVERITY_ORDER[current] ? issue.severity : current
   ), 'low');
@@ -211,7 +211,7 @@ export function buildResearchReviewQueue(zones: unknown[] = [], points: unknown[
       searchText: [pointId, displayName, scientificName, zoneRef, ...issues.map(issue => issue.id)]
         .join(' ')
         .toLocaleLowerCase()
-    } satisfies ResearchReviewTask;
+    } as ResearchReviewTask;
   }).filter((task): task is ResearchReviewTask => Boolean(task));
 
   tasks.sort((left, right) => (

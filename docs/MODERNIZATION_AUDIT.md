@@ -54,6 +54,7 @@ Liquid Glass material is limited to functional navigation, command surfaces, hov
 - The typed project session store owns project-source, busy, dirty, save, and capability state for modern workflows.
 - The typed object-selection store owns selected zone, point, phenology, hover, and list-tab state while publishing an immutable compatibility mirror for existing map workflows.
 - The typed research-query bridge owns read-only filtering, completeness flags, phenology criteria, and immutable result records; the compatibility renderer only reads form controls, renders results, and forwards selection actions.
+- The typed review-workbench controller owns immutable queue views, active filters, current-task selection, and cyclic navigation; the compatibility renderer retains localized markup and explicit locate/edit commands.
 - Existing renderer business modules remain behind one compatibility loader while their data and behavior contracts are still active.
 - Browser file access remains user initiated through File System Access or compatible import controls. Browser SQLite uses bounded local file parsing or OPFS and does not grant arbitrary filesystem access.
 
@@ -78,7 +79,7 @@ Liquid Glass material is limited to functional navigation, command surfaces, hov
 - A 15-scene visual baseline covers desktop and mobile workspace, management login and account views, site home and documentation, architecture, release, privacy, and the project inspector.
 - Evidence compares quantized color grids, theme identity, stable layout anchors, and document-level overflow; local PNG captures remain ignored.
 - The initial renderer entry is checked against raw and gzip budgets. SQLite workers remain separate lazy assets.
-- The renderer entry is 373,902 bytes raw and 114,849 bytes gzip after adding the typed query model, compared with 434,822 bytes raw and 136,493 bytes gzip before the Motion boundary reduction.
+- The renderer entry is 376,473 bytes raw and 115,585 bytes gzip after adding the typed query and review controllers, compared with 434,822 bytes raw and 136,493 bytes gzip before the Motion boundary reduction.
 
 ## Simplification Decisions
 
@@ -91,6 +92,7 @@ Removed:
 - A self-check dependency on the former component file location.
 - Full Motion DOM imports where only the mini WAAPI animation kernel was required.
 - Duplicate query-center completeness and filtering logic from the compatibility renderer.
+- The mutable review-workbench session object and its duplicate filter/navigation state transitions.
 
 Retained intentionally:
 
@@ -116,14 +118,14 @@ Release synchronization on 2026-08-28 used the following checks:
 | ------------------------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------- |
 | `npm run lint`                                         | Passed                         | Source and architecture lint rules                                                                |
 | `npm run typecheck`                                    | Passed                         | Electron, Preact, and checked JavaScript boundaries                                               |
-| `npm test`                                             | Passed: 73 unit, 9 integration | Pure models and project-service contracts                                                         |
+| `npm test`                                             | Passed: 77 unit, 9 integration | Pure models and project-service contracts                                                         |
 | `npm --prefix ../admin test`                           | Passed: 19                     | Accounts, sessions, permissions, CSRF, activation, and audit contracts                            |
 | `npm --prefix ../site run check`                       | Passed                         | Eight routes, 66 published assets, management boundary, app host, and page presentation contracts |
 | `npm --prefix ../site test`                            | Passed: 16                     | Route, local-app, motion, content-theme, management, and browser-workspace contracts              |
 | `npm run self-check`                                   | Passed                         | Runtime wiring, security, storage, and UI contracts                                               |
 | `npm run check:repo`                                   | Passed                         | Repository hygiene and restricted artifacts                                                       |
 | `npm run check:size`                                   | Passed without warnings        | File split policy after extracting renderer-domain contracts and browser smoke support            |
-| `npm run check:bundle`                                 | Passed                         | 373,902-byte initial JS, 114,849-byte gzip entry, separate lazy SQLite workers                    |
+| `npm run check:bundle`                                 | Passed                         | 376,473-byte initial JS, 115,585-byte gzip entry, separate lazy SQLite workers                    |
 | `npm run smoke:web`                                    | Passed                         | Browser local project, SQLite, workspace, layer, modal, management, and multi-tab flows           |
 | `npm run smoke:renderer`                               | Passed: 84 required controls   | Desktop renderer startup and major feature surfaces                                               |
 | `npm run visual:check`                                 | Passed: 15 scenes              | Three visual domains, responsive anchors, hosted app, and overflow limits                         |
@@ -137,7 +139,7 @@ Generated screenshots, temporary databases, logs, dependencies, and build output
 
 The compatibility renderer is not dead code. It still owns mature map editing, statistics, maintenance, phenology, taxonomy-reference, backup, and export workflows. Future conversion should move one domain at a time behind typed tests and preserve stable project data and preload contracts. A broad rewrite would increase regression risk without improving user-visible behavior.
 
-The next useful architecture work is moving the review workbench's session, filter, and queue-selection controller out of global renderer bindings. Its existing typed issue calculator and the object-selection store should remain the authoritative inputs, while DOM rendering and edit commands stay in the compatibility layer until acceptance coverage is expanded.
+The next useful architecture work is moving one read-only result surface, preferably query results, from imperative compatibility DOM construction into a Preact-owned view. The typed query bridge and object-selection store should remain the inputs, while point editing, map mutation, and persistence stay behind their current compatibility actions.
 
 ## Design References
 

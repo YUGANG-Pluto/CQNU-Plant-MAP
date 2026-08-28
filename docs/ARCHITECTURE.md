@@ -89,6 +89,7 @@ Renderer code calls `window.plantApp`. `electron/preload/index.ts` maps those ca
 - `renderer-modern`: Preact shell, modal markup, theme model, and modern chart presentation.
 - `renderer-modern/features/selection`: typed object-selection state with a compatibility mirror for existing map and inspector workflows.
 - `renderer-modern/features/query`: typed read-only query filters, completeness flags, and immutable result modeling behind the existing query UI.
+- `renderer-modern/features/review`: typed issue calculation and workbench session control behind the existing localized review UI.
 
 Large renderer domains are split by responsibility. Statistics separates controls, views, exports, workspace summaries, and pure research calculations. Maintenance separates health and repair, logs and settings, and storage conversion. Basemap handling separates configuration, layer rendering, overlays, and diagnostics. Locale dictionaries use the same domain split in Chinese and English.
 

@@ -343,7 +343,10 @@ async function run() {
       !window.projectEditHistory.inspect().canRedo;
 
     const reviewQueue = window.researchReview?.build(appState.zones, appState.points);
-    const reviewBridgeBuilt = reviewQueue?.totalPoints === 2 &&
+    const reviewBridgeBuilt = window.researchReview?.version === 'research-review-v1' &&
+      Object.isFrozen(window.researchReview) &&
+      typeof window.researchReview?.createController === 'function' &&
+      reviewQueue?.totalPoints === 2 &&
       reviewQueue?.pendingPoints === 2 &&
       reviewQueue?.readyPoints === 0 &&
       reviewQueue?.issueCounts?.missingFamily === 2 &&
