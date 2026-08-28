@@ -29,10 +29,13 @@ async function captureAppearanceCenter(window) {
   window.setSkipTaskbar(true);
   window.setBounds({ ...originalBounds, width: 1440, height: 960, x: -32_000, y: -32_000 }, false);
   window.showInactive();
-  await window.webContents.executeJavaScript(`new Promise(resolve => {
+  await window.webContents.executeJavaScript(
+    `new Promise(resolve => {
     document.getElementById('btnOpenTheme')?.click();
     setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(resolve)), 1250);
-  })`, true);
+  })`,
+    true
+  );
   await mkdir(outputDirectory, { recursive: true });
   const image = await window.webContents.capturePage();
   await writeFile(path.join(outputDirectory, 'desktop-appearance-center.png'), image.toPNG());
@@ -59,7 +62,8 @@ async function run() {
   await waitForLoad(window);
   await new Promise(resolve => setTimeout(resolve, 700));
 
-  const result = await window.webContents.executeJavaScript(`(async () => {
+  const result = await window.webContents.executeJavaScript(
+    `(async () => {
     const requiredIds = ${JSON.stringify(requiredIds)};
     const allIds = Array.from(document.querySelectorAll('[id]'), node => node.id);
     const duplicateIds = allIds.filter((id, index) => allIds.indexOf(id) !== index);
@@ -225,6 +229,29 @@ async function run() {
     const objectFocusBusy = document.getElementById('objectWorkflowFeedback').classList.contains('is-busy');
     await delay(420);
     const objectFocusCompleted = document.getElementById('objectWorkflowFeedback').classList.contains('is-success');
+    const objectSelectionEvents = [];
+    const unsubscribeObjectSelection = window.objectSelectionStore?.subscribe(snapshot => {
+      objectSelectionEvents.push(snapshot.revision);
+    });
+    window.objectSelectionStore?.setHover({ type: 'point', id: 'smoke-point-2', active: true });
+    const objectSelectionHoverMirrored = appState.hoveredPointId === 'smoke-point-2';
+    window.objectSelectionStore?.setHover({ type: 'point', id: 'smoke-point-2', active: false });
+    unsubscribeObjectSelection?.();
+    const objectSelectionSnapshot = window.objectSelectionStore?.getSnapshot();
+    const objectSelectionStoreReady = window.objectSelectionStore?.version === 'object-selection-v1' &&
+      document.documentElement.dataset.objectSelectionStore === 'object-selection-v1' &&
+      Object.isFrozen(window.objectSelectionStore) &&
+      Object.isFrozen(objectSelectionSnapshot) &&
+      typeof window.objectSelectionStore?.subscribe === 'function' &&
+      objectSelectionEvents.length >= 3 &&
+      objectSelectionSnapshot?.type === 'point' &&
+      objectSelectionSnapshot.selectedZoneId === 'smoke-zone' &&
+      objectSelectionSnapshot.selectedPointId === 'smoke-point' &&
+      objectSelectionSnapshot.selectedPhenologyId === 'smoke-entry';
+    const objectSelectionCompatibilityMirrored = objectSelectionHoverMirrored &&
+      appState.hoveredPointId === null &&
+      appState.selectedZoneId === objectSelectionSnapshot?.selectedZoneId &&
+      appState.selectedPointId === objectSelectionSnapshot?.selectedPointId;
 
     const speciesReferenceTrigger = document.getElementById('btnOpenSpeciesReference');
     const speciesReferenceExpectedInput = currentSpeciesReferenceInput();
@@ -471,6 +498,8 @@ async function run() {
       objectNavigationWorked,
       objectFocusBusy,
       objectFocusCompleted,
+      objectSelectionStoreReady,
+      objectSelectionCompatibilityMirrored,
       speciesReferenceModalOpened,
       speciesReferenceInputsPrefilled,
       speciesReferenceSessionIdle,
@@ -517,7 +546,9 @@ async function run() {
         'bindThemePanelEvents'
       ].every(name => typeof window[name] === 'function')
     };
-  })()`, true);
+  })()`,
+    true
+  );
 
   const failures = collectRendererSmokeFailures(result, errors);
 

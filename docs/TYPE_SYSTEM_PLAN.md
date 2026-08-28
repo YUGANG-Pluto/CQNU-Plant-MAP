@@ -28,6 +28,8 @@ The Electron application boundary, modern renderer shell, management service, an
 5. Kept storage services under `checkJs` while preserving JSON and SQLite compatibility.
 6. Migrated the management browser controllers to TypeScript and made the site consume only clean compiler output.
 7. Added typed statistics snapshot, matrix-cell, chart-registry, and export-descriptor boundaries while preserving the legacy statistics engine API.
+8. Added focused typed domain adapters for project records, phenology drafts, taxonomy candidates, maintenance issues, and species-reference panel state.
+9. Added a typed object-selection store for selected zones, points, phenology records, hover state, and list-tab state while preserving the legacy state mirror.
 
 ## Current Typecheck Scope
 
@@ -63,33 +65,33 @@ Convert another compatibility feature only when all of these pass in one local v
 - `npm run db:test-runtime`
 - `npm run dist`
 
-The next conversion should remain bounded to one feature and preserve its current global compatibility API until all callers move to explicit imports. The statistics bridge now validates the legacy engine output at the renderer boundary; formula modules remain intentionally unchanged.
+The next conversion should remain bounded to one feature and preserve its current global compatibility API until all callers move to explicit imports. The statistics bridge validates legacy engine output at the renderer boundary, and the object-selection store provides the same strategy for map and inspector selection. Formula modules and persisted project records remain intentionally unchanged.
 
 ## Initial Contract Targets
 
-| Area | Contract |
-| --- | --- |
-| Project storage | `settings.json`, `zones.json`, `points.json`, image references. |
-| SQLite runtime | `information/data.db`, conversion reports, explicit JSON fallback, source cleanup, backup restore. |
-| Taxonomy fields | `family`, `genus`, taxonomy source, confidence, verification status, candidate summary. |
-| IPC | Project load/save, backup, diagnostics, species reference, external link opening. |
-| Statistics | Summary, zone rows, diversity metrics, heatmap matrix model, export descriptors. |
-| Export | CSV rows, JSON report, Markdown report, GeoJSON feature properties. |
+| Area            | Contract                                                                                           |
+| --------------- | -------------------------------------------------------------------------------------------------- |
+| Project storage | `settings.json`, `zones.json`, `points.json`, image references.                                    |
+| SQLite runtime  | `information/data.db`, conversion reports, explicit JSON fallback, source cleanup, backup restore. |
+| Taxonomy fields | `family`, `genus`, taxonomy source, confidence, verification status, candidate summary.            |
+| IPC             | Project load/save, backup, diagnostics, species reference, external link opening.                  |
+| Statistics      | Summary, zone rows, diversity metrics, heatmap matrix model, export descriptors.                   |
+| Export          | CSV rows, JSON report, Markdown report, GeoJSON feature properties.                                |
 
 ## Initial Shared Declarations
 
 The repository now includes minimal declaration files under `app/src/shared/types/`.
 
-| Declaration | Contract |
-| --- | --- |
-| `settings.d.ts` | `ProjectSettings` |
-| `zone.d.ts` | `ZoneRecord` |
-| `point.d.ts` | `PointRecord`, taxonomy summary contracts |
-| `phenology.d.ts` | `PhenologyRecord` |
-| `image.d.ts` | `ImageAsset` |
-| `backup.d.ts` | `BackupManifest` |
-| `ipc.d.ts` | `IpcResponse` |
-| `project.d.ts` | `JsonProjectSnapshot` |
+| Declaration            | Contract                                                      |
+| ---------------------- | ------------------------------------------------------------- |
+| `settings.d.ts`        | `ProjectSettings`                                             |
+| `zone.d.ts`            | `ZoneRecord`                                                  |
+| `point.d.ts`           | `PointRecord`, taxonomy summary contracts                     |
+| `phenology.d.ts`       | `PhenologyRecord`                                             |
+| `image.d.ts`           | `ImageAsset`                                                  |
+| `backup.d.ts`          | `BackupManifest`                                              |
+| `ipc.d.ts`             | `IpcResponse`                                                 |
+| `project.d.ts`         | `JsonProjectSnapshot`                                         |
 | `sqlite-exchange.d.ts` | `SqliteTableModel`, `ConversionReport`, `BackupPreflightPlan` |
 
 These declarations remain the compatibility baseline for storage and project records.

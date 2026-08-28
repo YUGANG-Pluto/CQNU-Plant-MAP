@@ -40,6 +40,7 @@ Publishing a new version does not remove older saved versions. Rollback redeploy
 
 - Desktop installers and source releases remain on GitHub Releases.
 - This site keeps the documentation homepage and serves the full browser application from `/workspace`.
+- Small browser-local research tools are registered through a versioned app manifest and served from dedicated `/apps/*` routes. `/apps/project-inspector` performs a local, non-mutating project preflight without uploading selected files.
 - User-selected project directories, JSON, CSV, GeoJSON, and images remain on the user's device and are not uploaded by the site.
 - Project records, local paths, service tokens, coordinates, and user images are not bundled with the published site.
 - Browser project writes use an OPFS SQLite primary copy and, when granted, a compatible JSON directory mirror.

@@ -54,6 +54,7 @@ images_runtime/
 # Coverage / test
 coverage/
 .nyc_output/
+.artifacts/visual-current/
 
 # Misc
 *.bak

@@ -60,8 +60,9 @@ function renderPhenologyTabs() {
     button.textContent = entry.label || entry.floweringState || t('notFilled');
     button.addEventListener('click', async () => {
       if (entry.id === state.selectedPhenologyId) return;
-      if (!await confirmDiscardPointEditorDraft()) return;
-      state.selectedPhenologyId = entry.id;
+      if (!(await confirmDiscardPointEditorDraft())) return;
+      if (window.objectSelectionStore) window.objectSelectionStore.selectPhenology(entry.id);
+      else state.selectedPhenologyId = entry.id;
       populatePointForm();
     });
     ui.phenologyTabs.appendChild(button);
@@ -75,7 +76,11 @@ function populatePointForm() {
   ui.plantNameCn.value = point?.plantNameCn || '';
   ui.plantNameSci.value = point?.plantNameSci || '';
   taxonomySuggestionCache = point?.taxonomyCandidatesSummary?.length
-    ? { ok: true, candidates: point.taxonomyCandidatesSummary, source: point.taxonomySource || 'unknown' }
+    ? {
+        ok: true,
+        candidates: point.taxonomyCandidatesSummary,
+        source: point.taxonomySource || 'unknown'
+      }
     : null;
   taxonomyCandidatesVisible = false;
   if (ui.btnToggleTaxonomyCandidates) {
@@ -140,9 +145,7 @@ function readPointFormIntoEntry(point, entry) {
 
 function fillDatalist(listEl, values) {
   if (!listEl) return;
-  listEl.innerHTML = values
-    .map(value => `<option value="${escapeHtml(value)}"></option>`)
-    .join('');
+  listEl.innerHTML = values.map(value => `<option value="${escapeHtml(value)}"></option>`).join('');
 }
 
 function refreshSuggestionLists() {

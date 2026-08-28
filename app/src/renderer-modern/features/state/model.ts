@@ -13,6 +13,9 @@ export interface LegacyRendererState {
   selectedZoneId?: unknown;
   selectedPointId?: unknown;
   selectedPhenologyId?: unknown;
+  hoveredZoneId?: unknown;
+  hoveredPointId?: unknown;
+  activeListTab?: unknown;
   currentMode?: unknown;
 }
 
@@ -41,9 +44,7 @@ export interface RendererStateFacade {
 }
 
 function asRecord(value: unknown): UnknownRecord {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? value as UnknownRecord
-    : {};
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as UnknownRecord) : {};
 }
 
 function cleanText(value: unknown): string {
@@ -69,9 +70,7 @@ function safeModeEnabled(settingsValue: unknown): boolean {
   return safeMode.enabled === true;
 }
 
-export function createRendererStateFacade(
-  readState: () => LegacyRendererState | undefined
-): RendererStateFacade {
+export function createRendererStateFacade(readState: () => LegacyRendererState | undefined): RendererStateFacade {
   return Object.freeze({
     snapshot(): Readonly<RendererStateSnapshot> {
       const source = readState() || {};

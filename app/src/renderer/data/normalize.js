@@ -101,13 +101,13 @@ function normalizeImages(value) {
   if (!value) {
     return [];
   }
-  return String(value).split(/\s*;\s*/).filter(Boolean);
+  return String(value)
+    .split(/\s*;\s*/)
+    .filter(Boolean);
 }
 
 function pickPhenologyLabel(raw) {
-  return mapLegacyPhenology(
-    raw.label || raw.floweringState || raw.phaseName || raw.phenology || '不明'
-  );
+  return mapLegacyPhenology(raw.label || raw.floweringState || raw.phaseName || raw.phenology || '不明');
 }
 
 // 单物候旧记录补成 phenologyEntries，保持旧 points.json 可用。
@@ -158,8 +158,7 @@ function syncPointSummary(point) {
   point.note = entry.note;
   point.images = normalizeImages(entry.images);
 
-  const hasSelected = (point.phenologyEntries || [])
-    .some(entryItem => entryItem.id === point.selectedPhenologyId);
+  const hasSelected = (point.phenologyEntries || []).some(entryItem => entryItem.id === point.selectedPhenologyId);
 
   if (!point.selectedPhenologyId || !hasSelected) {
     point.selectedPhenologyId = entry.id || '';
@@ -185,7 +184,9 @@ function normalizePointFields(point) {
     taxonomyConfidenceLabel: String(point.taxonomyConfidenceLabel || 'unknown').trim(),
     taxonomyVerificationStatus: String(point.taxonomyVerificationStatus || 'unverified').trim(),
     taxonomyUpdatedAt: String(point.taxonomyUpdatedAt || '').trim(),
-    taxonomyCandidatesSummary: Array.isArray(point.taxonomyCandidatesSummary) ? point.taxonomyCandidatesSummary.slice(0, 5) : [],
+    taxonomyCandidatesSummary: Array.isArray(point.taxonomyCandidatesSummary)
+      ? point.taxonomyCandidatesSummary.slice(0, 5)
+      : [],
     pointId: String(point.pointId || '').trim()
   };
 }
@@ -312,10 +313,18 @@ function getSelectedPhenologyEntry(point = getSelectedPoint()) {
 }
 
 function setSelectedPhenologyEntry(pointId, entryId) {
-  if (pointId) {
-    state.selectedPointId = pointId;
+  if (pointId && window.objectSelectionStore) {
+    const point = state.points.find(item => item.id === pointId);
+    window.objectSelectionStore.selectPoint({
+      pointId,
+      zoneId: point?.zoneRef || state.selectedZoneId,
+      phenologyId: entryId
+    });
+  } else {
+    if (pointId) state.selectedPointId = pointId;
+    state.selectedPhenologyId = entryId || '';
+    window.objectSelectionStore?.sync();
   }
-  state.selectedPhenologyId = entryId || '';
 }
 
 if (typeof module !== 'undefined' && module.exports) {

@@ -4,7 +4,8 @@ async function applyZoneInfo() {
   if (!zone) return showAlert(t('noZoneSelected'));
   const edit = typeof beginProjectEdit === 'function' ? beginProjectEdit('historyEditZone') : null;
 
-  state.selectedZoneId = zone.id;
+  if (window.objectSelectionStore) window.objectSelectionStore.selectZone(zone.id);
+  else state.selectedZoneId = zone.id;
   zone.zoneId = ui.zoneId.value.trim();
   zone.name = ui.zoneName.value.trim();
   zone.description = ui.zoneDescription.value.trim();
@@ -28,8 +29,16 @@ async function applyPointInfo() {
   pointEditorSaving = true;
   setPointEditorSaveState('saving');
   try {
-    state.selectedPointId = point.id;
-    state.selectedZoneId = point.zoneRef;
+    if (window.objectSelectionStore) {
+      window.objectSelectionStore.selectPoint({
+        pointId: point.id,
+        zoneId: point.zoneRef,
+        phenologyId: entry.id
+      });
+    } else {
+      state.selectedPointId = point.id;
+      state.selectedZoneId = point.zoneRef;
+    }
     readPointFormIntoEntry(point, entry);
     syncPointSummary(point);
     updatePointTooltip(point);
@@ -46,7 +55,8 @@ async function applyPointInfo() {
 }
 
 function openPointEditor() {
-  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('open-point-editor')) return;
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('open-point-editor'))
+    return;
   const point = getSelectedPoint();
   if (!point) return showAlert(t('noPointSelected'));
   populatePointForm();
@@ -54,7 +64,7 @@ function openPointEditor() {
 }
 
 async function closePointEditor() {
-  if (!await confirmDiscardPointEditorDraft()) return false;
+  if (!(await confirmDiscardPointEditorDraft())) return false;
   closeLayerModal(ui.pointEditorModal);
   return true;
 }
@@ -79,7 +89,7 @@ async function addPhenologyEntry() {
   if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('add-phenology')) return;
   const point = getSelectedPoint();
   if (!point) return showAlert(t('noPointSelected'));
-  if (!await confirmDiscardPointEditorDraft()) return;
+  if (!(await confirmDiscardPointEditorDraft())) return;
 
   const value = await openSmallPrompt(t('addPhenologyPrompt'));
   if (!value) return;
@@ -88,7 +98,8 @@ async function addPhenologyEntry() {
   const edit = typeof beginProjectEdit === 'function' ? beginProjectEdit('historyAddPhenology') : null;
   const entry = makePhenologyEntry({ label, floweringState: label });
   point.phenologyEntries.push(entry);
-  state.selectedPhenologyId = entry.id;
+  if (window.objectSelectionStore) window.objectSelectionStore.selectPhenology(entry.id);
+  else state.selectedPhenologyId = entry.id;
 
   syncPointSummary(point);
   populatePointForm();
@@ -98,15 +109,17 @@ async function addPhenologyEntry() {
 }
 
 async function deletePhenologyEntry() {
-  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('delete-phenology')) return;
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('delete-phenology'))
+    return;
   const point = getSelectedPoint();
   const entry = getSelectedPhenologyEntry(point);
   if (!point || !entry) return showAlert(t('noPhenologySelected'));
-  if (!await confirmDiscardPointEditorDraft()) return;
+  if (!(await confirmDiscardPointEditorDraft())) return;
 
   if (point.phenologyEntries.length <= 1) {
     point.phenologyEntries[0] = makePhenologyEntry({ label: '不明', floweringState: '不明' });
-    state.selectedPhenologyId = point.phenologyEntries[0].id;
+    if (window.objectSelectionStore) window.objectSelectionStore.selectPhenology(point.phenologyEntries[0].id);
+    else state.selectedPhenologyId = point.phenologyEntries[0].id;
     syncPointSummary(point);
     populatePointForm();
     renderAllDerived();
@@ -121,7 +134,8 @@ async function deletePhenologyEntry() {
   if (!ok) return;
 
   point.phenologyEntries = point.phenologyEntries.filter(item => item.id !== entry.id);
-  state.selectedPhenologyId = point.phenologyEntries[0]?.id || '';
+  if (window.objectSelectionStore) window.objectSelectionStore.selectPhenology(point.phenologyEntries[0]?.id || '');
+  else state.selectedPhenologyId = point.phenologyEntries[0]?.id || '';
   syncPointSummary(point);
   populatePointForm();
   renderAllDerived();

@@ -24,21 +24,41 @@ if (!managementUiModuleNames.includes('manage.js')) {
   throw new Error('Compiled management UI entry is missing.');
 }
 
-const [styles, pageExperienceStyles, responsiveStyles, client, workspaceGateCss, workspaceGateClient, appIndex, legacyLoaderSource, manageHtml, manageCss, managementUiModules, profileStorage, hostingConfig] = await Promise.all([
+const [
+  styles,
+  pageExperienceStyles,
+  responsiveStyles,
+  appsStyles,
+  client,
+  projectInspectorClient,
+  workspaceGateCss,
+  workspaceGateClient,
+  appIndex,
+  legacyLoaderSource,
+  manageHtml,
+  manageCss,
+  managementUiModules,
+  profileStorage,
+  hostingConfig
+] = await Promise.all([
   readFile(resolve(projectRoot, 'src/styles.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/page-experience.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/responsive.css'), 'utf8'),
+  readFile(resolve(projectRoot, 'src/apps.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/client.js'), 'utf8'),
+  readFile(resolve(projectRoot, 'src/apps/project-inspector.js'), 'utf8'),
   readFile(resolve(projectRoot, 'src/workspace-gate.css'), 'utf8'),
   readFile(resolve(projectRoot, 'src/workspace-gate.js'), 'utf8'),
   readFile(resolve(appRoot, 'index.html'), 'utf8'),
   readFile(resolve(appRoot, 'src/renderer/legacy-loader.js'), 'utf8'),
   readFile(resolve(adminRoot, 'ui/index.html'), 'utf8'),
   readFile(resolve(adminRoot, 'ui/manage.css'), 'utf8'),
-  Promise.all(managementUiModuleNames.map(async name => ({
-    name,
-    source: await readFile(resolve(adminDistRoot, 'ui', name), 'utf8')
-  }))),
+  Promise.all(
+    managementUiModuleNames.map(async name => ({
+      name,
+      source: await readFile(resolve(adminDistRoot, 'ui', name), 'utf8')
+    }))
+  ),
   readFile(resolve(adminRoot, 'ui/profile-storage.js'), 'utf8'),
   readFile(resolve(projectRoot, '.openai/hosting.json'), 'utf8')
 ]);
@@ -47,22 +67,26 @@ JSON.parse(hostingConfig);
 
 async function buildLegacyRuntimeBundle() {
   const context = { CQNU_LEGACY_RUNTIME_MANIFEST_ONLY: true };
-  runInNewContext(legacyLoaderSource, context, { filename: 'legacy-loader.js' });
+  runInNewContext(legacyLoaderSource, context, {
+    filename: 'legacy-loader.js'
+  });
   const sources = Array.from(context.CQNU_LEGACY_RUNTIME_SOURCES || []);
   if (!sources.length) throw new Error('Legacy renderer source manifest is empty.');
 
-  const modules = await Promise.all(sources.map(async source => {
-    const relativeSource = String(source).replace(/^\.\//, '');
-    const absoluteSource = resolve(appRoot, relativeSource);
-    const relativeToApp = relative(appRoot, absoluteSource);
-    if (!relativeToApp || relativeToApp.startsWith('..') || relativeToApp.includes(':')) {
-      throw new Error(`Legacy renderer source escapes app root: ${source}`);
-    }
-    return {
-      source,
-      code: await readFile(absoluteSource, 'utf8')
-    };
-  }));
+  const modules = await Promise.all(
+    sources.map(async source => {
+      const relativeSource = String(source).replace(/^\.\//, '');
+      const absoluteSource = resolve(appRoot, relativeSource);
+      const relativeToApp = relative(appRoot, absoluteSource);
+      if (!relativeToApp || relativeToApp.startsWith('..') || relativeToApp.includes(':')) {
+        throw new Error(`Legacy renderer source escapes app root: ${source}`);
+      }
+      return {
+        source,
+        code: await readFile(absoluteSource, 'utf8')
+      };
+    })
+  );
 
   return [
     "document.documentElement.dataset.runtimeStatus = 'loading';",
@@ -82,12 +106,14 @@ const workspaceHtml = appIndex
   .replace('  <script src="./node_modules/leaflet/dist/leaflet.js"></script>\n', '')
   .replace('  <script src="./node_modules/leaflet-draw/dist/leaflet.draw.js"></script>\n', '')
   .replace('  <script defer src="./src/renderer/legacy-loader.js"></script>\n', '')
+  .replace("script-src 'self';", "script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:;")
   .replace(
-    "script-src 'self';",
-    "script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:;"
+    '</head>',
+    `  ${workspaceResourceHints}\n  <link rel="manifest" href="/workspace.webmanifest" />\n  <link rel="stylesheet" href="/assets/workspace-gate.css" />\n</head>`
   )
-  .replace('</head>', `  ${workspaceResourceHints}\n  <link rel="manifest" href="/workspace.webmanifest" />\n  <link rel="stylesheet" href="/assets/workspace-gate.css" />\n</head>`)
-  .replace('<body>', `<body data-site-workspace="true">
+  .replace(
+    '<body>',
+    `<body data-site-workspace="true">
   <div class="workspace-access-gate" data-workspace-access-gate role="status" aria-live="polite">
     <div class="workspace-access-panel">
       <img src="/assets/cqnu-logo.svg" alt="" />
@@ -99,8 +125,12 @@ const workspaceHtml = appIndex
        <small data-gate-stage>安全会话</small>
        <a href="/manage?next=/workspace" data-gate-action hidden>前往登录</a>
     </div>
-  </div>`)
-  .replace('</body>', '  <script src="/assets/profile-storage.js"></script>\n  <script src="/assets/workspace-gate.js"></script>\n</body>');
+  </div>`
+  )
+  .replace(
+    '</body>',
+    '  <script src="/assets/profile-storage.js"></script>\n  <script src="/assets/workspace-gate.js"></script>\n</body>'
+  );
 const managePageHtml = manageHtml.replace(
   '</head>',
   '  <link rel="prefetch" href="/renderer-dist/modern-shell.js" as="script" />\n  <link rel="prefetch" href="/assets/legacy-runtime.js" as="script" />\n</head>'
@@ -114,9 +144,8 @@ async function copyRendererAssets() {
   const entries = await readdir(rendererDist, { withFileTypes: true });
   for (const entry of entries) {
     const source = resolve(rendererDist, entry.name);
-    const target = entry.name === 'assets'
-      ? resolve(clientRoot, 'assets')
-      : resolve(clientRoot, 'renderer-dist', entry.name);
+    const target =
+      entry.name === 'assets' ? resolve(clientRoot, 'assets') : resolve(clientRoot, 'renderer-dist', entry.name);
     await cp(source, target, { recursive: entry.isDirectory() });
   }
 }
@@ -136,7 +165,9 @@ async function copyWorkspaceRuntimeAssets() {
   await Promise.all([
     cp(resolve(leafletSource, 'leaflet.css'), resolve(leafletTarget, 'leaflet.css')),
     cp(resolve(leafletSource, 'leaflet.js'), resolve(leafletTarget, 'leaflet.js')),
-    cp(resolve(leafletSource, 'images'), resolve(leafletTarget, 'images'), { recursive: true }),
+    cp(resolve(leafletSource, 'images'), resolve(leafletTarget, 'images'), {
+      recursive: true
+    }),
     cp(resolve(leafletDrawSource, 'leaflet.draw.css'), resolve(leafletDrawTarget, 'leaflet.draw.css')),
     cp(resolve(leafletDrawSource, 'leaflet.draw.js'), resolve(leafletDrawTarget, 'leaflet.draw.js')),
     cp(resolve(leafletDrawSource, 'images'), resolve(leafletDrawTarget, 'images'), { recursive: true })
@@ -145,13 +176,15 @@ async function copyWorkspaceRuntimeAssets() {
 
 async function copyAdminServerAssets() {
   const entries = await readdir(adminDistRoot, { withFileTypes: true });
-  await Promise.all(entries
-    .filter(entry => entry.name !== 'ui')
-    .map(entry => cp(
-      resolve(adminDistRoot, entry.name),
-      resolve(distRoot, 'server/admin', entry.name),
-      { recursive: entry.isDirectory() }
-    )));
+  await Promise.all(
+    entries
+      .filter(entry => entry.name !== 'ui')
+      .map(entry =>
+        cp(resolve(adminDistRoot, entry.name), resolve(distRoot, 'server/admin', entry.name), {
+          recursive: entry.isDirectory()
+        })
+      )
+  );
 }
 
 async function collectFileMetrics(directory) {
@@ -186,14 +219,14 @@ await Promise.all([
   writeFile(resolve(clientRoot, 'assets/styles.css'), styles, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/page-experience.css'), pageExperienceStyles, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/responsive.css'), responsiveStyles, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/apps.css'), appsStyles, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/client.js'), client, 'utf8'),
+  writeFile(resolve(clientRoot, 'assets/project-inspector.js'), projectInspectorClient, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/workspace-gate.css'), workspaceGateCss, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/workspace-gate.js'), workspaceGateClient, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/legacy-runtime.js'), legacyRuntimeBundle, 'utf8'),
   writeFile(resolve(clientRoot, 'assets/manage.css'), manageCss, 'utf8'),
-  ...managementUiModules.map(({ name, source }) => (
-    writeFile(resolve(clientRoot, 'assets', name), source, 'utf8')
-  )),
+  ...managementUiModules.map(({ name, source }) => writeFile(resolve(clientRoot, 'assets', name), source, 'utf8')),
   writeFile(resolve(clientRoot, 'assets/profile-storage.js'), profileStorage, 'utf8'),
   writeFile(resolve(distRoot, 'db/schema.ts'), schemaSource, 'utf8'),
   copyAdminServerAssets(),
@@ -237,7 +270,9 @@ const siteAssetPaths = new Set([
   '/assets/styles.css',
   '/assets/page-experience.css',
   '/assets/responsive.css',
+  '/assets/apps.css',
   '/assets/client.js',
+  '/assets/project-inspector.js',
   '/assets/workspace-gate.css',
   '/assets/workspace-gate.js',
   '/assets/manage.css',

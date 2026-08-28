@@ -173,9 +173,7 @@ function syncProjectSaveStatusUi() {
     if (savedAt) ui.projectSaveTimestamp.dateTime = new Date(savedAt).toISOString();
     else ui.projectSaveTimestamp.removeAttribute('datetime');
   }
-  ui.projectSaveStatus.title = savedTime
-    ? `${t('saveStateLastSaved')} ${savedTime}`
-    : t(labelKey);
+  ui.projectSaveStatus.title = savedTime ? `${t('saveStateLastSaved')} ${savedTime}` : t(labelKey);
 }
 
 function projectHistoryBlockedReason() {
@@ -203,17 +201,21 @@ function syncProjectHistoryUi() {
   if (ui.btnUndoProjectEdit) {
     ui.btnUndoProjectEdit.disabled = undoDisabled;
     ui.btnUndoProjectEdit.title = undoDisabled
-      ? (blockedReason || t('historyNothingToUndo'))
+      ? blockedReason || t('historyNothingToUndo')
       : `${t('undoProjectEdit')}: ${t(status.undoLabelKey)}`;
   }
   if (ui.btnRedoProjectEdit) {
     ui.btnRedoProjectEdit.disabled = redoDisabled;
     ui.btnRedoProjectEdit.title = redoDisabled
-      ? (blockedReason || t('historyNothingToRedo'))
+      ? blockedReason || t('historyNothingToRedo')
       : `${t('redoProjectEdit')}: ${t(status.redoLabelKey)}`;
   }
   syncProjectSaveStatusUi();
-  if (typeof refreshCommandPaletteI18n === 'function' && typeof isCommandPaletteOpen === 'function' && isCommandPaletteOpen()) {
+  if (
+    typeof refreshCommandPaletteI18n === 'function' &&
+    typeof isCommandPaletteOpen === 'function' &&
+    isCommandPaletteOpen()
+  ) {
     refreshCommandPaletteI18n();
   }
 }
@@ -243,8 +245,11 @@ function notifyProjectSaveFailed() {
 function applyProjectEditSnapshot(snapshot, reason) {
   state.zones = (snapshot.zones || []).map(item => normalizeZoneRecord(cloneProjectEditValue(item)));
   state.points = (snapshot.points || []).map(item => normalizePointRecord(cloneProjectEditValue(item)));
-  state.hoveredZoneId = null;
-  state.hoveredPointId = null;
+  if (window.objectSelectionStore) window.objectSelectionStore.clearHover();
+  else {
+    state.hoveredZoneId = null;
+    state.hoveredPointId = null;
+  }
   if (typeof clearPendingPoint === 'function') clearPendingPoint();
 
   const selectedPoint = state.points.find(item => item.id === snapshot.selectedPointId);

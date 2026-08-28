@@ -83,11 +83,17 @@ jobs:
       - name: Build shared browser renderer
         run: npm run build:renderer
 
+      - name: Check initial client bundle budget
+        run: npm run check:bundle
+
       - name: Build browser workspace site bundle
         run: npm --prefix ../site run build
 
       - name: Run hidden browser workspace acceptance
         run: npm run smoke:web
+
+      - name: Run three-domain visual regression
+        run: npm run visual:check
 
   site:
     name: Site verification
@@ -124,6 +130,10 @@ jobs:
       - name: Build shared browser renderer
         working-directory: app
         run: npm run build:renderer
+
+      - name: Check initial client bundle budget
+        working-directory: app
+        run: npm run check:bundle
 
       - name: Install site dependencies
         run: npm ci --ignore-scripts --no-audit --fund=false

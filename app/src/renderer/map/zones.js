@@ -1,9 +1,9 @@
 function zoneStyle(selected = false, hovered = false) {
   return {
-    color: selected ? '#4b6bff' : (hovered ? '#5579e8' : '#6e8cff'),
-    weight: selected ? 3.5 : (hovered ? 3 : 2),
-    fillColor: selected ? '#5b7dff' : (hovered ? '#7892f4' : '#92a6ff'),
-    fillOpacity: selected ? 0.28 : (hovered ? 0.22 : 0.16)
+    color: selected ? '#4b6bff' : hovered ? '#5579e8' : '#6e8cff',
+    weight: selected ? 3.5 : hovered ? 3 : 2,
+    fillColor: selected ? '#5b7dff' : hovered ? '#7892f4' : '#92a6ff',
+    fillOpacity: selected ? 0.28 : hovered ? 0.22 : 0.16
   };
 }
 
@@ -11,13 +11,15 @@ function zoneStyle(selected = false, hovered = false) {
 function geometryToLatLngs(geometry) {
   if (!geometry || geometry.type !== 'Polygon') return [];
   if (!Array.isArray(geometry.coordinates?.[0])) return [];
-  return geometry.coordinates[0].map(pair => {
-    const decoded = decodeCoordPair(pair);
-    if (!decoded) return null;
-    const [lat, lng] = decoded;
-    const display = storageLngLatToDisplayLatLng(lng, lat);
-    return [display.lat, display.lng];
-  }).filter(Boolean);
+  return geometry.coordinates[0]
+    .map(pair => {
+      const decoded = decodeCoordPair(pair);
+      if (!decoded) return null;
+      const [lat, lng] = decoded;
+      const display = storageLngLatToDisplayLatLng(lng, lat);
+      return [display.lat, display.lng];
+    })
+    .filter(Boolean);
 }
 
 function pointInPolygonStorage(latlng, polygonCoords) {
@@ -34,8 +36,7 @@ function pointInPolygonStorage(latlng, polygonCoords) {
     const xj = ring[j][0];
     const yj = ring[j][1];
     const denominator = yj - yi || 1e-12;
-    const intersects = ((yi > y) !== (yj > y)) &&
-      (x < ((xj - xi) * (y - yi)) / denominator + xi);
+    const intersects = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / denominator + xi;
 
     if (intersects) inside = !inside;
   }
@@ -145,9 +146,12 @@ function updateZoneTooltip(zone) {
 }
 
 function selectZone(zoneId) {
-  state.selectedZoneId = zoneId;
-  state.selectedPointId = null;
-  state.selectedPhenologyId = '';
+  if (window.objectSelectionStore) window.objectSelectionStore.selectZone(zoneId);
+  else {
+    state.selectedZoneId = zoneId;
+    state.selectedPointId = null;
+    state.selectedPhenologyId = '';
+  }
 
   refreshZoneStyles();
   refreshPointStyles();
@@ -174,9 +178,7 @@ function uniqueSpeciesInZone(zoneId) {
 }
 
 function overallSpeciesCount() {
-  const species = state.points
-    .map(point => (point.plantNameSci || point.plantNameCn || '').trim())
-    .filter(Boolean);
+  const species = state.points.map(point => (point.plantNameSci || point.plantNameCn || '').trim()).filter(Boolean);
 
   return new Set(species).size;
 }

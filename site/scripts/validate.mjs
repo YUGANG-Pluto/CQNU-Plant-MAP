@@ -17,7 +17,16 @@ async function fetchSite(path, init) {
 assert.equal(typeof worker?.fetch, 'function');
 assert.ok((await stat(workerPath)).size < 512_000, 'Site Worker should remain below 500 KiB');
 assert.doesNotMatch(source, /APP_ASSETS|sqlite3-worker1-[A-Za-z0-9_-]+.*base64/);
-for (const route of ['/', '/workspace', '/manage', '/docs', '/web', '/release', '/privacy']) {
+for (const route of [
+  '/',
+  '/workspace',
+  '/manage',
+  '/docs',
+  '/web',
+  '/release',
+  '/privacy',
+  '/apps/project-inspector'
+]) {
   const response = await fetchSite(route);
   const html = await response.text();
   assert.equal(response.status, 200, `${route} should return 200`);
@@ -31,7 +40,8 @@ const pagePresentationContracts = new Map([
   ['/docs', ['site-page--docs', '#f7f9fc']],
   ['/web', ['site-page--architecture', '#f6fafb']],
   ['/release', ['site-page--release', '#fbf8f9']],
-  ['/privacy', ['site-page--privacy', '#f7faf8']]
+  ['/privacy', ['site-page--privacy', '#f7faf8']],
+  ['/apps/project-inspector', ['site-page--app-inspector', '#f4faf9']]
 ]);
 for (const [route, [pageClass, themeColor]] of pagePresentationContracts) {
   const response = await fetchSite(route);
@@ -64,11 +74,16 @@ const preview = await fetchSite('/assets/app-preview.png');
 assert.equal(preview.status, 200);
 assert.match(preview.headers.get('content-type') || '', /image\/png/);
 assert.ok((await preview.arrayBuffer()).byteLength > 1000);
-for (const asset of [
-  '/renderer-dist/modern-shell.js',
-  '/assets/legacy-runtime.js',
-  '/assets/workspace-gate.js'
-]) {
+const projectInspectorPage = await fetchSite('/apps/project-inspector');
+const projectInspectorHtml = await projectInspectorPage.text();
+assert.match(projectInspectorHtml, /data-project-inspector/);
+assert.match(projectInspectorHtml, /assets\/project-inspector\.js/);
+assert.match(projectInspectorHtml, /不上传/);
+for (const asset of ['/assets/apps.css', '/assets/project-inspector.js']) {
+  const response = await fetchSite(asset);
+  assert.equal(response.status, 200, `${asset} should return 200`);
+}
+for (const asset of ['/renderer-dist/modern-shell.js', '/assets/legacy-runtime.js', '/assets/workspace-gate.js']) {
   const response = await fetchSite(asset);
   const source = await response.text();
   assert.equal(response.status, 200);
@@ -107,7 +122,11 @@ assert.equal(unavailableSessionData.ok, false);
 assert.equal(unavailableSessionData.error.code, 'MANAGEMENT_SERVICE_UNAVAILABLE');
 const modernShellResponse = await fetchSite('/renderer-dist/modern-shell.js');
 const modernShellSource = await modernShellResponse.text();
-assert.match(modernShellSource, /project-workflow-v1/, 'Modern shell should include the shared project workflow bridge');
+assert.match(
+  modernShellSource,
+  /project-workflow-v1/,
+  'Modern shell should include the shared project workflow bridge'
+);
 const databaseWorkerMatch = modernShellSource.match(/assets\/webDatabaseWorker-[A-Za-z0-9_-]+\.js/);
 assert.ok(databaseWorkerMatch, 'Modern shell should reference the browser database Worker');
 const databaseWorkerResponse = await fetchSite(`/${databaseWorkerMatch[0]}`);

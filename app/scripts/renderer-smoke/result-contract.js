@@ -16,16 +16,21 @@ function collectRendererSmokeFailures(result, runtimeErrors = []) {
   if (!result.statsRegistryReady) failures.push('typed statistics chart registry is incomplete');
   if (!result.statsRegistryImmutable) failures.push('typed statistics chart registry exposes mutable containers');
   if (!result.projectWorkflowReady) failures.push('typed project workflow bridge is incomplete');
-  if (!result.projectSessionStoreReady) failures.push('typed project session store is missing, mutable, or not mirrored to the compatibility dataset');
+  if (!result.projectSessionStoreReady)
+    failures.push('typed project session store is missing, mutable, or not mirrored to the compatibility dataset');
   if (result.modalPrimitiveCount < 3) failures.push(`modal primitive count: ${result.modalPrimitiveCount}`);
   if (!result.queryFocusTrapped) failures.push('query modal does not trap keyboard focus');
   if (!result.queryClosedByEscape) failures.push('query modal did not close with Escape');
   if (!result.queryFocusReturned) failures.push('query modal did not restore focus to its opener');
   if (!result.themeCenterOpened) failures.push('appearance center did not open as the top workflow layer');
-  if (!result.themeControlsApplied) failures.push('appearance center did not apply the shared liquid-glass and motion state');
-  if (!result.themeMaterialControlsReady) failures.push('appearance center did not expose the compact solid, regular, and clear material controls');
+  if (!result.themeControlsApplied)
+    failures.push('appearance center did not apply the shared liquid-glass and motion state');
+  if (!result.themeMaterialControlsReady)
+    failures.push('appearance center did not expose the compact solid, regular, and clear material controls');
   if (result.themeActiveDurations.some(value => !Number.isFinite(value) || value < 260)) {
-    failures.push(`appearance center exposed an active animation below 260ms: ${result.themeActiveDurations.join(', ')}`);
+    failures.push(
+      `appearance center exposed an active animation below 260ms: ${result.themeActiveDurations.join(', ')}`
+    );
   }
   if (!result.themeCenterClosed) failures.push('appearance center did not close through the shared motion layer');
   if (!result.pointEditorDirtyDetected) failures.push('point editor did not expose its dirty state');
@@ -40,30 +45,47 @@ function collectRendererSmokeFailures(result, runtimeErrors = []) {
   if (!result.objectHoverLinked) failures.push('object hover did not link list and map state');
   if (!result.objectKeyboardActivated) failures.push('object list item did not activate from the keyboard');
   if (!result.objectNavigationWorked) failures.push('previous/next object navigation did not preserve selection scope');
-  if (!result.objectFocusBusy || !result.objectFocusCompleted) failures.push('object focus feedback did not expose busy and success states');
-  if (!result.speciesReferenceModalOpened) failures.push('species reference modal did not open as the top workflow layer');
-  if (!result.speciesReferenceInputsPrefilled) failures.push('species reference modal did not reuse the selected point names');
-  if (!result.speciesReferenceSessionIdle) failures.push('species reference session did not expose immutable idle state');
+  if (!result.objectFocusBusy || !result.objectFocusCompleted)
+    failures.push('object focus feedback did not expose busy and success states');
+  if (!result.objectSelectionStoreReady)
+    failures.push('typed object selection store is missing, mutable, or did not publish selection changes');
+  if (!result.objectSelectionCompatibilityMirrored)
+    failures.push('typed object selection store did not mirror the legacy renderer state');
+  if (!result.speciesReferenceModalOpened)
+    failures.push('species reference modal did not open as the top workflow layer');
+  if (!result.speciesReferenceInputsPrefilled)
+    failures.push('species reference modal did not reuse the selected point names');
+  if (!result.speciesReferenceSessionIdle)
+    failures.push('species reference session did not expose immutable idle state');
   if (!result.speciesReferenceModalClosed) failures.push('species reference modal did not close cleanly');
-  if (!result.rendererStateFacadeReady) failures.push('typed renderer state facade did not reflect current selection and counts');
-  if (!result.rendererStateFacadeImmutable) failures.push('typed renderer state facade did not freeze its public containers');
+  if (!result.rendererStateFacadeReady)
+    failures.push('typed renderer state facade did not reflect current selection and counts');
+  if (!result.rendererStateFacadeImmutable)
+    failures.push('typed renderer state facade did not freeze its public containers');
   if (!result.rendererStatePathHidden) failures.push('typed renderer state facade exposed the local project path');
   if (!result.rendererStateFacadeIsolated) failures.push('typed renderer state facade leaked mutable project records');
   if (!result.rendererDomainBridgeReady) failures.push('typed renderer domain bridge is missing or mutable');
-  if (!result.rendererDomainAdapterReady) failures.push('typed renderer domain adapter did not preserve canonical project values');
-  if (!result.rendererDomainAdapterImmutable) failures.push('typed renderer domain adapter did not freeze its compatibility view');
-  if (!result.rendererDomainAdapterInputUnchanged) failures.push('typed renderer domain adapter mutated its source record');
-  if (!result.rendererDomainDraftReady) failures.push('typed phenology draft controller returned an invalid state transition');
+  if (!result.rendererDomainAdapterReady)
+    failures.push('typed renderer domain adapter did not preserve canonical project values');
+  if (!result.rendererDomainAdapterImmutable)
+    failures.push('typed renderer domain adapter did not freeze its compatibility view');
+  if (!result.rendererDomainAdapterInputUnchanged)
+    failures.push('typed renderer domain adapter mutated its source record');
+  if (!result.rendererDomainDraftReady)
+    failures.push('typed phenology draft controller returned an invalid state transition');
   if (!result.rendererDomainTaxonomyReady) failures.push('typed taxonomy candidate model returned invalid output');
-  if (!result.rendererDomainMaintenanceReady) failures.push('typed maintenance issue model returned invalid counts or ordering');
-  if (!result.rendererDomainSpeciesReferenceReady) failures.push('typed species reference panel model returned invalid session state');
+  if (!result.rendererDomainMaintenanceReady)
+    failures.push('typed maintenance issue model returned invalid counts or ordering');
+  if (!result.rendererDomainSpeciesReferenceReady)
+    failures.push('typed species reference panel model returned invalid session state');
   if (!result.historyUndoButtonEnabled) failures.push('project history did not enable undo after a supported edit');
   if (!result.historyUndoWorked) failures.push('Ctrl+Z did not restore the previous project edit snapshot');
   if (!result.historyRedoWorked) failures.push('Ctrl+Shift+Z did not restore the redone project edit snapshot');
   if (!result.historySaveStatusWorked) failures.push('project save status did not return to saved');
   if (!result.historyCommandsRegistered) failures.push('undo and redo commands are missing from Command Center');
   if (!result.textEditingPreservedHistory) failures.push('text-field Ctrl+Z incorrectly consumed project history');
-  if (!result.externalPointMutationClearedHistory) failures.push('an unsupported point mutation did not invalidate stale project history');
+  if (!result.externalPointMutationClearedHistory)
+    failures.push('an unsupported point mutation did not invalidate stale project history');
   if (!result.reviewBridgeBuilt) failures.push('research review bridge did not derive the expected local task queue');
   if (!result.reviewWorkbenchOpened) failures.push('research review workbench did not open as the top workflow layer');
   if (!result.reviewOverviewRendered || result.reviewInitialTaskCount !== 2) {
@@ -74,11 +96,16 @@ function collectRendererSmokeFailures(result, runtimeErrors = []) {
   if (!result.reviewResetWorked) failures.push('research review filters did not reset');
   if (!result.reviewNavigationWorked) failures.push('research review previous/next navigation did not change tasks');
   if (!result.reviewEditorLayered) failures.push('point editor did not open above the research review workbench');
-  if (!result.reviewRestoredAfterEditor) failures.push('research review workbench was not restored after closing the point editor');
+  if (!result.reviewRestoredAfterEditor)
+    failures.push('research review workbench was not restored after closing the point editor');
   if (!result.reviewWorkbenchEnglish) failures.push('research review workbench did not refresh English labels');
   if (!result.reviewWorkbenchClosed) failures.push('research review workbench did not close cleanly');
-  if (!result.commandPaletteOpened) failures.push(`command palette did not open and focus search with Ctrl+K: ${JSON.stringify(result.commandPaletteOpenSnapshot)}`);
-  if (!result.commandKeyboardNavigationWorked) failures.push('command palette keyboard navigation did not move the active result');
+  if (!result.commandPaletteOpened)
+    failures.push(
+      `command palette did not open and focus search with Ctrl+K: ${JSON.stringify(result.commandPaletteOpenSnapshot)}`
+    );
+  if (!result.commandKeyboardNavigationWorked)
+    failures.push('command palette keyboard navigation did not move the active result');
   if (!result.commandObjectJumpWorked) failures.push('command palette did not locate a point command');
   if (!result.commandRecentRemembered) failures.push('command palette did not retain recent commands for the session');
   if (!result.commandHelpWorked) failures.push('command palette shortcut reference is incomplete');

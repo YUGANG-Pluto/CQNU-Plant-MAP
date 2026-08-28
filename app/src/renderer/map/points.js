@@ -1,9 +1,9 @@
 function pointStyle(selected = false, pending = false, hovered = false) {
   return {
-    radius: pending ? 10 : (selected ? 10 : (hovered ? 8.5 : 7)),
+    radius: pending ? 10 : selected ? 10 : hovered ? 8.5 : 7,
     color: '#ffffff',
-    weight: selected ? 3 : (hovered ? 2.5 : 2),
-    fillColor: pending ? '#ffb147' : (selected ? '#ff5e80' : (hovered ? '#16877d' : '#30b7a0')),
+    weight: selected ? 3 : hovered ? 2.5 : 2,
+    fillColor: pending ? '#ffb147' : selected ? '#ff5e80' : hovered ? '#16877d' : '#30b7a0',
     fillOpacity: 0.96
   };
 }
@@ -15,13 +15,9 @@ function pointMeta(point) {
     .filter(Boolean)
     .join(' / ');
 
-  return [
-    point.pointId,
-    point.plantNameSci,
-    labels || entry?.floweringState,
-    entry?.habitat,
-    entry?.cultivatedStatus
-  ].filter(Boolean).join(' · ');
+  return [point.pointId, point.plantNameSci, labels || entry?.floweringState, entry?.habitat, entry?.cultivatedStatus]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 function totalPhenologyCount() {
@@ -29,7 +25,9 @@ function totalPhenologyCount() {
 }
 
 function popupRows(point, entry) {
-  const labels = getPhenologyEntries(point).map(item => item.label).filter(Boolean);
+  const labels = getPhenologyEntries(point)
+    .map(item => item.label)
+    .filter(Boolean);
   return [
     ['编号', point.pointId],
     ['中文名', point.plantNameCn],
@@ -47,12 +45,16 @@ function popupRows(point, entry) {
 }
 
 function renderPopupRows(rows) {
-  return rows.map(([key, value]) => `
+  return rows
+    .map(
+      ([key, value]) => `
     <div class="pp-row">
       <span class="pp-key">${escapeHtml(key)}：</span>
       <span class="pp-val">${escapeHtml(value)}</span>
     </div>
-  `).join('');
+  `
+    )
+    .join('');
 }
 
 // 图片在项目目录内以相对路径保存，预览时才转换为本地 file URL。
@@ -76,14 +78,19 @@ function renderPopupImages(point, entry) {
   const imageSet = images.map(img => toFileUrl(img)).join('|');
   const caption = point.plantNameCn || point.plantNameSci || point.pointId || '';
 
-  return `<div class="pp-images">${images.slice(0, 4).map(img => `
+  return `<div class="pp-images">${images
+    .slice(0, 4)
+    .map(
+      img => `
     <img class="pp-thumb"
       src="${escapeHtml(toFileUrl(img))}"
       data-full-image="${escapeHtml(toFileUrl(img))}"
       data-image-set="${escapeHtml(imageSet)}"
       data-caption="${escapeHtml(caption)}"
       alt="thumb" />
-  `).join('')}</div>`;
+  `
+    )
+    .join('')}</div>`;
 }
 
 function renderPointPopupHtml(point) {
@@ -186,16 +193,25 @@ function updatePointTooltip(point) {
 }
 
 function selectPoint(pointId) {
-  state.selectedPointId = pointId;
-  const point = getSelectedPoint();
+  const point = state.points.find(item => item.id === pointId) || null;
+  let selectedPhenologyId = state.selectedPhenologyId || '';
 
   if (point) {
-    state.selectedZoneId = point.zoneRef;
-    const hasSelected = getPhenologyEntries(point)
-      .some(entry => entry.id === state.selectedPhenologyId);
-    if (!state.selectedPhenologyId || !hasSelected) {
-      state.selectedPhenologyId = getPhenologyEntries(point)[0]?.id || '';
+    const hasSelected = getPhenologyEntries(point).some(entry => entry.id === selectedPhenologyId);
+    if (!selectedPhenologyId || !hasSelected) {
+      selectedPhenologyId = getPhenologyEntries(point)[0]?.id || '';
     }
+  }
+  if (window.objectSelectionStore) {
+    window.objectSelectionStore.selectPoint({
+      pointId,
+      zoneId: point?.zoneRef || state.selectedZoneId,
+      phenologyId: selectedPhenologyId
+    });
+  } else {
+    state.selectedPointId = pointId;
+    if (point) state.selectedZoneId = point.zoneRef;
+    state.selectedPhenologyId = selectedPhenologyId;
   }
 
   refreshZoneStyles();
@@ -242,7 +258,8 @@ function redrawPendingPointLayer(token = state.mapRenderToken) {
   layer._businessLayerKey = 'temp:pending-point';
   layer._businessKind = 'tempPreview';
   layer._mapRenderToken = token;
-  if (typeof registerBusinessLayer === 'function') registerBusinessLayer('temp:pending-point', layer, 'tempPreview', token);
+  if (typeof registerBusinessLayer === 'function')
+    registerBusinessLayer('temp:pending-point', layer, 'tempPreview', token);
   else layer.addTo(state.map);
   state.pendingPoint.layer = layer;
   showPendingControls(true);
@@ -264,7 +281,8 @@ function createPendingPointAt(latlng) {
   layer._pendingPointLayer = true;
   layer._businessLayerKey = 'temp:pending-point';
   layer._businessKind = 'tempPreview';
-  if (typeof registerBusinessLayer === 'function') registerBusinessLayer('temp:pending-point', layer, 'tempPreview', state.mapRenderToken || 0);
+  if (typeof registerBusinessLayer === 'function')
+    registerBusinessLayer('temp:pending-point', layer, 'tempPreview', state.mapRenderToken || 0);
   else layer.addTo(state.map);
 
   state.pendingPoint = {
@@ -273,7 +291,8 @@ function createPendingPointAt(latlng) {
     lng: storageLatLng.lng,
     layer
   };
-  state.selectedPointId = null;
+  if (window.objectSelectionStore) window.objectSelectionStore.selectZone(state.selectedZoneId);
+  else state.selectedPointId = null;
 
   clearPointForm();
   showPendingControls(true);

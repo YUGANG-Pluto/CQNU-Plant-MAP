@@ -8,10 +8,10 @@ This audit covers the shared map workspace, browser runtime, access-management i
 
 The product has three visual domains. They share accessibility, spacing, motion timing, focus behavior, and component engineering, but they do not share one palette or one density model.
 
-| Domain | Visual language | Primary responsibility |
-| --- | --- | --- |
-| Map workspace | Scientific white, botanical green, restrained translucent command surfaces | Mapping, selection, point and zone editing, research tools |
-| Access management | Ice blue, graphite, opaque security data surfaces | Accounts, capabilities, sessions, activation, and audit records |
+| Domain                          | Visual language                                                                            | Primary responsibility                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Map workspace                   | Scientific white, botanical green, restrained translucent command surfaces                 | Mapping, selection, point and zone editing, research tools                 |
+| Access management               | Ice blue, graphite, opaque security data surfaces                                          | Accounts, capabilities, sessions, activation, and audit records            |
 | Research site and documentation | Content-specific accents for home, documentation, architecture, release, and privacy pages | Navigation, product guidance, release information, and platform boundaries |
 
 Liquid Glass material is limited to functional navigation, command surfaces, hover tools, and transient overlays. Forms, tables, statistics, security records, and long-form documentation stay on stable opaque surfaces.
@@ -52,15 +52,32 @@ Liquid Glass material is limited to functional navigation, command surfaces, hov
 
 - Preact owns application markup, shared shell components, theme presentation, and typed browser platform adapters.
 - The typed project session store owns project-source, busy, dirty, save, and capability state for modern workflows.
+- The typed object-selection store owns selected zone, point, phenology, hover, and list-tab state while publishing an immutable compatibility mirror for existing map workflows.
 - Existing renderer business modules remain behind one compatibility loader while their data and behavior contracts are still active.
 - Browser file access remains user initiated through File System Access or compatible import controls. Browser SQLite uses bounded local file parsing or OPFS and does not grant arbitrary filesystem access.
 
+### Browser App Host
+
+- The site app registry defines versioned route, asset, capability, persistence, network, upload, and local-file contracts.
+- `/apps/project-inspector` performs a browser-memory-only preflight for selected JSON, image, and SQLite project files.
+- The preflight validates bounded JSON and the SQLite file signature, reports recognized records, and exports a local report without mutating or uploading project data.
+- Hosted app assets are route scoped and remain separate from Electron and management capabilities.
+
 ### Motion And Material
 
-- Enabled motion uses perceptible tiers of at least 320 ms for micro-interactions, approximately 400-580 ms for state transitions, and approximately 620-720 ms for scene or modal entrances.
+- Enabled motion uses perceptible tiers of at least 320 ms. The default expressive profile uses approximately 620 ms feedback, 860 ms surface transitions, and 1,040 ms layer entrances.
 - Navigation, cards, dialogs, menus, status changes, and staged content entrances use distinct but restrained motion patterns.
 - Reduced-motion and reduced-transparency preferences remove nonessential effects and preserve readable fallbacks.
 - Hover effects do not move neighboring layout or hide data.
+- The animation kernel uses `motion/mini` for WAAPI playback and browser-native pointer, keyboard, intersection, and View Transition primitives. The public motion-kernel API is unchanged.
+- Completed scene animations release their effects so identity transforms cannot change fixed-position containing blocks on mobile.
+
+### Visual And Bundle Gates
+
+- A 15-scene visual baseline covers desktop and mobile workspace, management login and account views, site home and documentation, architecture, release, privacy, and the project inspector.
+- Evidence compares quantized color grids, theme identity, stable layout anchors, and document-level overflow; local PNG captures remain ignored.
+- The initial renderer entry is checked against raw and gzip budgets. SQLite workers remain separate lazy assets.
+- The optimized renderer entry is 370,520 bytes raw and 113,972 bytes gzip, compared with 434,822 bytes raw and 136,493 bytes gzip before the Motion boundary reduction.
 
 ## Simplification Decisions
 
@@ -71,6 +88,7 @@ Removed:
 - Unread right-inspector mode and diagnostic state.
 - Stale structural CSS selectors from the previous workbar, panel, and module layout.
 - A self-check dependency on the former component file location.
+- Full Motion DOM imports where only the mini WAAPI animation kernel was required.
 
 Retained intentionally:
 
@@ -78,6 +96,7 @@ Retained intentionally:
 - The motion `MutationObserver`, because legacy-rendered dialogs and list items still need motion registration.
 - The compatibility loader and stable control IDs, because current editing, statistics, maintenance, and export functions still bind through that boundary.
 - JSON compatibility payloads and SQLite exchange fields, because they preserve unknown project data.
+- Runtime smoke and visual evidence gates, because they cover different failure classes and share one extracted screenshot/navigation support module.
 
 ## Security And Data Review
 
@@ -91,20 +110,24 @@ Retained intentionally:
 
 Release synchronization on 2026-08-28 used the following checks:
 
-| Check | Result | Purpose |
-| --- | --- | --- |
-| `npm run lint` | Passed | Source and architecture lint rules |
-| `npm run typecheck` | Passed | Electron, Preact, and checked JavaScript boundaries |
-| `npm test` | Passed: 69 unit, 9 integration | Pure models and project-service contracts |
-| `npm --prefix ../admin test` | Passed: 19 | Accounts, sessions, permissions, CSRF, activation, and audit contracts |
-| `npm --prefix ../site run check` | Passed | Seven routes, published assets, management boundary, and page presentation contracts |
-| `npm run self-check` | Passed | Runtime wiring, security, storage, and UI contracts |
-| `npm run check:repo` | Passed | Repository hygiene and restricted artifacts |
-| `npm run check:size` | Passed | File split policy |
-| `npm run smoke:web` | Passed | Browser local project, SQLite, workspace, layer, modal, management, and multi-tab flows |
-| `npm run smoke:renderer` | Passed: 84 required controls | Desktop renderer startup and major feature surfaces |
-| `npm run verify` | Passed | Combined release-oriented build and structural gates |
-| SQLite schema, conversion, storage, and runtime probes | Passed | Temporary synthetic database acceptance and cleanup |
+| Check                                                  | Result                         | Purpose                                                                                           |
+| ------------------------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `npm run lint`                                         | Passed                         | Source and architecture lint rules                                                                |
+| `npm run typecheck`                                    | Passed                         | Electron, Preact, and checked JavaScript boundaries                                               |
+| `npm test`                                             | Passed: 69 unit, 9 integration | Pure models and project-service contracts                                                         |
+| `npm --prefix ../admin test`                           | Passed: 19                     | Accounts, sessions, permissions, CSRF, activation, and audit contracts                            |
+| `npm --prefix ../site run check`                       | Passed                         | Eight routes, 66 published assets, management boundary, app host, and page presentation contracts |
+| `npm --prefix ../site test`                            | Passed: 16                     | Route, local-app, motion, content-theme, management, and browser-workspace contracts              |
+| `npm run self-check`                                   | Passed                         | Runtime wiring, security, storage, and UI contracts                                               |
+| `npm run check:repo`                                   | Passed                         | Repository hygiene and restricted artifacts                                                       |
+| `npm run check:size`                                   | Passed without warnings        | File split policy after extracting renderer-domain contracts and browser smoke support            |
+| `npm run check:bundle`                                 | Passed                         | 370,520-byte initial JS, 113,972-byte gzip entry, separate lazy SQLite workers                    |
+| `npm run smoke:web`                                    | Passed                         | Browser local project, SQLite, workspace, layer, modal, management, and multi-tab flows           |
+| `npm run smoke:renderer`                               | Passed: 84 required controls   | Desktop renderer startup and major feature surfaces                                               |
+| `npm run visual:check`                                 | Passed: 15 scenes              | Three visual domains, responsive anchors, hosted app, and overflow limits                         |
+| `npm run verify`                                       | Passed                         | Combined release-oriented build and structural gates                                              |
+| SQLite schema, conversion, storage, and runtime probes | Passed                         | Temporary synthetic database acceptance and cleanup                                               |
+| `npm run dist`                                         | Passed                         | Unsigned Windows NSIS packaging probe; generated output remains local                             |
 
 Generated screenshots, temporary databases, logs, dependencies, and build outputs are local verification artifacts and are not synchronized to the source repository.
 
@@ -112,7 +135,7 @@ Generated screenshots, temporary databases, logs, dependencies, and build output
 
 The compatibility renderer is not dead code. It still owns mature map editing, statistics, maintenance, phenology, taxonomy-reference, backup, and export workflows. Future conversion should move one domain at a time behind typed tests and preserve stable project data and preload contracts. A broad rewrite would increase regression risk without improving user-visible behavior.
 
-The next useful architecture work is domain-by-domain extraction of business state from global renderer bindings, beginning with one low-risk read-only workflow. It should proceed only after this shell and platform baseline remains green in desktop, browser, and SQLite acceptance checks.
+The next useful architecture work is domain-by-domain extraction of one read-only query or review workflow from global renderer bindings. It should reuse the typed domain and object-selection stores, preserve the compatibility API until callers move, and remain gated by desktop, browser, visual, and SQLite acceptance checks.
 
 ## Design References
 

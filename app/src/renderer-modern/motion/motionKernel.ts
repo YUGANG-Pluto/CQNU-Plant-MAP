@@ -1,5 +1,11 @@
-import { animate, animateView, hover, inView, press } from 'motion';
 import { resolveMotionConfig, seconds, type MotionRuntimeConfig } from './motionConfig';
+import {
+  animate,
+  installHoverGesture,
+  installPressGesture,
+  observeInView,
+  runViewTransition
+} from './motionPrimitives';
 import {
   feedbackScene,
   layerCloseScene,
@@ -28,16 +34,36 @@ declare global {
   }
 }
 
+interface MotionPlaybackControl {
+  stop(): void;
+  cancel?(): void;
+}
+
 let currentConfig: MotionRuntimeConfig;
-const activeControls = new WeakMap<Element, Set<{ stop(): void }>>();
+const activeControls = new WeakMap<Element, Set<MotionPlaybackControl>>();
 
 function config(): MotionRuntimeConfig {
   currentConfig ||= resolveMotionConfig();
   return currentConfig;
 }
 
+function cancel(control: MotionPlaybackControl): void {
+  try {
+    control.cancel?.();
+  } catch (error) {
+    if (!(error instanceof DOMException) || error.name !== 'InvalidStateError') throw error;
+  }
+}
+
 function stop(target: Element): void {
-  activeControls.get(target)?.forEach(control => control.stop());
+  activeControls.get(target)?.forEach(control => {
+    try {
+      control.stop();
+    } catch (error) {
+      if (!(error instanceof DOMException) || error.name !== 'InvalidStateError') throw error;
+      cancel(control);
+    }
+  });
   activeControls.delete(target);
 }
 
@@ -46,7 +72,9 @@ function track(target: Element, run: MotionSceneRun): void {
   const controls = new Set(run.controls);
   activeControls.set(target, controls);
   void run.finished.finally(() => {
-    if (activeControls.get(target) === controls) activeControls.delete(target);
+    if (activeControls.get(target) !== controls) return;
+    controls.forEach(cancel);
+    activeControls.delete(target);
   });
 }
 
@@ -83,18 +111,7 @@ async function transitionView(container: HTMLElement, update: () => void | Promi
     await update();
     return;
   }
-  container.style.viewTransitionName = 'cqnu-workspace-view';
-  const transition = animateView(update);
-  transition.old(
-    { opacity: [1, 0], x: [0, -Math.max(10, settings.distance * 0.55)], filter: ['blur(0px)', 'blur(5px)'] },
-    { duration: seconds(settings.durations.feedback), ease: settings.ease }
-  );
-  transition.new(
-    { opacity: [0, 1], x: [Math.max(10, settings.distance * 0.55), 0], filter: ['blur(5px)', 'blur(0px)'] },
-    { duration: seconds(settings.durations.surface), ease: settings.ease }
-  );
-  await transition;
-  container.style.removeProperty('view-transition-name');
+  await runViewTransition(container, update);
 }
 
 function installLayerObserver(): void {
@@ -116,16 +133,16 @@ function installLayerObserver(): void {
 }
 
 function installViewportReveals(): void {
-  inView(
-    '.panel, .card, .stats-chart-card, .stats-table-panel, .data-card',
-    element => reveal(element),
-    { amount: 0.14, margin: '0px 0px -6% 0px' }
-  );
+  observeInView('.panel, .card, .stats-chart-card, .stats-table-panel, .data-card', element => reveal(element), {
+    amount: 0.14,
+    margin: '0px 0px -6% 0px'
+  });
 }
 
 function installControlGestures(): void {
-  const selector = 'button, a.btn, .ui-module-button, .modern-theme-choice, .modern-segmented button, [data-motion-control]';
-  hover(selector, element => {
+  const selector =
+    'button, a.btn, .ui-module-button, .modern-theme-choice, .modern-segmented button, [data-motion-control]';
+  installHoverGesture(selector, element => {
     const settings = config();
     if (!settings.enabled || !document.documentElement.classList.contains('motion-hover')) return;
     stop(element);
@@ -145,7 +162,7 @@ function installControlGestures(): void {
       activeControls.set(element, new Set([exit]));
     };
   });
-  press(selector, element => {
+  installPressGesture(selector, element => {
     const settings = config();
     if (!settings.enabled) return;
     stop(element);
@@ -157,10 +174,14 @@ function installControlGestures(): void {
     activeControls.set(element, new Set([down]));
     return () => {
       stop(element);
-      const up = animate(element, { scale: 1, y: 0 }, {
-        duration: seconds(settings.durations.feedback),
-        ease: settings.ease
-      });
+      const up = animate(
+        element,
+        { scale: 1, y: 0 },
+        {
+          duration: seconds(settings.durations.feedback),
+          ease: settings.ease
+        }
+      );
       activeControls.set(element, new Set([up]));
     };
   });

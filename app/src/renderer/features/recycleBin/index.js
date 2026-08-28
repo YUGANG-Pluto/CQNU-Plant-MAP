@@ -10,11 +10,8 @@ function renderTrashList() {
     return;
   }
   trash.forEach(item => {
-    const typeLabel = item.type === 'zone'
-      ? t('itemTypeZone')
-      : item.type === 'point'
-        ? t('itemTypePoint')
-        : t('itemTypeImage');
+    const typeLabel =
+      item.type === 'zone' ? t('itemTypeZone') : item.type === 'point' ? t('itemTypePoint') : t('itemTypeImage');
     const card = listTextItem(
       item.label || typeLabel,
       `${typeLabel} / ${t('deletedAt')} ${formatDateTimeLabel(item.deletedAt)}`
@@ -47,23 +44,29 @@ function renderLists() {
   }
   clearNode(ui.zoneListPanel);
   clearNode(ui.pointListPanel);
-  ui.listSummaryCount && (ui.listSummaryCount.textContent = String(activeTab === 'zones' ? state.zones.length : state.points.length));
+  ui.listSummaryCount &&
+    (ui.listSummaryCount.textContent = String(activeTab === 'zones' ? state.zones.length : state.points.length));
   if (!state.zones.length) renderObjectListEmpty(ui.zoneListPanel, 'objectListEmptyZones', 'objectWorkflowNoObjects');
-  else state.zones.forEach(zone => {
-    ui.zoneListPanel.appendChild(createObjectListButton(
-      zoneDisplayName(zone),
-      zone.zoneId || '',
-      { type: 'zone', id: zone.id }
-    ));
-  });
-  if (!state.points.length) renderObjectListEmpty(ui.pointListPanel, 'objectListEmptyPoints', 'objectWorkflowNoObjects');
-  else state.points.forEach(point => {
-    ui.pointListPanel.appendChild(createObjectListButton(
-      pointDisplayName(point),
-      pointMeta(point) || point.pointId || '',
-      { type: 'point', id: point.id }
-    ));
-  });
+  else
+    state.zones.forEach(zone => {
+      ui.zoneListPanel.appendChild(
+        createObjectListButton(zoneDisplayName(zone), zone.zoneId || '', {
+          type: 'zone',
+          id: zone.id
+        })
+      );
+    });
+  if (!state.points.length)
+    renderObjectListEmpty(ui.pointListPanel, 'objectListEmptyPoints', 'objectWorkflowNoObjects');
+  else
+    state.points.forEach(point => {
+      ui.pointListPanel.appendChild(
+        createObjectListButton(pointDisplayName(point), pointMeta(point) || point.pointId || '', {
+          type: 'point',
+          id: point.id
+        })
+      );
+    });
   syncObjectSelectionUi('workspace-list-render');
   if (tabChanged) {
     window.requestAnimationFrame(() => {
@@ -118,7 +121,10 @@ function softDeletePointById(pointId) {
   pushToRecycleBin(buildTrashItem('point', pointDisplayName(point), { point: structuredClone(point) }));
   removePointLayer(point.id);
   state.points = state.points.filter(p => p.id !== point.id);
-  if (state.selectedPointId === point.id) state.selectedPointId = null;
+  if (state.selectedPointId === point.id) {
+    if (window.objectSelectionStore) window.objectSelectionStore.selectZone(state.selectedZoneId);
+    else state.selectedPointId = null;
+  }
   if (ui.pointId.dataset.targetId === point.id) clearPointForm();
   state.map.closePopup();
   populatePointForm();
@@ -131,7 +137,10 @@ async function deleteCurrentPoint() {
   if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('delete-point')) return;
   const point = getSelectedPoint();
   if (!point) return showAlert(t('noPointSelected'));
-  const ok = await openConfirmDialog({ title: t('confirmDeletePointTitle'), message: t('confirmDeletePoint') });
+  const ok = await openConfirmDialog({
+    title: t('confirmDeletePointTitle'),
+    message: t('confirmDeletePoint')
+  });
   if (!ok) return;
   if (softDeletePointById(point.id)) await persistProject();
 }
@@ -140,16 +149,29 @@ async function deleteCurrentZone() {
   if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('delete-zone')) return;
   const zone = getEditableZone();
   if (!zone) return showAlert(t('noZoneSelected'));
-  const ok = await openConfirmDialog({ title: t('confirmDeleteZoneTitle'), message: t('confirmDeleteZone') });
+  const ok = await openConfirmDialog({
+    title: t('confirmDeleteZoneTitle'),
+    message: t('confirmDeleteZone')
+  });
   if (!ok) return;
   const linkedPoints = state.points.filter(p => p.zoneRef === zone.id).map(p => structuredClone(p));
-  pushToRecycleBin(buildTrashItem('zone', zoneDisplayName(zone), { zone: structuredClone(zone), points: linkedPoints }));
+  pushToRecycleBin(
+    buildTrashItem('zone', zoneDisplayName(zone), {
+      zone: structuredClone(zone),
+      points: linkedPoints
+    })
+  );
   linkedPoints.forEach(p => removePointLayer(p.id));
   state.points = state.points.filter(p => p.zoneRef !== zone.id);
   removeZoneLayer(zone.id);
   state.zones = state.zones.filter(z => z.id !== zone.id);
-  if (state.selectedZoneId === zone.id) state.selectedZoneId = null;
-  if (linkedPoints.some(p => p.id === state.selectedPointId)) state.selectedPointId = null;
+  if (state.selectedZoneId === zone.id || linkedPoints.some(p => p.id === state.selectedPointId)) {
+    if (window.objectSelectionStore) window.objectSelectionStore.clear();
+    else {
+      if (state.selectedZoneId === zone.id) state.selectedZoneId = null;
+      if (linkedPoints.some(p => p.id === state.selectedPointId)) state.selectedPointId = null;
+    }
+  }
   clearZoneForm();
   clearPointForm();
   renderAllDerived();
@@ -184,7 +206,9 @@ async function restoreSelectedTrash() {
   } else if (item.type === 'image') {
     const { pointId, phenologyId, relativePath } = item.payload || {};
     const point = state.points.find(p => p.id === pointId);
-    const entry = point ? (getPhenologyEntries(point).find(candidate => candidate.id === phenologyId) || getPhenologyEntries(point)[0]) : null;
+    const entry = point
+      ? getPhenologyEntries(point).find(candidate => candidate.id === phenologyId) || getPhenologyEntries(point)[0]
+      : null;
     if (point && entry && relativePath && !(entry.images || []).includes(relativePath)) {
       entry.images = entry.images || [];
       entry.images.push(relativePath);
@@ -200,16 +224,22 @@ async function restoreSelectedTrash() {
 }
 
 async function deleteTrashForever() {
-  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('delete-trash-forever')) return;
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('delete-trash-forever'))
+    return;
   const item = getTrashSelection();
   if (!item) return;
-  const ok = await openConfirmDialog({ title: t('confirmDeleteForeverTitle'), message: t('deleteForeverSelected') });
+  const ok = await openConfirmDialog({
+    title: t('confirmDeleteForeverTitle'),
+    message: t('deleteForeverSelected')
+  });
   if (!ok) return;
   if (item.type === 'image' && item.payload?.relativePath) {
-    await callIpc(window.platformAdapter.image.delete({
-      projectDir: state.projectDir,
-      relativePath: item.payload.relativePath
-    }));
+    await callIpc(
+      window.platformAdapter.image.delete({
+        projectDir: state.projectDir,
+        relativePath: item.payload.relativePath
+      })
+    );
   }
   state.settings.recycleBin = getRecycleBin().filter(entry => entry.id !== item.id);
   state.trashSelectedId = '';

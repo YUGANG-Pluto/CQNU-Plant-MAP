@@ -39,11 +39,12 @@ export const researchNavigationGroups = Object.freeze([
       },
       {
         id: 'field-files',
-        title: '野外调查文件夹',
-        description: '后续接入调查批次、原始表格与图片归档导航。',
-        label: '研究资料',
-        state: 'planned',
-        keywords: '调查 文件 图片 原始数据'
+        title: '本地项目文件预检',
+        description: '检查项目文件组成、JSON 结构和 SQLite 文件头，全程仅在浏览器本地处理。',
+        href: '/apps/project-inspector',
+        label: '本地工具',
+        state: 'available',
+        keywords: '调查 文件 JSON SQLite 项目 预检 本地'
       },
       {
         id: 'analysis-notebooks',

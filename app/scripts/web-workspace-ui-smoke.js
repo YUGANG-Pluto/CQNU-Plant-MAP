@@ -1,100 +1,24 @@
-const { mkdir, writeFile } = require('node:fs/promises');
-const path = require('node:path');
 const { BrowserWindow, session } = require('electron');
-
-let markSmokeStage = () => {};
-
-function setSmokeStageReporter(reporter) {
-  markSmokeStage = typeof reporter === 'function' ? reporter : () => {};
-}
-
-async function waitForRuntime(window) {
-  await window.webContents.executeJavaScript(`new Promise((resolve, reject) => {
-    const startedAt = Date.now();
-    const poll = () => {
-      if (document.documentElement.dataset.runtimeStatus === 'ready') return resolve(true);
-      if (document.documentElement.dataset.runtimeStatus === 'failed') return reject(new Error('Legacy runtime failed.'));
-      if (Date.now() - startedAt > 15000) return reject(new Error('Web workspace runtime timed out.'));
-      setTimeout(poll, 50);
-    };
-    poll();
-  })`, true);
-}
-
-function waitForPathname(window, expectedPathname, timeoutMs = 10_000) {
-  return new Promise((resolve, reject) => {
-    const cleanup = () => {
-      clearTimeout(timeout);
-      window.webContents.removeListener('did-navigate', handleNavigation);
-    };
-    const matches = () => {
-      try {
-        return new URL(window.webContents.getURL()).pathname === expectedPathname;
-      } catch {
-        return false;
-      }
-    };
-    const handleNavigation = () => {
-      if (!matches()) return;
-      cleanup();
-      resolve(true);
-    };
-    const timeout = setTimeout(() => {
-      cleanup();
-      reject(new Error(`Navigation to ${expectedPathname} timed out.`));
-    }, timeoutMs);
-    if (matches()) {
-      cleanup();
-      resolve(true);
-      return;
-    }
-    window.webContents.on('did-navigate', handleNavigation);
-  });
-}
-
-function collectWindowErrors(window, errors, scope) {
-  window.webContents.on('console-message', details => {
-    if (Number(details?.level || 0) >= 3) {
-      errors.push(`${scope}:${details?.lineNumber || 0} ${details?.message || ''}`);
-    }
-  });
-}
-
-async function captureSmokeScreenshot(window, name, size = null) {
-  const outputDirectory = process.env.CQNU_SMOKE_SCREENSHOT_DIR;
-  if (!outputDirectory) return;
-  const originalBounds = window.getBounds();
-  window.setSkipTaskbar(true);
-  window.setBounds({
-    ...originalBounds,
-    width: size?.width || originalBounds.width,
-    height: size?.height || originalBounds.height,
-    x: -32_000,
-    y: -32_000
-  }, false);
-  window.showInactive();
-  await new Promise(resolve => setTimeout(resolve, 820));
-  await window.webContents.executeJavaScript(`new Promise(resolve => {
-    for (const animation of document.getAnimations()) {
-      try { animation.finish(); } catch {}
-    }
-    requestAnimationFrame(() => requestAnimationFrame(resolve));
-  })`, true);
-  window.webContents.invalidate();
-  await new Promise(resolve => setTimeout(resolve, 120));
-  await mkdir(outputDirectory, { recursive: true });
-  const image = await window.webContents.capturePage();
-  await writeFile(path.join(outputDirectory, `${name}.png`), image.toPNG());
-  window.setBounds(originalBounds, false);
-  window.hide();
-}
+const {
+  captureSmokeScreenshot,
+  collectWindowErrors,
+  markSmokeStage,
+  setSmokeStageReporter,
+  waitForPathname,
+  waitForRuntime
+} = require('./web-workspace-ui-support');
 
 async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
   markSmokeStage('read-picker:create-window');
   const partition = `web-read-picker-smoke-${Date.now()}`;
   const isolatedSession = session.fromPartition(partition);
   const origin = new URL(baseUrl).origin;
-  await isolatedSession.cookies.set({ url: origin, name: 'smoke-access', value: 'read', path: '/' });
+  await isolatedSession.cookies.set({
+    url: origin,
+    name: 'smoke-access',
+    value: 'read',
+    path: '/'
+  });
   const errors = [];
   const requestedPaths = [];
   isolatedSession.webRequest.onCompleted(details => {
@@ -121,11 +45,12 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
     markSmokeStage('read-picker:load-workspace');
     await window.loadURL(`${origin}/workspace`);
     await waitForRuntime(window);
-    const workerRequestsBeforeSelection = requestedPaths.filter(value => (
+    const workerRequestsBeforeSelection = requestedPaths.filter(value =>
       /webDatabaseWorker|sqlite3-worker/i.test(value)
-    ));
+    );
     markSmokeStage('read-picker:install-fixture');
-    const buttonRect = await window.webContents.executeJavaScript(`(() => {
+    const buttonRect = await window.webContents.executeJavaScript(
+      `(() => {
       const now = Date.now();
       const jsonFile = (name, value) => new File(
         [JSON.stringify(value)],
@@ -200,15 +125,34 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
         missingRequired: window.platformAdapter?.web?.capabilityReport?.missingRequired || [],
         workspaceSession: document.documentElement.dataset.workspaceSession || ''
       };
-    })()`, true);
+    })()`,
+      true
+    );
     if (buttonRect.disabled) {
       throw new Error(`read account project button is disabled: ${JSON.stringify(buttonRect)}`);
     }
     markSmokeStage('read-picker:open-import-center');
-    window.webContents.sendInputEvent({ type: 'mouseMove', x: Math.round(buttonRect.x), y: Math.round(buttonRect.y) });
-    window.webContents.sendInputEvent({ type: 'mouseDown', x: Math.round(buttonRect.x), y: Math.round(buttonRect.y), button: 'left', clickCount: 1 });
-    window.webContents.sendInputEvent({ type: 'mouseUp', x: Math.round(buttonRect.x), y: Math.round(buttonRect.y), button: 'left', clickCount: 1 });
-    const importCenter = await window.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+    window.webContents.sendInputEvent({
+      type: 'mouseMove',
+      x: Math.round(buttonRect.x),
+      y: Math.round(buttonRect.y)
+    });
+    window.webContents.sendInputEvent({
+      type: 'mouseDown',
+      x: Math.round(buttonRect.x),
+      y: Math.round(buttonRect.y),
+      button: 'left',
+      clickCount: 1
+    });
+    window.webContents.sendInputEvent({
+      type: 'mouseUp',
+      x: Math.round(buttonRect.x),
+      y: Math.round(buttonRect.y),
+      button: 'left',
+      clickCount: 1
+    });
+    const importCenter = await window.webContents.executeJavaScript(
+      `new Promise((resolve, reject) => {
       const startedAt = Date.now();
       const poll = () => {
         const layer = document.getElementById('projectImportModal');
@@ -234,9 +178,14 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
         setTimeout(poll, 40);
       };
       poll();
-    })`, true);
+    })`,
+      true
+    );
     await captureSmokeScreenshot(window, 'workspace-project-import-center');
-    await captureSmokeScreenshot(window, 'workspace-project-import-center-mobile', { width: 390, height: 844 });
+    await captureSmokeScreenshot(window, 'workspace-project-import-center-mobile', {
+      width: 390,
+      height: 844
+    });
     if (process.env.CQNU_SMOKE_SCREENSHOT_DIR) {
       const bounds = window.getBounds();
       window.setBounds({ ...bounds, x: -32_000, y: -32_000 }, false);
@@ -244,11 +193,28 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
     }
     if (importCenter.disabled) throw new Error('recommended project directory option is disabled');
     markSmokeStage('read-picker:trusted-directory-click');
-    window.webContents.sendInputEvent({ type: 'mouseMove', x: Math.round(importCenter.x), y: Math.round(importCenter.y) });
-    window.webContents.sendInputEvent({ type: 'mouseDown', x: Math.round(importCenter.x), y: Math.round(importCenter.y), button: 'left', clickCount: 1 });
-    window.webContents.sendInputEvent({ type: 'mouseUp', x: Math.round(importCenter.x), y: Math.round(importCenter.y), button: 'left', clickCount: 1 });
+    window.webContents.sendInputEvent({
+      type: 'mouseMove',
+      x: Math.round(importCenter.x),
+      y: Math.round(importCenter.y)
+    });
+    window.webContents.sendInputEvent({
+      type: 'mouseDown',
+      x: Math.round(importCenter.x),
+      y: Math.round(importCenter.y),
+      button: 'left',
+      clickCount: 1
+    });
+    window.webContents.sendInputEvent({
+      type: 'mouseUp',
+      x: Math.round(importCenter.x),
+      y: Math.round(importCenter.y),
+      button: 'left',
+      clickCount: 1
+    });
     markSmokeStage('read-picker:await-project');
-    const result = await window.webContents.executeJavaScript(`new Promise(resolve => {
+    const result = await window.webContents.executeJavaScript(
+      `new Promise(resolve => {
       const startedAt = Date.now();
       const poll = () => {
         if (window.__readPickerSmoke.loaded || Date.now() - startedAt > 8000) {
@@ -294,16 +260,19 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
         setTimeout(poll, 40);
       };
       poll();
-    })`, true);
+    })`,
+      true
+    );
     const failures = [];
-    const workerRequestsAfterSelection = requestedPaths.filter(value => (
+    const workerRequestsAfterSelection = requestedPaths.filter(value =>
       /webDatabaseWorker|sqlite3-worker/i.test(value)
-    ));
+    );
     if (workerRequestsBeforeSelection.length) {
       failures.push(`SQLite workers loaded before project selection: ${workerRequestsBeforeSelection.join(',')}`);
     }
     if (!workerRequestsAfterSelection.length) failures.push('SQLite workers were not loaded after project selection');
-    if (importCenter.layerManager !== 'layer-manager-v1') failures.push(`typed layer manager missing: ${importCenter.layerManager}`);
+    if (importCenter.layerManager !== 'layer-manager-v1')
+      failures.push(`typed layer manager missing: ${importCenter.layerManager}`);
     if (importCenter.layerZ <= importCenter.topbarZ || !importCenter.closeHitVisible) {
       failures.push(`import center layer contract failed: ${JSON.stringify(importCenter)}`);
     }
@@ -313,24 +282,28 @@ async function runReadOnlyDirectoryPickerSmoke(baseUrl) {
       failures.push(`read account requested invalid modes: ${result.mode} / ${result.permissionModes.join(',')}`);
     }
     if (!result.loaded || !result.projectLoaded || result.pointCount !== 1) {
-      failures.push(`read account project load failed: ${result.loaded} / ${result.projectLoaded} / ${result.pointCount}`);
+      failures.push(
+        `read account project load failed: ${result.loaded} / ${result.projectLoaded} / ${result.pointCount}`
+      );
     }
     if (result.projectSourceKind !== 'directory' || !result.sourceStatusVisible) {
       failures.push(`project source status failed: ${result.projectSourceKind} / ${result.sourceStatusVisible}`);
     }
     if (!result.readOnly || result.writeProject) failures.push('read account received write capabilities');
     if (result.layerZ <= result.topbarZ || !result.closeHitVisible) {
-      failures.push(`top-layer contract failed: ${JSON.stringify({
-        layerZ: result.layerZ,
-        topbarZ: result.topbarZ,
-        closeHitVisible: result.closeHitVisible,
-        layerHidden: result.layerHidden,
-        layerAriaHidden: result.layerAriaHidden,
-        closeRect: result.closeRect,
-        hitTarget: result.hitTarget,
-        openLayers: result.openLayers,
-        openLayerDetails: result.openLayerDetails
-      })}`);
+      failures.push(
+        `top-layer contract failed: ${JSON.stringify({
+          layerZ: result.layerZ,
+          topbarZ: result.topbarZ,
+          closeHitVisible: result.closeHitVisible,
+          layerHidden: result.layerHidden,
+          layerAriaHidden: result.layerAriaHidden,
+          closeRect: result.closeRect,
+          hitTarget: result.hitTarget,
+          openLayers: result.openLayers,
+          openLayerDetails: result.openLayerDetails
+        })}`
+      );
     }
     failures.push(...errors);
     if (failures.length) throw new Error(failures.join('\n'));
@@ -348,7 +321,12 @@ async function runManagementUiSmoke(baseUrl) {
   const partition = `management-ui-smoke-${Date.now()}`;
   const isolatedSession = session.fromPartition(partition);
   const origin = new URL(baseUrl).origin;
-  await isolatedSession.cookies.set({ url: origin, name: 'smoke-login', value: 'logged-out', path: '/' });
+  await isolatedSession.cookies.set({
+    url: origin,
+    name: 'smoke-login',
+    value: 'logged-out',
+    path: '/'
+  });
   const errors = [];
   const requestedPaths = [];
   isolatedSession.webRequest.onCompleted(details => {
@@ -374,7 +352,8 @@ async function runManagementUiSmoke(baseUrl) {
   try {
     markSmokeStage('management:load-login');
     await window.loadURL(`${origin}/manage`);
-    await window.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+    await window.webContents.executeJavaScript(
+      `new Promise((resolve, reject) => {
       const startedAt = Date.now();
       const poll = () => {
         const form = document.querySelector('[data-login-form]');
@@ -383,32 +362,38 @@ async function runManagementUiSmoke(baseUrl) {
         setTimeout(poll, 40);
       };
       poll();
-    })`, true);
+    })`,
+      true
+    );
     await captureSmokeScreenshot(window, 'management-login');
     await captureSmokeScreenshot(window, 'management-login-mobile', { width: 390, height: 844 });
     markSmokeStage('management:submit-login');
     const loginStartedAt = Date.now();
     const workspaceNavigation = waitForPathname(window, '/workspace');
-    await window.webContents.executeJavaScript(`(() => {
+    await window.webContents.executeJavaScript(
+      `(() => {
       const form = document.querySelector('[data-login-form]');
       form.elements.username.value = 'web.smoke';
       form.elements.password.value = 'Smoke9!';
       form.requestSubmit();
       return true;
-    })()`, true);
+    })()`,
+      true
+    );
     await workspaceNavigation;
     await waitForRuntime(window);
     const loginReadyMs = Date.now() - loginStartedAt;
     const startupPaths = [...requestedPaths];
     const legacyBundlePaths = [...new Set(startupPaths.filter(value => value === '/assets/legacy-runtime.js'))];
-    const unbundledLegacyPaths = startupPaths.filter(value => (
-      value.startsWith('/src/renderer/') && value.endsWith('.js')
-    ));
+    const unbundledLegacyPaths = startupPaths.filter(
+      value => value.startsWith('/src/renderer/') && value.endsWith('.js')
+    );
     const redirectedToWorkspace = new URL(window.webContents.getURL()).pathname === '/workspace';
 
     markSmokeStage('management:open-account');
     await window.loadURL(`${origin}/manage?next=/manage&view=account`);
-    const accountReady = await window.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+    const accountReady = await window.webContents.executeJavaScript(
+      `new Promise((resolve, reject) => {
       const startedAt = Date.now();
       const poll = () => {
         const view = document.querySelector('[data-view="account"]');
@@ -417,9 +402,12 @@ async function runManagementUiSmoke(baseUrl) {
         setTimeout(poll, 40);
       };
       poll();
-    })`, true);
+    })`,
+      true
+    );
     markSmokeStage('management:upload-avatar');
-    const avatarResult = await window.webContents.executeJavaScript(`(async () => {
+    const avatarResult = await window.webContents.executeJavaScript(
+      `(async () => {
       const canvas = document.createElement('canvas');
       canvas.width = 64;
       canvas.height = 64;
@@ -452,7 +440,9 @@ async function runManagementUiSmoke(baseUrl) {
         stored: Boolean(window.cqnuLocalProfile?.read('acct_web_smoke_save')),
         previewVisible: !document.querySelector('[data-avatar-preview-image]').hidden
       };
-    })()`, true);
+    })()`,
+      true
+    );
     await captureSmokeScreenshot(window, 'management-account');
     await captureSmokeScreenshot(window, 'management-account-mobile', { width: 390, height: 844 });
     markSmokeStage('management:verify-workspace-avatar');
@@ -462,7 +452,8 @@ async function runManagementUiSmoke(baseUrl) {
       `Boolean(document.querySelector('.web-profile-avatar img')?.getAttribute('src')?.startsWith('data:image/'))`,
       true
     );
-    const workspaceShellResult = await window.webContents.executeJavaScript(`(async () => {
+    const workspaceShellResult = await window.webContents.executeJavaScript(
+      `(async () => {
       const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const layersButton = document.querySelector('[aria-controls="mapLayerPopover"]');
       const modulesButton = document.querySelector('[aria-controls="workspaceModuleLauncher"]');
@@ -498,28 +489,34 @@ async function runManagementUiSmoke(baseUrl) {
         docsLink: Boolean(modulePopover?.querySelector('.web-site-link[href="/docs"]')),
         capabilityDisclosure: Boolean(modulePopover?.querySelector('.web-capability-disclosure'))
       };
-    })()`, true);
+    })()`,
+      true
+    );
     await captureSmokeScreenshot(window, 'workspace');
     await captureSmokeScreenshot(window, 'workspace-mobile', { width: 390, height: 844 });
     const failures = [];
     if (!redirectedToWorkspace) failures.push('login did not route directly to workspace');
     if (loginReadyMs > 8_000) failures.push(`login-to-workspace startup is too slow: ${loginReadyMs}ms`);
     if (legacyBundlePaths.length !== 1 || unbundledLegacyPaths.length) {
-      failures.push(`workspace runtime was not bundled: ${JSON.stringify({ legacyBundlePaths, unbundledLegacyPaths })}`);
+      failures.push(
+        `workspace runtime was not bundled: ${JSON.stringify({ legacyBundlePaths, unbundledLegacyPaths })}`
+      );
     }
     if (!accountReady) failures.push('avatar link target did not open account view');
     if (!avatarResult.stored || !avatarResult.previewVisible || !workspaceAvatarVisible) {
       failures.push(`avatar workflow failed: ${JSON.stringify(avatarResult)} / ${workspaceAvatarVisible}`);
     }
-    if (!workspaceShellResult.layerPopoverVisible
-      || !workspaceShellResult.layerPopoverTopmost
-      || !workspaceShellResult.zoneHidden
-      || !workspaceShellResult.zoneRestored
-      || !workspaceShellResult.modulePopoverVisible
-      || !workspaceShellResult.modulePopoverTopmost
-      || !workspaceShellResult.siteHomeLink
-      || !workspaceShellResult.docsLink
-      || !workspaceShellResult.capabilityDisclosure) {
+    if (
+      !workspaceShellResult.layerPopoverVisible ||
+      !workspaceShellResult.layerPopoverTopmost ||
+      !workspaceShellResult.zoneHidden ||
+      !workspaceShellResult.zoneRestored ||
+      !workspaceShellResult.modulePopoverVisible ||
+      !workspaceShellResult.modulePopoverTopmost ||
+      !workspaceShellResult.siteHomeLink ||
+      !workspaceShellResult.docsLink ||
+      !workspaceShellResult.capabilityDisclosure
+    ) {
       failures.push(`workspace shell contract failed: ${JSON.stringify(workspaceShellResult)}`);
     }
     failures.push(...errors);
@@ -543,6 +540,7 @@ async function runManagementUiSmoke(baseUrl) {
 }
 
 module.exports = {
+  captureSmokeScreenshot,
   runManagementUiSmoke,
   runReadOnlyDirectoryPickerSmoke,
   setSmokeStageReporter,

@@ -431,7 +431,7 @@
   width: 14px;
   height: 14px;
   margin-left: 12px;
-  content: "";
+  content: '';
   background: white;
   border-radius: 50%;
   box-shadow: 0 2px 5px rgba(31, 42, 39, 0.18);
@@ -467,9 +467,17 @@
 }
 
 @keyframes workspacePopoverIn {
-  from { opacity: 0; transform: translateX(-8px) scale(0.975); }
-  55% { opacity: 0.78; }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.975);
+  }
+  55% {
+    opacity: 0.78;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (max-width: 720px) {
@@ -491,6 +499,19 @@
 
   .workspace-module-popover .ui-module-launcher {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-module-popover,
+  .map-layer-popover {
+    position: fixed;
+    top: auto;
+    right: max(8px, env(safe-area-inset-right));
+    bottom: calc(70px + env(safe-area-inset-bottom));
+    left: max(8px, env(safe-area-inset-left));
+    width: auto;
+    max-width: none;
+    max-height: min(72vh, 680px);
+    transform-origin: center bottom;
   }
 }
 

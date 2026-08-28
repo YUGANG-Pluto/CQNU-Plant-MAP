@@ -2,8 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { renderPages } from '../src/render.mjs';
+import { findSiteApplication, siteApplications } from '../src/apps/registry.mjs';
 
-const workspaceHtml = '<!doctype html><html lang="zh-CN"><head><title>CQNU Plant MAP</title><link rel="preload" href="/assets/legacy-runtime.js" as="script"><link rel="stylesheet" href="./renderer-dist/modern-shell.css"><link rel="stylesheet" href="/assets/workspace-gate.css"></head><body data-site-workspace="true"><div class="workspace-access-gate"></div><div id="modernUiRoot"></div><script src="/assets/workspace-gate.js"></script></body></html>';
+const workspaceHtml =
+  '<!doctype html><html lang="zh-CN"><head><title>CQNU Plant MAP</title><link rel="preload" href="/assets/legacy-runtime.js" as="script"><link rel="stylesheet" href="./renderer-dist/modern-shell.css"><link rel="stylesheet" href="/assets/workspace-gate.css"></head><body data-site-workspace="true"><div class="workspace-access-gate"></div><div id="modernUiRoot"></div><script src="/assets/workspace-gate.js"></script></body></html>';
 
 async function readSiteStyles() {
   const sources = await Promise.all([
@@ -16,13 +18,48 @@ async function readSiteStyles() {
 
 test('site routes render complete branded documents', () => {
   const pages = renderPages({ workspaceHtml });
-  assert.deepEqual(Object.keys(pages), ['/', '/workspace', '/docs', '/web', '/release', '/privacy']);
+  assert.deepEqual(Object.keys(pages), [
+    '/',
+    '/workspace',
+    '/docs',
+    '/web',
+    '/release',
+    '/privacy',
+    '/apps/project-inspector'
+  ]);
   Object.values(pages).forEach(page => {
     assert.match(page, /^<!doctype html>/);
     assert.match(page, /CQNU Plant MAP/);
     assert.match(page, /(?:assets\/styles|renderer-dist\/modern-shell)\.css/);
     assert.doesNotMatch(page, /undefined|null|NaN/);
   });
+});
+
+test('site application registry exposes a local-only versioned host contract', async () => {
+  const application = findSiteApplication('/apps/project-inspector');
+  const client = await readFile(new URL('../src/apps/project-inspector.js', import.meta.url), 'utf8');
+  assert.equal(siteApplications.length, 1);
+  assert.ok(Object.isFrozen(siteApplications));
+  assert.ok(Object.isFrozen(application));
+  assert.equal(application.execution, 'browser-local');
+  assert.equal(application.dataPolicy.network, 'none');
+  assert.equal(application.dataPolicy.upload, false);
+  assert.match(application.version, /^\d+\.\d+\.\d+$/u);
+  assert.doesNotMatch(client, /\bfetch\s*\(|XMLHttpRequest|WebSocket|localStorage|indexedDB/u);
+  assert.match(client, /SQLite format 3/);
+  assert.match(client, /webkitRelativePath/);
+  assert.match(client, /project_preflight_/);
+});
+
+test('project inspector renders a functional local file surface', () => {
+  const page = renderPages({ workspaceHtml })['/apps/project-inspector'];
+  assert.match(page, /site-page--app-inspector/);
+  assert.match(page, /data-project-directory-input/);
+  assert.match(page, /data-project-file-input/);
+  assert.match(page, /data-project-export/);
+  assert.match(page, /assets\/apps\.css/);
+  assert.match(page, /assets\/project-inspector\.js/);
+  assert.match(page, /不上传/);
 });
 
 test('workspace route receives the complete shared application document', () => {
@@ -153,10 +190,10 @@ test('workspace startup uses staged progress and one bundled legacy runtime requ
   assert.match(build, /CQNU_LEGACY_RUNTIME_SOURCES/);
   assert.match(build, /legacyRuntimeBundle/);
   assert.match(build, /copyWorkspaceRuntimeAssets/);
-  assert.match(build, /readdir\(resolve\(adminDistRoot, 'ui'\)/);
+  assert.match(build, /readdir\(resolve\(adminDistRoot, ["']ui["']\)/);
   assert.match(build, /Compiled management UI entry is missing/);
-  assert.doesNotMatch(build, /cp\(resolve\(appRoot, 'src\/renderer'\),/);
-  assert.doesNotMatch(build, /cp\(resolve\(appRoot, 'node_modules\/leaflet\/dist'\),/);
+  assert.doesNotMatch(build, /cp\(resolve\(appRoot, ["']src\/renderer["']\),/);
+  assert.doesNotMatch(build, /cp\(resolve\(appRoot, ["']node_modules\/leaflet\/dist["']\),/);
 });
 
 test('published pages never embed local paths or desktop bridge names', () => {

@@ -9,6 +9,8 @@ npm run ci:install
 npm run check:repo
 npm run check:syntax
 npm run typecheck
+npm run build:renderer
+npm run check:bundle
 npm run check:size
 npm run self-check
 npm run test:unit
@@ -20,43 +22,53 @@ npm run db:check-schema
 npm run db:test-conversion
 npm run db:test-storage-conversion
 npm run db:test-runtime
+npm run smoke:renderer
+npm run smoke:web
+npm run visual:check
 npm test
 npm run verify
 ```
 
-| Command | Coverage |
-| --- | --- |
-| `ci:install` | CI dependency installation using `npm ci --ignore-scripts` so native modules do not compile against Node before the Electron rebuild step. |
-| `check:repo` | Required files, license metadata, ignored files, restricted repository artifacts. |
-| `check:syntax` | JavaScript syntax with `node --check`. |
-| `typecheck` | Checked JavaScript storage services plus strict Electron and Preact TypeScript gates. |
-| `check:size` | Source file warning and split-review thresholds. No large-file exceptions are currently required. |
-| `self-check` | Modular runtime contracts for path guards, project storage, backup, logging, UI wiring, security, and selected feature contracts. |
-| `prepare:electron` | Installs the Electron runtime after script-free CI installation and rebuilds native dependencies against the Electron runtime ABI. |
-| `test:unit` | Node test runner unit tests for pure models and path guards. |
-| `test:integration` | Node test runner integration tests using system temporary directories. |
-| `sqlite:probe` | Electron main-process probe for the selected SQLite dependency in a temporary directory. |
-| `sqlite:probe:electron` | Electron main-process probe for the selected SQLite dependency in a temporary directory. |
-| `sqlite:probe:node` | Optional Node ABI diagnostic for the selected SQLite dependency. It may fail after the native module is rebuilt for Electron. |
-| `db:check-schema` | Electron main-process schema readiness check using a temporary schema database. |
-| `db:test-conversion` | Electron main-process temporary JSON/SQLite round-trip check using synthetic fixtures. |
-| `db:test-storage-conversion` | Electron main-process project storage conversion check using a synthetic temporary project. |
-| `db:test-runtime` | Electron main-process SQLite runtime acceptance check using a synthetic temporary project. |
-| `test` | Unit and integration test sequence. |
-| `verify` | Repository, syntax, size, and self-check sequence. |
+| Command                      | Coverage                                                                                                                                             |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci:install`                 | CI dependency installation using `npm ci --ignore-scripts` so native modules do not compile against Node before the Electron rebuild step.           |
+| `check:repo`                 | Required files, license metadata, ignored files, restricted repository artifacts.                                                                    |
+| `check:syntax`               | JavaScript syntax with `node --check`.                                                                                                               |
+| `typecheck`                  | Checked JavaScript storage services plus strict Electron and Preact TypeScript gates.                                                                |
+| `check:bundle`               | Built renderer entry budgets, Motion mini boundary, and separate lazy SQLite worker assets.                                                          |
+| `check:size`                 | Source file warning and split-review thresholds. No large-file exceptions are currently required.                                                    |
+| `self-check`                 | Modular runtime contracts for path guards, project storage, backup, logging, UI wiring, security, and selected feature contracts.                    |
+| `prepare:electron`           | Installs the Electron runtime after script-free CI installation and rebuilds native dependencies against the Electron runtime ABI.                   |
+| `test:unit`                  | Node test runner unit tests for pure models and path guards.                                                                                         |
+| `test:integration`           | Node test runner integration tests using system temporary directories.                                                                               |
+| `sqlite:probe`               | Electron main-process probe for the selected SQLite dependency in a temporary directory.                                                             |
+| `sqlite:probe:electron`      | Electron main-process probe for the selected SQLite dependency in a temporary directory.                                                             |
+| `sqlite:probe:node`          | Optional Node ABI diagnostic for the selected SQLite dependency. It may fail after the native module is rebuilt for Electron.                        |
+| `db:check-schema`            | Electron main-process schema readiness check using a temporary schema database.                                                                      |
+| `db:test-conversion`         | Electron main-process temporary JSON/SQLite round-trip check using synthetic fixtures.                                                               |
+| `db:test-storage-conversion` | Electron main-process project storage conversion check using a synthetic temporary project.                                                          |
+| `db:test-runtime`            | Electron main-process SQLite runtime acceptance check using a synthetic temporary project.                                                           |
+| `smoke:renderer`             | Hidden Electron renderer startup, required controls, typed bridges, motion settings, and major feature surfaces.                                     |
+| `smoke:web`                  | Browser-local workspace, directory and file access, SQLite, management, and multi-tab acceptance.                                                    |
+| `visual:check`               | Quantized visual, layout-anchor, theme-identity, and page-overflow comparison for workspace, management, site, documentation, and hosted app scenes. |
+| `test`                       | Unit and integration test sequence.                                                                                                                  |
+| `verify`                     | Repository, version, syntax, type, build, client-bundle, source-size, and structural contract sequence.                                              |
 
 ## Test Layers
 
-| Layer | Location | Purpose |
-| --- | --- | --- |
-| Structural contracts | `scripts/self-check.js`, `scripts/self-check/` | Small runner plus domain suites for data, operations, renderer, features, and platform security. |
-| Unit tests | `tests/unit/` | Pure model behavior and focused service contracts. |
-| Integration tests | `tests/integration/` | Main-process services that need temporary directories or zip files. |
-| Fixtures | `tests/fixtures/` | Synthetic JSON project data only. No real survey records or private images. |
+| Layer                | Location                                       | Purpose                                                                                                                        |
+| -------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Structural contracts | `scripts/self-check.js`, `scripts/self-check/` | Small runner plus domain suites for data, operations, renderer, features, and platform security.                               |
+| Unit tests           | `tests/unit/`                                  | Pure model behavior and focused service contracts.                                                                             |
+| Integration tests    | `tests/integration/`                           | Main-process services that need temporary directories or zip files.                                                            |
+| Visual baselines     | `tests/visual/baseline.json`                   | Stable quantized color grids, theme identity, layout anchors, and overflow limits; local screenshots remain ignored artifacts. |
+| Fixtures             | `tests/fixtures/`                              | Synthetic JSON project data only. No real survey records or private images.                                                    |
 
 `npm run verify` builds the Electron and renderer outputs after repository, syntax, and type checks, then runs size and structural checks. CI and local release checks should still run `npm run test --if-present`.
 
-GitHub CI uses Node 24 and runs the structural checks as separate steps: repository hygiene, syntax, typecheck, file size policy, self-check, unit/integration tests, and SQLite runtime acceptance. Keeping these steps separate makes GitHub failures point to the exact gate instead of hiding them inside one combined command. CI sets `ELECTRON_MIRROR` and `npm_config_registry` so Electron binary installation uses the same mirror strategy as local setup when the default download path is unstable. CI runs `npm run ci:install` so install-time native scripts are skipped, then runs `npm run prepare:electron` so the Electron runtime is installed and native SQLite bindings are compiled for Electron before runtime checks.
+GitHub CI uses Node 24 and runs the structural checks as separate steps: repository hygiene, syntax, typecheck, source size, client bundle, self-check, unit/integration tests, SQLite runtime acceptance, browser smoke, and visual regression. Keeping these steps separate makes GitHub failures point to the exact gate instead of hiding them inside one combined command. CI sets `ELECTRON_MIRROR` and `npm_config_registry` so Electron binary installation uses the same mirror strategy as local setup when the default download path is unstable. CI runs `npm run ci:install` so install-time native scripts are skipped, then runs `npm run prepare:electron` so the Electron runtime is installed and native SQLite bindings are compiled for Electron before runtime checks.
+
+Use `npm run visual:update` only after an intentional, reviewed design change. It rebuilds the shared renderer and site, captures synthetic scenes, and replaces the committed evidence baseline. `npm run visual:check` never updates the baseline. Screenshots and current-run evidence stay under ignored `.artifacts/` paths.
 
 SQLite probe commands create only temporary databases under the system temporary directory and delete them before exit. The schema check command also creates a temporary schema database under the system temporary directory and deletes it before exit. The temporary conversion database created by `db:test-conversion` follows the same cleanup rule and uses only synthetic fixtures. The project conversion check created by `db:test-storage-conversion` uses a synthetic temporary project, writes a temporary `information/data.db`, verifies `information/statistics/backup`, verifies source-format cleanup after each direction, verifies backup-first conversion and export equality, then removes the temporary project.
 

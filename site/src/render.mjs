@@ -6,6 +6,7 @@ import {
   researchFlow,
   siteMeta
 } from './content.mjs';
+import { findSiteApplication } from './apps/registry.mjs';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -17,10 +18,12 @@ function escapeHtml(value) {
 }
 
 function nav(activePath) {
-  const links = navigation.map(item => {
-    const active = item.href === activePath ? ' aria-current="page" class="is-active"' : '';
-    return `<a href="${item.href}"${active}>${escapeHtml(item.label)}</a>`;
-  }).join('');
+  const links = navigation
+    .map(item => {
+      const active = item.href === activePath ? ' aria-current="page" class="is-active"' : '';
+      return `<a href="${item.href}"${active}>${escapeHtml(item.label)}</a>`;
+    })
+    .join('');
   return `
     <header class="site-header" data-header>
       <a class="brand" href="/" aria-label="CQNU Plant MAP 首页">
@@ -50,10 +53,14 @@ const pagePresentations = {
   '/docs': { className: 'site-page--docs', themeColor: '#f7f9fc' },
   '/web': { className: 'site-page--architecture', themeColor: '#f6fafb' },
   '/release': { className: 'site-page--release', themeColor: '#fbf8f9' },
-  '/privacy': { className: 'site-page--privacy', themeColor: '#f7faf8' }
+  '/privacy': { className: 'site-page--privacy', themeColor: '#f7faf8' },
+  '/apps/project-inspector': {
+    className: 'site-page--app-inspector',
+    themeColor: '#f4faf9'
+  }
 };
 
-function layout({ activePath, title, description, body }) {
+function layout({ activePath, title, description, body, styles = [], scripts = [] }) {
   const presentation = pagePresentations[activePath] ?? pagePresentations['/'];
   return `<!doctype html>
 <html lang="zh-CN">
@@ -67,7 +74,9 @@ function layout({ activePath, title, description, body }) {
   <link rel="stylesheet" href="/assets/styles.css" />
   <link rel="stylesheet" href="/assets/page-experience.css" />
   <link rel="stylesheet" href="/assets/responsive.css" />
+  ${styles.map(href => `<link rel="stylesheet" href="${escapeHtml(href)}" />`).join('\n  ')}
   <script src="/assets/client.js" defer></script>
+  ${scripts.map(src => `<script src="${escapeHtml(src)}" defer></script>`).join('\n  ')}
 </head>
 <body class="site-page ${presentation.className}">
   <a class="skip-link" href="#mainContent">跳至主要内容</a>
@@ -78,32 +87,98 @@ function layout({ activePath, title, description, body }) {
 </html>`;
 }
 
+function projectInspectorPage() {
+  const application = findSiteApplication('/apps/project-inspector');
+  if (!application) throw new Error('Project inspector manifest is missing.');
+  return layout({
+    activePath: application.route,
+    title: application.title,
+    description: application.summary,
+    styles: ['/assets/apps.css'],
+    scripts: [application.entry],
+    body: `
+      <section class="page-hero"><div class="content-wrap" data-reveal>
+        <span>LOCAL RESEARCH UTILITY · ${escapeHtml(application.version)}</span>
+        <h1>${escapeHtml(application.title)}</h1>
+        <p>${escapeHtml(application.summary)}</p>
+        <ul class="app-contract-badges"><li>仅读取用户主动选择的文件</li><li>不上传</li><li>不修改原文件</li><li>内存会话</li></ul>
+      </div></section>
+      <section class="content-band band-plain"><div class="content-wrap app-workbench" data-project-inspector>
+        <aside class="app-contract-panel" data-reveal>
+          <span class="eyebrow">应用宿主契约</span><h2>受控浏览器模块</h2>
+          <dl>
+            <div><dt>执行位置</dt><dd>当前浏览器标签页</dd></div>
+            <div><dt>网络能力</dt><dd>无</dd></div>
+            <div><dt>持久化</dt><dd>仅导出的检查报告</dd></div>
+            <div><dt>支持内容</dt><dd>${application.acceptedFiles.map(escapeHtml).join(' · ')}</dd></div>
+          </dl>
+          <p>该工具只做格式与文件组成预检，不替代正式工作区的数据读取、修复或迁移。</p>
+        </aside>
+        <section class="app-inspector-panel" data-reveal>
+          <div class="project-dropzone" data-project-dropzone>
+            <div><h2>选择项目文件夹或项目文件</h2><p>可检查完整项目目录，也可单独选择 settings、zones、points 或 SQLite 数据库。</p>
+              <div class="app-input-actions">
+                <label class="button button-primary">选择项目文件夹<input type="file" webkitdirectory multiple data-project-directory-input /></label>
+                <label class="button">选择文件<input type="file" accept=".json,.db,.sqlite,.sqlite3,image/*" multiple data-project-file-input /></label>
+              </div>
+            </div>
+          </div>
+          <p class="project-status" data-project-status role="status" aria-live="polite"></p>
+          <section class="project-results" data-project-results hidden aria-labelledby="projectResultTitle">
+            <h2 id="projectResultTitle">预检结果</h2>
+            <div class="project-metrics">
+              <article><span>文件数</span><strong data-project-metric="files">0</strong></article>
+              <article><span>总大小</span><strong data-project-metric="bytes">0 B</strong></article>
+              <article><span>分区与点位记录</span><strong data-project-metric="records">0</strong></article>
+              <article><span>图片数</span><strong data-project-metric="images">0</strong></article>
+            </div>
+            <ul class="project-checks" data-project-checks></ul>
+            <div class="project-file-scroll"><table class="project-file-table"><thead><tr><th>文件</th><th>类型</th><th>大小</th><th>检查结果</th></tr></thead><tbody data-project-files></tbody></table></div>
+            <div class="app-result-actions"><button class="button" type="button" data-project-clear disabled>清除结果</button><button class="button button-primary" type="button" data-project-export disabled>导出本地报告</button></div>
+          </section>
+        </section>
+      </div></section>`
+  });
+}
+
 function homePage() {
-  const groupNavigation = researchNavigationGroups.map(group => `
-    <a href="#${escapeHtml(group.id)}">${escapeHtml(group.title)}</a>`).join('');
-  const groups = researchNavigationGroups.map(group => {
-    const items = group.items.map(item => {
-      const content = `
+  const groupNavigation = researchNavigationGroups
+    .map(
+      group => `
+    <a href="#${escapeHtml(group.id)}">${escapeHtml(group.title)}</a>`
+    )
+    .join('');
+  const groups = researchNavigationGroups
+    .map(group => {
+      const items = group.items
+        .map(item => {
+          const content = `
         <span class="hub-card-meta"><b>${escapeHtml(item.label)}</b><i>${item.state === 'available' ? '可用' : '待接入'}</i></span>
         <strong>${escapeHtml(item.title)}</strong>
         <p>${escapeHtml(item.description)}</p>
         <span class="hub-card-action">${item.state === 'available' ? '打开模块' : '保留位置'}</span>`;
-      const attributes = `class="hub-card${item.state === 'planned' ? ' is-planned' : ''}" data-hub-item data-search="${escapeHtml(`${item.title} ${item.description} ${item.keywords}`)}"`;
-      return item.href
-        ? `<a ${attributes} href="${escapeHtml(item.href)}">${content}</a>`
-        : `<article ${attributes} aria-disabled="true">${content}</article>`;
-    }).join('');
-    return `
+          const attributes = `class="hub-card${item.state === 'planned' ? ' is-planned' : ''}" data-hub-item data-search="${escapeHtml(`${item.title} ${item.description} ${item.keywords}`)}"`;
+          return item.href
+            ? `<a ${attributes} href="${escapeHtml(item.href)}">${content}</a>`
+            : `<article ${attributes} aria-disabled="true">${content}</article>`;
+        })
+        .join('');
+      return `
       <section id="${escapeHtml(group.id)}" class="hub-group" data-hub-group data-reveal>
         <div class="hub-group-heading"><div><span>${escapeHtml(group.title)}</span><h2>${escapeHtml(group.title)}</h2></div><p>${escapeHtml(group.description)}</p></div>
         <div class="hub-grid">${items}</div>
       </section>`;
-  }).join('');
-  const flow = researchFlow.map((item, index) => `
+    })
+    .join('');
+  const flow = researchFlow
+    .map(
+      (item, index) => `
     <li data-reveal>
       <span>${String(index + 1).padStart(2, '0')}</span>
       <div><strong>${escapeHtml(item.step)}</strong><p>${escapeHtml(item.detail)}</p></div>
-    </li>`).join('');
+    </li>`
+    )
+    .join('');
 
   return layout({
     activePath: '/',
@@ -151,11 +226,15 @@ function homePage() {
 
 function docsPage() {
   const toc = docsSections.map(section => `<a href="#${section.id}" data-doc-link>${section.title}</a>`).join('');
-  const sections = docsSections.map(section => `
+  const sections = docsSections
+    .map(
+      section => `
     <section id="${section.id}" class="doc-section" data-doc-section data-reveal>
       <h2>${escapeHtml(section.title)}</h2>
       <ol>${section.items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ol>
-    </section>`).join('');
+    </section>`
+    )
+    .join('');
   return layout({
     activePath: '/docs',
     title: '使用文档',
@@ -177,12 +256,16 @@ function docsPage() {
 }
 
 function webPage() {
-  const layers = architectureLayers.map((item, index) => `
+  const layers = architectureLayers
+    .map(
+      (item, index) => `
     <article class="architecture-layer" data-reveal>
       <div><span>${String(index + 1).padStart(2, '0')}</span><em>${escapeHtml(item.state)}</em></div>
       <h2>${escapeHtml(item.title)}</h2>
       <p>${escapeHtml(item.detail)}</p>
-    </article>`).join('');
+    </article>`
+    )
+    .join('');
   return layout({
     activePath: '/web',
     title: 'Web 架构',
@@ -239,6 +322,7 @@ export function renderPages({ workspaceHtml = '' } = {}) {
     '/docs': docsPage(),
     '/web': webPage(),
     '/release': releasePage(),
-    '/privacy': privacyPage()
+    '/privacy': privacyPage(),
+    '/apps/project-inspector': projectInspectorPage()
   });
 }

@@ -6,15 +6,16 @@ CQNU Campus Plant Mapping System is a local-first application with Electron and 
 
 ## Runtime Layers
 
-| Layer | Responsibility |
-| --- | --- |
-| Main process | Window creation, file dialogs, project JSON/SQLite storage, image import, backups, logs, diagnostics, species reference requests, and controlled system actions. |
-| Preload | Exposes the `window.plantApp` business API through Electron context isolation. |
-| Renderer | Renders the map workspace, editors, query center, statistics, theme controls, maintenance center, and local UI state. |
-| Browser platform adapter | Maps the shared workspace contract to File System Access, OPFS SQLite, Cache Storage, and browser-safe backup services. |
-| Site Worker | Serves the navigation, documentation, browser workspace, and private management API without accepting project data. |
-| Management service | Provides typed accounts, sessions, CSRF, capabilities, member administration, and redacted audit events. |
-| Project folder | Holds user project files under `information/`. |
+| Layer                    | Responsibility                                                                                                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main process             | Window creation, file dialogs, project JSON/SQLite storage, image import, backups, logs, diagnostics, species reference requests, and controlled system actions. |
+| Preload                  | Exposes the `window.plantApp` business API through Electron context isolation.                                                                                   |
+| Renderer                 | Renders the map workspace, editors, query center, statistics, theme controls, maintenance center, and local UI state.                                            |
+| Browser platform adapter | Maps the shared workspace contract to File System Access, OPFS SQLite, Cache Storage, and browser-safe backup services.                                          |
+| Site Worker              | Serves the navigation, documentation, browser workspace, and private management API without accepting project data.                                              |
+| Browser app host         | Serves versioned, route-scoped browser-local research utilities with declared file and network capabilities.                                                     |
+| Management service       | Provides typed accounts, sessions, CSRF, capabilities, member administration, and redacted audit events.                                                         |
+| Project folder           | Holds user project files under `information/`.                                                                                                                   |
 
 ## Current Structure
 
@@ -38,6 +39,7 @@ admin/
   ui/                        # static management markup, styles, local profile bridge
 site/
   src/
+    apps/                     # browser-local app manifests and route scripts
   scripts/
 docs/
 .github/
@@ -85,6 +87,7 @@ Renderer code calls `window.plantApp`. `electron/preload/index.ts` maps those ca
 - `features/theme`: theme, glass, motion, status color settings.
 - `features/speciesReference`: temporary species suggestions and apply flow.
 - `renderer-modern`: Preact shell, modal markup, theme model, and modern chart presentation.
+- `renderer-modern/features/selection`: typed object-selection state with a compatibility mirror for existing map and inspector workflows.
 
 Large renderer domains are split by responsibility. Statistics separates controls, views, exports, workspace summaries, and pure research calculations. Maintenance separates health and repair, logs and settings, and storage conversion. Basemap handling separates configuration, layer rendering, overlays, and diagnostics. Locale dictionaries use the same domain split in Chinese and English.
 
@@ -98,12 +101,16 @@ Large renderer domains are split by responsibility. Statistics separates control
 6. `npm --prefix admin run build` cleans and compiles server and browser-management TypeScript.
 7. `npm --prefix site run build` runs the admin build, then publishes only compiled management modules and the browser workspace assets.
 8. `npm run smoke:web` rebuilds the renderer and site through `presmoke:web` before browser smoke testing, preventing stale shared-workspace assets from being tested.
+9. `npm run check:bundle` keeps the initial renderer entry within reviewed raw and gzip budgets while SQLite workers remain separate lazy assets.
+10. Site app manifests register route-scoped assets; an app route does not load other hosted-app scripts.
 
 Generated directories are excluded from source synchronization and recreated locally or in packaging.
 
 ## Security Boundary
 
 The renderer has no Node integration. Preload exposes only business commands. Main-process services validate paths before reading, writing, copying, deleting, or opening external targets.
+
+Hosted browser tools are static repository code. Their manifest declares local file access, persistence, network, and upload behavior. The first hosted tool performs a read-only project preflight entirely in browser memory and has no network capability. See `docs/SITE_APP_HOST.md`.
 
 ## Migration Boundary
 

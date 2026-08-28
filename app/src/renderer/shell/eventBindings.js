@@ -13,7 +13,8 @@ function bindProjectEvents() {
 
   document.querySelectorAll('.seg-btn[data-lang]').forEach(button => {
     button.addEventListener('click', async () => {
-      if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('switch-language')) return;
+      if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('switch-language'))
+        return;
       if (!state.settings) return;
       state.settings.language = button.dataset.lang;
       applyI18n();
@@ -86,7 +87,8 @@ function bindBasemapEvents() {
   ui.btnToggleBasemapEditor.addEventListener('click', openBasemapWorkspacePanel);
   ui.btnCloseBasemapWorkspaceModal?.addEventListener('click', closeBasemapWorkspacePanel);
   ui.btnCloseBasemapWorkspaceFooter?.addEventListener('click', closeBasemapWorkspacePanel);
-  ui.basemapWorkspaceModal?.querySelector('.layer-modal-backdrop')
+  ui.basemapWorkspaceModal
+    ?.querySelector('.layer-modal-backdrop')
     ?.addEventListener('click', closeBasemapWorkspacePanel);
   document.querySelectorAll('.basemap-tab').forEach(button => {
     button.addEventListener('click', () => setBasemapWorkspaceTab(button.dataset.basemapTab || 'source'));
@@ -103,7 +105,8 @@ function bindBasemapEvents() {
     renderOverlayStatusPanel();
   });
   ui.bmOverlayOpacity?.addEventListener('input', () => {
-    if (ui.bmOverlayOpacityValue) ui.bmOverlayOpacityValue.textContent = `${Math.round(Number(ui.bmOverlayOpacity.value || 0) * 100)}%`;
+    if (ui.bmOverlayOpacityValue)
+      ui.bmOverlayOpacityValue.textContent = `${Math.round(Number(ui.bmOverlayOpacity.value || 0) * 100)}%`;
   });
   ui.btnNewOverlay?.addEventListener('click', newOverlayForm);
   ui.btnTestOverlay?.addEventListener('click', testOverlayConfig);
@@ -113,7 +116,8 @@ function bindBasemapEvents() {
 
 function bindListEvents() {
   const activateTab = (tab, focusTab = false) => {
-    state.activeListTab = tab;
+    if (window.objectSelectionStore) window.objectSelectionStore.setActiveListTab(tab);
+    else state.activeListTab = tab;
     renderLists();
     if (focusTab) (tab === 'zones' ? ui.btnTabZones : ui.btnTabPoints)?.focus();
   };
@@ -140,8 +144,7 @@ function bindStatsEvents() {
   ui.btnOpenStats.addEventListener('click', openStatsCenterOverview);
   ui.btnOpenStatsFromSummary?.addEventListener('click', openStatsCenterOverview);
   ui.btnCloseStatsModal.addEventListener('click', () => closeLayerModal(ui.statsModal));
-  ui.statsModal.querySelector('.layer-modal-backdrop')
-    .addEventListener('click', () => closeLayerModal(ui.statsModal));
+  ui.statsModal.querySelector('.layer-modal-backdrop').addEventListener('click', () => closeLayerModal(ui.statsModal));
 
   document.querySelectorAll('.stats-tab').forEach(button => {
     button.addEventListener('click', () => {
@@ -160,8 +163,7 @@ function bindQueryEvents() {
   });
 
   ui.btnCloseQueryModal.addEventListener('click', () => closeLayerModal(ui.queryModal));
-  ui.queryModal.querySelector('.layer-modal-backdrop')
-    .addEventListener('click', () => closeLayerModal(ui.queryModal));
+  ui.queryModal.querySelector('.layer-modal-backdrop').addEventListener('click', () => closeLayerModal(ui.queryModal));
 
   [
     ui.queryText,
@@ -202,8 +204,7 @@ function bindRecycleAndEditorEvents() {
     openLayerModal(ui.trashModal);
   });
   ui.btnCloseTrashModal.addEventListener('click', () => closeLayerModal(ui.trashModal));
-  ui.trashModal.querySelector('.layer-modal-backdrop')
-    .addEventListener('click', () => closeLayerModal(ui.trashModal));
+  ui.trashModal.querySelector('.layer-modal-backdrop').addEventListener('click', () => closeLayerModal(ui.trashModal));
   ui.btnRestoreTrash.addEventListener('click', restoreSelectedTrash);
   ui.btnDeleteTrashForever.addEventListener('click', deleteTrashForever);
   if (typeof bindPhenologyFeatureEvents === 'function') bindPhenologyFeatureEvents();
@@ -212,7 +213,8 @@ function bindRecycleAndEditorEvents() {
 function bindThemeEvents() {
   ui.btnOpenTheme?.addEventListener('click', openThemeCenter);
   ui.btnCloseThemeModal?.addEventListener('click', () => closeLayerModal(ui.themeModal));
-  ui.themeModal?.querySelector('.layer-modal-backdrop')
+  ui.themeModal
+    ?.querySelector('.layer-modal-backdrop')
     ?.addEventListener('click', () => closeLayerModal(ui.themeModal));
   bindThemePanelEvents();
 }
@@ -220,40 +222,43 @@ function bindThemeEvents() {
 function bindMergeEvents() {
   ui.btnOpenMerge?.addEventListener('click', openMergeCenter);
   ui.btnCloseMergeModal?.addEventListener('click', () => closeLayerModal(ui.mergeModal));
-  ui.mergeModal?.querySelector('.layer-modal-backdrop')
+  ui.mergeModal
+    ?.querySelector('.layer-modal-backdrop')
     ?.addEventListener('click', () => closeLayerModal(ui.mergeModal));
 
   ui.btnChooseMergeBase?.addEventListener('click', async () => {
-    state.mergeBaseDir = await chooseProjectDirectoryForMerge() || state.mergeBaseDir;
+    state.mergeBaseDir = (await chooseProjectDirectoryForMerge()) || state.mergeBaseDir;
     updateMergePaths();
   });
   ui.btnChooseMergeOther?.addEventListener('click', async () => {
-    state.mergeOtherDir = await chooseProjectDirectoryForMerge() || state.mergeOtherDir;
+    state.mergeOtherDir = (await chooseProjectDirectoryForMerge()) || state.mergeOtherDir;
     updateMergePaths();
   });
   ui.btnRunMerge?.addEventListener('click', runMergeFlow);
 
   ui.btnCloseMergeReviewModal?.addEventListener('click', () => settleMergeReview(null));
-  ui.mergeReviewModal?.querySelector('.layer-modal-backdrop')
-    ?.addEventListener('click', () => settleMergeReview(null));
+  ui.mergeReviewModal?.querySelector('.layer-modal-backdrop')?.addEventListener('click', () => settleMergeReview(null));
   ui.btnMergeReviewCancel?.addEventListener('click', () => settleMergeReview(null));
   ui.btnMergeReviewApply?.addEventListener('click', applyMergeReviewSelection);
 }
 
 function applyMergeReviewSelection() {
-  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('apply-merge-review')) return;
-  const mergeIdxs = [...ui.mergeReviewList.querySelectorAll('input[type=checkbox][data-idx]:checked')]
-    .map(node => Number(node.dataset.idx));
+  if (typeof guardMaintenanceReadOnlyAction === 'function' && guardMaintenanceReadOnlyAction('apply-merge-review'))
+    return;
+  const mergeIdxs = [...ui.mergeReviewList.querySelectorAll('input[type=checkbox][data-idx]:checked')].map(node =>
+    Number(node.dataset.idx)
+  );
   settleMergeReview({ mergeIdxs });
 }
 
 function bindBackupEvents() {
   ui.btnBackupProject?.addEventListener('click', openBackupCenter);
   ui.btnCloseBackupModal?.addEventListener('click', () => closeLayerModal(ui.backupModal));
-  ui.backupModal?.querySelector('.layer-modal-backdrop')
+  ui.backupModal
+    ?.querySelector('.layer-modal-backdrop')
     ?.addEventListener('click', () => closeLayerModal(ui.backupModal));
   ui.btnChooseBackupTarget?.addEventListener('click', async () => {
-    state.backupTargetDir = await chooseBackupDirectory() || state.backupTargetDir;
+    state.backupTargetDir = (await chooseBackupDirectory()) || state.backupTargetDir;
     updateBackupPaths();
   });
   ui.btnRunManualBackup?.addEventListener('click', runManualBackup);
@@ -262,18 +267,17 @@ function bindBackupEvents() {
 function bindDialogEvents() {
   ui.btnConfirmCancel.addEventListener('click', () => settleConfirmDialog(false));
   ui.btnConfirmAccept.addEventListener('click', () => settleConfirmDialog(true));
-  ui.confirmModal.querySelector('.layer-modal-backdrop')
-    .addEventListener('click', () => settleConfirmDialog(false));
+  ui.confirmModal.querySelector('.layer-modal-backdrop').addEventListener('click', () => settleConfirmDialog(false));
   ui.btnAlertClose?.addEventListener('click', () => closeLayerModal(ui.alertModal));
-  ui.alertModal?.querySelector('.layer-modal-backdrop')
+  ui.alertModal
+    ?.querySelector('.layer-modal-backdrop')
     ?.addEventListener('click', () => closeLayerModal(ui.alertModal));
 
   ui.btnSmallPromptCancel?.addEventListener('click', () => settleSmallPrompt(''));
   ui.btnSmallPromptAccept?.addEventListener('click', () => {
     settleSmallPrompt(ui.smallPromptInput.value.trim());
   });
-  ui.smallPromptModal?.querySelector('.layer-modal-backdrop')
-    ?.addEventListener('click', () => settleSmallPrompt(''));
+  ui.smallPromptModal?.querySelector('.layer-modal-backdrop')?.addEventListener('click', () => settleSmallPrompt(''));
   ui.smallPromptInput?.addEventListener('keydown', event => {
     if (event.key === 'Enter') settleSmallPrompt(ui.smallPromptInput.value.trim());
   });
@@ -281,8 +285,7 @@ function bindDialogEvents() {
 
 function bindImagePreviewEvents() {
   ui.btnCloseImageModal.addEventListener('click', closeImagePreview);
-  ui.imagePreviewModal.querySelector('.image-modal-backdrop')
-    .addEventListener('click', closeImagePreview);
+  ui.imagePreviewModal.querySelector('.image-modal-backdrop').addEventListener('click', closeImagePreview);
   ui.imagePreviewFull.addEventListener('wheel', handleImagePreviewWheel, { passive: false });
   ui.imagePreviewFull.addEventListener('pointerdown', handleImagePreviewPointerDown);
   window.addEventListener('pointermove', handleImagePreviewPointerMove);
@@ -329,7 +332,7 @@ function handleFullscreenShortcut(event) {
 
 async function toggleFullscreenMode() {
   try {
-  if (!window.platformAdapter?.window?.toggleFullscreen) return;
+    if (!window.platformAdapter?.window?.toggleFullscreen) return;
     await callIpc(window.platformAdapter.window.toggleFullscreen());
     setTimeout(() => {
       if (typeof scheduleMapResize === 'function') scheduleMapResize();
@@ -367,7 +370,8 @@ function handleModalEscapeKey(event) {
     if (topModal === ui.pointEditorModal) return closePointEditor();
     if (topModal === ui.basemapWorkspaceModal) return closeBasemapWorkspacePanel();
     if (topModal === ui.mergeReviewModal && typeof settleMergeReview === 'function') return settleMergeReview(null);
-    if (topModal.id === 'statsFullscreenLayer' && typeof closeStatsFullscreen === 'function') return closeStatsFullscreen();
+    if (topModal.id === 'statsFullscreenLayer' && typeof closeStatsFullscreen === 'function')
+      return closeStatsFullscreen();
     closeLayerModal(topModal);
     return;
   }

@@ -28,12 +28,13 @@ function markSmokeStage(stage) {
 setSmokeStageReporter(markSmokeStage);
 
 function managementSessionFixture(accessLevel = 'save') {
-  const absoluteExpiresAt = new Date(Date.now() + (60 * 60 * 1000)).toISOString();
-  const capabilities = accessLevel === 'read'
-    ? ['workspace.read']
-    : accessLevel === 'edit'
-      ? ['workspace.read', 'workspace.edit']
-      : ['workspace.read', 'workspace.edit', 'workspace.save', 'member.read', 'member.manage', 'audit.read'];
+  const absoluteExpiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const capabilities =
+    accessLevel === 'read'
+      ? ['workspace.read']
+      : accessLevel === 'edit'
+        ? ['workspace.read', 'workspace.edit']
+        : ['workspace.read', 'workspace.edit', 'workspace.save', 'member.read', 'member.manage', 'audit.read'];
   return {
     ok: true,
     data: {
@@ -73,14 +74,18 @@ async function createSiteServer() {
         response.end(JSON.stringify(managementSessionFixture(accessLevel)));
         return;
       }
-      if (target.pathname === '/api/manage/session'
-        || target.pathname === '/api/manage/session/heartbeat') {
+      if (target.pathname === '/api/manage/session' || target.pathname === '/api/manage/session/heartbeat') {
         if (loggedOut) {
           response.writeHead(401, {
             'content-type': 'application/json; charset=utf-8',
             'cache-control': 'no-store'
           });
-          response.end(JSON.stringify({ ok: false, error: { code: 'SESSION_REQUIRED', message: '登录会话已失效，请重新登录。' } }));
+          response.end(
+            JSON.stringify({
+              ok: false,
+              error: { code: 'SESSION_REQUIRED', message: '登录会话已失效，请重新登录。' }
+            })
+          );
           return;
         }
         response.writeHead(200, {
@@ -90,10 +95,7 @@ async function createSiteServer() {
         response.end(JSON.stringify(managementSessionFixture(accessLevel)));
         return;
       }
-      const siteResponse = await worker.fetch(
-        new Request(target, { method: request.method || 'GET' }),
-        env
-      );
+      const siteResponse = await worker.fetch(new Request(target, { method: request.method || 'GET' }), env);
       response.writeHead(siteResponse.status, Object.fromEntries(siteResponse.headers));
       response.end(Buffer.from(await siteResponse.arrayBuffer()));
     } catch {
@@ -145,7 +147,8 @@ async function run() {
     await window.loadURL(url);
     await waitForRuntime(window);
     markSmokeStage('primary:platform-roundtrip');
-    const result = await window.webContents.executeJavaScript(`(async () => {
+    const result = await window.webContents.executeJavaScript(
+      `(async () => {
       let browserStage = 'initialize';
       try {
       const projectDir = 'web://project/web-workspace-smoke';
@@ -315,17 +318,16 @@ async function run() {
           }
         };
       }
-    })()`, true);
+    })()`,
+      true
+    );
     if (result.smokeExecutionError) {
       const failure = result.smokeExecutionError;
       throw new Error(`${failure.stage}: ${failure.name}: ${failure.message}\n${failure.stack}`);
     }
 
     markSmokeStage('primary:external-sqlite-import');
-    const externalSqliteResult = await runExternalSqliteImportSmoke(
-      window,
-      createDesktopSqliteFixtureBytes()
-    );
+    const externalSqliteResult = await runExternalSqliteImportSmoke(window, createDesktopSqliteFixtureBytes());
 
     markSmokeStage('primary:stats-fullscreen-layer');
     const statsFullscreenResult = await runStatsFullscreenLayerSmoke(window);
@@ -345,12 +347,15 @@ async function run() {
     try {
       await secondWindow.loadURL(url);
       await waitForRuntime(secondWindow);
-      lockResult = await secondWindow.webContents.executeJavaScript(`window.platformAdapter.project.save({
+      lockResult = await secondWindow.webContents.executeJavaScript(
+        `window.platformAdapter.project.save({
         projectDir: 'web://project/web-workspace-smoke-secondary',
         settings: { projectName: 'Secondary tab must not write' },
         zones: [],
         points: []
-      })`, true);
+      })`,
+        true
+      );
     } finally {
       secondWindow.destroy();
     }
@@ -367,10 +372,14 @@ async function run() {
     if (result.readOnly) failures.push('web adapter is still read-only');
     if (!result.writeProject || !result.saved) failures.push(`web project save is unavailable: ${result.saveError}`);
     if (result.directoryPermissionStatus !== 'granted' || result.directoryReconnectRequired) {
-      failures.push(`directory handle recovery: ${result.directoryPermissionStatus} / ${result.directoryReconnectRequired}`);
+      failures.push(
+        `directory handle recovery: ${result.directoryPermissionStatus} / ${result.directoryReconnectRequired}`
+      );
     }
     if (!result.directoryMirrorWritten) {
-      failures.push(`recovered directory handle did not receive the JSON mirror: ${result.mirrorWarning || result.mirrorReadError}`);
+      failures.push(
+        `recovered directory handle did not receive the JSON mirror: ${result.mirrorWarning || result.mirrorReadError}`
+      );
     }
     if (!result.changed || !result.backupCreated || !result.backupRestored) {
       failures.push(`web backup create/restore is unavailable: ${result.backupError || result.restoreError}`);
@@ -384,7 +393,8 @@ async function run() {
     if (result.restoredProjectName !== 'Web workspace smoke') {
       failures.push(`backup restore value: ${result.restoredProjectName}`);
     }
-    if (!result.logged || result.logCount < 1) failures.push(`web diagnostic log round trip failed: ${result.logError}`);
+    if (!result.logged || result.logCount < 1)
+      failures.push(`web diagnostic log round trip failed: ${result.logError}`);
     if (!result.storageReady) failures.push(`web storage preflight failed: ${result.storageError || result.loadError}`);
     if (!result.backupCapability || !result.diagnosticsCapability || !result.speciesCapability) {
       failures.push('web platform capabilities are incomplete');
@@ -393,7 +403,9 @@ async function run() {
       failures.push('external web backup import contract is incomplete');
     }
     if (!['full', 'portable'].includes(result.capabilityMode) || result.missingCapabilities.length) {
-      failures.push(`browser capability assessment: ${result.capabilityMode} / ${result.missingCapabilities.join(', ')}`);
+      failures.push(
+        `browser capability assessment: ${result.capabilityMode} / ${result.missingCapabilities.join(', ')}`
+      );
     }
     if (result.storageMode !== 'opfs-sahpool') failures.push(`storage mode: ${result.storageMode}`);
     if (result.zoneCount !== 1 || result.pointCount !== 1) {
@@ -403,32 +415,36 @@ async function run() {
     if (!result.projectWorkflowReady) failures.push('typed project workflow bridge is unavailable in the web runtime');
     if (result.runtimeStatus !== 'ready') failures.push(`runtime status: ${result.runtimeStatus}`);
     if (!result.siteHomeLink) failures.push('site homepage link is missing');
-    if (!externalSqliteResult.ok
-      || !externalSqliteResult.filePickerCalled
-      || externalSqliteResult.filePickerMultiple !== false
-      || !externalSqliteResult.externalSqliteImported
-      || !externalSqliteResult.sourceUnchangedFlag
-      || !externalSqliteResult.sourceHashUnchanged
-      || externalSqliteResult.writeAttempted
-      || externalSqliteResult.jsonFilesExist
-      || !externalSqliteResult.saved
-      || externalSqliteResult.zoneCount !== 1
-      || externalSqliteResult.pointCount !== 1
-      || externalSqliteResult.unknownZone !== 1
-      || externalSqliteResult.unknownPoint !== true
-      || externalSqliteResult.phenology !== '开花'
-      || externalSqliteResult.taxonomyProvider !== 'GBIF') {
+    if (
+      !externalSqliteResult.ok ||
+      !externalSqliteResult.filePickerCalled ||
+      externalSqliteResult.filePickerMultiple !== false ||
+      !externalSqliteResult.externalSqliteImported ||
+      !externalSqliteResult.sourceUnchangedFlag ||
+      !externalSqliteResult.sourceHashUnchanged ||
+      externalSqliteResult.writeAttempted ||
+      externalSqliteResult.jsonFilesExist ||
+      !externalSqliteResult.saved ||
+      externalSqliteResult.zoneCount !== 1 ||
+      externalSqliteResult.pointCount !== 1 ||
+      externalSqliteResult.unknownZone !== 1 ||
+      externalSqliteResult.unknownPoint !== true ||
+      externalSqliteResult.phenology !== '开花' ||
+      externalSqliteResult.taxonomyProvider !== 'GBIF'
+    ) {
       failures.push(`external SQLite import contract: ${JSON.stringify(externalSqliteResult)}`);
     }
-    if (!statsFullscreenResult.ok
-      || !statsFullscreenResult.mountedToBody
-      || !statsFullscreenResult.visible
-      || statsFullscreenResult.layerZ <= statsFullscreenResult.statsModalZ
-      || !statsFullscreenResult.closeHitVisible
-      || !statsFullscreenResult.bodyLocked
-      || !statsFullscreenResult.closedByEscape
-      || !statsFullscreenResult.statsModalStillVisible
-      || !statsFullscreenResult.statsModalClosed) {
+    if (
+      !statsFullscreenResult.ok ||
+      !statsFullscreenResult.mountedToBody ||
+      !statsFullscreenResult.visible ||
+      statsFullscreenResult.layerZ <= statsFullscreenResult.statsModalZ ||
+      !statsFullscreenResult.closeHitVisible ||
+      !statsFullscreenResult.bodyLocked ||
+      !statsFullscreenResult.closedByEscape ||
+      !statsFullscreenResult.statsModalStillVisible ||
+      !statsFullscreenResult.statsModalClosed
+    ) {
       failures.push(`statistics fullscreen layer contract: ${JSON.stringify(statsFullscreenResult)}`);
     }
     if (lockResult?.ok !== false || lockResult?.error?.code !== 'WEB_DATABASE_LOCKED') {
@@ -438,12 +454,16 @@ async function run() {
       failures.push(`secondary tab lock message: ${lockResult?.error?.message || ''}`);
     }
     if (!primaryAfterLock?.ok) failures.push('primary tab stopped working after secondary lock rejection');
-    failures.push(...errors.filter(message => {
-      if (message.includes('Failed to load resource')) return false;
-      return !/^net::ERR_ABORTED https:\/\/[abc]\.tile\.openstreetmap\.org\//.test(message);
-    }));
+    failures.push(
+      ...errors.filter(message => {
+        if (message.includes('Failed to load resource')) return false;
+        return !/^net::ERR_ABORTED https:\/\/[abc]\.tile\.openstreetmap\.org\//.test(message);
+      })
+    );
     if (failures.length) throw new Error(failures.join('\n'));
-    process.stdout.write(`web workspace smoke passed (login-to-workspace ${managementResult.loginReadyMs}ms; typed import center, OPFS SQLite, direct read-only SQLite picker, lazy SQLite worker, trusted directory picker, local avatar, modal and statistics-fullscreen top-layer hit tests, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n`);
+    process.stdout.write(
+      `web workspace smoke passed (login-to-workspace ${managementResult.loginReadyMs}ms; typed import center, OPFS SQLite, direct read-only SQLite picker, lazy SQLite worker, trusted directory picker, local avatar, modal and statistics-fullscreen top-layer hit tests, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n`
+    );
   } finally {
     markSmokeStage('primary:cleanup-window');
     window.destroy();
@@ -454,24 +474,36 @@ async function run() {
   }
 }
 
-const smokeTimeout = setTimeout(() => {
-  process.stderr.write(`[${activeSmokeStage}] Web workspace smoke exceeded the 55 second limit.\n`);
-  app.exit(1);
-}, 55_000);
+const directEntryPath = path.resolve(process.argv[1] || '');
+const isDirectExecution = require.main === module || directEntryPath === __filename;
 
-run()
-  .then(() => {
-    clearTimeout(smokeTimeout);
-    app.quit();
-  })
-  .catch(error => {
-    clearTimeout(smokeTimeout);
-    const detail = error instanceof Error
-      ? error.stack || error.message
-      : typeof error === 'string'
-        ? error
-        : JSON.stringify(error, Object.getOwnPropertyNames(error || {}))
-          || 'Unknown web workspace smoke failure';
-    process.stderr.write(`[${activeSmokeStage}] ${detail}\n`);
+if (isDirectExecution) {
+  const smokeTimeoutMs = 55_000;
+  const smokeTimeout = setTimeout(() => {
+    process.stderr.write(
+      `[${activeSmokeStage}] Web workspace smoke exceeded the ${Math.round(smokeTimeoutMs / 1000)} second limit.\n`
+    );
     app.exit(1);
-  });
+  }, smokeTimeoutMs);
+  run()
+    .then(() => {
+      clearTimeout(smokeTimeout);
+      app.quit();
+    })
+    .catch(error => {
+      clearTimeout(smokeTimeout);
+      const detail =
+        error instanceof Error
+          ? error.stack || error.message
+          : typeof error === 'string'
+            ? error
+            : JSON.stringify(error, Object.getOwnPropertyNames(error || {})) || 'Unknown web workspace smoke failure';
+      process.stderr.write(`[${activeSmokeStage}] ${detail}\n`);
+      app.exit(1);
+    });
+}
+
+module.exports = {
+  createSiteServer,
+  managementSessionFixture
+};

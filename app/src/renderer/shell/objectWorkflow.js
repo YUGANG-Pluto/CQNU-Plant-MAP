@@ -37,9 +37,7 @@ function getSelectedObjectDescriptor() {
 
 function getObjectNavigationItems(type) {
   if (type === 'point') {
-    const zonePoints = state.selectedZoneId
-      ? state.points.filter(point => point.zoneRef === state.selectedZoneId)
-      : [];
+    const zonePoints = state.selectedZoneId ? state.points.filter(point => point.zoneRef === state.selectedZoneId) : [];
     return zonePoints.length ? zonePoints : state.points;
   }
   if (type === 'zone') return state.zones;
@@ -60,9 +58,7 @@ function objectSelectionSummaryText(selection = getSelectedObjectDescriptor()) {
   if (!selection) return t('objectSelectionEmpty');
   const typeLabel = t(selection.type === 'point' ? 'objectTypePoint' : 'objectTypeZone');
   const position = getObjectSelectionPosition(selection);
-  const positionText = position.total
-    ? formatObjectWorkflowText('objectSelectionPosition', position)
-    : '';
+  const positionText = position.total ? formatObjectWorkflowText('objectSelectionPosition', position) : '';
   return [typeLabel, selection.label, positionText].filter(Boolean).join(' · ');
 }
 
@@ -100,9 +96,8 @@ function getObjectListItems(container) {
 function normalizeObjectListTabStops(container) {
   const items = getObjectListItems(container).filter(item => !item.disabled);
   if (!items.length) return;
-  const current = items.find(item => item.classList.contains('is-selected')) ||
-    items.find(item => item.tabIndex === 0) ||
-    items[0];
+  const current =
+    items.find(item => item.classList.contains('is-selected')) || items.find(item => item.tabIndex === 0) || items[0];
   items.forEach(item => {
     item.tabIndex = item === current ? 0 : -1;
   });
@@ -129,7 +124,9 @@ function moveObjectListFocus(item, direction) {
 function setObjectHover(type, id, active = true) {
   if (!['zone', 'point'].includes(type) || !id) return;
   const key = type === 'point' ? 'hoveredPointId' : 'hoveredZoneId';
-  if (active) state[key] = id;
+  if (window.objectSelectionStore) {
+    window.objectSelectionStore.setHover({ type, id, active });
+  } else if (active) state[key] = id;
   else if (state[key] === id) state[key] = null;
 
   document.querySelectorAll('[data-object-type][data-object-id]').forEach(node => {
@@ -251,8 +248,10 @@ function configureMapObjectLayer(layer, options = {}) {
 }
 
 function pulseSelectionStatus() {
-  const nodes = [ui.selectedZoneText?.closest('.ui-status-chip'), ui.selectedPointText?.closest('.ui-status-chip')]
-    .filter(Boolean);
+  const nodes = [
+    ui.selectedZoneText?.closest('.ui-status-chip'),
+    ui.selectedPointText?.closest('.ui-status-chip')
+  ].filter(Boolean);
   nodes.forEach(node => node.classList.remove('is-updated'));
   window.requestAnimationFrame(() => nodes.forEach(node => node.classList.add('is-updated')));
   if (objectSelectionPulseTimer) window.clearTimeout(objectSelectionPulseTimer);
@@ -265,19 +264,15 @@ function pulseSelectionStatus() {
 function syncObjectSelectionUi(reason = 'sync', options = {}) {
   const selection = getSelectedObjectDescriptor();
   const contextZoneId = selection?.type === 'point' ? state.selectedZoneId : null;
-  const deleteLocked = window.platformAdapter?.runtime === 'web'
-    && window.platformAdapter?.capabilities?.importRecords === false;
+  const deleteLocked =
+    window.platformAdapter?.runtime === 'web' && window.platformAdapter?.capabilities?.importRecords === false;
 
   document.querySelectorAll('[data-object-type][data-object-id]').forEach(node => {
     const selected = Boolean(
-      selection &&
-      node.dataset.objectType === selection.type &&
-      node.dataset.objectId === selection.id
+      selection && node.dataset.objectType === selection.type && node.dataset.objectId === selection.id
     );
     const contextual = Boolean(
-      contextZoneId &&
-      node.dataset.objectType === 'zone' &&
-      node.dataset.objectId === contextZoneId
+      contextZoneId && node.dataset.objectType === 'zone' && node.dataset.objectId === contextZoneId
     );
     node.classList.toggle('is-selected', selected);
     node.classList.toggle('selected', selected);
@@ -287,14 +282,27 @@ function syncObjectSelectionUi(reason = 'sync', options = {}) {
     else node.removeAttribute('aria-current');
   });
 
-  document.querySelectorAll('[role="listbox"], .object-list, #zonePointList, #queryResults')
+  document
+    .querySelectorAll('[role="listbox"], .object-list, #zonePointList, #queryResults')
     .forEach(normalizeObjectListTabStops);
 
   state.zoneLayers?.forEach((layer, id) => {
-    syncMapObjectLayerState(layer, 'zone', id, selection?.type === 'zone' && selection.id === id, state.hoveredZoneId === id);
+    syncMapObjectLayerState(
+      layer,
+      'zone',
+      id,
+      selection?.type === 'zone' && selection.id === id,
+      state.hoveredZoneId === id
+    );
   });
   state.pointLayers?.forEach((layer, id) => {
-    syncMapObjectLayerState(layer, 'point', id, selection?.type === 'point' && selection.id === id, state.hoveredPointId === id);
+    syncMapObjectLayerState(
+      layer,
+      'point',
+      id,
+      selection?.type === 'point' && selection.id === id,
+      state.hoveredPointId === id
+    );
   });
 
   const summary = objectSelectionSummaryText(selection);
@@ -338,9 +346,10 @@ function syncObjectSelectionUi(reason = 'sync', options = {}) {
   }
 
   if (state.activeRightDrawerModule && ui.rightDrawerSummary) {
-    const definition = typeof rightPanelModuleDefinitions === 'function'
-      ? rightPanelModuleDefinitions()[state.activeRightDrawerModule]
-      : null;
+    const definition =
+      typeof rightPanelModuleDefinitions === 'function'
+        ? rightPanelModuleDefinitions()[state.activeRightDrawerModule]
+        : null;
     if (definition?.summary) ui.rightDrawerSummary.textContent = definition.summary();
   }
 
@@ -355,9 +364,8 @@ function focusObjectSelection(selection = getSelectedObjectDescriptor()) {
 }
 
 function activateObjectSelection(type, id, options = {}) {
-  const exists = type === 'point'
-    ? state.points.some(point => point.id === id)
-    : state.zones.some(zone => zone.id === id);
+  const exists =
+    type === 'point' ? state.points.some(point => point.id === id) : state.zones.some(zone => zone.id === id);
   if (!exists) {
     setObjectWorkflowFeedback('objectWorkflowMissingObject', 'error');
     return false;
@@ -368,7 +376,9 @@ function activateObjectSelection(type, id, options = {}) {
   }
   if (type === 'point') selectPoint(id);
   else selectZone(id);
-  syncObjectSelectionUi(`${options.source || 'workflow'}-activate`, { announce: options.focusMap === false });
+  syncObjectSelectionUi(`${options.source || 'workflow'}-activate`, {
+    announce: options.focusMap === false
+  });
 
   if (options.focusMap === false) return true;
   const focused = focusObjectSelection();
