@@ -80,7 +80,7 @@ async function captureScene(isolatedSession, origin, name, pathname, options = {
     await window.loadURL(`${origin}${pathname}`);
     assertHealthy('navigation');
     if (options.runtime) await waitForRuntime(window);
-    if (options.selector) await waitForSelector(window, options.selector);
+    if (options.selector) await waitForSelector(window, options.selector, options.selectorTimeout);
     if (options.prepare) await window.webContents.executeJavaScript(options.prepare, true);
     assertHealthy('preparation');
     await captureSmokeScreenshot(window, name, { width: 1440, height: 960 });
@@ -138,27 +138,43 @@ async function run() {
     await captureScene(isolatedSession, origin, 'cloud-project-library', '/workspace', {
       runtime: true,
       mobile: true,
+      selector: '#btnChooseDirWelcome',
+      selectorTimeout: 15_000,
       prepare: `(async () => {
-        document.getElementById('btnReopenProjectImportCenter')?.click();
-        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-        document.getElementById('btnOpenCloudProjectLibrary')?.click();
+        const waitForVisible = (selector, timeoutMs = 15000) => new Promise((resolve, reject) => {
+          const startedAt = Date.now();
+          const poll = () => {
+            const node = document.querySelector(selector);
+            if (node && !node.hidden && node.getClientRects().length > 0) return resolve(node);
+            if (Date.now() - startedAt > timeoutMs) {
+              return reject(new Error('Cloud project control timed out: ' + selector));
+            }
+            setTimeout(poll, 40);
+          };
+          poll();
+        });
+        const chooseSourceButton = await waitForVisible('#btnChooseDirWelcome');
+        chooseSourceButton.click();
+        const cloudButton = await waitForVisible('#btnOpenCloudProjectLibrary');
+        await new Promise(resolve => setTimeout(resolve, 320));
+        cloudButton.click();
         await new Promise((resolve, reject) => {
           const startedAt = Date.now();
           const poll = () => {
             const modal = document.getElementById('cloudProjectLibraryModal');
             const card = document.querySelector('.cloud-project-card');
             if (modal?.classList.contains('is-open') && card) return resolve();
-            if (Date.now() - startedAt > 8000) return reject(new Error('Cloud project library timed out.'));
+            if (Date.now() - startedAt > 15000) return reject(new Error('Cloud project library timed out.'));
             setTimeout(poll, 40);
           };
           poll();
         });
-        document.querySelector('[data-cloud-project-history]')?.click();
+        document.querySelector('[data-cloud-project-history]').click();
         await new Promise((resolve, reject) => {
           const startedAt = Date.now();
           const poll = () => {
             if (document.querySelector('.cloud-project-history li')) return resolve();
-            if (Date.now() - startedAt > 8000) return reject(new Error('Cloud project history timed out.'));
+            if (Date.now() - startedAt > 15000) return reject(new Error('Cloud project history timed out.'));
             setTimeout(poll, 40);
           };
           poll();
