@@ -97,6 +97,15 @@ jobs:
       - name: Run three-domain visual regression
         run: npm run visual:check
 
+      - name: Upload visual regression failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-regression-${{ runner.os }}-${{ github.run_id }}
+          path: app/.artifacts/visual-current/
+          if-no-files-found: warn
+          retention-days: 7
+
   site:
     name: Site verification
     runs-on: ubuntu-latest

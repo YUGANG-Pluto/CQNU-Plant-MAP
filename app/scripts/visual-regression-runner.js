@@ -8,6 +8,10 @@ const evidenceDirectory = path.join(root, '.artifacts', 'visual-current');
 const baselinePath = path.join(root, 'tests', 'visual', 'baseline.json');
 const mode = process.argv[2] === 'update' ? 'update' : 'check';
 
+function escapeWorkflowData(value) {
+  return String(value).replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');
+}
+
 const REQUIRED_SCENES = Object.freeze([
   'workspace',
   'workspace-mobile',
@@ -169,6 +173,10 @@ async function main() {
 }
 
 main().catch(error => {
-  console.error(error?.stack || error);
+  const detail = error?.stack || String(error);
+  console.error(detail);
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    console.error(`::error title=Visual regression failed::${escapeWorkflowData(detail)}`);
+  }
   process.exitCode = 1;
 });
