@@ -46,6 +46,9 @@ function runSmoke() {
   if (result.stderr) process.stderr.write(result.stderr);
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`Visual smoke exited with status ${result.status}.`);
+  if (!result.stdout?.includes('visual scene capture passed')) {
+    throw new Error('Visual smoke exited before all scenes completed.');
+  }
 }
 
 async function readEvidence() {

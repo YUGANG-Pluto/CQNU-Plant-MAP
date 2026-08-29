@@ -17,6 +17,7 @@ const {
   createCloudProjectSmokeApi,
   runCloudProjectRoundtrip
 } = require('./web-workspace-cloud-smoke');
+const { listenOnSafePort } = require('./smoke-server-port');
 
 const siteRuntimePath = path.resolve(__dirname, '../../site/scripts/local-runtime.mjs');
 const host = '127.0.0.1';
@@ -113,10 +114,7 @@ async function createSiteServer() {
       response.end('Preview failed.');
     }
   });
-  await new Promise((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, host, resolve);
-  });
+  await listenOnSafePort(server, host);
   const address = server.address();
   const port = typeof address === 'object' && address ? address.port : 0;
   return { server, url: `http://${host}:${port}/workspace` };

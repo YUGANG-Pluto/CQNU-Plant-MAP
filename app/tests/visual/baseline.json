@@ -5,8 +5,8 @@
       "version": 1,
       "name": "workspace",
       "bitmap": {
-        "width": 2160,
-        "height": 1401,
+        "width": 2139,
+        "height": 1346,
         "columns": 12,
         "rows": 8,
         "average": [244, 248, 244],
@@ -112,8 +112,8 @@
       },
       "layout": {
         "viewport": {
-          "width": 1440,
-          "height": 934,
+          "width": 1426,
+          "height": 897,
           "devicePixelRatio": 1.5
         },
         "document": {
@@ -407,8 +407,8 @@
       "version": 1,
       "name": "cloud-project-library",
       "bitmap": {
-        "width": 2160,
-        "height": 1401,
+        "width": 2139,
+        "height": 1346,
         "columns": 12,
         "rows": 8,
         "average": [232, 232, 232],
@@ -514,8 +514,8 @@
       },
       "layout": {
         "viewport": {
-          "width": 1440,
-          "height": 934,
+          "width": 1426,
+          "height": 897,
           "devicePixelRatio": 1.5
         },
         "document": {
@@ -1109,8 +1109,8 @@
       "version": 1,
       "name": "management-account",
       "bitmap": {
-        "width": 2160,
-        "height": 1401,
+        "width": 2139,
+        "height": 1346,
         "columns": 12,
         "rows": 8,
         "average": [240, 244, 248],
@@ -1216,8 +1216,8 @@
       },
       "layout": {
         "viewport": {
-          "width": 1440,
-          "height": 934,
+          "width": 1426,
+          "height": 897,
           "devicePixelRatio": 1.5
         },
         "document": {
@@ -1250,13 +1250,13 @@
             "x": 0,
             "y": 68,
             "width": 228,
-            "height": 866
+            "height": 829
           },
           ".manage-content": {
             "x": 228,
             "y": 68,
             "width": 1212,
-            "height": 866
+            "height": 829
           }
         },
         "overflowElements": []
@@ -1438,8 +1438,8 @@
       "version": 1,
       "name": "management-storage",
       "bitmap": {
-        "width": 2160,
-        "height": 1401,
+        "width": 2139,
+        "height": 1346,
         "columns": 12,
         "rows": 8,
         "average": [244, 244, 248],
@@ -1545,8 +1545,8 @@
       },
       "layout": {
         "viewport": {
-          "width": 1440,
-          "height": 934,
+          "width": 1426,
+          "height": 897,
           "devicePixelRatio": 1.5
         },
         "document": {
@@ -1579,13 +1579,13 @@
             "x": 0,
             "y": 68,
             "width": 228,
-            "height": 866
+            "height": 829
           },
           ".manage-content": {
             "x": 228,
             "y": 68,
             "width": 1212,
-            "height": 866
+            "height": 829
           }
         },
         "overflowElements": []
@@ -1837,8 +1837,8 @@
       "version": 1,
       "name": "site-home",
       "bitmap": {
-        "width": 2160,
-        "height": 1401,
+        "width": 2139,
+        "height": 1346,
         "columns": 12,
         "rows": 8,
         "average": [240, 248, 244],
@@ -1944,8 +1944,8 @@
       },
       "layout": {
         "viewport": {
-          "width": 1440,
-          "height": 934,
+          "width": 1426,
+          "height": 897,
           "devicePixelRatio": 1.5
         },
         "document": {
@@ -2167,8 +2167,8 @@
       "version": 1,
       "name": "site-docs",
       "bitmap": {
-        "width": 2160,
-        "height": 1401,
+        "width": 2139,
+        "height": 1346,
         "columns": 12,
         "rows": 8,
         "average": [240, 244, 248],
@@ -2274,8 +2274,8 @@
       },
       "layout": {
         "viewport": {
-          "width": 1440,
-          "height": 934,
+          "width": 1426,
+          "height": 897,
           "devicePixelRatio": 1.5
         },
         "document": {
@@ -2497,8 +2497,8 @@
       "version": 1,
       "name": "site-architecture",
       "bitmap": {
-        "width": 2160,
-        "height": 1401,
+        "width": 2139,
+        "height": 1346,
         "columns": 12,
         "rows": 8,
         "average": [232, 240, 244],
@@ -2604,8 +2604,8 @@
       },
       "layout": {
         "viewport": {
-          "width": 1440,
-          "height": 934,
+          "width": 1426,
+          "height": 897,
           "devicePixelRatio": 1.5
         },
         "document": {
@@ -2650,8 +2650,8 @@
       "version": 1,
       "name": "site-release",
       "bitmap": {
-        "width": 2160,
-        "height": 1401,
+        "width": 2139,
+        "height": 1346,
         "columns": 12,
         "rows": 8,
         "average": [244, 240, 244],
@@ -2757,8 +2757,8 @@
       },
       "layout": {
         "viewport": {
-          "width": 1440,
-          "height": 934,
+          "width": 1426,
+          "height": 897,
           "devicePixelRatio": 1.5
         },
         "document": {
@@ -2803,8 +2803,8 @@
       "version": 1,
       "name": "site-privacy",
       "bitmap": {
-        "width": 2160,
-        "height": 1401,
+        "width": 2139,
+        "height": 1346,
         "columns": 12,
         "rows": 8,
         "average": [240, 244, 240],
@@ -2910,8 +2910,8 @@
       },
       "layout": {
         "viewport": {
-          "width": 1440,
-          "height": 934,
+          "width": 1426,
+          "height": 897,
           "devicePixelRatio": 1.5
         },
         "document": {
@@ -2956,8 +2956,8 @@
       "version": 1,
       "name": "site-project-inspector",
       "bitmap": {
-        "width": 2160,
-        "height": 1401,
+        "width": 2139,
+        "height": 1346,
         "columns": 12,
         "rows": 8,
         "average": [232, 244, 244],
@@ -3063,8 +3063,8 @@
       },
       "layout": {
         "viewport": {
-          "width": 1440,
-          "height": 934,
+          "width": 1426,
+          "height": 897,
           "devicePixelRatio": 1.5
         },
         "document": {
