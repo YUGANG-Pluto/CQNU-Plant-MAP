@@ -75,7 +75,16 @@ async function prepareCloudProjectLibrary(window) {
         return resolve(true);
       }
       if (Date.now() - startedAt > 15_000) {
-        return reject(new Error('Cloud project visual state timed out.'));
+        const state = {
+          modal: Boolean(modal),
+          button: Boolean(button),
+          cloudClient: window.siteCloudProjects?.version || '',
+          layerManager: layerManager?.version || '',
+          platformRuntime: window.platformAdapter?.runtime || '',
+          runtimeStatus: document.documentElement.dataset.runtimeStatus || '',
+          workspaceSession: document.documentElement.dataset.workspaceSession || ''
+        };
+        return reject(new Error('Cloud project visual state timed out: ' + JSON.stringify(state)));
       }
       setTimeout(poll, 40);
     };
