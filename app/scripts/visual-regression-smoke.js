@@ -63,7 +63,26 @@ async function clickSelector(window, selector, timeoutMs = 15_000) {
 }
 
 async function prepareCloudProjectLibrary(window) {
-  await clickSelector(window, '#btnChooseDirWelcome');
+  await window.webContents.executeJavaScript(
+    `new Promise((resolve, reject) => {
+    const startedAt = Date.now();
+    const poll = () => {
+      const modal = document.getElementById('projectImportModal');
+      const button = document.getElementById('btnOpenCloudProjectLibrary');
+      const layerManager = window.cqnuLayerManager;
+      if (modal && button && window.siteCloudProjects && typeof layerManager?.open === 'function') {
+        layerManager.open(modal, { focusTarget: button });
+        return resolve(true);
+      }
+      if (Date.now() - startedAt > 15_000) {
+        return reject(new Error('Cloud project visual state timed out.'));
+      }
+      setTimeout(poll, 40);
+    };
+    poll();
+  })`,
+    true
+  );
   await waitForSelector(window, '#btnOpenCloudProjectLibrary', 15_000);
   await new Promise(resolve => setTimeout(resolve, 320));
   await clickSelector(window, '#btnOpenCloudProjectLibrary');
