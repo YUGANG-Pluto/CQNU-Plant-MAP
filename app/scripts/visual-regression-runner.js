@@ -12,6 +12,11 @@ function escapeWorkflowData(value) {
   return String(value).replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');
 }
 
+function summarizeSmokeOutput(result) {
+  const output = [result.stdout, result.stderr].filter(Boolean).join('\n').trim();
+  return output ? `\n${output.slice(-8_000)}` : '';
+}
+
 const REQUIRED_SCENES = Object.freeze([
   'workspace',
   'workspace-mobile',
@@ -49,7 +54,9 @@ function runSmoke() {
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
   if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(`Visual smoke exited with status ${result.status}.`);
+  if (result.status !== 0) {
+    throw new Error(`Visual smoke exited with status ${result.status}.${summarizeSmokeOutput(result)}`);
+  }
   if (!result.stdout?.includes('visual scene capture passed')) {
     throw new Error('Visual smoke exited before all scenes completed.');
   }
