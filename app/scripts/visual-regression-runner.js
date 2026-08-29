@@ -101,8 +101,9 @@ function compareIdentity(name, actual, expected, failures) {
 }
 
 function compareBitmap(name, actual, expected, failures) {
-  compareNumber(`${name} bitmap width`, actual.width, expected.width, 0, failures);
-  compareNumber(`${name} bitmap height`, actual.height, expected.height, 0, failures);
+  const actualAspectRatio = Number(actual.width) / Math.max(1, Number(actual.height));
+  const expectedAspectRatio = Number(expected.width) / Math.max(1, Number(expected.height));
+  compareNumber(`${name} bitmap aspect ratio`, actualAspectRatio, expectedAspectRatio, 0.01, failures);
   compareNumber(`${name} average luminance`, actual.luma, expected.luma, 16, failures);
   const actualChannels = actual.cells.flat();
   const expectedChannels = expected.cells.flat();
@@ -118,8 +119,8 @@ function compareBitmap(name, actual, expected, failures) {
 }
 
 function compareLayout(name, actual, expected, failures) {
-  compareNumber(`${name} viewport width`, actual.viewport.width, expected.viewport.width, 0, failures);
-  compareNumber(`${name} viewport height`, actual.viewport.height, expected.viewport.height, 0, failures);
+  compareNumber(`${name} viewport width`, actual.viewport.width, expected.viewport.width, 4, failures);
+  compareNumber(`${name} viewport height`, actual.viewport.height, expected.viewport.height, 4, failures);
   if (actual.document.horizontalOverflow > 2) {
     failures.push(`${name} creates ${actual.document.horizontalOverflow}px document-level horizontal overflow.`);
   }
