@@ -8,13 +8,18 @@ app.on('window-all-closed', () => {
   // Scene windows are short-lived; the runner owns the final application exit.
 });
 
-async function waitForSelector(window, selector, timeoutMs = 10_000) {
+async function waitForSelector(window, selector, timeoutMs = 10_000, requireEnabled = false) {
   await window.webContents.executeJavaScript(
     `new Promise((resolve, reject) => {
     const startedAt = Date.now();
     const poll = () => {
       const node = document.querySelector(${JSON.stringify(selector)});
-      if (node && !node.hidden && node.getClientRects().length > 0) return resolve(true);
+      if (
+        node &&
+        !node.hidden &&
+        node.getClientRects().length > 0 &&
+        (!${requireEnabled} || !node.disabled)
+      ) return resolve(true);
       if (Date.now() - startedAt > ${timeoutMs}) return reject(new Error('Visual selector timed out: ${selector}'));
       setTimeout(poll, 40);
     };
@@ -25,7 +30,7 @@ async function waitForSelector(window, selector, timeoutMs = 10_000) {
 }
 
 async function clickSelector(window, selector, timeoutMs = 15_000) {
-  await waitForSelector(window, selector, timeoutMs);
+  await waitForSelector(window, selector, timeoutMs, true);
   const point = await window.webContents.executeJavaScript(
     `(() => {
     const node = document.querySelector(${JSON.stringify(selector)});
