@@ -5,7 +5,7 @@ This directory contains the TypeScript account, authorization, session, CSRF, au
 ## Current Scope
 
 - Hosting access control remains the outer gate for the private deployment.
-- Accounts support user and administrator roles, read/edit/save workspace access, first-use activation, password reset, and a maximum of three administrators.
+- Accounts support user and administrator roles, read/edit/save workspace access, first-use activation, optional post-activation password change, password reset, and a maximum of three administrators.
 - Durable production accounts, sessions, credential grants, audit events, and account-scoped cloud project versions use the configured D1 binding.
 - Browser management controllers live under `src/ui/` and compile to `dist/ui/`; the site build publishes those compiled modules instead of parallel hand-written JavaScript.
 - The site-only cloud project API lists, creates, reads, renames, versions, restores, and deletes `settings`, `zones`, and `points` record snapshots for the authenticated owner.
@@ -19,6 +19,7 @@ This directory contains the TypeScript account, authorization, session, CSRF, au
 - Mutating route contracts require an exact allowed origin and matching CSRF token. Unknown routes are denied.
 - Audit metadata uses a narrow field allowlist and redacts credential-shaped values and local paths.
 - Browser avatars remain local browser preferences and are not sent to the management service.
+- An administrator can reset all existing login identities to the known temporary password `123456`. The operation preserves account IDs, usernames, roles, permissions, and project ownership, but returns every account to pending activation, invalidates outstanding credential links, revokes every session, and records a redacted audit event.
 
 ## Deliberate Boundaries
 
@@ -34,7 +35,7 @@ The in-memory stores remain test fixtures. Production changes must retain deny-b
 - Bind D1 as `DB`.
 - Set `CQNU_MANAGEMENT_AUTH_KEYRING` as a deployment secret. Its JSON contains `activeKeyId` and a `keys` map of base64url-encoded 32–64 byte random keys.
 - For the first request against an empty D1 database, set `CQNU_BOOTSTRAP_ADMIN_PASSWORD` and `CQNU_BOOTSTRAP_USER_PASSWORD`. Usernames are optional and default to `admin` and `user`.
-- Bootstrap credentials are temporary and force first-use activation. Do not commit key-ring material or deployment passwords.
+- Bootstrap credentials are temporary and force first-use activation. Activation may retain the temporary password, but the account remains marked for a recommended personal-password change until a policy-compliant password is saved. Do not commit key-ring material or deployment secrets.
 - Schema setup is idempotent. The production runtime reuses existing accounts and cloud project versions instead of reseeding them.
 
 ## Validation

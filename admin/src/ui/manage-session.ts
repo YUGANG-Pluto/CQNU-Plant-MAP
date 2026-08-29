@@ -33,6 +33,16 @@ type TransitionDocument = Document & {
   startViewTransition?: (callback: () => void) => unknown;
 };
 
+let postActivationData: ManagementSessionData | null = null;
+let postActivationCurrentPassword = '';
+
+function clearPostActivationState(): void {
+  postActivationData = null;
+  postActivationCurrentPassword = '';
+  elements.passwordChoiceForm.reset();
+  showMessage(elements.passwordChoiceForm);
+}
+
 function stopHeartbeat(): void {
   if (state.heartbeatId) window.clearInterval(state.heartbeatId);
   state.heartbeatId = 0;
@@ -53,6 +63,8 @@ function showAuthForm(form: HTMLFormElement): void {
 }
 
 function resetToLogin(message = ''): void {
+  if (elements.passwordChoiceDialog.open) elements.passwordChoiceDialog.close();
+  clearPostActivationState();
   clearCsrfToken();
   showAuthForm(elements.loginForm);
   showMessage(elements.loginForm, message);
@@ -64,9 +76,28 @@ function showActivation(data: ManagementSessionData): void {
   formControl<HTMLInputElement>(activationForm, 'username').value = data.account.username || '';
   formControl<HTMLInputElement>(activationForm, 'displayName').value = data.account.displayName || '';
   formControl<HTMLInputElement>(activationForm, 'currentPassword').value = '';
-  formControl<HTMLInputElement>(activationForm, 'password').value = '';
-  formControl<HTMLInputElement>(activationForm, 'confirmPassword').value = '';
   showAuthForm(activationForm);
+}
+
+function continueAfterActivation(data: ManagementSessionData): void {
+  if (safeNextPath() === '/workspace') {
+    document.documentElement.dataset.authTransition = 'workspace';
+    location.replace('/workspace');
+    return;
+  }
+  showDashboard(data, { followNext: true });
+}
+
+function showPasswordChoice(data: ManagementSessionData, currentPassword: string): void {
+  postActivationData = data;
+  postActivationCurrentPassword = currentPassword;
+  showDashboard(data);
+  elements.passwordChoiceForm.reset();
+  showMessage(elements.passwordChoiceForm);
+  elements.passwordChoiceDialog.showModal();
+  requestAnimationFrame(() => {
+    formControl<HTMLInputElement>(elements.passwordChoiceForm, 'password').focus();
+  });
 }
 
 function switchView(requestedView: ManagementView, options: ViewOptions = {}): void {
@@ -171,28 +202,63 @@ function installAuthHandlers(): void {
 
   activationForm.addEventListener('submit', async event => {
     event.preventDefault();
-    const password = formControl<HTMLInputElement>(activationForm, 'password');
-    const confirmPassword = formControl<HTMLInputElement>(activationForm, 'confirmPassword');
-    if (password.value !== confirmPassword.value) {
-      showMessage(activationForm, '两次输入的新密码不一致。');
+    const currentPassword = formControl<HTMLInputElement>(activationForm, 'currentPassword');
+    try {
+      const data = await submitWithBusy(activationForm, () => managementApi.activate({
+        currentPassword: currentPassword.value,
+        username: formControl<HTMLInputElement>(activationForm, 'username').value,
+        displayName: formControl<HTMLInputElement>(activationForm, 'displayName').value
+      }));
+      const retainedPassword = currentPassword.value;
+      activationForm.reset();
+      showToast('账户已激活。');
+      showPasswordChoice(data, retainedPassword);
+    } catch {
+      currentPassword.value = '';
+    }
+  });
+
+  elements.passwordChoiceForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!postActivationData || !postActivationCurrentPassword) {
+      resetToLogin('激活会话已失效，请重新登录。');
+      return;
+    }
+    const password = formControl<HTMLInputElement>(elements.passwordChoiceForm, 'password');
+    const confirmPassword = formControl<HTMLInputElement>(elements.passwordChoiceForm, 'confirmPassword');
+    if (!password.value || password.value !== confirmPassword.value) {
+      showMessage(elements.passwordChoiceForm, password.value
+        ? '两次输入的新密码不一致。'
+        : '请输入新密码，或选择暂不修改。');
       return;
     }
     try {
-      const data = await submitWithBusy(activationForm, () => managementApi.activate({
-        currentPassword: formControl<HTMLInputElement>(activationForm, 'currentPassword').value,
-        username: formControl<HTMLInputElement>(activationForm, 'username').value,
-        displayName: formControl<HTMLInputElement>(activationForm, 'displayName').value,
+      const data = await submitWithBusy(elements.passwordChoiceForm, () => managementApi.changePassword({
+        currentPassword: postActivationCurrentPassword,
         password: password.value
       }));
-      activationForm.reset();
-      showToast('账户已激活。');
-      showDashboard(data, { followNext: true });
+      clearPostActivationState();
+      elements.passwordChoiceDialog.close();
+      showToast('个人密码已设置，其他会话已撤销。');
+      continueAfterActivation(data);
     } catch {
-      formControl<HTMLInputElement>(activationForm, 'currentPassword').value = '';
       password.value = '';
       confirmPassword.value = '';
     }
   });
+
+  requiredElement<HTMLButtonElement>('[data-password-change-later]').addEventListener('click', () => {
+    const data = postActivationData;
+    if (!data) {
+      resetToLogin('激活会话已失效，请重新登录。');
+      return;
+    }
+    clearPostActivationState();
+    elements.passwordChoiceDialog.close();
+    showToast('账户已激活，可稍后在账户设置中修改临时密码。');
+    continueAfterActivation(data);
+  });
+  elements.passwordChoiceDialog.addEventListener('cancel', event => event.preventDefault());
 
   tokenForm.addEventListener('submit', async event => {
     event.preventDefault();

@@ -62,7 +62,11 @@ export const elements = Object.freeze({
   manageContent: requiredElement<HTMLElement>('[data-manage-content]'),
   memberDialog: requiredElement<HTMLDialogElement>('[data-member-dialog]'),
   memberForm: requiredElement<HTMLFormElement>('[data-member-form]'),
-  tokenDialog: requiredElement<HTMLDialogElement>('[data-token-dialog]')
+  tokenDialog: requiredElement<HTMLDialogElement>('[data-token-dialog]'),
+  bulkResetDialog: requiredElement<HTMLDialogElement>('[data-bulk-reset-dialog]'),
+  bulkResetForm: requiredElement<HTMLFormElement>('[data-bulk-reset-form]'),
+  passwordChoiceDialog: requiredElement<HTMLDialogElement>('[data-password-choice-dialog]'),
+  passwordChoiceForm: requiredElement<HTMLFormElement>('[data-password-choice-form]')
 });
 
 export const localProfile = window.cqnuLocalProfile;

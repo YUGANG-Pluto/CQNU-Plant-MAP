@@ -24,6 +24,7 @@ export const ADMIN_ROUTES = Object.freeze<AdminRouteContract[]>([
   { id: 'members.create', method: 'POST', path: '/api/manage/members', capability: 'member.manage', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },
   { id: 'members.update', method: 'PATCH', path: '/api/manage/members/:memberId', capability: 'member.permission.manage', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },
   { id: 'members.reset', method: 'POST', path: '/api/manage/members/:memberId/password-reset', capability: 'member.password.reset', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },
+  { id: 'members.reset-all', method: 'POST', path: '/api/manage/members/reset-all-activation', capability: 'member.password.reset', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },
   { id: 'audit.list', method: 'GET', path: '/api/manage/audit-events', capability: 'audit.read', mutatesState: false, csrfProtected: false, sessionRequired: true, allowPendingActivation: false },
   { id: 'site.read', method: 'GET', path: '/api/manage/site', capability: 'site.read', mutatesState: false, csrfProtected: false, sessionRequired: true, allowPendingActivation: false },
   { id: 'site.publish', method: 'POST', path: '/api/manage/site/publish', capability: 'site.publish', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },

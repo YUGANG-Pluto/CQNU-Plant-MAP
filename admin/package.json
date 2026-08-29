@@ -7,7 +7,7 @@
   "scripts": {
     "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test --test-isolation=none tests/*.test.mjs",
+    "test": "npm run build && node --disable-warning=ExperimentalWarning --test --test-isolation=none tests/*.test.mjs",
     "check": "npm run typecheck && npm test"
   },
   "devDependencies": {

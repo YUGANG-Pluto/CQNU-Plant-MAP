@@ -107,11 +107,54 @@ async function captureSmokeScreenshot(window, name, size = null) {
   }
 }
 
+async function verifyManagementSecurityDialogs(window) {
+  return window.webContents.executeJavaScript(
+    `(async () => {
+    const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const inspectDialog = dialog => {
+      const rect = dialog?.getBoundingClientRect();
+      const hit = rect
+        ? document.elementFromPoint(rect.left + rect.width / 2, rect.top + Math.min(72, rect.height / 2))
+        : null;
+      return {
+        open: Boolean(dialog?.open),
+        visible: Boolean(rect?.width && rect?.height),
+        topmost: Boolean(dialog && hit && dialog.contains(hit)),
+        withinViewport: Boolean(
+          rect && rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight
+        )
+      };
+    };
+
+    document.querySelector('[data-open-bulk-reset]')?.click();
+    await nextFrame();
+    const bulkDialog = document.querySelector('[data-bulk-reset-dialog]');
+    const bulkReset = inspectDialog(bulkDialog);
+    document.querySelector('[data-close-bulk-reset]')?.click();
+    await nextFrame();
+
+    const passwordDialog = document.querySelector('[data-password-choice-dialog]');
+    passwordDialog?.showModal();
+    await nextFrame();
+    const passwordChoice = inspectDialog(passwordDialog);
+    passwordDialog?.close();
+    return {
+      bulkReset,
+      passwordChoice,
+      noPageOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+      remainingOpenDialogs: document.querySelectorAll('dialog[open]').length
+    };
+  })()`,
+    true
+  );
+}
+
 module.exports = {
   captureSmokeScreenshot,
   collectWindowErrors,
   markSmokeStage,
   setSmokeStageReporter,
+  verifyManagementSecurityDialogs,
   waitForPathname,
   waitForRuntime
 };

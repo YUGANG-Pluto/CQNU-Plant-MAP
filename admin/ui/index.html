@@ -60,9 +60,9 @@
 
         <form class="auth-form" data-activation-form hidden>
           <div class="form-heading">
-            <span>首次激活</span>
-            <h2>建立个人登录凭据</h2>
-            <p>激活完成后，用户名和密码仍可在账户设置中修改。</p>
+            <span>身份激活</span>
+            <h2>确认个人登录身份</h2>
+            <p>激活成功后，安全窗口会询问是否立即修改临时密码；也可选择稍后修改。</p>
           </div>
           <label>
             <span>当前临时密码</span>
@@ -76,15 +76,7 @@
             <span>显示名称</span>
             <input name="displayName" autocomplete="name" maxlength="80" />
           </label>
-          <label>
-            <span>新密码</span>
-            <input name="password" type="password" autocomplete="new-password" minlength="6" maxlength="128" required />
-          </label>
-          <label>
-            <span>确认新密码</span>
-            <input name="confirmPassword" type="password" autocomplete="new-password" minlength="6" maxlength="128" required />
-          </label>
-          <button class="primary-button" type="submit">完成激活</button>
+          <button class="primary-button" type="submit">激活账户</button>
           <p class="form-message" data-activation-message role="alert"></p>
         </form>
 
@@ -187,7 +179,10 @@
         <section class="manage-view" data-view="members" hidden>
           <div class="view-heading">
             <div><span>GROUP ACCESS</span><h1>成员与权限</h1><p>管理员最多 3 名；只读、编辑草稿和保存权限逐级累积。</p></div>
-            <button class="primary-button compact" type="button" data-open-create-member>新增成员</button>
+            <div class="view-actions">
+              <button class="danger-button compact" type="button" data-open-bulk-reset>重置全部登录身份</button>
+              <button class="primary-button compact" type="button" data-open-create-member>新增成员</button>
+            </div>
           </div>
           <section class="data-panel table-panel">
             <div class="table-toolbar">
@@ -272,6 +267,7 @@
             </form>
             <form class="data-panel settings-form" data-password-form>
               <div class="panel-heading"><div><span>凭据安全</span><h2>修改密码</h2></div></div>
+              <p class="credential-warning" data-password-change-recommended hidden>当前账户仍在使用统一临时密码。建议尽快设置个人密码；普通改密仍会拒绝常见弱密码。</p>
               <label><span>当前密码</span><input name="currentPassword" type="password" maxlength="128" autocomplete="current-password" required /></label>
               <label><span>新密码</span><input name="password" type="password" minlength="6" maxlength="128" autocomplete="new-password" required /></label>
               <label><span>确认新密码</span><input name="confirmPassword" type="password" minlength="6" maxlength="128" autocomplete="new-password" required /></label>
@@ -309,6 +305,42 @@
       <div class="token-expiry">有效期至 <strong data-issued-token-expiry>—</strong></div>
       <div class="dialog-actions"><button class="secondary-button compact" type="button" data-copy-token>复制链接</button><button class="primary-button compact" type="button" data-close-token-dialog>完成</button></div>
     </div>
+  </dialog>
+
+  <dialog class="manage-dialog decision-dialog" data-password-choice-dialog aria-labelledby="passwordChoiceTitle">
+    <form class="dialog-surface" data-password-choice-form>
+      <div class="dialog-heading">
+        <div><span>账户已激活</span><h2 id="passwordChoiceTitle">是否现在修改临时密码？</h2></div>
+      </div>
+      <p class="dialog-note">选择“暂不修改”不会阻止进入工作区，但统一临时密码仍然有效。账户设置会持续显示安全提醒，直至设置个人密码。</p>
+      <label><span>新密码</span><input name="password" type="password" minlength="6" maxlength="128" autocomplete="new-password" /></label>
+      <label><span>确认新密码</span><input name="confirmPassword" type="password" minlength="6" maxlength="128" autocomplete="new-password" /></label>
+      <p class="form-message" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="quiet-button" type="button" data-password-change-later>暂不修改并继续</button>
+        <button class="primary-button compact" type="submit">保存新密码并继续</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="manage-dialog danger-dialog" data-bulk-reset-dialog aria-labelledby="bulkResetTitle">
+    <form class="dialog-surface" data-bulk-reset-form>
+      <div class="dialog-heading">
+        <div><span>高风险操作</span><h2 id="bulkResetTitle">重置全部登录身份</h2></div>
+        <button class="icon-button" type="button" data-close-bulk-reset aria-label="关闭">×</button>
+      </div>
+      <div class="danger-summary">
+        <strong>所有账户都将回到待激活状态</strong>
+        <p>用户名、角色、权限和云项目归属保持不变；密码统一改为 <code>123456</code>。所有在线会话以及尚未使用的激活、重置链接会立即失效。</p>
+      </div>
+      <label><span>当前管理员密码</span><input name="currentPassword" type="password" maxlength="128" autocomplete="current-password" required /></label>
+      <label><span>输入确认短语 <code>RESET ALL MEMBERS</code></span><input name="confirmation" maxlength="64" autocomplete="off" spellcheck="false" required /></label>
+      <p class="form-message" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="quiet-button" type="button" data-close-bulk-reset>取消</button>
+        <button class="danger-button compact" type="submit">确认重置全部账户</button>
+      </div>
+    </form>
   </dialog>
 
   <div class="toast-region" aria-live="polite" aria-atomic="true" data-toast-region></div>

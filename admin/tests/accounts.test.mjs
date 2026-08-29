@@ -70,7 +70,7 @@ function harness() {
 const bootstrap = {
   administrator: {
     username: 'admin',
-    password: '000000',
+    password: '123456',
     displayName: 'Administrator',
     accountKind: 'admin',
     accessLevel: 'save'
@@ -85,10 +85,10 @@ const bootstrap = {
 };
 
 async function activateAdministrator(service) {
-  const login = await service.login('admin', '000000');
+  const login = await service.login('admin', '123456');
   return service.activateBootstrapAccount({
     accountId: login.account.id,
-    currentPassword: '000000',
+    currentPassword: '123456',
     username: 'admin',
     password: 'A secure administrator passphrase'
   });
@@ -98,13 +98,13 @@ test('bootstrap credentials are seeded once and require first-use activation', a
   const { service } = harness();
   assert.equal(await service.ensureBootstrapAccounts(bootstrap), true);
   assert.equal(await service.ensureBootstrapAccounts(bootstrap), false);
-  const login = await service.login('ADMIN', '000000');
+  const login = await service.login('ADMIN', '123456');
   assert.equal(login.account.mustChangePassword, true);
   assert.equal(login.account.status, 'pending-activation');
 
   const activated = await service.activateBootstrapAccount({
     accountId: login.account.id,
-    currentPassword: '000000',
+    currentPassword: '123456',
     username: 'principal.admin',
     password: 'A secure research passphrase 2026'
   });
@@ -119,12 +119,12 @@ test('bootstrap verifiers use a bounded cost and require an immediate production
     keys: { k1: bytesToBase64Url(Uint8Array.from({ length: 32 }, (_, index) => index + 17)) }
   });
   const hasher = new Pbkdf2PasswordHasher(passwordKeyRing, PBKDF2_SHA256_ITERATIONS);
-  const verifier = await hasher.hash('000000', {
+  const verifier = await hasher.hash('123456', {
     allowWeakBootstrap: true,
     bootstrapIterations: PBKDF2_BOOTSTRAP_ITERATIONS
   });
   assert.equal(verifier.iterations, PBKDF2_BOOTSTRAP_ITERATIONS);
-  assert.equal(await hasher.verify('000000', verifier), true);
+  assert.equal(await hasher.verify('123456', verifier), true);
   assert.equal(hasher.needsRehash(verifier), true);
   await assert.rejects(
     hasher.hash('A secure research passphrase', {
@@ -166,6 +166,72 @@ test('activation tokens are single-use and account update is atomic', async () =
   await assert.rejects(service.consumeCredentialToken({
     token: invitation.token,
     password: 'Another secure field reader passphrase'
+  }), /CREDENTIAL_TOKEN_INVALID/);
+});
+
+test('activation may retain the temporary password and recommends a later personal password', async () => {
+  const { service } = harness();
+  await service.ensureBootstrapAccounts(bootstrap);
+  const login = await service.login('admin', '123456');
+  const activated = await service.activateBootstrapAccount({
+    accountId: login.account.id,
+    currentPassword: '123456',
+    username: 'admin'
+  });
+  assert.equal(activated.account.status, 'active');
+  assert.equal(activated.account.mustChangePassword, false);
+  assert.equal(activated.account.passwordChangeRecommended, true);
+  const changed = await service.changePassword({
+    accountId: activated.account.id,
+    currentPassword: '123456',
+    password: 'A personal administrator passphrase'
+  });
+  assert.equal(changed.account.passwordChangeRecommended, false);
+  await assert.rejects(service.login('admin', '123456'), /LOGIN_FAILED/);
+  assert.equal((await service.login('admin', 'A personal administrator passphrase')).account.id, activated.account.id);
+});
+
+test('administrator can reset every account to one audited temporary activation state', async () => {
+  const { service, accountStore, sessionStore } = harness();
+  await service.ensureBootstrapAccounts(bootstrap);
+  const admin = await activateAdministrator(service);
+  const userLogin = await service.login('user', '123456');
+  await service.activateBootstrapAccount({
+    accountId: userLogin.account.id,
+    currentPassword: '123456',
+    username: 'user',
+    password: 'A personal research user passphrase'
+  });
+  const invitation = await service.createMember(admin.account.id, {
+    username: 'field.writer',
+    displayName: 'Field writer',
+    accountKind: 'user',
+    accessLevel: 'edit'
+  });
+  await assert.rejects(service.resetAllMemberCredentials(admin.account.id, {
+    currentPassword: 'A secure administrator passphrase',
+    confirmation: 'RESET SOME MEMBERS'
+  }), /ACCOUNT_RESET_CONFIRMATION_INVALID/);
+
+  const reset = await service.resetAllMemberCredentials(admin.account.id, {
+    currentPassword: 'A secure administrator passphrase',
+    confirmation: 'RESET ALL MEMBERS'
+  });
+  assert.equal(reset.accountCount, 3);
+  assert.ok(reset.revokedSessionCount >= 2);
+  const accounts = await accountStore.listAccounts();
+  assert.ok(accounts.every(account => account.status === 'pending-activation'));
+  assert.ok(accounts.every(account => account.mustChangePassword));
+  assert.ok(accounts.every(account => account.passwordChangeRecommended));
+  assert.ok(accounts.every(account => account.activatedAt === null));
+  assert.ok(sessionStore.snapshotRecords().every(session => session.revokedAt));
+  assert.ok(accountStore.snapshotTokens().every(token => token.consumedAt));
+  await assert.rejects(service.login('admin', 'A secure administrator passphrase'), /LOGIN_FAILED/);
+  assert.equal((await service.login('admin', '123456')).account.mustChangePassword, true);
+  assert.equal((await service.login('field.writer', '123456')).account.mustChangePassword, true);
+  await assert.rejects(service.consumeCredentialToken({
+    token: invitation.token,
+    password: 'A stale invitation password'
   }), /CREDENTIAL_TOKEN_INVALID/);
 });
 

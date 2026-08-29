@@ -19,8 +19,10 @@ Each snapshot is size-bounded, split across bounded D1 rows, assigned an immutab
 
 - Password verifiers use a random salt, PBKDF2-HMAC-SHA-256, and a deployment-provided HMAC pepper.
 - The shared implementation defaults to 600,000 iterations. Cloudflare-hosted Workers use the platform ceiling of 100,000 iterations and retain the iteration count for future transparent upgrades.
-- Bootstrap passwords are accepted only for forced first-use activation. Normal password policy rejects common values and requires at least 6 characters.
+- Bootstrap and administrator-reset passwords are accepted only as temporary activation credentials. Normal password policy rejects common values and requires at least 6 characters.
 - Five failed logins lock the account for 10 minutes. Credential, identity, and permission changes revoke active sessions.
+- The bulk identity-reset route is administrator-only, exact-origin CSRF protected, and requires the current administrator password plus a fixed confirmation phrase. It preserves roles and project ownership while resetting every account to pending activation, invalidating outstanding credential links, revoking all sessions, and writing count-only audit metadata.
+- A user may defer the personal-password change after activation. In that state the shared temporary credential remains valid and the account exposes a persistent recommendation flag; saving a personal password clears the flag and revokes other sessions.
 
 ## Required Controls Before Production Identity
 

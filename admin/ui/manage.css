@@ -69,6 +69,7 @@ img { display: block; }
 .quiet-button,
 .secondary-button,
 .primary-button,
+.danger-button,
 .icon-button {
   min-height: 42px;
   border-radius: var(--radius-control);
@@ -85,7 +86,8 @@ img { display: block; }
 .quiet-link,
 .quiet-button,
 .secondary-button,
-.primary-button {
+.primary-button,
+.danger-button {
   position: relative;
   overflow: hidden;
   isolation: isolate;
@@ -103,6 +105,8 @@ img { display: block; }
 .secondary-button:hover { border-color: rgba(var(--primary-rgb), 0.4); box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.12); transform: translateY(-2px); }
 .primary-button { color: white; border: 1px solid var(--primary); background: var(--primary); box-shadow: 0 10px 26px rgba(var(--primary-rgb), 0.22); }
 .primary-button:hover { border-color: var(--primary-strong); background: var(--primary-strong); box-shadow: 0 16px 34px rgba(var(--primary-rgb), 0.28); transform: translateY(-2px); }
+.danger-button { color: white; border: 1px solid var(--danger); background: var(--danger); box-shadow: 0 10px 26px rgba(169, 54, 49, 0.2); }
+.danger-button:hover { background: #8d2d29; box-shadow: 0 16px 34px rgba(169, 54, 49, 0.28); transform: translateY(-2px); }
 .primary-button::before,
 .secondary-button::before,
 .manage-nav button::after,
@@ -314,6 +318,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
 .view-heading::before { position: absolute; top: 5px; bottom: 5px; left: 0; width: 3px; content: ''; border-radius: 999px; background: var(--primary); box-shadow: 0 0 0 5px rgba(var(--primary-rgb), 0.07); }
 .view-heading h1 { margin: 5px 0 3px; font-size: 32px; line-height: 1.15; }
 .view-heading p { margin: 0; color: var(--muted); }
+.view-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 9px; }
 .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 12px; }
 .summary-grid article { min-width: 0; min-height: 124px; padding: 16px; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); animation: panelSwap var(--motion-slow) both; transition: transform var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast); }
 .summary-grid article:nth-child(2) { animation-delay: 72ms; }
@@ -377,6 +382,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .empty-state { margin: 0; padding: 34px; color: var(--muted); text-align: center; }
 .settings-form { display: grid; align-content: start; gap: 15px; }
 .settings-form .primary-button { width: 100%; margin-top: 2px; }
+.credential-warning { margin: 0; padding: 11px 12px; color: var(--warning); border: 1px solid rgba(138, 90, 20, 0.18); border-radius: var(--radius-control); background: var(--warning-soft); font-size: 12px; line-height: 1.55; }
 .profile-panel { display: grid; align-content: start; gap: 16px; }
 .avatar-editor { display: flex; align-items: center; gap: 16px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-soft); }
 .avatar-preview { width: 72px; height: 72px; font-size: 24px; box-shadow: 0 16px 38px rgba(var(--primary-rgb), 0.24); }
@@ -405,6 +411,12 @@ tbody tr:last-child td { border-bottom: 0; }
 .icon-button:hover { color: var(--ink); background: var(--primary-soft); transform: rotate(4deg); }
 .form-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .dialog-note, .token-dialog p { margin: 0; color: var(--muted); font-size: 12px; }
+.danger-summary { padding: 14px; color: var(--danger); border: 1px solid rgba(169, 54, 49, 0.2); border-radius: var(--radius-control); background: var(--danger-soft); }
+.danger-summary strong { display: block; margin-bottom: 5px; }
+.danger-summary p { margin: 0; color: #6f3531; font-size: 12px; line-height: 1.6; }
+.danger-summary code, .danger-dialog label code { padding: 1px 5px; border-radius: 5px; background: rgba(169, 54, 49, 0.08); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.decision-dialog .dialog-surface { border-top: 3px solid var(--primary); }
+.danger-dialog .dialog-surface { border-top: 3px solid var(--danger); }
 .dialog-actions { margin-top: 4px; display: flex; justify-content: flex-end; gap: 9px; }
 .token-expiry { padding: 10px 12px; color: var(--muted); border-left: 3px solid var(--primary); background: var(--primary-soft); font-size: 12px; }
 
@@ -485,6 +497,8 @@ tbody tr:last-child td { border-bottom: 0; }
   .topbar-state .secondary-button { display: none; }
   .manage-sidebar { top: 58px; }
   .view-heading { align-items: stretch; flex-direction: column; }
+  .view-actions { align-items: stretch; flex-direction: column-reverse; }
+  .view-actions > * { width: 100%; }
   .summary-grid { grid-template-columns: 1fr; }
   .summary-grid article { min-height: 124px; }
   .table-toolbar { align-items: stretch; flex-direction: column; }

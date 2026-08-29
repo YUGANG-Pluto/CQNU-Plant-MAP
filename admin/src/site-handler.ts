@@ -87,6 +87,8 @@ function publicError(code: string): { code: string; message: string } {
     USE_SELF_ACCOUNT_SETTINGS: '请在个人账户设置中修改自己的资料或凭据。',
     ACCOUNT_USERNAME_CONFLICT: '该用户名已被使用。',
     ACCOUNT_UPDATE_CONFLICT: '账户信息已更新，请刷新后重试。',
+    ACCOUNT_RESET_CONFIRMATION_INVALID: '全员重置确认信息不正确，操作未执行。',
+    ACCOUNT_RESET_INVALID: '当前账户状态无法执行全员重置。',
     USERNAME_INVALID: '用户名需为 3 至 32 位字母、数字、点、下划线或短横线。',
     MANAGEMENT_SERVICE_UNAVAILABLE: '管理服务尚未完成安全配置。',
     REQUEST_BODY_TOO_LARGE: '提交的数据超过允许大小。',
@@ -196,6 +198,7 @@ function actionForRoute(route: AdminRouteContract): AdminAuditAction {
     'profile.username': 'account.username.change',
     'profile.password': 'account.password.change',
     'members.reset': 'account.password.reset.issue',
+    'members.reset-all': 'account.identity.reset-all',
     'cloud-projects.list': 'workspace.read',
     'cloud-projects.read': 'workspace.read',
     'cloud-projects.usage': 'workspace.read',
@@ -221,6 +224,9 @@ async function appendAudit(
     reasonCode?: string;
     targetAccountId?: string;
     targetProjectId?: string;
+    memberAction?: string;
+    accountCount?: number;
+    revokedSessionCount?: number;
   }
 ): Promise<void> {
   await runtime.audit.append({
@@ -235,7 +241,12 @@ async function appendAudit(
       statusCode: input.statusCode,
       ...(input.reasonCode ? { reasonCode: input.reasonCode } : {}),
       ...(input.targetAccountId ? { targetAccountId: input.targetAccountId } : {}),
-      ...(input.targetProjectId ? { targetProjectId: input.targetProjectId } : {})
+      ...(input.targetProjectId ? { targetProjectId: input.targetProjectId } : {}),
+      ...(input.memberAction ? { memberAction: input.memberAction } : {}),
+      ...(input.accountCount === undefined ? {} : { accountCount: input.accountCount }),
+      ...(input.revokedSessionCount === undefined
+        ? {}
+        : { revokedSessionCount: input.revokedSessionCount })
     }
   });
 }
@@ -256,6 +267,7 @@ async function accountForSession(
     accessLevel: account.accessLevel,
     status: account.status,
     mustChangePassword: account.mustChangePassword,
+    passwordChangeRecommended: account.passwordChangeRecommended === true,
     credentialVersion: account.credentialVersion,
     createdAt: account.createdAt,
     updatedAt: account.updatedAt,
@@ -274,6 +286,7 @@ export function createManagementRequestHandler(runtime: ManagementRequestRuntime
     if (!route) return jsonResponse({ ok: false, error: publicError('ROUTE_DENIED') }, 404);
     const requestId = `req_${randomBase64Url(16)}`;
     const sessionToken = cookieValue(request, ADMIN_SESSION_COOKIE_NAME);
+    let auditPrincipalId = 'anonymous';
 
     try {
       if (route.id === 'login') {
@@ -282,6 +295,7 @@ export function createManagementRequestHandler(runtime: ManagementRequestRuntime
           textField(body, 'username', 64),
           textField(body, 'password', 128)
         );
+        auditPrincipalId = result.account.id;
         await appendAudit(runtime, {
           principalId: result.account.id,
           route,
@@ -300,6 +314,7 @@ export function createManagementRequestHandler(runtime: ManagementRequestRuntime
           password: textField(body, 'password', 128),
           displayName: optionalTextField(body, 'displayName', 80)
         });
+        auditPrincipalId = result.account.id;
         await appendAudit(runtime, {
           principalId: result.account.id,
           route,
@@ -352,6 +367,7 @@ export function createManagementRequestHandler(runtime: ManagementRequestRuntime
           'set-cookie': clearAdminSessionCookie()
         });
       }
+      auditPrincipalId = account.id;
       const rotatedCsrf = decision.sessionAccess.replacement?.csrfToken;
       const commonHeaders = responseHeadersForAccess(decision.sessionAccess);
 
@@ -375,7 +391,7 @@ export function createManagementRequestHandler(runtime: ManagementRequestRuntime
           accountId: account.id,
           currentPassword: textField(body, 'currentPassword', 128),
           username: textField(body, 'username', 32),
-          password: textField(body, 'password', 128),
+          password: optionalTextField(body, 'password', 128),
           displayName: optionalTextField(body, 'displayName', 80)
         });
         await appendAudit(runtime, {
@@ -472,6 +488,28 @@ export function createManagementRequestHandler(runtime: ManagementRequestRuntime
         return jsonResponse({ ok: true, data: reset }, 200, commonHeaders);
       }
 
+      if (route.id === 'members.reset-all') {
+        const body = await readJson(request);
+        const reset = await runtime.accounts.resetAllMemberCredentials(account.id, {
+          currentPassword: textField(body, 'currentPassword', 128),
+          confirmation: textField(body, 'confirmation', 64)
+        });
+        await appendAudit(runtime, {
+          principalId: account.id,
+          route,
+          outcome: 'allowed',
+          requestId,
+          statusCode: 200,
+          memberAction: 'reset-all-activation',
+          accountCount: reset.accountCount,
+          revokedSessionCount: reset.revokedSessionCount
+        });
+        return jsonResponse({ ok: true, data: { reset } }, 200, {
+          ...commonHeaders,
+          'set-cookie': clearAdminSessionCookie()
+        });
+      }
+
       if (route.id === 'audit.list') {
         const limit = Number(url.searchParams.get('limit') || 100);
         return jsonResponse({ ok: true, data: { events: await runtime.audit.listAuditEvents(limit) } }, 200, commonHeaders);
@@ -544,7 +582,7 @@ export function createManagementRequestHandler(runtime: ManagementRequestRuntime
       const response = failure(error);
       try {
         await appendAudit(runtime, {
-          principalId: 'anonymous',
+          principalId: auditPrincipalId,
           route,
           outcome: 'failed',
           requestId,

@@ -1,5 +1,6 @@
 import type {
   AccountStore,
+  AccountActivationResetUpdate,
   CredentialTokenRecord,
   ManagementAccountRecord
 } from './account-contracts.js';
@@ -84,9 +85,7 @@ function sessionValues(session: AdminSessionRecord): unknown[] {
 }
 
 export async function ensureManagementSchema(database: D1DatabaseLike): Promise<void> {
-  for (const statement of MANAGEMENT_SCHEMA_STATEMENTS) {
-    await database.prepare(statement).run();
-  }
+  await database.batch(MANAGEMENT_SCHEMA_STATEMENTS.map(statement => database.prepare(statement)));
 }
 
 export class D1ManagementStore implements AccountStore, SessionStore, AuditSink {
@@ -147,6 +146,69 @@ export class D1ManagementStore implements AccountStore, SessionStore, AuditSink 
       )
       .run();
     if (changes(result) !== 1) throw new Error('ACCOUNT_UPDATE_CONFLICT');
+  }
+
+  async resetAccountsForActivation(
+    updates: readonly AccountActivationResetUpdate[],
+    invalidatedAt: string
+  ): Promise<void> {
+    if (!updates.length || !Number.isFinite(Date.parse(invalidatedAt))) {
+      throw new Error('ACCOUNT_RESET_INVALID');
+    }
+    const incomingIds = new Set<string>();
+    for (const { account, expectedRevision } of updates) {
+      if (incomingIds.has(account.id)
+        || account.revision !== expectedRevision + 1
+        || account.updatedAt !== invalidatedAt) {
+        throw new Error('ACCOUNT_UPDATE_CONFLICT');
+      }
+      incomingIds.add(account.id);
+    }
+    const payload = JSON.stringify(updates.map(({ account, expectedRevision }) => ({
+      id: account.id,
+      expectedRevision,
+      normalizedUsername: account.normalizedUsername,
+      accountKind: account.accountKind,
+      accountStatus: account.status,
+      revision: account.revision,
+      recordJson: JSON.stringify(account),
+      updatedAt: account.updatedAt
+    })));
+    const result = await this.#database.prepare(`WITH incoming AS (
+        SELECT
+          json_extract(value, '$.id') AS id,
+          CAST(json_extract(value, '$.expectedRevision') AS INTEGER) AS expected_revision,
+          json_extract(value, '$.normalizedUsername') AS normalized_username,
+          json_extract(value, '$.accountKind') AS account_kind,
+          json_extract(value, '$.accountStatus') AS account_status,
+          CAST(json_extract(value, '$.revision') AS INTEGER) AS revision,
+          json_extract(value, '$.recordJson') AS record_json,
+          json_extract(value, '$.updatedAt') AS updated_at
+        FROM json_each(?)
+      ), matching AS (
+        SELECT COUNT(*) AS count
+        FROM incoming
+        JOIN management_accounts
+          ON management_accounts.id = incoming.id
+          AND management_accounts.revision = incoming.expected_revision
+      ), expected AS (
+        SELECT COUNT(*) AS count FROM incoming
+      ), current_total AS (
+        SELECT COUNT(*) AS count FROM management_accounts
+      )
+      UPDATE management_accounts
+      SET normalized_username = (SELECT normalized_username FROM incoming WHERE incoming.id = management_accounts.id),
+          account_kind = (SELECT account_kind FROM incoming WHERE incoming.id = management_accounts.id),
+          account_status = (SELECT account_status FROM incoming WHERE incoming.id = management_accounts.id),
+          revision = (SELECT revision FROM incoming WHERE incoming.id = management_accounts.id),
+          record_json = (SELECT record_json FROM incoming WHERE incoming.id = management_accounts.id),
+          updated_at = (SELECT updated_at FROM incoming WHERE incoming.id = management_accounts.id)
+      WHERE id IN (SELECT id FROM incoming)
+        AND (SELECT count FROM matching) = (SELECT count FROM expected)
+        AND (SELECT count FROM current_total) = (SELECT count FROM expected)`)
+      .bind(payload)
+      .run();
+    if (changes(result) !== updates.length) throw new Error('ACCOUNT_UPDATE_CONFLICT');
   }
 
   async putCredentialToken(token: CredentialTokenRecord): Promise<void> {

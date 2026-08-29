@@ -5,6 +5,7 @@ export * from './cloud-project-service.js';
 export * from './cloud-project-store.js';
 export * from './access.js';
 export * from './account-contracts.js';
+export * from './account-reset-policy.js';
 export * from './account-policy.js';
 export * from './account-service.js';
 export * from './account-store.js';

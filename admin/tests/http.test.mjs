@@ -67,7 +67,7 @@ async function harness() {
   });
   await accounts.ensureBootstrapAccounts({
     administrator: {
-      username: 'admin', password: '000000', displayName: 'Administrator', accountKind: 'admin', accessLevel: 'save'
+      username: 'admin', password: '123456', displayName: 'Administrator', accountKind: 'admin', accessLevel: 'save'
     },
     user: {
       username: 'user', password: '123456', displayName: 'Research user', accountKind: 'user', accessLevel: 'read'
@@ -107,7 +107,7 @@ function sessionSecurity(result) {
 test('HTTP flow forces bootstrap activation before administrator capabilities are available', async () => {
   const handler = await harness();
   const login = await call(handler, '/api/manage/login', {
-    method: 'POST', body: { username: 'admin', password: '000000' }
+    method: 'POST', body: { username: 'admin', password: '123456' }
   });
   assert.equal(login.response.status, 200);
   assert.equal(login.payload.data.account.mustChangePassword, true);
@@ -129,7 +129,7 @@ test('HTTP flow forces bootstrap activation before administrator capabilities ar
       'x-cqnu-csrf': pendingSecurity.csrf
     },
     body: {
-      currentPassword: '000000',
+      currentPassword: '123456',
       username: 'admin.primary',
       displayName: 'Primary administrator',
       password: 'A secure administrator passphrase'
@@ -140,17 +140,103 @@ test('HTTP flow forces bootstrap activation before administrator capabilities ar
   assert.ok(activation.payload.data.capabilities.includes('member.manage'));
 });
 
-test('administrator can issue a single-use member activation link through CSRF-protected API', async () => {
+test('bulk identity reset requires CSRF and confirmation, revokes sessions, and leaves a redacted audit event', async () => {
   const handler = await harness();
   const login = await call(handler, '/api/manage/login', {
-    method: 'POST', body: { username: 'admin', password: '000000' }
+    method: 'POST', body: { username: 'admin', password: '123456' }
   });
   const pending = sessionSecurity(login);
   const activation = await call(handler, '/api/manage/account/activate', {
     method: 'POST',
     headers: { cookie: pending.cookie, origin: 'https://example.test', 'x-cqnu-csrf': pending.csrf },
     body: {
-      currentPassword: '000000', username: 'admin', displayName: 'Administrator',
+      currentPassword: '123456', username: 'admin', displayName: 'Administrator',
+      password: 'A secure administrator passphrase'
+    }
+  });
+  const active = sessionSecurity(activation);
+  const csrfDenied = await call(handler, '/api/manage/members/reset-all-activation', {
+    method: 'POST',
+    headers: { cookie: active.cookie, origin: 'https://example.test' },
+    body: {
+      currentPassword: 'A secure administrator passphrase',
+      confirmation: 'RESET ALL MEMBERS'
+    }
+  });
+  assert.equal(csrfDenied.response.status, 403);
+
+  const confirmationDenied = await call(handler, '/api/manage/members/reset-all-activation', {
+    method: 'POST',
+    headers: { cookie: active.cookie, origin: 'https://example.test', 'x-cqnu-csrf': active.csrf },
+    body: {
+      currentPassword: 'A secure administrator passphrase',
+      confirmation: 'RESET SOME MEMBERS'
+    }
+  });
+  assert.equal(confirmationDenied.response.status, 400);
+  assert.equal(confirmationDenied.payload.error.code, 'ACCOUNT_RESET_CONFIRMATION_INVALID');
+
+  const reset = await call(handler, '/api/manage/members/reset-all-activation', {
+    method: 'POST',
+    headers: { cookie: active.cookie, origin: 'https://example.test', 'x-cqnu-csrf': active.csrf },
+    body: {
+      currentPassword: 'A secure administrator passphrase',
+      confirmation: 'RESET ALL MEMBERS'
+    }
+  });
+  assert.equal(reset.response.status, 200);
+  assert.equal(reset.payload.data.reset.accountCount, 2);
+  assert.match(reset.response.headers.get('set-cookie'), /Max-Age=0/);
+  assert.equal(JSON.stringify(reset.payload).includes('123456'), false);
+
+  const revoked = await call(handler, '/api/manage/session', { headers: { cookie: active.cookie } });
+  assert.equal(revoked.response.status, 401);
+  const resetLogin = await call(handler, '/api/manage/login', {
+    method: 'POST', body: { username: 'admin', password: '123456' }
+  });
+  assert.equal(resetLogin.payload.data.account.status, 'pending-activation');
+  const resetPending = sessionSecurity(resetLogin);
+  const reactivated = await call(handler, '/api/manage/account/activate', {
+    method: 'POST',
+    headers: {
+      cookie: resetPending.cookie,
+      origin: 'https://example.test',
+      'x-cqnu-csrf': resetPending.csrf
+    },
+    body: { currentPassword: '123456', username: 'admin', displayName: 'Administrator' }
+  });
+  assert.equal(reactivated.payload.data.account.passwordChangeRecommended, true);
+  const security = sessionSecurity(reactivated);
+  const audit = await call(handler, '/api/manage/audit-events?limit=100', {
+    headers: { cookie: security.cookie }
+  });
+  const resetEvent = audit.payload.data.events.find(event => event.action === 'account.identity.reset-all');
+  assert.ok(resetEvent);
+  assert.equal(resetEvent.metadata.accountCount, 2);
+  assert.equal(resetEvent.metadata.memberAction, 'reset-all-activation');
+  assert.equal(JSON.stringify(resetEvent).includes('123456'), false);
+  assert.equal(JSON.stringify(resetEvent).toLocaleLowerCase().includes('password'), false);
+  const rejectedResetEvent = audit.payload.data.events.find(event =>
+    event.action === 'account.identity.reset-all'
+      && event.outcome === 'failed'
+      && event.metadata.reasonCode === 'ACCOUNT_RESET_CONFIRMATION_INVALID'
+  );
+  assert.ok(rejectedResetEvent);
+  assert.equal(rejectedResetEvent.principalId, reactivated.payload.data.account.id);
+  assert.equal(JSON.stringify(rejectedResetEvent).includes('RESET SOME MEMBERS'), false);
+});
+
+test('administrator can issue a single-use member activation link through CSRF-protected API', async () => {
+  const handler = await harness();
+  const login = await call(handler, '/api/manage/login', {
+    method: 'POST', body: { username: 'admin', password: '123456' }
+  });
+  const pending = sessionSecurity(login);
+  const activation = await call(handler, '/api/manage/account/activate', {
+    method: 'POST',
+    headers: { cookie: pending.cookie, origin: 'https://example.test', 'x-cqnu-csrf': pending.csrf },
+    body: {
+      currentPassword: '123456', username: 'admin', displayName: 'Administrator',
       password: 'A secure administrator passphrase'
     }
   });
@@ -213,14 +299,14 @@ test('session refresh rotates CSRF material without exposing session token in JS
 test('save-level account can manage an owner-scoped cloud project lifecycle', async () => {
   const handler = await harness();
   const login = await call(handler, '/api/manage/login', {
-    method: 'POST', body: { username: 'admin', password: '000000' }
+    method: 'POST', body: { username: 'admin', password: '123456' }
   });
   const pending = sessionSecurity(login);
   const activation = await call(handler, '/api/manage/account/activate', {
     method: 'POST',
     headers: { cookie: pending.cookie, origin: 'https://example.test', 'x-cqnu-csrf': pending.csrf },
     body: {
-      currentPassword: '000000', username: 'admin', displayName: 'Administrator',
+      currentPassword: '123456', username: 'admin', displayName: 'Administrator',
       password: 'A secure administrator passphrase'
     }
   });

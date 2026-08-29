@@ -7,6 +7,10 @@ import type {
   PublicManagementAccount
 } from './account-contracts.js';
 import {
+  BULK_ACCOUNT_RESET_CONFIRMATION,
+  BULK_ACCOUNT_RESET_TEMPORARY_PASSWORD
+} from './account-reset-policy.js';
+import {
   accountToPrincipal,
   normalizeAccessLevel,
   normalizeAccountKind,
@@ -75,6 +79,17 @@ export interface ConsumeCredentialTokenInput {
   username?: string;
   password: string;
   displayName?: string;
+}
+
+export interface ResetAllMemberCredentialsInput {
+  currentPassword: string;
+  confirmation: string;
+}
+
+export interface ResetAllMemberCredentialsResult {
+  accountCount: number;
+  revokedSessionCount: number;
+  resetAt: string;
 }
 
 export interface AccountServiceOptions {
@@ -171,6 +186,7 @@ export class ManagementAccountService {
         status: 'pending-activation',
         passwordVerifier,
         mustChangePassword: true,
+        passwordChangeRecommended: true,
         credentialVersion: 1,
         failedLoginCount: 0,
         lockedUntil: null,
@@ -211,7 +227,9 @@ export class ManagementAccountService {
     let current = account;
     if (account.failedLoginCount || account.lockedUntil || this.#passwordHasher.needsRehash(verifier)) {
       const passwordVerifier = this.#passwordHasher.needsRehash(verifier)
-        ? await this.#passwordHasher.hash(password, { allowWeakBootstrap: account.mustChangePassword })
+        ? await this.#passwordHasher.hash(password, {
+          allowWeakBootstrap: account.mustChangePassword || account.passwordChangeRecommended === true
+        })
         : verifier;
       current = withRevision(account, {
         passwordVerifier,
@@ -228,7 +246,7 @@ export class ManagementAccountService {
     accountId: string;
     currentPassword: string;
     username: string;
-    password: string;
+    password?: string;
     displayName?: string;
   }): Promise<LoginResult> {
     const account = await this.#requiredAccount(input.accountId);
@@ -237,12 +255,14 @@ export class ManagementAccountService {
       || !await this.#passwordHasher.verify(input.currentPassword, account.passwordVerifier)) {
       throw new Error('ACTIVATION_FAILED');
     }
-    const updated = await this.#replaceCredentials(account, {
-      username: input.username,
-      password: input.password,
-      displayName: input.displayName,
-      status: 'active'
-    });
+    const updated = input.password
+      ? await this.#replaceCredentials(account, {
+        username: input.username,
+        password: input.password,
+        displayName: input.displayName,
+        status: 'active'
+      })
+      : await this.#activateWithCurrentPassword(account, input);
     await this.#sessions.revokeAllForPrincipal(account.id);
     const grant = await this.#sessions.issue(accountToPrincipal(updated), 'password');
     return { account: publicAccount(updated), grant };
@@ -285,6 +305,41 @@ export class ManagementAccountService {
     return (await this.#store.listAccounts()).map(publicAccount);
   }
 
+  async resetAllMemberCredentials(
+    actorId: string,
+    input: ResetAllMemberCredentialsInput
+  ): Promise<ResetAllMemberCredentialsResult> {
+    const actor = await this.#requiredAdministrator(actorId);
+    await this.#verifyCurrentPassword(actor, input.currentPassword);
+    if (input.confirmation !== BULK_ACCOUNT_RESET_CONFIRMATION) {
+      throw new Error('ACCOUNT_RESET_CONFIRMATION_INVALID');
+    }
+    const accounts = await this.#store.listAccounts();
+    if (!accounts.length) throw new Error('ACCOUNT_RESET_INVALID');
+    const resetAt = this.#clock.now().toISOString();
+    const updates = await Promise.all(accounts.map(async account => ({
+      account: withRevision(account, {
+        passwordVerifier: await this.#passwordHasher.hash(BULK_ACCOUNT_RESET_TEMPORARY_PASSWORD, {
+          allowWeakBootstrap: true
+        }),
+        status: 'pending-activation',
+        mustChangePassword: true,
+        passwordChangeRecommended: true,
+        credentialVersion: account.credentialVersion + 1,
+        failedLoginCount: 0,
+        lockedUntil: null,
+        activatedAt: null
+      }, resetAt),
+      expectedRevision: account.revision
+    })));
+    await this.#store.resetAccountsForActivation(updates, resetAt);
+    let revokedSessionCount = 0;
+    for (const account of accounts) {
+      revokedSessionCount += await this.#sessions.revokeAllForPrincipal(account.id);
+    }
+    return { accountCount: accounts.length, revokedSessionCount, resetAt };
+  }
+
   async createMember(actorId: string, input: CreateMemberInput): Promise<CredentialTokenGrant> {
     await this.#requiredAdministrator(actorId);
     const now = this.#clock.now().toISOString();
@@ -299,6 +354,7 @@ export class ManagementAccountService {
       status: 'pending-activation',
       passwordVerifier: null,
       mustChangePassword: true,
+      passwordChangeRecommended: false,
       credentialVersion: 1,
       failedLoginCount: 0,
       lockedUntil: null,
@@ -362,6 +418,7 @@ export class ManagementAccountService {
       passwordVerifier: await this.#passwordHasher.hash(input.password),
       status: 'active',
       mustChangePassword: false,
+      passwordChangeRecommended: false,
       credentialVersion: account.credentialVersion + 1,
       failedLoginCount: 0,
       lockedUntil: null,
@@ -412,6 +469,29 @@ export class ManagementAccountService {
       passwordVerifier: await this.#passwordHasher.hash(input.password),
       status: input.status || account.status,
       mustChangePassword: false,
+      passwordChangeRecommended: false,
+      credentialVersion: account.credentialVersion + 1,
+      failedLoginCount: 0,
+      lockedUntil: null,
+      activatedAt: account.activatedAt || now
+    }, now);
+    await this.#store.updateAccount(updated, account.revision);
+    return updated;
+  }
+
+  async #activateWithCurrentPassword(
+    account: ManagementAccountRecord,
+    input: { username: string; displayName?: string }
+  ): Promise<ManagementAccountRecord> {
+    const username = validateUsername(input.username || account.username);
+    const now = this.#clock.now().toISOString();
+    const updated = withRevision(account, {
+      username,
+      normalizedUsername: normalizeUsername(username),
+      displayName: cleanDisplayName(input.displayName || account.displayName, username),
+      status: 'active',
+      mustChangePassword: false,
+      passwordChangeRecommended: true,
       credentialVersion: account.credentialVersion + 1,
       failedLoginCount: 0,
       lockedUntil: null,

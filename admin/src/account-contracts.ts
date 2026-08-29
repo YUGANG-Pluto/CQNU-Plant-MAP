@@ -24,6 +24,7 @@ export interface ManagementAccountRecord {
   status: ManagementAccountStatus;
   passwordVerifier: PasswordVerifierRecord | null;
   mustChangePassword: boolean;
+  passwordChangeRecommended?: boolean;
   credentialVersion: number;
   failedLoginCount: number;
   lockedUntil: string | null;
@@ -31,6 +32,11 @@ export interface ManagementAccountRecord {
   updatedAt: string;
   activatedAt: string | null;
   revision: number;
+}
+
+export interface AccountActivationResetUpdate {
+  account: ManagementAccountRecord;
+  expectedRevision: number;
 }
 
 export type PublicManagementAccount = Omit<
@@ -59,6 +65,10 @@ export interface AccountStore {
   createAccount(account: ManagementAccountRecord): Promise<void>;
   createAccounts(accounts: readonly ManagementAccountRecord[]): Promise<void>;
   updateAccount(account: ManagementAccountRecord, expectedRevision: number): Promise<void>;
+  resetAccountsForActivation(
+    updates: readonly AccountActivationResetUpdate[],
+    invalidatedAt: string
+  ): Promise<void>;
   putCredentialToken(token: CredentialTokenRecord): Promise<void>;
   getCredentialToken(tokenDigest: string, tokenKeyId: string): Promise<CredentialTokenRecord | null>;
   consumeCredentialTokenAndUpdateAccount(

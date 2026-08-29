@@ -13,6 +13,8 @@ export const ADMIN_AUDIT_METADATA_KEYS = Object.freeze([
   'targetAccountId',
   'targetProjectId',
   'memberAction',
+  'accountCount',
+  'revokedSessionCount',
   'sessionAction',
   'attempt',
   'durationMs'

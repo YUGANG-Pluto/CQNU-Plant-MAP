@@ -44,7 +44,10 @@ export function publicAccount(account: ManagementAccountRecord): PublicManagemen
     lockedUntil: _lockedUntil,
     ...result
   } = account;
-  return { ...result };
+  return {
+    ...result,
+    passwordChangeRecommended: account.passwordChangeRecommended === true
+  };
 }
 
 export function accountToPrincipal(account: ManagementAccountRecord): AdminPrincipal {

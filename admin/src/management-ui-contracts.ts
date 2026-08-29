@@ -7,6 +7,7 @@ import type {
   CreateMemberInput,
   UpdateMemberInput
 } from './account-service.js';
+import type { ResetAllMemberCredentialsInput } from './account-service.js';
 import type {
   AdminAuditEvent,
   AdminCapability,
@@ -73,7 +74,15 @@ export interface ManagementActivationInput {
   currentPassword: string;
   username: string;
   displayName?: string;
-  password: string;
+  password?: string;
+}
+
+export interface ManagementBulkAccountResetData {
+  reset: {
+    accountCount: number;
+    revokedSessionCount: number;
+    resetAt: string;
+  };
 }
 
 export interface ManagementUsernameChangeInput {
@@ -99,6 +108,7 @@ export interface ManagementApi {
   createMember(input: CreateMemberInput): Promise<ManagementCredentialGrant>;
   updateMember(memberId: string, input: UpdateMemberInput): Promise<ManagementAccountData>;
   resetMemberPassword(memberId: string): Promise<ManagementCredentialGrant>;
+  resetAllMemberCredentials(input: ResetAllMemberCredentialsInput): Promise<ManagementBulkAccountResetData>;
   listAuditEvents(limit?: number): Promise<ManagementAuditData>;
   getCloudUsage(): Promise<ManagementCloudUsageData>;
 }

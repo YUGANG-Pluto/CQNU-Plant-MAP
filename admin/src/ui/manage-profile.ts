@@ -60,6 +60,8 @@ export function renderAccountSummary(): void {
   }
   const usernameForm = requiredElement<HTMLFormElement>('[data-username-form]');
   formControl<HTMLInputElement>(usernameForm, 'username').value = account.username;
+  requiredElement<HTMLElement>('[data-password-change-recommended]').hidden =
+    account.passwordChangeRecommended !== true;
 }
 
 export function renderCapabilities(): void {

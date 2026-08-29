@@ -50,6 +50,7 @@ const labels = Object.freeze({
     'account.password.change': '修改密码',
     'account.password.reset.issue': '签发重置链接',
     'account.password.reset.consume': '使用重置链接',
+    'account.identity.reset-all': '重置全员登录身份',
     'session.create': '登录',
     'session.heartbeat': '会话续期',
     'session.rotate': '轮换会话',

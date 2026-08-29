@@ -77,9 +77,12 @@ export const MANAGEMENT_SCHEMA_STATEMENTS = Object.freeze([
     BEGIN
       SELECT RAISE(ABORT, 'LAST_ADMIN_REQUIRED');
     END`,
-  `CREATE TRIGGER IF NOT EXISTS management_apply_credential_token
+  `DROP TRIGGER IF EXISTS management_apply_credential_token`,
+  `CREATE TRIGGER management_apply_credential_token
     AFTER UPDATE OF consumed_at ON management_credential_tokens
-    WHEN OLD.consumed_at IS NULL AND NEW.consumed_at IS NOT NULL
+    WHEN OLD.consumed_at IS NULL
+      AND NEW.consumed_at IS NOT NULL
+      AND NEW.pending_account_json IS NOT NULL
     BEGIN
       UPDATE management_accounts
       SET normalized_username = json_extract(NEW.pending_account_json, '$.normalizedUsername'),
@@ -95,6 +98,21 @@ export const MANAGEMENT_SCHEMA_STATEMENTS = Object.freeze([
       UPDATE management_credential_tokens
       SET pending_account_json = NULL, expected_account_revision = NULL
       WHERE id = NEW.id;
+    END`,
+  `CREATE TRIGGER IF NOT EXISTS management_consume_tokens_on_identity_reset
+    AFTER UPDATE OF account_status, record_json ON management_accounts
+    WHEN NEW.account_status = 'pending-activation'
+      AND json_extract(NEW.record_json, '$.mustChangePassword') = 1
+      AND json_extract(NEW.record_json, '$.passwordChangeRecommended') = 1
+      AND CAST(json_extract(NEW.record_json, '$.credentialVersion') AS INTEGER)
+        > CAST(json_extract(OLD.record_json, '$.credentialVersion') AS INTEGER)
+    BEGIN
+      UPDATE management_credential_tokens
+      SET consumed_at = NEW.updated_at,
+          pending_account_json = NULL,
+          expected_account_revision = NULL,
+          record_json = json_set(record_json, '$.consumedAt', NEW.updated_at)
+      WHERE account_id = NEW.id AND consumed_at IS NULL;
     END`
 ]);
 

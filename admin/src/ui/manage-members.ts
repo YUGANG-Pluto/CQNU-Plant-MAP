@@ -18,6 +18,9 @@ import { formatDateTime, label } from './manage-i18n.js';
 
 type UnauthorizedHandler = (message: string) => void;
 
+const BULK_ACCOUNT_RESET_CONFIRMATION = 'RESET ALL MEMBERS';
+const BULK_ACCOUNT_RESET_TEMPORARY_PASSWORD = '123456';
+
 function memberRow(member: PublicManagementAccount): HTMLTableRowElement {
   const row = document.createElement('tr');
   row.dataset.memberId = member.id;
@@ -142,6 +145,16 @@ async function resetMember(memberId: string): Promise<void> {
   }
 }
 
+function openBulkResetDialog(): void {
+  const { bulkResetDialog, bulkResetForm } = elements;
+  bulkResetForm.reset();
+  showMessage(bulkResetForm);
+  bulkResetDialog.showModal();
+  requestAnimationFrame(() => {
+    formControl<HTMLInputElement>(bulkResetForm, 'currentPassword').focus();
+  });
+}
+
 export async function loadAuditEvents(): Promise<void> {
   if (!hasCapability('audit.read')) return;
   try {
@@ -172,7 +185,7 @@ export async function loadAuditEvents(): Promise<void> {
 }
 
 export function installMemberController(onUnauthorized: UnauthorizedHandler): void {
-  const { memberDialog, memberForm, tokenDialog } = elements;
+  const { bulkResetDialog, bulkResetForm, memberDialog, memberForm, tokenDialog } = elements;
   memberForm.addEventListener('submit', async event => {
     event.preventDefault();
     const memberId = formControl<HTMLInputElement>(memberForm, 'memberId').value;
@@ -211,6 +224,7 @@ export function installMemberController(onUnauthorized: UnauthorizedHandler): vo
     const resetButton = target.closest<HTMLElement>('[data-member-reset]');
     const resetId = resetButton?.dataset.memberReset;
     if (resetId) void resetMember(resetId);
+    if (target.closest('[data-open-bulk-reset]')) openBulkResetDialog();
   });
   requiredElement<HTMLButtonElement>('[data-open-create-member]').addEventListener('click', () => openMemberDialog());
   requiredElement<HTMLInputElement>('[data-member-search]').addEventListener('input', renderMembers);
@@ -222,6 +236,31 @@ export function installMemberController(onUnauthorized: UnauthorizedHandler): vo
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-close-token-dialog]')) {
     button.addEventListener('click', () => tokenDialog.close());
   }
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-close-bulk-reset]')) {
+    button.addEventListener('click', () => bulkResetDialog.close());
+  }
+  bulkResetForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const confirmation = formControl<HTMLInputElement>(bulkResetForm, 'confirmation');
+    if (confirmation.value !== BULK_ACCOUNT_RESET_CONFIRMATION) {
+      showMessage(bulkResetForm, `请输入完整确认短语 ${BULK_ACCOUNT_RESET_CONFIRMATION}。`);
+      confirmation.focus();
+      return;
+    }
+    try {
+      const data = await submitWithBusy(bulkResetForm, () => managementApi.resetAllMemberCredentials({
+        currentPassword: formControl<HTMLInputElement>(bulkResetForm, 'currentPassword').value,
+        confirmation: confirmation.value
+      }));
+      bulkResetForm.reset();
+      bulkResetDialog.close();
+      onUnauthorized(
+        `已重置 ${data.reset.accountCount} 个账户。请使用临时密码 ${BULK_ACCOUNT_RESET_TEMPORARY_PASSWORD} 重新登录并激活。`
+      );
+    } catch {
+      formControl<HTMLInputElement>(bulkResetForm, 'currentPassword').value = '';
+    }
+  });
   requiredElement<HTMLButtonElement>('[data-copy-token]').addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(state.issuedLink);

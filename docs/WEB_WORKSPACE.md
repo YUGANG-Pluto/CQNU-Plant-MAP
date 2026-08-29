@@ -20,8 +20,8 @@ The site uses a separate account and session service to decide who may enter the
 - `read` allows local and owner-scoped cloud project opening, browsing, queries, statistics, diagnostics, and exports.
 - `edit` adds in-memory editing, but changes remain a session draft and are not written to the local project.
 - `save` adds local persistence, explicit cloud project creation/upload/rename/version restore/delete, image changes, backup management, and storage conversion.
-- Administrators can manage members, access levels, activation links, password-reset links, security audit events, and account-level cloud storage usage. The storage view exposes counts and byte totals, not project content. Administrative status always includes `save` access and is limited to three enabled accounts.
-- Bootstrap and newly created accounts require activation before normal access. Deployment-provided temporary credentials are never stored in source files.
+- Administrators can manage members, access levels, activation links, password-reset links, security audit events, account-level cloud storage usage, and a confirmed all-account identity reset. The storage view exposes counts and byte totals, not project content. Administrative status always includes `save` access and is limited to three enabled accounts.
+- Bootstrap and administrator-reset accounts require activation before normal access. After activation, users can set a personal password immediately or continue with a visible temporary-password reminder. The all-account reset uses the known temporary password `123456`, revokes all sessions and unused credential links, and preserves usernames, roles, permissions, and project ownership.
 - An active browser renews a short online lease through a heartbeat. Losing that lease ends the session, and every continuously active session has an absolute 24-hour lifetime.
 
 Authentication cookies are host-only, `HttpOnly`, `Secure`, and `SameSite=Strict`. Authenticated mutations require a same-origin CSRF token. Username, password, permission, reset, and disable operations revoke affected sessions.

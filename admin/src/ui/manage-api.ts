@@ -1,6 +1,7 @@
 import type {
   ManagementApi,
   ManagementAuditData,
+  ManagementBulkAccountResetData,
   ManagementCloudUsageData,
   ManagementCredentialGrant,
   ManagementMembersData,
@@ -106,6 +107,10 @@ export const managementApi = Object.freeze({
   resetMemberPassword: memberId => request<ManagementCredentialGrant>(
     `/members/${encodeURIComponent(memberId)}/password-reset`,
     { method: 'POST', body: {} }
+  ),
+  resetAllMemberCredentials: body => request<ManagementBulkAccountResetData>(
+    '/members/reset-all-activation',
+    { method: 'POST', body }
   ),
   listAuditEvents: (limit = 100) => request<ManagementAuditData>(
     `/audit-events?limit=${encodeURIComponent(limit)}`

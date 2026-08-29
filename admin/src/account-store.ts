@@ -1,6 +1,7 @@
 import {
   MAX_ADMINISTRATORS,
   type AccountStore,
+  type AccountActivationResetUpdate,
   type CredentialTokenRecord,
   type ManagementAccountRecord
 } from './account-contracts.js';
@@ -100,6 +101,42 @@ export class InMemoryAccountStore implements AccountStore {
       this.#accountIdByUsername.delete(previous.normalizedUsername);
       this.#accounts.set(account.id, clone(account));
       this.#accountIdByUsername.set(account.normalizedUsername, account.id);
+    });
+  }
+
+  async resetAccountsForActivation(
+    updates: readonly AccountActivationResetUpdate[],
+    invalidatedAt: string
+  ): Promise<void> {
+    await this.#write(() => {
+      if (!updates.length || !Number.isFinite(Date.parse(invalidatedAt))) {
+        throw new Error('ACCOUNT_RESET_INVALID');
+      }
+      const incomingIds = new Set<string>();
+      for (const { account, expectedRevision } of updates) {
+        const previous = this.#accounts.get(account.id);
+        if (incomingIds.has(account.id)
+          || !previous
+          || previous.revision !== expectedRevision
+          || account.revision !== expectedRevision + 1) {
+          throw new Error('ACCOUNT_UPDATE_CONFLICT');
+        }
+        incomingIds.add(account.id);
+      }
+      const updatesById = new Map(updates.map(item => [item.account.id, clone(item.account)]));
+      const next = [...this.#accounts.values()].map(item => updatesById.get(item.id) || item);
+      validateAccountSet(next);
+      for (const { account } of updates) {
+        const previous = this.#accounts.get(account.id) as ManagementAccountRecord;
+        this.#accountIdByUsername.delete(previous.normalizedUsername);
+        this.#accounts.set(account.id, clone(account));
+        this.#accountIdByUsername.set(account.normalizedUsername, account.id);
+      }
+      for (const [key, token] of this.#tokens.entries()) {
+        if (!token.consumedAt && incomingIds.has(token.accountId)) {
+          this.#tokens.set(key, { ...token, consumedAt: invalidatedAt });
+        }
+      }
     });
   }
 

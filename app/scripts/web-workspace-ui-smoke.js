@@ -4,6 +4,7 @@ const {
   collectWindowErrors,
   markSmokeStage,
   setSmokeStageReporter,
+  verifyManagementSecurityDialogs,
   waitForPathname,
   waitForRuntime
 } = require('./web-workspace-ui-support');
@@ -443,6 +444,8 @@ async function runManagementUiSmoke(baseUrl) {
     })()`,
       true
     );
+    markSmokeStage('management:verify-security-dialogs');
+    const securityDialogResult = await verifyManagementSecurityDialogs(window);
     await captureSmokeScreenshot(window, 'management-account');
     await captureSmokeScreenshot(window, 'management-account-mobile', { width: 390, height: 844 });
     markSmokeStage('management:verify-workspace-avatar');
@@ -507,6 +510,20 @@ async function runManagementUiSmoke(baseUrl) {
       failures.push(`avatar workflow failed: ${JSON.stringify(avatarResult)} / ${workspaceAvatarVisible}`);
     }
     if (
+      !securityDialogResult.bulkReset.open ||
+      !securityDialogResult.bulkReset.visible ||
+      !securityDialogResult.bulkReset.topmost ||
+      !securityDialogResult.bulkReset.withinViewport ||
+      !securityDialogResult.passwordChoice.open ||
+      !securityDialogResult.passwordChoice.visible ||
+      !securityDialogResult.passwordChoice.topmost ||
+      !securityDialogResult.passwordChoice.withinViewport ||
+      !securityDialogResult.noPageOverflow ||
+      securityDialogResult.remainingOpenDialogs !== 0
+    ) {
+      failures.push(`management security dialog contract failed: ${JSON.stringify(securityDialogResult)}`);
+    }
+    if (
       !workspaceShellResult.layerPopoverVisible ||
       !workspaceShellResult.layerPopoverTopmost ||
       !workspaceShellResult.zoneHidden ||
@@ -529,6 +546,7 @@ async function runManagementUiSmoke(baseUrl) {
       legacyBundlePaths,
       unbundledLegacyPaths,
       ...avatarResult,
+      securityDialogResult,
       workspaceAvatarVisible,
       workspaceShellResult
     };
@@ -544,5 +562,6 @@ module.exports = {
   runManagementUiSmoke,
   runReadOnlyDirectoryPickerSmoke,
   setSmokeStageReporter,
+  verifyManagementSecurityDialogs,
   waitForRuntime
 };

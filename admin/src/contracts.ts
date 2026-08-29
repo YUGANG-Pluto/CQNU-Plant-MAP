@@ -26,6 +26,7 @@ export type AdminAuditAction = AdminCapability
   | 'account.password.change'
   | 'account.password.reset.issue'
   | 'account.password.reset.consume'
+  | 'account.identity.reset-all'
   | 'session.create'
   | 'session.heartbeat'
   | 'session.rotate'
