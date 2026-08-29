@@ -16,14 +16,13 @@ import type {
   CloudProjectMetadata,
   CloudProjectRevisionMetadata,
   CloudProjectUsage,
-  ProjectRendererBridge,
-  SiteCloudProjectClient
+  ProjectRendererBridge
 } from '../../../shared/types/cloud-projects';
 import { LayerModal } from '../../components/LayerModal';
+import { useSiteCloudProjectClient } from './useSiteCloudProjectClient';
 
 declare global {
   interface Window {
-    siteCloudProjects?: SiteCloudProjectClient;
     projectRendererBridge?: ProjectRendererBridge;
     openConfirmDialog?(input: {
       title?: string;
@@ -74,7 +73,7 @@ export function openCloudProjectLibrary(): void {
 }
 
 export function CloudProjectLibrary() {
-  const client = window.siteCloudProjects;
+  const client = useSiteCloudProjectClient();
   const canSave = Boolean(window.managementAccess?.capabilities.includes('workspace.save'));
   const [projects, setProjects] = useState<CloudProjectMetadata[]>([]);
   const [usage, setUsage] = useState<CloudProjectUsage>(EMPTY_USAGE);

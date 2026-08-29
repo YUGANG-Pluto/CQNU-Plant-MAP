@@ -189,6 +189,8 @@ test('site cloud project client is same-origin, CSRF protected, and explicit', a
   const client = await readFile(new URL('../src/cloud-projects.js', import.meta.url), 'utf8');
   const gate = await readFile(new URL('../src/workspace-gate.js', import.meta.url), 'utf8');
   const library = await readFile(new URL('../../app/src/renderer-modern/features/project/CloudProjectLibrary.tsx', import.meta.url), 'utf8');
+  const importCenter = await readFile(new URL('../../app/src/renderer-modern/features/project/ProjectImportCenter.tsx', import.meta.url), 'utf8');
+  const clientHook = await readFile(new URL('../../app/src/renderer-modern/features/project/useSiteCloudProjectClient.ts', import.meta.url), 'utf8');
   assert.match(client, /\/api\/projects/);
   assert.match(client, /credentials:\s*'same-origin'/);
   assert.match(client, /x-cqnu-csrf/);
@@ -200,6 +202,10 @@ test('site cloud project client is same-origin, CSRF protected, and explicit', a
   assert.match(client, /\/restore/);
   assert.doesNotMatch(client, /showDirectoryPicker|FileReader|webkitdirectory|better-sqlite3/);
   assert.match(gate, /installSiteCloudProjectClient/);
+  assert.match(gate, /cqnu:cloud-projects-ready/);
+  assert.match(clientHook, /addEventListener\(CLOUD_PROJECTS_READY_EVENT/);
+  assert.match(importCenter, /useSiteCloudProjectClient\(\)/);
+  assert.match(library, /useSiteCloudProjectClient\(\)/);
   assert.match(library, /cloudProjectUpload/);
   assert.match(library, /projectRendererBridge\?\.snapshot/);
   assert.match(library, /workspace\.save/);

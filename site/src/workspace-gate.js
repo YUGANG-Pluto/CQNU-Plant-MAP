@@ -100,6 +100,9 @@
         )
       });
     }
+    if (window.siteCloudProjects) {
+      window.dispatchEvent(new Event('cqnu:cloud-projects-ready'));
+    }
   }
 
   function loadScript(source) {

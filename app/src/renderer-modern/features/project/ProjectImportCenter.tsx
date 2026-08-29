@@ -18,6 +18,7 @@ import {
 } from './importCenterModel';
 import { useProjectSession } from './useProjectSession';
 import { openCloudProjectLibrary } from './CloudProjectLibrary';
+import { useSiteCloudProjectClient } from './useSiteCloudProjectClient';
 
 declare global {
   interface Window {
@@ -120,6 +121,7 @@ export function ProjectSourceStatus() {
 export function ProjectImportCenter() {
   const adapter = window.platformAdapter;
   const source = sourceFromSession(useProjectSession());
+  const cloudProjectClient = useSiteCloudProjectClient();
 
   if (adapter?.runtime !== 'web') return null;
   const options = buildProjectImportOptions({
@@ -166,7 +168,7 @@ export function ProjectImportCenter() {
 
       <div class="project-import-options" role="list" aria-label="项目读取方式" data-i18n-aria-label="projectImportOptionsLabel">
         {options.map(option => <ProjectImportOptionButton key={option.id} option={option} />)}
-        {window.siteCloudProjects ? (
+        {cloudProjectClient ? (
           <button
             id="btnOpenCloudProjectLibrary"
             class="project-import-option project-import-option--cloud"
