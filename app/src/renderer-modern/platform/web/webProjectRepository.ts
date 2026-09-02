@@ -65,7 +65,7 @@ export interface WebProjectChooseOptions {
 }
 
 export interface WebProjectRepositoryOptions {
-  directoryAccessMode?: WebDirectoryAccessMode;
+  directoryAccessMode?: WebDirectoryAccessMode | (() => WebDirectoryAccessMode);
 }
 
 function clone<T>(value: T): T {
@@ -110,11 +110,14 @@ function toSession(project: StoredWebProject): WebProjectSession {
 
 export class WebProjectRepository {
   readonly #contexts = new Map<string, ProjectContext>();
-  readonly #directoryAccessMode: WebDirectoryAccessMode;
+  readonly #directoryAccessMode: () => WebDirectoryAccessMode;
   #activeProjectId = '';
 
   constructor(options: WebProjectRepositoryOptions = {}) {
-    this.#directoryAccessMode = options.directoryAccessMode || 'readwrite';
+    const configuredMode = options.directoryAccessMode;
+    this.#directoryAccessMode = typeof configuredMode === 'function'
+      ? configuredMode
+      : () => configuredMode || 'readwrite';
   }
 
   async database(): Promise<WebDatabaseClient> {
@@ -158,7 +161,7 @@ export class WebProjectRepository {
   ): Promise<WebProjectSession | null> {
     const allowCreate = options.allowCreate ?? true;
     const persist = options.persist ?? true;
-    const directoryAccessMode = options.directoryAccessMode || this.#directoryAccessMode;
+    const directoryAccessMode = options.directoryAccessMode || this.#directoryAccessMode();
     const selectionMode = options.selectionMode || 'auto';
     let context: ProjectContext | null = null;
 
@@ -268,7 +271,7 @@ export class WebProjectRepository {
       this.#activeProjectId = projectId;
       return clone(existingContext.session);
     }
-    const recovered = await recoverWebDirectoryHandle(projectId, false, this.#directoryAccessMode);
+    const recovered = await recoverWebDirectoryHandle(projectId, false, this.#directoryAccessMode());
     const directoryHandle = recovered.directoryHandle;
     const directoryPermissionStatus = recovered.status;
     const readableDirectoryHandle = directoryPermissionStatus === 'granted'

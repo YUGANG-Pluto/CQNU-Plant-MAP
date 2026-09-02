@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { siteMeta } from '../src/content.mjs';
 import { renderPages } from '../src/render.mjs';
+import { removeDesktopRuntimeScripts } from './workspace-document.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const appRoot = resolve(projectRoot, '../app');
@@ -103,11 +104,7 @@ const workspaceResourceHints = [
   '<link rel="preload" href="/node_modules/leaflet/dist/leaflet.js" as="script" />',
   '<link rel="preload" href="/assets/legacy-runtime.js" as="script" />'
 ].join('\n  ');
-const workspaceHtml = appIndex
-  .replace('  <script src="./renderer-dist/modern-shell.js"></script>\n', '')
-  .replace('  <script src="./node_modules/leaflet/dist/leaflet.js"></script>\n', '')
-  .replace('  <script src="./node_modules/leaflet-draw/dist/leaflet.draw.js"></script>\n', '')
-  .replace('  <script defer src="./src/renderer/legacy-loader.js"></script>\n', '')
+const workspaceHtml = removeDesktopRuntimeScripts(appIndex)
   .replace("script-src 'self';", "script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:;")
   .replace(
     '</head>',

@@ -16,10 +16,29 @@ async function waitForRuntime(window) {
   await window.webContents.executeJavaScript(
     `new Promise((resolve, reject) => {
     const startedAt = Date.now();
+    const snapshot = () => ({
+      runtimeStatus: document.documentElement.dataset.runtimeStatus || '',
+      workspaceSession: document.documentElement.dataset.workspaceSession || '',
+      siteWorkspace: document.body?.dataset.siteWorkspace === 'true',
+      managementAccess: Boolean(window.managementAccess),
+      platformAdapter: Boolean(window.platformAdapter),
+      readProject: Boolean(window.platformAdapter?.capabilities?.readProject)
+    });
     const poll = () => {
-      if (document.documentElement.dataset.runtimeStatus === 'ready') return resolve(true);
-      if (document.documentElement.dataset.runtimeStatus === 'failed') return reject(new Error('Legacy runtime failed.'));
-      if (Date.now() - startedAt > 15000) return reject(new Error('Web workspace runtime timed out.'));
+      const state = snapshot();
+      const accessReady = !state.siteWorkspace || (
+        state.workspaceSession === 'active'
+        && state.managementAccess
+        && state.platformAdapter
+        && state.readProject
+      );
+      if (state.runtimeStatus === 'ready' && accessReady) return resolve(state);
+      if (state.runtimeStatus === 'failed') {
+        return reject(new Error('Legacy runtime failed: ' + JSON.stringify(state)));
+      }
+      if (Date.now() - startedAt > 15000) {
+        return reject(new Error('Web workspace runtime timed out: ' + JSON.stringify(state)));
+      }
       setTimeout(poll, 50);
     };
     poll();

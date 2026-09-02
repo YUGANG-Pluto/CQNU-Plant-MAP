@@ -429,6 +429,14 @@ function testPlatformAdapterContract() {
     path.join(process.cwd(), 'src/renderer-modern/platform/web/webWorkspaceAccess.ts'),
     'utf8'
   );
+  const webPermissionsSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/renderer-modern/platform/web/webWorkspacePermissions.ts'),
+    'utf8'
+  );
+  const webRepositorySource = fs.readFileSync(
+    path.join(process.cwd(), 'src/renderer-modern/platform/web/webProjectRepository.ts'),
+    'utf8'
+  );
   const webProjectSource = fs.readFileSync(
     path.join(process.cwd(), 'src/renderer-modern/platform/webProject.ts'),
     'utf8'
@@ -455,11 +463,16 @@ function testPlatformAdapterContract() {
   assert.ok(webSource.includes("runtime: 'web'"));
   assert.ok(webSource.includes('createWebWorkspaceAccess'));
   assert.ok(webAccessSource.includes('assessWebRuntimeCapabilities'));
-  assert.ok(webSource.includes('writeProject: access.capabilityReport.workspaceReady'));
-  assert.ok(webSource.includes('sqliteStorage: access.capabilityReport.workspaceReady'));
-  assert.ok(webSource.includes('externalBackupImport: access.capabilityReport.portableBackupAvailable'));
-  assert.ok(webSource.includes('speciesReference: true'));
-  assert.ok(webSource.includes('readOnly: !access.capabilityReport.workspaceReady'));
+  assert.ok(webAccessSource.includes("dataset.workspaceSession === 'active'"));
+  assert.ok(webSource.includes('createWebPlatformCapabilities(access)'));
+  assert.ok(webPermissionsSource.includes('get writeProject()'));
+  assert.ok(webPermissionsSource.includes('access.capabilityReport.workspaceReady && access.canSave'));
+  assert.ok(webPermissionsSource.includes('get sqliteStorage()'));
+  assert.ok(webPermissionsSource.includes('get externalBackupImport()'));
+  assert.ok(webPermissionsSource.includes('speciesReference: true'));
+  assert.ok(webPermissionsSource.includes('get readOnly()'));
+  assert.ok(webRepositorySource.includes('directoryAccessMode?: WebDirectoryAccessMode | (() => WebDirectoryAccessMode)'));
+  assert.ok(webRepositorySource.includes('this.#directoryAccessMode()'));
   assert.ok(webProjectSource.includes('selectWebProjectFiles'));
   assert.ok(webProjectSource.includes('createWebProjectSession'));
   assert.ok(webProjectSource.includes('input.accept = fileAcceptFor(kind)'));

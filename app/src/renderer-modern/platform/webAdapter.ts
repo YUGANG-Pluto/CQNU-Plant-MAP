@@ -33,12 +33,16 @@ import {
 import { createWebStorageMaintenance } from './web/webStorageMaintenance';
 import { createWebBackupCommands } from './web/webBackupCommands';
 import { createWebProjectCommands } from './web/webProjectCommands';
-import { createWebWorkspaceAccess } from './web/webWorkspaceAccess';
+import {
+  createWebPlatformCapabilities,
+  createWebPlatformContext,
+  createWebWorkspaceAccess
+} from './web/webWorkspaceAccess';
 
 export function createWebPlatformAdapter(): PlatformAdapter {
   const access = createWebWorkspaceAccess();
   const repository = new WebProjectRepository({
-    directoryAccessMode: access.canSave ? 'readwrite' : 'read'
+    directoryAccessMode: () => access.canSave ? 'readwrite' : 'read'
   });
   const projectCommands = createWebProjectCommands(repository, access);
   const backupCommands = createWebBackupCommands(repository, access);
@@ -177,25 +181,8 @@ export function createWebPlatformAdapter(): PlatformAdapter {
 
   return Object.freeze({
     runtime: 'web' as const,
-    capabilities: Object.freeze({
-      readProject: access.capabilityReport.workspaceReady && access.canRead,
-      writeProject: access.capabilityReport.workspaceReady && access.canSave,
-      importRecords: access.capabilityReport.workspaceReady && access.canEdit,
-      exportFiles: access.capabilityReport.portableBackupAvailable && access.canRead,
-      sqliteStorage: access.capabilityReport.workspaceReady && access.canRead,
-      backups: access.capabilityReport.workspaceReady && access.canSave,
-      diagnostics: access.capabilityReport.workspaceReady && access.canRead,
-      speciesReference: true,
-      externalLinks: true,
-      nativeWindow: false,
-      readOnly: !access.capabilityReport.workspaceReady || !access.canEdit,
-      externalBackupImport: access.capabilityReport.portableBackupAvailable && access.canSave,
-      directoryMirror: access.capabilityReport.directoryMirrorAvailable && access.canSave
-    }),
-    web: Object.freeze({
-      capabilityReport: access.capabilityReport,
-      ...(access.managementAccess ? { managementAccess: access.managementAccess } : {})
-    }),
+    capabilities: createWebPlatformCapabilities(access),
+    web: createWebPlatformContext(access),
     project: Object.freeze({
       ...projectCommands,
       importCsv: () => importTextFile('.csv,text/csv'),

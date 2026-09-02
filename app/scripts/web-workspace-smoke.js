@@ -121,6 +121,7 @@ async function createSiteServer() {
 }
 
 async function run() {
+  let failureStage = '';
   markSmokeStage('primary:electron-ready');
   app.disableHardwareAcceleration();
   await app.whenReady();
@@ -496,6 +497,9 @@ async function run() {
     process.stdout.write(
       `web workspace smoke passed (login-to-workspace ${managementResult.loginReadyMs}ms; cloud project versions and lifecycle, typed import center, OPFS SQLite, direct read-only SQLite picker, lazy SQLite worker, trusted directory picker, local avatar, modal and statistics-fullscreen top-layer hit tests, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n`
     );
+  } catch (error) {
+    failureStage = activeSmokeStage;
+    throw error;
   } finally {
     markSmokeStage('primary:cleanup-window');
     window.destroy();
@@ -503,6 +507,7 @@ async function run() {
     markSmokeStage('primary:cleanup-server');
     await new Promise(resolve => server.close(resolve));
     markSmokeStage('primary:complete');
+    if (failureStage) activeSmokeStage = failureStage;
   }
 }
 

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { renderPages } from '../src/render.mjs';
 import { findSiteApplication, siteApplications } from '../src/apps/registry.mjs';
+import { removeDesktopRuntimeScripts } from '../scripts/workspace-document.mjs';
 
 const workspaceHtml =
   '<!doctype html><html lang="zh-CN"><head><title>CQNU Plant MAP</title><link rel="preload" href="/assets/legacy-runtime.js" as="script"><link rel="stylesheet" href="./renderer-dist/modern-shell.css"><link rel="stylesheet" href="/assets/workspace-gate.css"></head><body data-site-workspace="true"><div class="workspace-access-gate"></div><div id="modernUiRoot"></div><script src="/assets/workspace-gate.js"></script></body></html>';
@@ -70,6 +71,18 @@ test('workspace route receives the complete shared application document', () => 
   assert.match(workspace, /assets\/workspace-gate\.js/);
   assert.match(workspace, /assets\/legacy-runtime\.js/);
   assert.doesNotMatch(workspace, /<script src="\.\/renderer-dist\/modern-shell\.js"><\/script>/);
+});
+
+test('workspace build removes desktop bootstrap scripts for LF and CRLF checkouts', async () => {
+  const appIndex = await readFile(new URL('../../app/index.html', import.meta.url), 'utf8');
+  for (const lineEnding of ['\n', '\r\n']) {
+    const normalized = appIndex.replace(/\r?\n/g, lineEnding);
+    const workspaceDocument = removeDesktopRuntimeScripts(normalized);
+    assert.doesNotMatch(workspaceDocument, /renderer-dist\/modern-shell\.js[^<]*<\/script>/);
+    assert.doesNotMatch(workspaceDocument, /node_modules\/leaflet(?:-draw)?\/dist\/[^"']+\.js/);
+    assert.doesNotMatch(workspaceDocument, /src\/renderer\/legacy-loader\.js/);
+    assert.match(workspaceDocument, /id="modernUiRoot"/);
+  }
 });
 
 test('research hub is operational navigation rather than a marketing shell', () => {

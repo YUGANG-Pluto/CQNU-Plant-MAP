@@ -58,6 +58,8 @@ assert.match(workspaceHtml, /assets\/workspace-gate\.js/);
 assert.match(workspaceHtml, /assets\/legacy-runtime\.js/);
 assert.match(workspaceHtml, /data-gate-progress/);
 assert.doesNotMatch(workspaceHtml, /<script src="\.\/renderer-dist\/modern-shell\.js"><\/script>/);
+assert.doesNotMatch(workspaceHtml, /<script src="\.\/node_modules\/leaflet(?:-draw)?\/dist\/[^"']+\.js"><\/script>/);
+assert.doesNotMatch(workspaceHtml, /<script defer src="\.\/src\/renderer\/legacy-loader\.js"><\/script>/);
 assert.match(workspace.headers.get('content-security-policy') || '', /wasm-unsafe-eval/);
 assert.match(workspace.headers.get('content-security-policy') || '', /worker-src 'self' blob:/);
 assert.match(workspace.headers.get('content-security-policy') || '', /connect-src 'self' https: data:/);

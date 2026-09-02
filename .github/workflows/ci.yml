@@ -92,6 +92,8 @@ jobs:
         run: npm --prefix ../site run build
 
       - name: Run hidden browser workspace acceptance
+        env:
+          CQNU_SMOKE_TRACE: '1'
         run: npm run smoke:web
 
       - name: Run three-domain visual regression
