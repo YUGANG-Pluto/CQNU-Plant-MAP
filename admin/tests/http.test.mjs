@@ -39,7 +39,7 @@ class TestAuditSink extends InMemoryAuditSink {
   }
 }
 
-async function harness() {
+async function harness(options = {}) {
   let id = 0;
   let random = 0;
   const keyRing = new AuthKeyRing({
@@ -83,7 +83,7 @@ async function harness() {
       now: () => new Date('2026-08-25T12:00:00.000Z'),
       randomId: prefix => `${prefix}-http-${++id}`
     })
-  });
+  }, options);
 }
 
 async function call(handler, path, options = {}) {
@@ -224,6 +224,109 @@ test('bulk identity reset requires CSRF and confirmation, revokes sessions, and 
   assert.ok(rejectedResetEvent);
   assert.equal(rejectedResetEvent.principalId, reactivated.payload.data.account.id);
   assert.equal(JSON.stringify(rejectedResetEvent).includes('RESET SOME MEMBERS'), false);
+});
+
+test('owner recovery requires a deployment secret, exact origin, and matching preflight state', async () => {
+  const path = '/api/manage/owner-recovery/reset-all-activation';
+  const preflightPath = '/api/manage/owner-recovery/reset-preflight';
+  const recoveryToken = 'r'.repeat(43);
+  const unavailable = await call(await harness(), preflightPath, {
+    method: 'POST',
+    headers: { origin: 'https://example.test', 'x-cqnu-owner-recovery': recoveryToken }
+  });
+  assert.equal(unavailable.response.status, 404);
+  assert.equal(unavailable.payload.error.code, 'OWNER_RECOVERY_UNAVAILABLE');
+
+  const handler = await harness({ ownerRecoveryToken: recoveryToken });
+  const wrongOrigin = await call(handler, preflightPath, {
+    method: 'POST',
+    headers: { origin: 'https://elsewhere.test', 'x-cqnu-owner-recovery': recoveryToken }
+  });
+  assert.equal(wrongOrigin.response.status, 403);
+  const wrongToken = await call(handler, preflightPath, {
+    method: 'POST',
+    headers: { origin: 'https://example.test', 'x-cqnu-owner-recovery': 'x'.repeat(43) }
+  });
+  assert.equal(wrongToken.response.status, 403);
+
+  const adminLogin = await call(handler, '/api/manage/login', {
+    method: 'POST', body: { username: 'admin', password: '123456' }
+  });
+  const userLogin = await call(handler, '/api/manage/login', {
+    method: 'POST', body: { username: 'user', password: '123456' }
+  });
+  const adminSecurity = sessionSecurity(adminLogin);
+  const userSecurity = sessionSecurity(userLogin);
+  const preflight = await call(handler, preflightPath, {
+    method: 'POST',
+    headers: { origin: 'https://example.test', 'x-cqnu-owner-recovery': recoveryToken }
+  });
+  assert.equal(preflight.response.status, 200);
+  assert.equal(preflight.payload.data.preflight.accountCount, 2);
+  assert.equal(preflight.payload.data.preflight.revisionTotal, 2);
+
+  const reset = await call(handler, path, {
+    method: 'POST',
+    headers: { origin: 'https://example.test', 'x-cqnu-owner-recovery': recoveryToken },
+    body: {
+      confirmation: 'RESET ALL MEMBERS',
+      expectedAccountCount: preflight.payload.data.preflight.accountCount,
+      expectedRevisionTotal: preflight.payload.data.preflight.revisionTotal
+    }
+  });
+  assert.equal(reset.response.status, 200);
+  assert.equal(reset.payload.data.reset.accountCount, 2);
+  assert.equal(reset.payload.data.reset.revokedSessionCount, 2);
+  assert.equal(JSON.stringify(reset.payload).includes('123456'), false);
+  assert.equal(JSON.stringify(reset.payload).includes(recoveryToken), false);
+
+  const oldAdminSession = await call(handler, '/api/manage/session', {
+    headers: { cookie: adminSecurity.cookie }
+  });
+  const oldUserSession = await call(handler, '/api/manage/session', {
+    headers: { cookie: userSecurity.cookie }
+  });
+  assert.equal(oldAdminSession.response.status, 401);
+  assert.equal(oldUserSession.response.status, 401);
+
+  const repeated = await call(handler, path, {
+    method: 'POST',
+    headers: { origin: 'https://example.test', 'x-cqnu-owner-recovery': recoveryToken },
+    body: {
+      confirmation: 'RESET ALL MEMBERS',
+      expectedAccountCount: preflight.payload.data.preflight.accountCount,
+      expectedRevisionTotal: preflight.payload.data.preflight.revisionTotal
+    }
+  });
+  assert.equal(repeated.response.status, 409);
+  assert.equal(repeated.payload.error.code, 'ACCOUNT_RESET_STATE_CHANGED');
+
+  const resetLogin = await call(handler, '/api/manage/login', {
+    method: 'POST', body: { username: 'admin', password: '123456' }
+  });
+  assert.equal(resetLogin.payload.data.account.status, 'pending-activation');
+  const pending = sessionSecurity(resetLogin);
+  const activation = await call(handler, '/api/manage/account/activate', {
+    method: 'POST',
+    headers: {
+      cookie: pending.cookie,
+      origin: 'https://example.test',
+      'x-cqnu-csrf': pending.csrf
+    },
+    body: { currentPassword: '123456', username: 'admin', displayName: 'Administrator' }
+  });
+  const active = sessionSecurity(activation);
+  const audit = await call(handler, '/api/manage/audit-events?limit=100', {
+    headers: { cookie: active.cookie }
+  });
+  const recoveryEvent = audit.payload.data.events.find(event =>
+    event.action === 'account.identity.reset-all'
+      && event.metadata.memberAction === 'owner-recovery-reset-all-activation'
+  );
+  assert.ok(recoveryEvent);
+  assert.equal(recoveryEvent.principalId, 'site-owner-recovery');
+  assert.equal(recoveryEvent.metadata.accountCount, 2);
+  assert.equal(JSON.stringify(audit.payload).includes(recoveryToken), false);
 });
 
 test('administrator can issue a single-use member activation link through CSRF-protected API', async () => {

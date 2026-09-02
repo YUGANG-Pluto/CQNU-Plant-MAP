@@ -27,6 +27,7 @@ export interface ManagementRequestRuntime {
 export interface ManagementWorkerEnvironment {
   DB?: D1DatabaseLike;
   CQNU_MANAGEMENT_AUTH_KEYRING?: string;
+  CQNU_MANAGEMENT_OWNER_RECOVERY_TOKEN?: string;
   CQNU_BOOTSTRAP_ADMIN_USERNAME?: string;
   CQNU_BOOTSTRAP_ADMIN_PASSWORD?: string;
   CQNU_BOOTSTRAP_USER_USERNAME?: string;

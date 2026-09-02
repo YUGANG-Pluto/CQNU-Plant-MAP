@@ -7,8 +7,11 @@ import type {
   PublicManagementAccount
 } from './account-contracts.js';
 import {
+  buildResetPreflight,
   BULK_ACCOUNT_RESET_CONFIRMATION,
-  BULK_ACCOUNT_RESET_TEMPORARY_PASSWORD
+  BULK_ACCOUNT_RESET_TEMPORARY_PASSWORD,
+  type OwnerRecoveryResetInput,
+  type ResetAllMemberCredentialsPreflight
 } from './account-reset-policy.js';
 import {
   accountToPrincipal,
@@ -305,16 +308,38 @@ export class ManagementAccountService {
     return (await this.#store.listAccounts()).map(publicAccount);
   }
 
+  async previewAllMemberCredentialReset(): Promise<ResetAllMemberCredentialsPreflight> {
+    return buildResetPreflight(await this.#store.listAccounts());
+  }
+
   async resetAllMemberCredentials(
     actorId: string,
     input: ResetAllMemberCredentialsInput
   ): Promise<ResetAllMemberCredentialsResult> {
     const actor = await this.#requiredAdministrator(actorId);
     await this.#verifyCurrentPassword(actor, input.currentPassword);
-    if (input.confirmation !== BULK_ACCOUNT_RESET_CONFIRMATION) {
+    return this.#resetAllMemberCredentials(await this.#store.listAccounts(), input.confirmation);
+  }
+
+  async resetAllMemberCredentialsForOwnerRecovery(
+    input: OwnerRecoveryResetInput
+  ): Promise<ResetAllMemberCredentialsResult> {
+    const accounts = await this.#store.listAccounts();
+    const preflight = buildResetPreflight(accounts);
+    if (preflight.accountCount !== input.expectedAccountCount
+      || preflight.revisionTotal !== input.expectedRevisionTotal) {
+      throw new Error('ACCOUNT_RESET_STATE_CHANGED');
+    }
+    return this.#resetAllMemberCredentials(accounts, input.confirmation);
+  }
+
+  async #resetAllMemberCredentials(
+    accounts: ManagementAccountRecord[],
+    confirmation: string
+  ): Promise<ResetAllMemberCredentialsResult> {
+    if (confirmation !== BULK_ACCOUNT_RESET_CONFIRMATION) {
       throw new Error('ACCOUNT_RESET_CONFIRMATION_INVALID');
     }
-    const accounts = await this.#store.listAccounts();
     if (!accounts.length) throw new Error('ACCOUNT_RESET_INVALID');
     const resetAt = this.#clock.now().toISOString();
     const updates = await Promise.all(accounts.map(async account => ({

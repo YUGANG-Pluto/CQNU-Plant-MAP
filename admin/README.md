@@ -36,6 +36,7 @@ The in-memory stores remain test fixtures. Production changes must retain deny-b
 - Set `CQNU_MANAGEMENT_AUTH_KEYRING` as a deployment secret. Its JSON contains `activeKeyId` and a `keys` map of base64url-encoded 32–64 byte random keys.
 - For the first request against an empty D1 database, set `CQNU_BOOTSTRAP_ADMIN_PASSWORD` and `CQNU_BOOTSTRAP_USER_PASSWORD`. Usernames are optional and default to `admin` and `user`.
 - Bootstrap credentials are temporary and force first-use activation. Activation may retain the temporary password, but the account remains marked for a recommended personal-password change until a policy-compliant password is saved. Do not commit key-ring material or deployment secrets.
+- If every administrator credential is unavailable, an owner-only recovery window may be enabled temporarily with the high-entropy `CQNU_MANAGEMENT_OWNER_RECOVERY_TOKEN` deployment secret. Recovery requires the private hosting gate, an exact same-origin request, the dedicated recovery header, a reset preflight, matching account count and revision total, and the fixed confirmation phrase. Remove the secret and redeploy immediately after one successful reset.
 - Schema setup is idempotent. The production runtime reuses existing accounts and cloud project versions instead of reseeding them.
 
 ## Validation

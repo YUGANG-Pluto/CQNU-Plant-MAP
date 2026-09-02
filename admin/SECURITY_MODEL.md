@@ -22,6 +22,7 @@ Each snapshot is size-bounded, split across bounded D1 rows, assigned an immutab
 - Bootstrap and administrator-reset passwords are accepted only as temporary activation credentials. Normal password policy rejects common values and requires at least 6 characters.
 - Five failed logins lock the account for 10 minutes. Credential, identity, and permission changes revoke active sessions.
 - The bulk identity-reset route is administrator-only, exact-origin CSRF protected, and requires the current administrator password plus a fixed confirmation phrase. It preserves roles and project ownership while resetting every account to pending activation, invalidating outstanding credential links, revoking all sessions, and writing count-only audit metadata.
+- Credential-loss recovery is disabled unless a 32-byte-or-stronger deployment token is present. It is intended only for an owner-only hosting window, requires exact-origin token verification and a matching read-only account-state preflight, uses the same reset transaction, records count-only audit metadata, and must be disabled by removing the deployment token immediately after use.
 - A user may defer the personal-password change after activation. In that state the shared temporary credential remains valid and the account exposes a persistent recommendation flag; saving a personal password clears the flag and revokes other sessions.
 
 ## Required Controls Before Production Identity
