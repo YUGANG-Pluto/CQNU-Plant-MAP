@@ -1,3 +1,5 @@
+const { createHash } = require('node:crypto');
+
 async function requestJson(request) {
   const chunks = [];
   for await (const chunk of request) chunks.push(chunk);
@@ -20,13 +22,14 @@ function seedCloudProjects() {
     zones: [{ id: 'cloud-zone', name: 'Cloud Zone' }],
     points: [{ id: 'cloud-point', zoneId: 'cloud-zone', plantNameSci: 'Planta cloudensis' }]
   };
+  const serialized = JSON.stringify(snapshot);
   const metadata = {
     id: 'cloud-project-smoke',
     name: 'Cloud smoke project',
     revision: 1,
     formatVersion: 1,
-    byteSize: 128,
-    contentSha256: 'a'.repeat(64),
+    byteSize: Buffer.byteLength(serialized),
+    contentSha256: createHash('sha256').update(serialized, 'utf8').digest('hex'),
     createdAt: '2026-08-28T08:00:00.000Z',
     updatedAt: '2026-08-28T08:00:00.000Z'
   };
@@ -64,15 +67,24 @@ function usage(projects) {
   };
 }
 
-function saveRevision(project, snapshot) {
+function saveRevision(project, snapshot, forceRevision = false) {
+  const serialized = JSON.stringify(snapshot);
+  const byteSize = Buffer.byteLength(serialized);
+  const contentSha256 = createHash('sha256').update(serialized, 'utf8').digest('hex');
+  if (!forceRevision
+    && project.metadata.revision > 0
+    && project.metadata.byteSize === byteSize
+    && project.metadata.contentSha256 === contentSha256) {
+    return project.metadata;
+  }
   const revision = project.metadata.revision + 1;
   const now = new Date().toISOString();
   project.snapshot = snapshot;
   project.metadata = {
     ...project.metadata,
     revision,
-    byteSize: Buffer.byteLength(JSON.stringify(snapshot)),
-    contentSha256: String(revision % 10).repeat(64),
+    byteSize,
+    contentSha256,
     updatedAt: now
   };
   project.revisions.set(revision, {
@@ -233,7 +245,7 @@ function createCloudProjectSmokeApi() {
         }
         sendJson(response, 200, {
           ok: true,
-          data: { project: saveRevision(project, structuredClone(historical.snapshot)) }
+          data: { project: saveRevision(project, structuredClone(historical.snapshot), true) }
         });
         return true;
       }
@@ -276,6 +288,7 @@ async function runCloudProjectRoundtrip(window) {
       window.__CQNU_STATE__.points[0].images = ['images/cloud-point.jpg'];
       const snapshot = window.projectRendererBridge.snapshot();
       const saved = await client.save(remote.metadata.id, remote.metadata.revision, snapshot);
+      const duplicate = await client.save(remote.metadata.id, saved.revision, snapshot);
       const history = await client.revisions(remote.metadata.id);
       const restored = await client.restore(remote.metadata.id, 1, saved.revision);
       const renamed = await client.rename(remote.metadata.id, restored.revision, 'Renamed cloud smoke');
@@ -296,6 +309,7 @@ async function runCloudProjectRoundtrip(window) {
         listed: listed.length,
         initialUsageProjects: initialUsage.projectCount,
         savedRevision: saved.revision,
+        duplicateRevision: duplicate.revision,
         historyRevisions: history.map(item => item.revision),
         restoredRevision: restored.revision,
         renamedName: renamed.name,

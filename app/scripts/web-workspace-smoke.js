@@ -425,7 +425,10 @@ async function run() {
     }
     if (!result.mapReady) failures.push('Leaflet map did not initialize');
     if (!result.projectWorkflowReady) failures.push('typed project workflow bridge is unavailable in the web runtime');
-    if (!cloudResult.clientReady || cloudResult.listed < 1 || cloudResult.savedRevision !== 2) {
+    if (
+      !cloudResult.clientReady || cloudResult.listed < 1 ||
+      cloudResult.savedRevision !== 2 || cloudResult.duplicateRevision !== 2
+    ) {
       failures.push(`cloud project API round trip: ${JSON.stringify(cloudResult)}`);
     }
     if (

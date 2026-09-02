@@ -37,6 +37,17 @@ test('cloud project snapshots preserve project records and pass integrity verifi
   const loaded = await projects.read('account-a', created.id);
   assert.equal(loaded.snapshot.settings.unknownSetting.retained, true);
   assert.equal(loaded.snapshot.zones[0].unknownZoneField, 7);
+
+  const duplicate = await projects.save({
+    ownerId: 'account-a',
+    actorId: 'account-a',
+    projectId: created.id,
+    expectedRevision: saved.revision,
+    snapshot: original
+  });
+  assert.equal(duplicate.revision, saved.revision);
+  assert.equal(duplicate.contentSha256, saved.contentSha256);
+  assert.deepEqual((await projects.revisions('account-a', created.id)).map(item => item.revision), [1]);
 });
 
 test('cloud project writes reject stale revisions and cross-account reads', async () => {
@@ -55,6 +66,26 @@ test('cloud project writes reject stale revisions and cross-account reads', asyn
     /CLOUD_PROJECT_CONFLICT/
   );
   await assert.rejects(projects.read('account-b', created.id), /CLOUD_PROJECT_NOT_FOUND/);
+});
+
+test('restoring an identical historical snapshot still creates an explicit revision', async () => {
+  const projects = service();
+  const created = await projects.create('account-a', 'Explicit restore');
+  const snapshot = { settings: { projectName: 'Same records' }, zones: [], points: [] };
+  const saved = await projects.save({
+    ownerId: 'account-a', actorId: 'account-a', projectId: created.id,
+    expectedRevision: 0, snapshot
+  });
+
+  const restored = await projects.restore(
+    'account-a', 'account-a', created.id, saved.revision, saved.revision
+  );
+  assert.equal(restored.revision, 2);
+  assert.equal(restored.contentSha256, saved.contentSha256);
+  assert.deepEqual(
+    (await projects.revisions('account-a', created.id)).map(item => item.revision),
+    [2, 1]
+  );
 });
 
 test('cloud project snapshots enforce the bounded upload size', async () => {

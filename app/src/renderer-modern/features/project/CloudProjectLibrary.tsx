@@ -8,7 +8,6 @@ import {
   Pencil,
   Plus,
   RefreshCw,
-  RotateCcw,
   Trash2,
   ShieldCheck
 } from 'lucide-preact';
@@ -19,6 +18,15 @@ import type {
   ProjectRendererBridge
 } from '../../../shared/types/cloud-projects';
 import { LayerModal } from '../../components/LayerModal';
+import { CloudProjectHistory } from './CloudProjectHistory';
+import {
+  EMPTY_CLOUD_PROJECT_USAGE,
+  formatCloudProjectBytes,
+  formatCloudProjectDate,
+  inspectCloudProjectUpload,
+  isCloudProjectConflict,
+  readCloudProjectLibraryState
+} from './cloudProjectLibraryModel';
 import { useSiteCloudProjectClient } from './useSiteCloudProjectClient';
 
 declare global {
@@ -38,31 +46,6 @@ function text(key: string, fallback: string): string {
   return translated && translated !== key ? translated : fallback;
 }
 
-function formatBytes(value: number): string {
-  if (!value) return '0 B';
-  if (value < 1024) return `${value} B`;
-  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KiB`;
-  return `${(value / (1024 * 1024)).toFixed(2)} MiB`;
-}
-
-function formatDate(value: string): string {
-  const date = new Date(value);
-  return Number.isFinite(date.getTime())
-    ? new Intl.DateTimeFormat(document.documentElement.lang || 'zh-CN', {
-      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-    }).format(date)
-    : '—';
-}
-
-const EMPTY_USAGE: CloudProjectUsage = Object.freeze({
-  projectCount: 0,
-  maxProjects: 25,
-  currentBytes: 0,
-  versionBytes: 0,
-  maxSnapshotBytes: 8 * 1024 * 1024,
-  updatedAt: null
-});
-
 export function openCloudProjectLibrary(): void {
   window.dispatchEvent(new CustomEvent('cqnu:cloud-projects-open'));
   const modal = document.getElementById('cloudProjectLibraryModal');
@@ -76,7 +59,7 @@ export function CloudProjectLibrary() {
   const client = useSiteCloudProjectClient();
   const canSave = Boolean(window.managementAccess?.capabilities.includes('workspace.save'));
   const [projects, setProjects] = useState<CloudProjectMetadata[]>([]);
-  const [usage, setUsage] = useState<CloudProjectUsage>(EMPTY_USAGE);
+  const [usage, setUsage] = useState<CloudProjectUsage>(EMPTY_CLOUD_PROJECT_USAGE);
   const [historyProjectId, setHistoryProjectId] = useState('');
   const [revisions, setRevisions] = useState<CloudProjectRevisionMetadata[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -97,7 +80,7 @@ export function CloudProjectLibrary() {
     try {
       const [result, nextUsage] = await Promise.all([client.list(), client.usage()]);
       setProjects(result);
-      setUsage(nextUsage || EMPTY_USAGE);
+      setUsage(nextUsage || EMPTY_CLOUD_PROJECT_USAGE);
       setTone('neutral');
       setStatus(result.length
         ? text('cloudProjectReady', '云项目已更新。')
@@ -120,8 +103,6 @@ export function CloudProjectLibrary() {
     () => [...projects].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
     [projects]
   );
-  const historyProject = projects.find(project => project.id === historyProjectId) || null;
-
   if (!client) return null;
 
   function replaceProject(updated: CloudProjectMetadata) {
@@ -144,6 +125,27 @@ export function CloudProjectLibrary() {
 
   function refreshOpenHistory(projectId: string): Promise<CloudProjectRevisionMetadata[]> | Promise<void> {
     return historyProjectId === projectId ? refreshRevisions(projectId) : Promise.resolve();
+  }
+
+  async function recoverFromConflict(error: unknown, projectId: string): Promise<boolean> {
+    if (!isCloudProjectConflict(error)) return false;
+    try {
+      const next = await readCloudProjectLibraryState(client!, historyProjectId === projectId ? projectId : '');
+      setProjects(next.projects);
+      setUsage(next.usage);
+      if (next.revisions) setRevisions(next.revisions);
+      setStatus(text(
+        'cloudProjectConflictRefreshed',
+        '云项目已有更新，本次操作未执行。已刷新远端版本，请先打开或比较最新副本后再试。'
+      ));
+    } catch {
+      setStatus(text(
+        'cloudProjectConflictRefreshFailed',
+        '云项目已有更新，本次操作未执行；远端状态刷新失败，请手动刷新后再试。'
+      ));
+    }
+    setTone('error');
+    return true;
   }
 
   async function createProject(event: Event) {
@@ -175,14 +177,34 @@ export function CloudProjectLibrary() {
     setTone('busy');
     setStatus(text('cloudProjectUploading', '正在上传当前项目记录…'));
     try {
-      const updated = await client!.save(project.id, project.revision, snapshot);
+      const inspected = await inspectCloudProjectUpload(snapshot, usage.maxSnapshotBytes);
+      if (inspected.exceedsLimit) {
+        setTone('error');
+        setStatus(text(
+          'cloudProjectUploadTooLarge',
+          `当前项目快照为 ${formatCloudProjectBytes(inspected.byteSize)}，超过单版本上限 ${formatCloudProjectBytes(usage.maxSnapshotBytes)}，未发起上传。`
+        )
+          .replace('{size}', formatCloudProjectBytes(inspected.byteSize))
+          .replace('{limit}', formatCloudProjectBytes(usage.maxSnapshotBytes)));
+        return;
+      }
+      const updated = await client!.save(project.id, project.revision, inspected.snapshot);
+      const unchanged = updated.revision === project.revision
+        && updated.contentSha256 === inspected.contentSha256;
       replaceProject(updated);
       await Promise.all([refreshUsage(), refreshOpenHistory(updated.id)]);
-      setTone('success');
-      setStatus(text('cloudProjectUploaded', '当前记录已保存为新的云端版本。'));
+      setTone(unchanged ? 'neutral' : 'success');
+      setStatus(unchanged
+        ? text(
+          'cloudProjectUploadUnchanged',
+          `当前记录与云端 v${project.revision} 内容一致，未创建重复版本。`
+        ).replace('{revision}', String(project.revision))
+        : text('cloudProjectUploaded', '当前记录已保存为新的云端版本。'));
     } catch (error) {
-      setTone('error');
-      setStatus(error instanceof Error ? error.message : text('cloudProjectUploadFailed', '云项目上传失败。'));
+      if (!await recoverFromConflict(error, project.id)) {
+        setTone('error');
+        setStatus(error instanceof Error ? error.message : text('cloudProjectUploadFailed', '云项目上传失败。'));
+      }
     } finally {
       setBusyId('');
     }
@@ -215,8 +237,10 @@ export function CloudProjectLibrary() {
       setTone('success');
       setStatus(text('cloudProjectRenamed', '云项目名称已更新。'));
     } catch (error) {
-      setTone('error');
-      setStatus(error instanceof Error ? error.message : text('cloudProjectRenameFailed', '云项目重命名失败。'));
+      if (!await recoverFromConflict(error, project.id)) {
+        setTone('error');
+        setStatus(error instanceof Error ? error.message : text('cloudProjectRenameFailed', '云项目重命名失败。'));
+      }
     } finally {
       setBusyId('');
     }
@@ -263,8 +287,10 @@ export function CloudProjectLibrary() {
       setTone('success');
       setStatus(text('cloudProjectRestored', '历史记录已恢复为新的云端版本。'));
     } catch (error) {
-      setTone('error');
-      setStatus(error instanceof Error ? error.message : text('cloudProjectRestoreFailed', '历史版本恢复失败。'));
+      if (!await recoverFromConflict(error, project.id)) {
+        setTone('error');
+        setStatus(error instanceof Error ? error.message : text('cloudProjectRestoreFailed', '历史版本恢复失败。'));
+      }
     } finally {
       setBusyId('');
     }
@@ -304,8 +330,10 @@ export function CloudProjectLibrary() {
       setTone('success');
       setStatus(text('cloudProjectDeleted', '云项目及其版本历史已删除；本地工作副本保持不变。'));
     } catch (error) {
-      setTone('error');
-      setStatus(error instanceof Error ? error.message : text('cloudProjectDeleteFailed', '云项目删除失败。'));
+      if (!await recoverFromConflict(error, project.id)) {
+        setTone('error');
+        setStatus(error instanceof Error ? error.message : text('cloudProjectDeleteFailed', '云项目删除失败。'));
+      }
     } finally {
       setBusyId('');
     }
@@ -371,15 +399,15 @@ export function CloudProjectLibrary() {
         </div>
         <div>
           <span data-i18n="cloudProjectUsageCurrent">当前版本数据</span>
-          <strong>{formatBytes(usage.currentBytes)}</strong>
+          <strong>{formatCloudProjectBytes(usage.currentBytes)}</strong>
         </div>
         <div>
           <span data-i18n="cloudProjectUsageVersions">全部版本数据</span>
-          <strong>{formatBytes(usage.versionBytes)}</strong>
+          <strong>{formatCloudProjectBytes(usage.versionBytes)}</strong>
         </div>
         <div>
           <span data-i18n="cloudProjectUsageLimit">单版本上限</span>
-          <strong>{formatBytes(usage.maxSnapshotBytes)}</strong>
+          <strong>{formatCloudProjectBytes(usage.maxSnapshotBytes)}</strong>
         </div>
         <span
           class="cloud-project-usage-meter"
@@ -457,13 +485,13 @@ export function CloudProjectLibrary() {
                   ) : (
                     <>
                       <h3 title={project.name}>{project.name}</h3>
-                      <p>v{project.revision} · {formatBytes(project.byteSize)}</p>
+                      <p>v{project.revision} · {formatCloudProjectBytes(project.byteSize)}</p>
                     </>
                   )}
                 </div>
               </header>
               <dl>
-                <div><dt data-i18n="cloudProjectUpdated">更新</dt><dd>{formatDate(project.updatedAt)}</dd></div>
+                <div><dt data-i18n="cloudProjectUpdated">更新</dt><dd>{formatCloudProjectDate(project.updatedAt, document.documentElement.lang || 'zh-CN')}</dd></div>
                 <div><dt data-i18n="cloudProjectIntegrity">完整性</dt><dd>{project.contentSha256 ? project.contentSha256.slice(0, 10) : '—'}</dd></div>
               </dl>
               <div class="cloud-project-actions">
@@ -524,45 +552,16 @@ export function CloudProjectLibrary() {
                 ) : null}
               </div>
               {historyProjectId === project.id ? (
-                <section class="cloud-project-history" aria-label={text('cloudProjectHistoryTitle', `${project.name} 的版本历史`)}>
-                  <header>
-                    <div>
-                      <strong data-i18n="cloudProjectHistory">版本历史</strong>
-                      <span>{historyProject?.name}</span>
-                    </div>
-                    <small data-i18n="cloudProjectHistoryHint">恢复操作会创建新版本，不覆盖已有记录。</small>
-                  </header>
-                  {historyLoading ? (
-                    <p class="cloud-project-history-state" data-i18n="cloudProjectHistoryLoading">正在读取版本历史…</p>
-                  ) : revisions.length ? (
-                    <ol>
-                      {revisions.map(revision => (
-                        <li key={revision.revision}>
-                          <div>
-                            <strong>v{revision.revision}</strong>
-                            <span>{formatDate(revision.createdAt)} · {formatBytes(revision.byteSize)}</span>
-                            <small title={revision.contentSha256}>{revision.contentSha256.slice(0, 12)}</small>
-                          </div>
-                          {revision.revision === project.revision ? (
-                            <span class="cloud-project-current" data-i18n="cloudProjectCurrentVersion">当前版本</span>
-                          ) : canSave ? (
-                            <button
-                              class="btn btn-soft btn-compact"
-                              type="button"
-                              disabled={Boolean(busyId)}
-                              onClick={() => void restoreRevision(project, revision)}
-                            >
-                              <RotateCcw size={15} aria-hidden="true" />
-                              <span data-i18n="cloudProjectRestore">恢复为新版本</span>
-                            </button>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ol>
-                  ) : (
-                    <p class="cloud-project-history-state" data-i18n="cloudProjectHistoryEmpty">尚无已保存版本。</p>
-                  )}
-                </section>
+                <CloudProjectHistory
+                  ariaLabel={text('cloudProjectHistoryTitle', `${project.name} 的版本历史`)}
+                  projectName={project.name}
+                  currentRevision={project.revision}
+                  revisions={revisions}
+                  loading={historyLoading}
+                  canSave={canSave}
+                  busy={Boolean(busyId)}
+                  onRestore={revision => void restoreRevision(project, revision)}
+                />
               ) : null}
             </article>
           ))}

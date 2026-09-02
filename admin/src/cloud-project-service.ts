@@ -26,6 +26,7 @@ export interface SaveCloudProjectInput {
   projectId: string;
   expectedRevision: number;
   snapshot: unknown;
+  forceRevision?: boolean;
 }
 
 const defaultClock: CloudProjectClock = {
@@ -219,7 +220,7 @@ export class CloudProjectService {
     const stored = await this.#store.readRevisionOwned(ownerId, projectId, revision);
     if (!stored) throw new Error('CLOUD_PROJECT_REVISION_NOT_FOUND');
     const snapshot = await verifiedSnapshot(stored.serializedSnapshot, stored.metadata);
-    return this.save({ ownerId, actorId, projectId, expectedRevision, snapshot });
+    return this.save({ ownerId, actorId, projectId, expectedRevision, snapshot, forceRevision: true });
   }
 
   async save(input: SaveCloudProjectInput): Promise<CloudProjectMetadata> {
@@ -233,6 +234,13 @@ export class CloudProjectService {
     const serialized = JSON.stringify(snapshot);
     const byteSize = new TextEncoder().encode(serialized).byteLength;
     if (byteSize > CLOUD_PROJECT_MAX_BYTES) throw new Error('CLOUD_PROJECT_TOO_LARGE');
+    const contentSha256 = await sha256Hex(serialized);
+    if (!input.forceRevision
+      && current.revision > 0
+      && current.byteSize === byteSize
+      && current.contentSha256 === contentSha256) {
+      return publicMetadata(current);
+    }
     const createdAt = this.#clock.now().toISOString();
     return publicMetadata(await this.#store.writeRevision({
       projectId: input.projectId,
@@ -242,7 +250,7 @@ export class CloudProjectService {
       revision: input.expectedRevision + 1,
       formatVersion: CLOUD_PROJECT_FORMAT_VERSION,
       byteSize,
-      contentSha256: await sha256Hex(serialized),
+      contentSha256,
       createdAt,
       chunks: chunks(serialized)
     }));
