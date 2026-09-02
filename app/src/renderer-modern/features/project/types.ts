@@ -53,6 +53,9 @@ export interface ProjectLoadedData extends UnknownRecord {
   webDirectoryPermissionStatus?: string;
   webProjectSourceKind?: string;
   webExternalSqliteImported?: boolean;
+  webCloudProjectId?: string;
+  webCloudRevision?: number;
+  webCloudContentSha256?: string;
 }
 
 export interface ProjectSavePayload {
