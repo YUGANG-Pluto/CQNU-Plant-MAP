@@ -21,6 +21,13 @@ export interface CloudProjectDocument {
   snapshot: CloudProjectSnapshot | null;
 }
 
+export interface CloudProjectSourceMetadata {
+  projectId: string;
+  revision: number;
+  contentSha256: string;
+  syncedAt: string;
+}
+
 export interface CloudProjectRevisionMetadata {
   projectId: string;
   revision: number;
@@ -59,5 +66,7 @@ export interface SiteCloudProjectClient {
 export interface ProjectRendererBridge {
   readonly version: 'project-renderer-bridge-v1';
   snapshot(): CloudProjectSnapshot | null;
+  backupCurrentProject(label?: string): Promise<{ filePath: string }>;
+  updateCloudSource(metadata: CloudProjectMetadata): Promise<void>;
   importCloudProject(document: CloudProjectDocument): Promise<void>;
 }

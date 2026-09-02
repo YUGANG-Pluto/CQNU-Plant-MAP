@@ -13,6 +13,8 @@ function mirrorCompatibilityDataset(snapshot: Readonly<ProjectSessionSnapshot>):
   dataset.projectSession = snapshot.version;
   dataset.projectLoaded = String(snapshot.loaded);
   dataset.projectSourceKind = snapshot.sourceKind;
+  dataset.cloudProjectId = snapshot.cloudProjectId;
+  dataset.cloudProjectRevision = String(snapshot.cloudRevision);
   dataset.projectStorageFormat = snapshot.storageFormat;
   dataset.projectDirectoryPermission = snapshot.directoryPermissionStatus;
   dataset.projectDirectoryReconnect = String(snapshot.directoryReconnectRequired);
@@ -28,6 +30,9 @@ function projectLoadedDetail(snapshot: Readonly<ProjectSessionSnapshot>): Record
     storageFormat: snapshot.storageFormat,
     webAccessLevel: snapshot.accessLevel,
     sourceKind: snapshot.sourceKind,
+    cloudProjectId: snapshot.cloudProjectId,
+    cloudRevision: snapshot.cloudRevision,
+    cloudContentSha256: snapshot.cloudContentSha256,
     directoryPermissionStatus: snapshot.directoryPermissionStatus,
     directoryReconnectRequired: snapshot.directoryReconnectRequired,
     externalSqliteImported: snapshot.externalSqliteImported,

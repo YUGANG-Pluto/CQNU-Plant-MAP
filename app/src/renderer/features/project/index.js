@@ -165,6 +165,29 @@ if (typeof window !== 'undefined' && window.platformAdapter?.runtime === 'web' &
         if (typeof command !== 'function') throw new Error('当前工作区不支持云项目工作副本。');
         const selected = await callIpc(command({ document }));
         await loadProjectIntoRenderer(selected.projectDir, { storageFormat: 'sqlite' });
+      },
+      async backupCurrentProject(label = 'cloud_conflict') {
+        if (!state.projectDir || !state.settings) throw new Error('当前没有可备份的本地项目。');
+        await persistProject();
+        const payload = {
+          projectDir: state.projectDir,
+          backupDir: 'web://downloads',
+          label: String(label || 'cloud_conflict')
+        };
+        const data = window.projectWorkflow?.createBackup
+          ? await window.projectWorkflow.createBackup(payload)
+          : await callIpc(window.platformAdapter.backup.create(payload));
+        return { filePath: String(data.filePath || '') };
+      },
+      async updateCloudSource(metadata) {
+        const command = window.platformAdapter?.project?.updateCloudSource;
+        if (typeof command !== 'function') return;
+        await callIpc(command({ projectDir: state.projectDir, metadata }));
+        window.projectSessionStore?.setCloudSource(
+          String(metadata?.id || ''),
+          Number(metadata?.revision || 0),
+          String(metadata?.contentSha256 || '')
+        );
       }
     })
   });

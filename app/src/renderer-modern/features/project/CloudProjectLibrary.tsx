@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
 import {
   Cloud,
   CloudDownload,
@@ -8,38 +7,15 @@ import {
   Pencil,
   Plus,
   RefreshCw,
-  Trash2,
-  ShieldCheck
+  ShieldCheck,
+  Trash2
 } from 'lucide-preact';
-import type {
-  CloudProjectMetadata,
-  CloudProjectRevisionMetadata,
-  CloudProjectUsage,
-  ProjectRendererBridge
-} from '../../../shared/types/cloud-projects';
 import { LayerModal } from '../../components/LayerModal';
+import { CloudProjectConflict } from './CloudProjectConflict';
 import { CloudProjectHistory } from './CloudProjectHistory';
-import {
-  EMPTY_CLOUD_PROJECT_USAGE,
-  formatCloudProjectBytes,
-  formatCloudProjectDate,
-  inspectCloudProjectUpload,
-  isCloudProjectConflict,
-  readCloudProjectLibraryState
-} from './cloudProjectLibraryModel';
+import { formatCloudProjectBytes, formatCloudProjectDate } from './cloudProjectLibraryModel';
+import { useCloudProjectLibraryController } from './useCloudProjectLibraryController';
 import { useSiteCloudProjectClient } from './useSiteCloudProjectClient';
-
-declare global {
-  interface Window {
-    projectRendererBridge?: ProjectRendererBridge;
-    openConfirmDialog?(input: {
-      title?: string;
-      message?: string;
-      acceptLabel?: string;
-      cancelLabel?: string;
-    }): Promise<boolean>;
-  }
-}
 
 function text(key: string, fallback: string): string {
   const translated = window.t?.(key);
@@ -58,320 +34,8 @@ export function openCloudProjectLibrary(): void {
 export function CloudProjectLibrary() {
   const client = useSiteCloudProjectClient();
   const canSave = Boolean(window.managementAccess?.capabilities.includes('workspace.save'));
-  const [projects, setProjects] = useState<CloudProjectMetadata[]>([]);
-  const [usage, setUsage] = useState<CloudProjectUsage>(EMPTY_CLOUD_PROJECT_USAGE);
-  const [historyProjectId, setHistoryProjectId] = useState('');
-  const [revisions, setRevisions] = useState<CloudProjectRevisionMetadata[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [renameId, setRenameId] = useState('');
-  const [renameValue, setRenameValue] = useState('');
-  const [name, setName] = useState('');
-  const [status, setStatus] = useState('');
-  const [tone, setTone] = useState<'neutral' | 'busy' | 'success' | 'error'>('neutral');
-  const [busyId, setBusyId] = useState('');
-  const [loading, setLoading] = useState(false);
-  const currentSnapshot = window.projectRendererBridge?.snapshot() || null;
-
-  const refresh = useCallback(async () => {
-    if (!client) return;
-    setLoading(true);
-    setTone('busy');
-    setStatus(text('cloudProjectLoading', '正在读取云项目列表…'));
-    try {
-      const [result, nextUsage] = await Promise.all([client.list(), client.usage()]);
-      setProjects(result);
-      setUsage(nextUsage || EMPTY_CLOUD_PROJECT_USAGE);
-      setTone('neutral');
-      setStatus(result.length
-        ? text('cloudProjectReady', '云项目已更新。')
-        : text('cloudProjectEmpty', '当前账户还没有云项目。'));
-    } catch (error) {
-      setTone('error');
-      setStatus(error instanceof Error ? error.message : text('cloudProjectLoadFailed', '云项目列表读取失败。'));
-    } finally {
-      setLoading(false);
-    }
-  }, [client]);
-
-  useEffect(() => {
-    const onOpen = () => { void refresh(); };
-    window.addEventListener('cqnu:cloud-projects-open', onOpen);
-    return () => window.removeEventListener('cqnu:cloud-projects-open', onOpen);
-  }, [refresh]);
-
-  const sortedProjects = useMemo(
-    () => [...projects].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
-    [projects]
-  );
+  const controller = useCloudProjectLibraryController(client, canSave, text);
   if (!client) return null;
-
-  function replaceProject(updated: CloudProjectMetadata) {
-    setProjects(current => current.map(item => item.id === updated.id ? updated : item));
-  }
-
-  async function refreshUsage() {
-    try {
-      setUsage(await client!.usage());
-    } catch {
-      // The primary action remains successful if the supplemental usage read fails.
-    }
-  }
-
-  async function refreshRevisions(projectId: string) {
-    const nextRevisions = await client!.revisions(projectId);
-    if (historyProjectId === projectId) setRevisions(nextRevisions);
-    return nextRevisions;
-  }
-
-  function refreshOpenHistory(projectId: string): Promise<CloudProjectRevisionMetadata[]> | Promise<void> {
-    return historyProjectId === projectId ? refreshRevisions(projectId) : Promise.resolve();
-  }
-
-  async function recoverFromConflict(error: unknown, projectId: string): Promise<boolean> {
-    if (!isCloudProjectConflict(error)) return false;
-    try {
-      const next = await readCloudProjectLibraryState(client!, historyProjectId === projectId ? projectId : '');
-      setProjects(next.projects);
-      setUsage(next.usage);
-      if (next.revisions) setRevisions(next.revisions);
-      setStatus(text(
-        'cloudProjectConflictRefreshed',
-        '云项目已有更新，本次操作未执行。已刷新远端版本，请先打开或比较最新副本后再试。'
-      ));
-    } catch {
-      setStatus(text(
-        'cloudProjectConflictRefreshFailed',
-        '云项目已有更新，本次操作未执行；远端状态刷新失败，请手动刷新后再试。'
-      ));
-    }
-    setTone('error');
-    return true;
-  }
-
-  async function createProject(event: Event) {
-    event.preventDefault();
-    const nextName = name.trim();
-    if (!nextName || !canSave) return;
-    setBusyId('create');
-    setTone('busy');
-    setStatus(text('cloudProjectCreating', '正在创建云项目…'));
-    try {
-      const created = await client!.create(nextName);
-      setProjects(current => [created, ...current]);
-      setName('');
-      await refreshUsage();
-      setTone('success');
-      setStatus(text('cloudProjectCreated', '云项目已创建，可上传当前记录或打开空工作副本。'));
-    } catch (error) {
-      setTone('error');
-      setStatus(error instanceof Error ? error.message : text('cloudProjectCreateFailed', '云项目创建失败。'));
-    } finally {
-      setBusyId('');
-    }
-  }
-
-  async function uploadCurrent(project: CloudProjectMetadata) {
-    const snapshot = window.projectRendererBridge?.snapshot();
-    if (!snapshot || !canSave) return;
-    setBusyId(project.id);
-    setTone('busy');
-    setStatus(text('cloudProjectUploading', '正在上传当前项目记录…'));
-    try {
-      const inspected = await inspectCloudProjectUpload(snapshot, usage.maxSnapshotBytes);
-      if (inspected.exceedsLimit) {
-        setTone('error');
-        setStatus(text(
-          'cloudProjectUploadTooLarge',
-          `当前项目快照为 ${formatCloudProjectBytes(inspected.byteSize)}，超过单版本上限 ${formatCloudProjectBytes(usage.maxSnapshotBytes)}，未发起上传。`
-        )
-          .replace('{size}', formatCloudProjectBytes(inspected.byteSize))
-          .replace('{limit}', formatCloudProjectBytes(usage.maxSnapshotBytes)));
-        return;
-      }
-      const updated = await client!.save(project.id, project.revision, inspected.snapshot);
-      const unchanged = updated.revision === project.revision
-        && updated.contentSha256 === inspected.contentSha256;
-      replaceProject(updated);
-      await Promise.all([refreshUsage(), refreshOpenHistory(updated.id)]);
-      setTone(unchanged ? 'neutral' : 'success');
-      setStatus(unchanged
-        ? text(
-          'cloudProjectUploadUnchanged',
-          `当前记录与云端 v${project.revision} 内容一致，未创建重复版本。`
-        ).replace('{revision}', String(project.revision))
-        : text('cloudProjectUploaded', '当前记录已保存为新的云端版本。'));
-    } catch (error) {
-      if (!await recoverFromConflict(error, project.id)) {
-        setTone('error');
-        setStatus(error instanceof Error ? error.message : text('cloudProjectUploadFailed', '云项目上传失败。'));
-      }
-    } finally {
-      setBusyId('');
-    }
-  }
-
-  function beginRename(project: CloudProjectMetadata) {
-    setRenameId(project.id);
-    setRenameValue(project.name);
-  }
-
-  function cancelRename() {
-    setRenameId('');
-    setRenameValue('');
-  }
-
-  async function renameProject(event: Event, project: CloudProjectMetadata) {
-    event.preventDefault();
-    const nextName = renameValue.trim();
-    if (!nextName || nextName === project.name || !canSave) {
-      cancelRename();
-      return;
-    }
-    setBusyId(`${project.id}:rename`);
-    setTone('busy');
-    setStatus(text('cloudProjectRenaming', '正在重命名云项目…'));
-    try {
-      const updated = await client!.rename(project.id, project.revision, nextName);
-      replaceProject(updated);
-      cancelRename();
-      setTone('success');
-      setStatus(text('cloudProjectRenamed', '云项目名称已更新。'));
-    } catch (error) {
-      if (!await recoverFromConflict(error, project.id)) {
-        setTone('error');
-        setStatus(error instanceof Error ? error.message : text('cloudProjectRenameFailed', '云项目重命名失败。'));
-      }
-    } finally {
-      setBusyId('');
-    }
-  }
-
-  async function toggleHistory(project: CloudProjectMetadata) {
-    if (historyProjectId === project.id) {
-      setHistoryProjectId('');
-      setRevisions([]);
-      return;
-    }
-    setHistoryProjectId(project.id);
-    setRevisions([]);
-    setHistoryLoading(true);
-    try {
-      setRevisions(await client!.revisions(project.id));
-    } catch (error) {
-      setTone('error');
-      setStatus(error instanceof Error ? error.message : text('cloudProjectHistoryFailed', '版本历史读取失败。'));
-    } finally {
-      setHistoryLoading(false);
-    }
-  }
-
-  async function restoreRevision(project: CloudProjectMetadata, revision: CloudProjectRevisionMetadata) {
-    if (!canSave || revision.revision === project.revision) return;
-    const proceed = await window.openConfirmDialog?.({
-      title: text('cloudProjectRestoreTitle', '恢复历史版本'),
-      message: text(
-        'cloudProjectRestoreConfirm',
-        `将版本 v${revision.revision} 恢复为新的云端版本，现有版本历史不会被覆盖。是否继续？`
-      ).replace('{revision}', String(revision.revision)),
-      acceptLabel: text('cloudProjectRestore', '恢复为新版本'),
-      cancelLabel: text('cancelAction', '取消')
-    });
-    if (!proceed) return;
-    setBusyId(`${project.id}:restore:${revision.revision}`);
-    setTone('busy');
-    setStatus(text('cloudProjectRestoring', '正在校验并恢复历史版本…'));
-    try {
-      const updated = await client!.restore(project.id, revision.revision, project.revision);
-      replaceProject(updated);
-      await Promise.all([refreshUsage(), refreshOpenHistory(updated.id)]);
-      setTone('success');
-      setStatus(text('cloudProjectRestored', '历史记录已恢复为新的云端版本。'));
-    } catch (error) {
-      if (!await recoverFromConflict(error, project.id)) {
-        setTone('error');
-        setStatus(error instanceof Error ? error.message : text('cloudProjectRestoreFailed', '历史版本恢复失败。'));
-      }
-    } finally {
-      setBusyId('');
-    }
-  }
-
-  async function deleteProject(project: CloudProjectMetadata) {
-    if (!canSave || !window.openConfirmDialog) return;
-    const firstConfirmation = await window.openConfirmDialog({
-      title: text('cloudProjectDeleteTitle', '删除云项目'),
-      message: text(
-        'cloudProjectDeleteConfirm',
-        '删除后，该云项目及其全部历史版本将永久移除。当前浏览器中已打开的本地工作副本不会被删除。'
-      ),
-      acceptLabel: text('cloudProjectDeleteContinue', '继续删除'),
-      cancelLabel: text('cancelAction', '取消')
-    });
-    if (!firstConfirmation) return;
-    const finalConfirmation = await window.openConfirmDialog({
-      title: text('cloudProjectDeleteFinalTitle', '再次确认删除'),
-      message: text('cloudProjectDeleteFinalConfirm', `确定永久删除“${project.name}”及全部版本吗？`)
-        .replace('{name}', project.name),
-      acceptLabel: text('cloudProjectDelete', '永久删除'),
-      cancelLabel: text('cancelAction', '取消')
-    });
-    if (!finalConfirmation) return;
-    setBusyId(`${project.id}:delete`);
-    setTone('busy');
-    setStatus(text('cloudProjectDeleting', '正在删除云项目及其版本历史…'));
-    try {
-      await client!.remove(project.id, project.revision);
-      setProjects(current => current.filter(item => item.id !== project.id));
-      if (historyProjectId === project.id) {
-        setHistoryProjectId('');
-        setRevisions([]);
-      }
-      await refreshUsage();
-      setTone('success');
-      setStatus(text('cloudProjectDeleted', '云项目及其版本历史已删除；本地工作副本保持不变。'));
-    } catch (error) {
-      if (!await recoverFromConflict(error, project.id)) {
-        setTone('error');
-        setStatus(error instanceof Error ? error.message : text('cloudProjectDeleteFailed', '云项目删除失败。'));
-      }
-    } finally {
-      setBusyId('');
-    }
-  }
-
-  async function openProject(project: CloudProjectMetadata) {
-    const bridge = window.projectRendererBridge;
-    if (!bridge) {
-      setTone('error');
-      setStatus(text('cloudProjectBridgeUnavailable', '项目工作区尚未准备完成，请稍后重试。'));
-      return;
-    }
-    if (window.projectSessionStore?.getSnapshot().dirty) {
-      const proceed = await window.openConfirmDialog?.({
-        title: text('cloudProjectSwitchTitle', '切换到云项目'),
-        message: text('cloudProjectSwitchDirty', '当前项目有未保存修改。继续将放弃这些修改，是否切换？'),
-        acceptLabel: text('cloudProjectSwitchConfirm', '继续切换'),
-        cancelLabel: text('cancelAction', '取消')
-      });
-      if (!proceed) return;
-    }
-    setBusyId(project.id);
-    setTone('busy');
-    setStatus(text('cloudProjectOpening', '正在校验并建立本地工作副本…'));
-    try {
-      const cloudDocument = await client!.read(project.id);
-      await bridge.importCloudProject(cloudDocument);
-      setTone('success');
-      setStatus(text('cloudProjectOpened', '云项目已载入浏览器本地工作副本。'));
-      window.cqnuLayerManager?.close(document.getElementById('cloudProjectLibraryModal'));
-      window.cqnuLayerManager?.close(document.getElementById('projectImportModal'));
-    } catch (error) {
-      setTone('error');
-      setStatus(error instanceof Error ? error.message : text('cloudProjectOpenFailed', '云项目无法打开。'));
-    } finally {
-      setBusyId('');
-    }
-  }
 
   return (
     <LayerModal
@@ -395,48 +59,48 @@ export function CloudProjectLibrary() {
       <section class="cloud-project-usage" aria-label={text('cloudProjectUsageTitle', '云存储用量')}>
         <div>
           <span data-i18n="cloudProjectUsageProjects">项目配额</span>
-          <strong>{usage.projectCount} / {usage.maxProjects}</strong>
+          <strong>{controller.usage.projectCount} / {controller.usage.maxProjects}</strong>
         </div>
         <div>
           <span data-i18n="cloudProjectUsageCurrent">当前版本数据</span>
-          <strong>{formatCloudProjectBytes(usage.currentBytes)}</strong>
+          <strong>{formatCloudProjectBytes(controller.usage.currentBytes)}</strong>
         </div>
         <div>
           <span data-i18n="cloudProjectUsageVersions">全部版本数据</span>
-          <strong>{formatCloudProjectBytes(usage.versionBytes)}</strong>
+          <strong>{formatCloudProjectBytes(controller.usage.versionBytes)}</strong>
         </div>
         <div>
           <span data-i18n="cloudProjectUsageLimit">单版本上限</span>
-          <strong>{formatCloudProjectBytes(usage.maxSnapshotBytes)}</strong>
+          <strong>{formatCloudProjectBytes(controller.usage.maxSnapshotBytes)}</strong>
         </div>
         <span
           class="cloud-project-usage-meter"
           role="progressbar"
           aria-label={text('cloudProjectUsageProjects', '项目配额')}
           aria-valuemin={0}
-          aria-valuemax={usage.maxProjects}
-          aria-valuenow={usage.projectCount}
+          aria-valuemax={controller.usage.maxProjects}
+          aria-valuenow={controller.usage.projectCount}
         >
-          <i style={{ width: `${Math.min(100, (usage.projectCount / Math.max(1, usage.maxProjects)) * 100)}%` }} />
+          <i style={{ width: `${Math.min(100, (controller.usage.projectCount / Math.max(1, controller.usage.maxProjects)) * 100)}%` }} />
         </span>
       </section>
 
       <div class="cloud-project-toolbar">
         {canSave ? (
-          <form class="cloud-project-create" onSubmit={createProject}>
+          <form class="cloud-project-create" onSubmit={controller.createProject}>
             <label for="cloudProjectName" data-i18n="cloudProjectNameLabel">新项目名称</label>
             <div>
               <input
                 id="cloudProjectName"
-                value={name}
-                onInput={event => setName(event.currentTarget.value)}
+                value={controller.name}
+                onInput={event => controller.setName(event.currentTarget.value)}
                 maxLength={80}
                 autoComplete="off"
                 placeholder="例如：虎溪校区秋季调查"
                 data-i18n-placeholder="cloudProjectNamePlaceholder"
-                disabled={Boolean(busyId)}
+                disabled={Boolean(controller.busyId)}
               />
-              <button class="btn btn-primary" type="submit" disabled={!name.trim() || Boolean(busyId)}>
+              <button class="btn btn-primary" type="submit" disabled={!controller.name.trim() || Boolean(controller.busyId)}>
                 <Plus size={16} aria-hidden="true" />
                 <span data-i18n="cloudProjectCreate">创建数据库</span>
               </button>
@@ -445,128 +109,154 @@ export function CloudProjectLibrary() {
         ) : (
           <p class="cloud-project-readonly" data-i18n="cloudProjectReadOnly">当前账户为只读或草稿权限，可打开云项目，但不能建立或上传版本。</p>
         )}
-        <button class="btn btn-soft cloud-project-refresh" type="button" onClick={() => void refresh()} disabled={loading || Boolean(busyId)}>
+        <button
+          class="btn btn-soft cloud-project-refresh"
+          type="button"
+          onClick={() => void controller.refresh()}
+          disabled={controller.loading || Boolean(controller.busyId)}
+        >
           <RefreshCw size={16} aria-hidden="true" />
           <span data-i18n="cloudProjectRefresh">刷新</span>
         </button>
       </div>
 
-      <p class="cloud-project-status" data-tone={tone} role="status" aria-live="polite">{status}</p>
+      <p class="cloud-project-status" data-tone={controller.tone} role="status" aria-live="polite">{controller.status}</p>
 
-      {sortedProjects.length ? (
+      {controller.projects.length ? (
         <div class="cloud-project-grid" role="list">
-          {sortedProjects.map((project, index) => (
-            <article
-              key={project.id}
-              class={`cloud-project-card${historyProjectId === project.id ? ' has-history' : ''}`}
-              role="listitem"
-              style={{ '--cloud-card-order': String(index) }}
-            >
-              <header>
-                <span class="cloud-project-icon" aria-hidden="true"><Database size={19} /></span>
-                <div class="cloud-project-heading">
-                  {renameId === project.id ? (
-                    <form class="cloud-project-rename" onSubmit={event => void renameProject(event, project)}>
-                      <input
-                        value={renameValue}
-                        onInput={event => setRenameValue(event.currentTarget.value)}
-                        maxLength={80}
-                        aria-label={text('cloudProjectRenameLabel', '云项目名称')}
-                        disabled={Boolean(busyId)}
-                        autoFocus
-                      />
-                      <button class="btn btn-primary btn-compact" type="submit" disabled={!renameValue.trim() || Boolean(busyId)}>
-                        <span data-i18n="saveAction">保存</span>
-                      </button>
-                      <button class="btn btn-soft btn-compact" type="button" onClick={cancelRename} disabled={Boolean(busyId)}>
-                        <span data-i18n="cancelAction">取消</span>
-                      </button>
-                    </form>
-                  ) : (
-                    <>
-                      <h3 title={project.name}>{project.name}</h3>
-                      <p>v{project.revision} · {formatCloudProjectBytes(project.byteSize)}</p>
-                    </>
-                  )}
-                </div>
-              </header>
-              <dl>
-                <div><dt data-i18n="cloudProjectUpdated">更新</dt><dd>{formatCloudProjectDate(project.updatedAt, document.documentElement.lang || 'zh-CN')}</dd></div>
-                <div><dt data-i18n="cloudProjectIntegrity">完整性</dt><dd>{project.contentSha256 ? project.contentSha256.slice(0, 10) : '—'}</dd></div>
-              </dl>
-              <div class="cloud-project-actions">
-                <button
-                  class="btn btn-primary"
-                  type="button"
-                  data-cloud-project-open
-                  disabled={Boolean(busyId)}
-                  onClick={() => void openProject(project)}
-                >
-                  <CloudDownload size={16} aria-hidden="true" />
-                  <span data-i18n="cloudProjectOpen">打开副本</span>
-                </button>
-                {canSave ? (
+          {controller.projects.map((project, index) => {
+            const isActive = controller.activeCloudProjectId === project.id;
+            const hasConflict = controller.conflict?.project.id === project.id;
+            const expanded = controller.historyProjectId === project.id || hasConflict;
+            return (
+              <article
+                key={project.id}
+                class={`cloud-project-card${expanded ? ' has-history' : ''}${isActive ? ' is-active-copy' : ''}${hasConflict ? ' has-conflict' : ''}`}
+                role="listitem"
+                style={{ '--cloud-card-order': String(index) }}
+              >
+                <header>
+                  <span class="cloud-project-icon" aria-hidden="true"><Database size={19} /></span>
+                  <div class="cloud-project-heading">
+                    {controller.renameId === project.id ? (
+                      <form class="cloud-project-rename" onSubmit={event => void controller.renameProject(event, project)}>
+                        <input
+                          value={controller.renameValue}
+                          onInput={event => controller.setRenameValue(event.currentTarget.value)}
+                          maxLength={80}
+                          aria-label={text('cloudProjectRenameLabel', '云项目名称')}
+                          disabled={Boolean(controller.busyId)}
+                          autoFocus
+                        />
+                        <button class="btn btn-primary btn-compact" type="submit" disabled={!controller.renameValue.trim() || Boolean(controller.busyId)}>
+                          <span data-i18n="saveAction">保存</span>
+                        </button>
+                        <button class="btn btn-soft btn-compact" type="button" onClick={controller.cancelRename} disabled={Boolean(controller.busyId)}>
+                          <span data-i18n="cancelAction">取消</span>
+                        </button>
+                      </form>
+                    ) : (
+                      <>
+                        <div class="cloud-project-title-line">
+                          <h3 title={project.name}>{project.name}</h3>
+                          {isActive ? <span class="pill">{text('cloudProjectActiveCopy', '本地已打开')}</span> : null}
+                        </div>
+                        <p>v{project.revision} · {formatCloudProjectBytes(project.byteSize)}</p>
+                      </>
+                    )}
+                  </div>
+                </header>
+                <dl>
+                  <div><dt data-i18n="cloudProjectUpdated">更新</dt><dd>{formatCloudProjectDate(project.updatedAt, document.documentElement.lang || 'zh-CN')}</dd></div>
+                  <div><dt data-i18n="cloudProjectIntegrity">完整性</dt><dd>{project.contentSha256 ? project.contentSha256.slice(0, 10) : '—'}</dd></div>
+                </dl>
+                <div class="cloud-project-actions">
                   <button
-                    class="btn btn-soft"
+                    class="btn btn-primary"
                     type="button"
-                    disabled={!currentSnapshot || Boolean(busyId)}
-                    title={!currentSnapshot ? text('cloudProjectUploadRequiresLocal', '请先打开一个本地或云端项目。') : undefined}
-                    onClick={() => void uploadCurrent(project)}
+                    data-cloud-project-open
+                    disabled={Boolean(controller.busyId)}
+                    onClick={() => void controller.openProject(project)}
                   >
-                    <CloudUpload size={16} aria-hidden="true" />
-                    <span data-i18n="cloudProjectUpload">上传当前项目</span>
+                    <CloudDownload size={16} aria-hidden="true" />
+                    <span data-i18n="cloudProjectOpen">打开副本</span>
                   </button>
-                ) : null}
-                <button
-                  class="btn btn-soft cloud-project-utility"
-                  type="button"
-                  data-cloud-project-history
-                  aria-expanded={historyProjectId === project.id}
-                  disabled={Boolean(busyId) || historyLoading}
-                  onClick={() => void toggleHistory(project)}
-                >
-                  <History size={16} aria-hidden="true" />
-                  <span data-i18n="cloudProjectHistory">版本历史</span>
-                </button>
-                {canSave ? (
-                  <>
+                  {canSave ? (
                     <button
-                      class="btn btn-soft cloud-project-utility"
+                      class="btn btn-soft"
                       type="button"
-                      disabled={Boolean(busyId)}
-                      onClick={() => beginRename(project)}
+                      data-cloud-project-upload
+                      disabled={!controller.currentSnapshot || Boolean(controller.busyId)}
+                      title={!controller.currentSnapshot ? text('cloudProjectUploadRequiresLocal', '请先打开一个本地或云端项目。') : undefined}
+                      onClick={() => void controller.uploadCurrent(project)}
                     >
-                      <Pencil size={16} aria-hidden="true" />
-                      <span data-i18n="cloudProjectRename">重命名</span>
+                      <CloudUpload size={16} aria-hidden="true" />
+                      <span data-i18n="cloudProjectUpload">上传当前项目</span>
                     </button>
-                    <button
-                      class="btn btn-soft cloud-project-utility is-danger"
-                      type="button"
-                      disabled={Boolean(busyId)}
-                      onClick={() => void deleteProject(project)}
-                    >
-                      <Trash2 size={16} aria-hidden="true" />
-                      <span data-i18n="cloudProjectDelete">永久删除</span>
-                    </button>
-                  </>
+                  ) : null}
+                  <button
+                    class="btn btn-soft cloud-project-utility"
+                    type="button"
+                    data-cloud-project-history
+                    aria-expanded={controller.historyProjectId === project.id}
+                    disabled={Boolean(controller.busyId) || controller.historyLoading}
+                    onClick={() => void controller.toggleHistory(project)}
+                  >
+                    <History size={16} aria-hidden="true" />
+                    <span data-i18n="cloudProjectHistory">版本历史</span>
+                  </button>
+                  {canSave ? (
+                    <>
+                      <button
+                        class="btn btn-soft cloud-project-utility"
+                        type="button"
+                        disabled={Boolean(controller.busyId)}
+                        onClick={() => controller.beginRename(project)}
+                      >
+                        <Pencil size={16} aria-hidden="true" />
+                        <span data-i18n="cloudProjectRename">重命名</span>
+                      </button>
+                      <button
+                        class="btn btn-soft cloud-project-utility is-danger"
+                        type="button"
+                        disabled={Boolean(controller.busyId)}
+                        onClick={() => void controller.deleteProject(project)}
+                      >
+                        <Trash2 size={16} aria-hidden="true" />
+                        <span data-i18n="cloudProjectDelete">永久删除</span>
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+                {hasConflict && controller.conflict ? (
+                  <CloudProjectConflict
+                    conflict={controller.conflict}
+                    busy={Boolean(controller.busyId)}
+                    canBackup={controller.canBackupConflict}
+                    text={text}
+                    onCompare={() => void controller.compareConflict()}
+                    onKeepLocal={controller.keepLocalConflict}
+                    onOpenLatest={() => void controller.openLatestConflict(false)}
+                    onBackupAndOpen={() => void controller.openLatestConflict(true)}
+                  />
                 ) : null}
-              </div>
-              {historyProjectId === project.id ? (
-                <CloudProjectHistory
-                  ariaLabel={text('cloudProjectHistoryTitle', `${project.name} 的版本历史`)}
-                  projectName={project.name}
-                  currentRevision={project.revision}
-                  revisions={revisions}
-                  loading={historyLoading}
-                  canSave={canSave}
-                  busy={Boolean(busyId)}
-                  onRestore={revision => void restoreRevision(project, revision)}
-                />
-              ) : null}
-            </article>
-          ))}
+                {controller.historyProjectId === project.id ? (
+                  <CloudProjectHistory
+                    ariaLabel={text('cloudProjectHistoryTitle', `${project.name} 的版本历史`)}
+                    projectName={project.name}
+                    currentRevision={project.revision}
+                    revisions={controller.revisions}
+                    loading={controller.historyLoading}
+                    canSave={canSave}
+                    busy={Boolean(controller.busyId)}
+                    onRestore={revision => void controller.restoreRevision(project, revision)}
+                  />
+                ) : null}
+              </article>
+            );
+          })}
         </div>
-      ) : loading ? (
+      ) : controller.loading ? (
         <div class="cloud-project-skeleton" aria-hidden="true"><span /><span /><span /></div>
       ) : (
         <div class="cloud-project-empty">

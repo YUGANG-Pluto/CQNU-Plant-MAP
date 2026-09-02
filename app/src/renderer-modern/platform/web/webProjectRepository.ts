@@ -32,7 +32,14 @@ import {
 } from './webBackupArchive';
 import type { ImportedWebBackupArchive } from './webBackupImport';
 import { webProjectDir, type WebProjectSession } from '../webProject';
-import type { CloudProjectDocument } from '../../../shared/types/cloud-projects';
+import type {
+  CloudProjectDocument,
+  CloudProjectMetadata
+} from '../../../shared/types/cloud-projects';
+import {
+  cloudProjectSourceMetadata,
+  storedWebProjectFromCloud
+} from './webCloudProjectSource';
 
 interface ProjectContext {
   session: WebProjectSession;
@@ -89,6 +96,7 @@ function toStoredProject(session: WebProjectSession): StoredWebProject {
     label: session.label,
     modifiedAt: session.modifiedAt,
     sourceKind: session.sourceKind,
+    ...(session.cloudSource ? { cloudSource: clone(session.cloudSource) } : {}),
     settings: clone(session.settings),
     zones: clone(session.zones),
     points: clone(session.points)
@@ -102,6 +110,7 @@ function toSession(project: StoredWebProject): WebProjectSession {
     label: project.label,
     modifiedAt: project.modifiedAt,
     sourceKind: project.sourceKind,
+    ...(project.cloudSource ? { cloudSource: clone(project.cloudSource) } : {}),
     settings: clone(project.settings),
     zones: clone(project.zones),
     points: clone(project.points)
@@ -213,20 +222,7 @@ export class WebProjectRepository {
     document: CloudProjectDocument,
     persist = true
   ): Promise<WebProjectSession> {
-    const remoteId = String(document.metadata.id || '').trim();
-    if (!remoteId || !/^[A-Za-z0-9_-]{1,80}$/u.test(remoteId)) {
-      throw new Error('云项目标识无效。');
-    }
-    const snapshot = document.snapshot || { settings: {}, zones: [], points: [] };
-    const project: StoredWebProject = {
-      projectId: `cloud-${remoteId}`,
-      label: String(document.metadata.name || '').trim() || '云项目工作副本',
-      modifiedAt: Date.parse(document.metadata.updatedAt) || Date.now(),
-      sourceKind: 'cloud',
-      settings: clone(snapshot.settings || {}),
-      zones: clone(Array.isArray(snapshot.zones) ? snapshot.zones : []),
-      points: clone(Array.isArray(snapshot.points) ? snapshot.points : [])
-    };
+    const project = storedWebProjectFromCloud(document);
     if (persist) await (await this.database()).putProject(project);
     const session = toSession(project);
     this.#contexts.set(project.projectId, {
@@ -236,6 +232,27 @@ export class WebProjectRepository {
     });
     this.#activeProjectId = project.projectId;
     return clone(session);
+  }
+
+  async updateCloudSource(
+    projectDir: string,
+    metadata: CloudProjectMetadata
+  ) {
+    const projectId = projectIdFromDir(projectDir);
+    const remoteId = String(metadata.id || '').trim();
+    if (!projectId || projectId !== `cloud-${remoteId}`) {
+      throw new Error('当前本地副本与云项目不匹配，未更新来源标记。');
+    }
+    const database = await this.database();
+    const existing = await database.getProject(projectId);
+    if (!existing || existing.sourceKind !== 'cloud') {
+      throw new Error('当前项目不是云端工作副本，未更新来源标记。');
+    }
+    const cloudSource = cloudProjectSourceMetadata(metadata);
+    const stored = await database.putProject({ ...existing, cloudSource });
+    const context = this.#contexts.get(projectId);
+    if (context) this.#contexts.set(projectId, { ...context, session: toSession(stored) });
+    return clone(cloudSource);
   }
 
   async load(projectDir: string, preferredFormat: 'auto' | 'sqlite' | 'json' = 'auto'): Promise<WebProjectSession | null> {
@@ -334,6 +351,9 @@ export class WebProjectRepository {
       label: context?.session.label || existing?.label || '浏览器本地项目',
       modifiedAt,
       sourceKind: context?.session.sourceKind || existing?.sourceKind || 'opfs',
+      ...((context?.session.cloudSource || existing?.cloudSource)
+        ? { cloudSource: clone(context?.session.cloudSource || existing!.cloudSource!) }
+        : {}),
       settings: clone(input.settings),
       zones: clone(input.zones),
       points: clone(input.points)
@@ -479,13 +499,16 @@ export class WebProjectRepository {
       label: String(source.label || this.#contexts.get(projectId)?.session.label || '浏览器本地项目'),
       modifiedAt: Date.now(),
       sourceKind,
+      ...(source.cloudSource && typeof source.cloudSource === 'object' && !Array.isArray(source.cloudSource)
+        ? { cloudSource: clone(source.cloudSource as StoredWebProject['cloudSource']) }
+        : {}),
       settings: clone(source.settings && typeof source.settings === 'object' ? source.settings as WebProjectRecord : {}),
       zones: clone(Array.isArray(source.zones) ? source.zones as WebProjectRecord[] : []),
       points: clone(Array.isArray(source.points) ? source.points as WebProjectRecord[] : [])
     };
-    await (await this.database()).putProject(restored);
+    const persisted = await (await this.database()).putProject(restored);
     const context = this.#contexts.get(projectId);
-    const session = toSession(restored);
+    const session = toSession(persisted);
     this.#contexts.set(projectId, {
       session,
       directoryPermissionStatus: context?.directoryPermissionStatus || 'missing',

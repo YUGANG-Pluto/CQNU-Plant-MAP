@@ -278,6 +278,7 @@ async function runCloudProjectRoundtrip(window) {
       const initialUsage = await client.usage();
       const remote = await client.read(listed[0].id);
       await window.projectRendererBridge.importCloudProject(remote);
+      const importedSource = window.projectSessionStore?.getSnapshot();
       window.__CQNU_STATE__.settings.baseMaps = [{
         id: 'cloud-smoke-map',
         key: 'smoke-secret',
@@ -294,14 +295,50 @@ async function runCloudProjectRoundtrip(window) {
       const renamed = await client.rename(remote.metadata.id, restored.revision, 'Renamed cloud smoke');
       const temporary = await client.create('Temporary cloud smoke');
       await client.remove(temporary.id, temporary.revision);
-      const finalUsage = await client.usage();
       window.cqnuLayerManager.open(document.getElementById('projectImportModal'));
       document.getElementById('btnOpenCloudProjectLibrary')?.click();
-      await new Promise(resolve => setTimeout(resolve, 80));
+      const waitFor = async (selector, timeout = 3000) => {
+        const startedAt = Date.now();
+        while (Date.now() - startedAt < timeout) {
+          const element = document.querySelector(selector);
+          if (element) return element;
+          await new Promise(resolve => setTimeout(resolve, 40));
+        }
+        return null;
+      };
+      await waitFor('.cloud-project-card');
       const libraryModal = document.getElementById('cloudProjectLibraryModal');
       const importModal = document.getElementById('projectImportModal');
       const libraryOpen = libraryModal?.classList.contains('is-open') || false;
       const libraryCards = document.querySelectorAll('.cloud-project-card').length;
+      const activeCopyVisible = Boolean(document.querySelector('.cloud-project-card.is-active-copy'));
+
+      const latestBeforeConflict = await client.read(remote.metadata.id);
+      const remoteConflictSnapshot = structuredClone(latestBeforeConflict.snapshot);
+      remoteConflictSnapshot.settings.remoteConflictMarker = true;
+      const conflictRevision = await client.save(
+        remote.metadata.id,
+        latestBeforeConflict.metadata.revision,
+        remoteConflictSnapshot
+      );
+      window.__CQNU_STATE__.settings.localConflictMarker = true;
+      document.querySelector('.cloud-project-card [data-cloud-project-upload]')?.click();
+      const conflictPanel = await waitFor('[data-cloud-project-conflict]');
+      const conflictShown = Boolean(conflictPanel);
+      const conflictRect = conflictPanel?.getBoundingClientRect();
+      const conflictVisible = Boolean(conflictRect?.width && conflictRect?.height)
+        && getComputedStyle(conflictPanel).visibility === 'visible';
+      conflictPanel?.querySelector('[data-cloud-conflict-compare]')?.click();
+      const diffPanel = await waitFor('[data-cloud-project-conflict] .cloud-project-diff');
+      const conflictChangedCount = Number(diffPanel?.getAttribute('data-change-count') || 0);
+      const conflictActions = conflictPanel?.querySelectorAll('.cloud-project-conflict-actions button').length || 0;
+      const conflictBackupEnabled = !conflictPanel?.querySelector('[data-cloud-conflict-backup-open]')?.disabled;
+      const noAutoOverwrite = window.__CQNU_STATE__.settings.localConflictMarker === true
+        && window.__CQNU_STATE__.settings.remoteConflictMarker !== true;
+      conflictPanel?.querySelector('[data-cloud-conflict-keep]')?.click();
+      await new Promise(resolve => setTimeout(resolve, 40));
+      const conflictDismissed = !document.querySelector('[data-cloud-project-conflict]');
+      const finalUsage = await client.usage();
       window.cqnuLayerManager.close(libraryModal, { instant: true, restoreFocus: false });
       window.cqnuLayerManager.close(importModal, { instant: true, restoreFocus: false });
       return {
@@ -313,15 +350,28 @@ async function runCloudProjectRoundtrip(window) {
         historyRevisions: history.map(item => item.revision),
         restoredRevision: restored.revision,
         renamedName: renamed.name,
+        conflictRevision: conflictRevision.revision,
         finalUsageProjects: finalUsage.projectCount,
         sourceKind: window.projectSessionStore?.getSnapshot().sourceKind,
+        cloudProjectId: importedSource?.cloudProjectId || '',
+        cloudRevision: importedSource?.cloudRevision || 0,
+        cloudContentSha256: importedSource?.cloudContentSha256 || '',
         pointCount: window.__CQNU_STATE__?.points?.length || 0,
         sensitiveDataRemoved: snapshot.settings.baseMaps[0].key === ''
           && snapshot.settings.baseMaps[0].url.endsWith('?key={key}')
           && snapshot.settings.exportPath === '',
         relativeImageReferencePreserved: snapshot.points[0].images[0] === 'images/cloud-point.jpg',
         libraryOpen,
-        libraryCards
+        libraryCards,
+        activeCopyVisible,
+        conflictShown,
+        conflictVisible,
+        conflictChangedCount,
+        conflictActions,
+        conflictBackupEnabled,
+        noAutoOverwrite,
+        conflictDismissed,
+        conflictBackupApi: typeof window.projectRendererBridge.backupCurrentProject === 'function'
       };
     })()`,
     true

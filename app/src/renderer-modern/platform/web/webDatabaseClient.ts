@@ -110,6 +110,7 @@ export class WebDatabaseClient extends EventTarget {
       modifiedAt: project.modifiedAt,
       sourceKind: project.sourceKind,
       project: {
+        ...(project.cloudSource ? { cloudSource: project.cloudSource } : {}),
         settings: project.settings,
         zones: project.zones,
         points: project.points

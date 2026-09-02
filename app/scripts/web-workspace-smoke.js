@@ -440,7 +440,13 @@ async function run() {
     ) {
       failures.push(`cloud project lifecycle: ${JSON.stringify(cloudResult)}`);
     }
-    if (cloudResult.sourceKind !== 'cloud' || cloudResult.pointCount !== 1) {
+    if (
+      cloudResult.sourceKind !== 'cloud' ||
+      cloudResult.cloudProjectId !== 'cloud-project-smoke' ||
+      cloudResult.cloudRevision !== 1 ||
+      !cloudResult.cloudContentSha256 ||
+      cloudResult.pointCount !== 1
+    ) {
       failures.push(`cloud project working copy: ${cloudResult.sourceKind} / ${cloudResult.pointCount}`);
     }
     if (!cloudResult.sensitiveDataRemoved || !cloudResult.relativeImageReferencePreserved) {
@@ -448,6 +454,20 @@ async function run() {
     }
     if (!cloudResult.libraryOpen || cloudResult.libraryCards < 1) {
       failures.push(`cloud project library UI: ${cloudResult.libraryOpen} / ${cloudResult.libraryCards}`);
+    }
+    if (
+      cloudResult.conflictRevision !== 4 ||
+      !cloudResult.activeCopyVisible ||
+      !cloudResult.conflictShown ||
+      !cloudResult.conflictVisible ||
+      cloudResult.conflictChangedCount < 1 ||
+      cloudResult.conflictActions !== 4 ||
+      !cloudResult.conflictBackupEnabled ||
+      !cloudResult.noAutoOverwrite ||
+      !cloudResult.conflictDismissed ||
+      !cloudResult.conflictBackupApi
+    ) {
+      failures.push(`cloud project conflict workflow: ${JSON.stringify(cloudResult)}`);
     }
     if (result.runtimeStatus !== 'ready') failures.push(`runtime status: ${result.runtimeStatus}`);
     if (!result.siteHomeLink) failures.push('site homepage link is missing');
@@ -493,12 +513,13 @@ async function run() {
     failures.push(
       ...errors.filter(message => {
         if (message.includes('Failed to load resource')) return false;
+        if (/^HTTP 409 http:\/\/127\.0\.0\.1:\d+\/api\/projects\/cloud-project-smoke\/snapshot$/u.test(message)) return false;
         return !/^net::ERR_ABORTED https:\/\/[abc]\.tile\.openstreetmap\.org\//.test(message);
       })
     );
     if (failures.length) throw new Error(failures.join('\n'));
     process.stdout.write(
-      `web workspace smoke passed (login-to-workspace ${managementResult.loginReadyMs}ms; cloud project versions and lifecycle, typed import center, OPFS SQLite, direct read-only SQLite picker, lazy SQLite worker, trusted directory picker, local avatar, modal and statistics-fullscreen top-layer hit tests, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n`
+      `web workspace smoke passed (login-to-workspace ${managementResult.loginReadyMs}ms; cloud versions, conflict comparison and lifecycle, typed import center, OPFS SQLite, direct read-only SQLite picker, lazy SQLite worker, trusted directory picker, local avatar, modal and statistics-fullscreen top-layer hit tests, image backup restore, external ZIP contracts, multi-tab lock, log, and capability matrix)\n`
     );
   } catch (error) {
     failureStage = activeSmokeStage;

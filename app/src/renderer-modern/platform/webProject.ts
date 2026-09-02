@@ -1,4 +1,5 @@
 import type { ExternalSqliteFormat, WebProjectSourceKind } from './web/webDatabaseProtocol';
+import type { CloudProjectSourceMetadata } from '../../shared/types/cloud-projects';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -8,6 +9,7 @@ export interface WebProjectSession {
   label: string;
   modifiedAt: number;
   sourceKind: WebProjectSourceKind;
+  cloudSource?: CloudProjectSourceMetadata;
   settings: UnknownRecord;
   zones: UnknownRecord[];
   points: UnknownRecord[];

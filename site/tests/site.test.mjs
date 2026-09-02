@@ -202,6 +202,9 @@ test('site cloud project client is same-origin, CSRF protected, and explicit', a
   const client = await readFile(new URL('../src/cloud-projects.js', import.meta.url), 'utf8');
   const gate = await readFile(new URL('../src/workspace-gate.js', import.meta.url), 'utf8');
   const library = await readFile(new URL('../../app/src/renderer-modern/features/project/CloudProjectLibrary.tsx', import.meta.url), 'utf8');
+  const libraryController = await readFile(new URL('../../app/src/renderer-modern/features/project/useCloudProjectLibraryController.ts', import.meta.url), 'utf8');
+  const conflictPanel = await readFile(new URL('../../app/src/renderer-modern/features/project/CloudProjectConflict.tsx', import.meta.url), 'utf8');
+  const diffModel = await readFile(new URL('../../app/src/renderer-modern/features/project/cloudProjectDiff.ts', import.meta.url), 'utf8');
   const libraryModel = await readFile(new URL('../../app/src/renderer-modern/features/project/cloudProjectLibraryModel.ts', import.meta.url), 'utf8');
   const importCenter = await readFile(new URL('../../app/src/renderer-modern/features/project/ProjectImportCenter.tsx', import.meta.url), 'utf8');
   const clientHook = await readFile(new URL('../../app/src/renderer-modern/features/project/useSiteCloudProjectClient.ts', import.meta.url), 'utf8');
@@ -220,19 +223,26 @@ test('site cloud project client is same-origin, CSRF protected, and explicit', a
   assert.match(clientHook, /addEventListener\(CLOUD_PROJECTS_READY_EVENT/);
   assert.match(importCenter, /useSiteCloudProjectClient\(\)/);
   assert.match(library, /useSiteCloudProjectClient\(\)/);
+  assert.match(library, /useCloudProjectLibraryController/);
   assert.match(library, /cloudProjectUpload/);
-  assert.match(library, /projectRendererBridge\?\.snapshot/);
   assert.match(library, /workspace\.save/);
   assert.match(library, /cloudProjectHistory/);
-  assert.match(library, /cloudProjectRestore/);
-  assert.match(library, /cloudProjectDeleteFinalConfirm/);
-  assert.match(library, /client!\.usage/);
-  assert.match(library, /recoverFromConflict/);
-  assert.match(library, /inspectCloudProjectUpload/);
+  assert.match(library, /CloudProjectConflict/);
+  assert.match(libraryController, /projectRendererBridge\?\.snapshot/);
+  assert.match(libraryController, /cloudProjectRestore/);
+  assert.match(libraryController, /cloudProjectDeleteFinalConfirm/);
+  assert.match(libraryController, /client\.usage/);
+  assert.match(libraryController, /recoverFromConflict/);
+  assert.match(libraryController, /inspectCloudProjectUpload/);
+  assert.match(libraryController, /backupCurrentProject/);
+  assert.match(libraryController, /compareCloudProjectSnapshots/);
+  assert.match(conflictPanel, /data-cloud-conflict-backup-open/);
+  assert.match(diffModel, /changedCount/);
+  assert.doesNotMatch(diffModel, /document\.|window\.|HTMLElement/);
   assert.match(libraryModel, /CLOUD_PROJECT_CONFLICT/);
   assert.match(libraryModel, /SHA-256/);
   assert.match(libraryModel, /maxSnapshotBytes/);
-  assert.doesNotMatch(library, /window\.plantApp|ipcRenderer|child_process/);
+  assert.doesNotMatch(`${library}\n${libraryController}`, /window\.plantApp|ipcRenderer|child_process/);
 });
 
 test('cloud project schema is versioned, bounded, and owner scoped', async () => {

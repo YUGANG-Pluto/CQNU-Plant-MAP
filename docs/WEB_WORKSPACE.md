@@ -43,6 +43,8 @@ Only one tab can hold the browser database writer lock. If another workspace tab
 - Project listing, usage, reads, and version-history reads require `workspace.read`. Creating, uploading, renaming, restoring, or deleting a cloud project requires `workspace.save` plus exact-origin CSRF validation.
 - Projects are isolated by authenticated account. A project owned by another account is returned as not found rather than exposing its existence.
 - Each upload creates a monotonically increasing revision. A stale expected revision is rejected so a browser cannot silently overwrite a newer version.
+- A cloud working copy stores its source project ID, imported revision, digest, and synchronization time as browser-repository metadata beside the project document. This metadata is not added to `settings`, `zones`, or `points`, and older browser records remain readable without migration.
+- When a stale revision is detected, the workspace leaves both copies unchanged and offers a read-only comparison of top-level settings plus zone and point records. The user can keep the local copy, explicitly open the latest cloud copy, or download a local backup before opening it; there is no automatic conflict overwrite or record merge.
 - Restoring a historical revision verifies its stored digest and writes that snapshot as the next revision. Existing history remains immutable.
 - Permanent deletion requires two UI confirmations and removes the owner-scoped project, revisions, and chunks transactionally. It does not erase an OPFS working copy already open in the browser.
 - “Create database” creates one logical cloud project in the configured D1 binding. It does not provision a separate physical D1 database.

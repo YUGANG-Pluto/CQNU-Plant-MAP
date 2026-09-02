@@ -128,6 +128,18 @@ function sourceKind(value: unknown): StoredWebProject['sourceKind'] {
     : 'opfs';
 }
 
+function cloudSource(value: unknown): StoredWebProject['cloudSource'] | undefined {
+  const source = asRecord(value);
+  const projectId = text(source.projectId);
+  if (!projectId || !/^[A-Za-z0-9_-]{1,80}$/u.test(projectId)) return undefined;
+  return {
+    projectId,
+    revision: Math.max(0, Math.trunc(number(source.revision))),
+    contentSha256: text(source.contentSha256),
+    syncedAt: text(source.syncedAt)
+  };
+}
+
 function requireDatabase(): SqliteDatabase {
   if (!database) throw new Error('浏览器数据库尚未初始化。');
   return database;
@@ -161,11 +173,13 @@ function parseJson(value: unknown, fallback: unknown): unknown {
 
 function storedProjectFromRow(row: WebProjectRecord): StoredWebProject {
   const project = asRecord(parseJson(row.project_json, {}));
+  const source = cloudSource(project.cloudSource);
   return {
     projectId: text(row.project_id),
     label: text(row.label),
     modifiedAt: number(row.modified_at),
     sourceKind: sourceKind(row.source_kind),
+    ...(source ? { cloudSource: source } : {}),
     settings: asRecord(project.settings),
     zones: Array.isArray(project.zones) ? project.zones.filter(item => item && typeof item === 'object') as WebProjectRecord[] : [],
     points: Array.isArray(project.points) ? project.points.filter(item => item && typeof item === 'object') as WebProjectRecord[] : []
@@ -223,11 +237,13 @@ function initializeSqlite(): Promise<void> {
 function putProject(payload: unknown): StoredWebProject {
   const source = asRecord(payload);
   const project = asRecord(source.project);
+  const sourceMetadata = cloudSource(project.cloudSource);
   const stored: StoredWebProject = {
     projectId: text(source.projectId),
     label: text(source.label) || '浏览器本地项目',
     modifiedAt: number(source.modifiedAt, Date.now()),
     sourceKind: sourceKind(source.sourceKind),
+    ...(sourceMetadata ? { cloudSource: sourceMetadata } : {}),
     settings: asRecord(project.settings),
     zones: Array.isArray(project.zones) ? project.zones.filter(item => item && typeof item === 'object') as WebProjectRecord[] : [],
     points: Array.isArray(project.points) ? project.points.filter(item => item && typeof item === 'object') as WebProjectRecord[] : []
@@ -246,7 +262,12 @@ function putProject(payload: unknown): StoredWebProject {
       stored.label,
       stored.modifiedAt,
       stored.sourceKind,
-      JSON.stringify({ settings: stored.settings, zones: stored.zones, points: stored.points })
+      JSON.stringify({
+        ...(stored.cloudSource ? { cloudSource: stored.cloudSource } : {}),
+        settings: stored.settings,
+        zones: stored.zones,
+        points: stored.points
+      })
     ]
   );
   updateChannel?.postMessage({ type: 'project-changed', projectId: stored.projectId, modifiedAt: stored.modifiedAt });

@@ -86,10 +86,25 @@ test('cloud projects remain an explicit browser working-copy source', () => {
   store.setLoadedProject(loadedProject({
     projectDir: 'web://project/cloud-project-test',
     webProjectSourceKind: 'cloud',
-    webDirectoryPermissionStatus: 'unsupported'
+    webDirectoryPermissionStatus: 'unsupported',
+    webCloudProjectId: 'project-test',
+    webCloudRevision: 4,
+    webCloudContentSha256: 'abc123'
   }));
-  assert.equal(store.getSnapshot().sourceKind, 'cloud');
-  assert.equal(store.getSnapshot().connection, 'connected');
+  const snapshot = store.getSnapshot();
+  assert.equal(snapshot.sourceKind, 'cloud');
+  assert.equal(snapshot.connection, 'connected');
+  assert.equal(snapshot.cloudProjectId, 'project-test');
+  assert.equal(snapshot.cloudRevision, 4);
+  assert.equal(snapshot.cloudContentSha256, 'abc123');
+
+  store.setCloudSource('project-test', 5, 'def456');
+  assert.equal(store.getSnapshot().cloudRevision, 5);
+  assert.equal(store.getSnapshot().cloudContentSha256, 'def456');
+
+  store.setLoadedProject(loadedProject());
+  assert.equal(store.getSnapshot().cloudProjectId, '');
+  assert.equal(store.getSnapshot().cloudRevision, 0);
 });
 
 test('workflow and save transitions expose busy, error, and saved states', () => {

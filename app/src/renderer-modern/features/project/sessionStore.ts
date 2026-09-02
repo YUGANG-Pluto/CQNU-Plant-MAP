@@ -66,6 +66,9 @@ function initialSnapshot(runtime: PlatformRuntime, online: boolean): ProjectSess
     projectDir: '',
     storageFormat: 'auto',
     sourceKind: runtime === 'electron' ? 'desktop' : 'unknown',
+    cloudProjectId: '',
+    cloudRevision: 0,
+    cloudContentSha256: '',
     accessLevel: 'unknown',
     directoryPermissionStatus: 'unknown',
     directoryReconnectRequired: false,
@@ -111,6 +114,9 @@ export function createProjectSessionStore(
       projectDir: cleanText(input.projectDir),
       storageFormat,
       sourceKind: normalizeSource(input.webProjectSourceKind, storageFormat, runtime),
+      cloudProjectId: cleanText(input.webCloudProjectId),
+      cloudRevision: Math.max(0, Math.trunc(cleanTime(input.webCloudRevision))),
+      cloudContentSha256: cleanText(input.webCloudContentSha256),
       accessLevel: normalizeAccess(input.webAccessLevel),
       directoryPermissionStatus: permission,
       directoryReconnectRequired: reconnectRequired,
@@ -183,6 +189,14 @@ export function createProjectSessionStore(
         directoryPermissionStatus: permission,
         directoryReconnectRequired: reconnectRequired,
         connection: resolveConnection(runtime, snapshot.online, permission, reconnectRequired)
+      });
+    },
+    setCloudSource(projectId, revision, contentSha256) {
+      publish({
+        sourceKind: 'cloud',
+        cloudProjectId: cleanText(projectId),
+        cloudRevision: Math.max(0, Math.trunc(cleanTime(revision))),
+        cloudContentSha256: cleanText(contentSha256)
       });
     },
     reportError(errorCode) {

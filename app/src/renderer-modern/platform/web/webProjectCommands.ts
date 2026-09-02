@@ -31,6 +31,7 @@ export interface WebProjectCommands {
   readonly chooseSqliteFile: PlatformNoPayloadCommand;
   readonly chooseJsonFiles: PlatformNoPayloadCommand;
   readonly importCloudSnapshot: PlatformCommand;
+  readonly updateCloudSource: PlatformCommand;
   readonly chooseMergeDir: PlatformNoPayloadCommand;
   readonly load: PlatformCommand;
   readonly save: PlatformCommand;
@@ -173,10 +174,32 @@ export function createWebProjectCommands(
         storageFormat: 'sqlite',
         sourceKind: 'cloud',
         cloudProjectId: metadata.id,
-        cloudRevision: metadata.revision
+        cloudRevision: metadata.revision,
+        cloudContentSha256: metadata.contentSha256
       });
     } catch (error) {
       return failureFromError(error, 'WEB_CLOUD_PROJECT_IMPORT_FAILED', '云项目无法载入本地工作副本。');
+    }
+  }
+
+  async function updateCloudSource(payload?: unknown): Promise<PlatformResponse<UnknownRecord>> {
+    try {
+      access.requireSave();
+      const source = asRecord(payload);
+      const metadata = asRecord(source.metadata);
+      const updated = await repository.updateCloudSource(String(source.projectDir || ''), {
+        id: String(metadata.id || ''),
+        name: String(metadata.name || ''),
+        revision: Number(metadata.revision || 0),
+        formatVersion: 1,
+        byteSize: Number(metadata.byteSize || 0),
+        contentSha256: String(metadata.contentSha256 || ''),
+        createdAt: String(metadata.createdAt || ''),
+        updatedAt: String(metadata.updatedAt || '')
+      });
+      return success({ ...updated });
+    } catch (error) {
+      return failureFromError(error, 'WEB_CLOUD_SOURCE_UPDATE_FAILED', '云项目来源标记无法更新。');
     }
   }
 
@@ -219,6 +242,9 @@ export function createWebProjectCommands(
         webAccessLevel: access.managementAccess?.accessLevel || 'save',
         webStorageMode: 'opfs-sahpool',
         webProjectSourceKind: session.sourceKind,
+        webCloudProjectId: session.cloudSource?.projectId || '',
+        webCloudRevision: session.cloudSource?.revision || 0,
+        webCloudContentSha256: session.cloudSource?.contentSha256 || '',
         webExternalSqliteImported: session.sourceKind === 'sqlite',
         webExternalSqliteSourceUnchanged: session.sourceKind === 'sqlite',
         webDirectoryPermissionStatus: directoryPermissionStatus,
@@ -289,6 +315,7 @@ export function createWebProjectCommands(
     chooseSqliteFile: () => chooseImportedProject('sqlite-file'),
     chooseJsonFiles: () => chooseImportedProject('json-files'),
     importCloudSnapshot,
+    updateCloudSource,
     chooseMergeDir: chooseMergeProject,
     load: loadProject,
     save: saveProject,

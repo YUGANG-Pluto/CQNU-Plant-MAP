@@ -1,3 +1,5 @@
+import type { CloudProjectSourceMetadata } from '../../../shared/types/cloud-projects';
+
 export const WEB_DATABASE_SCHEMA_VERSION = 'cqnu-web-local-v1';
 export const WEB_DATABASE_FILE = '/cqnu-plant-map-web.sqlite3';
 export const WEB_DATABASE_LOCK = 'cqnu-plant-map-web-database';
@@ -18,6 +20,7 @@ export interface StoredWebProject extends WebProjectDocument {
   label: string;
   modifiedAt: number;
   sourceKind: WebProjectSourceKind;
+  cloudSource?: CloudProjectSourceMetadata;
 }
 
 export type ExternalSqliteFormat = 'desktop-project' | 'web-projects';

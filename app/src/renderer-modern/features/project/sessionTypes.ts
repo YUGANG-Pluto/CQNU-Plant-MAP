@@ -23,6 +23,9 @@ export interface ProjectSessionSnapshot {
   projectDir: string;
   storageFormat: ProjectStorageFormat;
   sourceKind: ProjectSessionSource;
+  cloudProjectId: string;
+  cloudRevision: number;
+  cloudContentSha256: string;
   accessLevel: ProjectSessionAccess;
   directoryPermissionStatus: ProjectDirectoryPermission;
   directoryReconnectRequired: boolean;
@@ -42,6 +45,9 @@ export interface ProjectSessionLoadedInput extends ProjectLoadedData {
   webDirectoryReconnectRequired?: boolean;
   webProjectSourceKind?: string;
   webExternalSqliteImported?: boolean;
+  webCloudProjectId?: string;
+  webCloudRevision?: number;
+  webCloudContentSha256?: string;
 }
 
 export interface ProjectSessionStore {
@@ -54,6 +60,7 @@ export interface ProjectSessionStore {
   setDirty(dirty: boolean): void;
   setOnline(online: boolean): void;
   setDirectoryPermission(status: string, reconnectRequired?: boolean): void;
+  setCloudSource(projectId: string, revision: number, contentSha256: string): void;
   reportError(errorCode: string): void;
   reset(): void;
 }
