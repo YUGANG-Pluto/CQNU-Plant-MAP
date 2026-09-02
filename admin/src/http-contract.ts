@@ -14,8 +14,6 @@ export interface AdminRouteContract {
 export const ADMIN_ROUTES = Object.freeze<AdminRouteContract[]>([
   { id: 'login', method: 'POST', path: '/api/manage/login', capability: null, mutatesState: true, csrfProtected: false, sessionRequired: false, allowPendingActivation: true },
   { id: 'reset.consume', method: 'POST', path: '/api/manage/password-reset/consume', capability: null, mutatesState: true, csrfProtected: false, sessionRequired: false, allowPendingActivation: true },
-  { id: 'owner-recovery.preflight', method: 'POST', path: '/api/manage/owner-recovery/reset-preflight', capability: null, mutatesState: false, csrfProtected: false, sessionRequired: false, allowPendingActivation: true },
-  { id: 'owner-recovery.reset-all', method: 'POST', path: '/api/manage/owner-recovery/reset-all-activation', capability: null, mutatesState: true, csrfProtected: false, sessionRequired: false, allowPendingActivation: true },
   { id: 'session.read', method: 'GET', path: '/api/manage/session', capability: null, mutatesState: false, csrfProtected: false, sessionRequired: true, allowPendingActivation: true },
   { id: 'session.heartbeat', method: 'POST', path: '/api/manage/session/heartbeat', capability: null, mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: true },
   { id: 'session.revoke', method: 'DELETE', path: '/api/manage/session', capability: null, mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: true },

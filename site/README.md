@@ -26,7 +26,6 @@ The Worker remains small because renderer bundles, SQLite Wasm, maps, styles, an
 - `CQNU_MANAGEMENT_AUTH_KEYRING` is required and must be a deployment secret containing JSON shaped as `{ "activeKeyId": "...", "keys": { "...": "base64url-key" } }`. Each key decodes to 32–64 random bytes; never store a real value in source control.
 - On an empty database, `CQNU_BOOTSTRAP_ADMIN_PASSWORD` and `CQNU_BOOTSTRAP_USER_PASSWORD` are required. Optional `CQNU_BOOTSTRAP_ADMIN_USERNAME` and `CQNU_BOOTSTRAP_USER_USERNAME` default to `admin` and `user`. Bootstrap accounts must replace temporary credentials before normal workspace access.
 - Existing D1 data is reused on later deployments. Removing bootstrap variables after first initialization does not remove accounts, while rotating the key ring must retain old keys until existing keyed records have expired or been replaced.
-- `CQNU_MANAGEMENT_OWNER_RECOVERY_TOKEN` is an optional incident-only secret for an owner-gated credential recovery window. Generate at least 32 random bytes, run the protected preflight before reset, and remove the secret followed by a redeploy immediately after use. It is never a standing administrator credential.
 
 ```powershell
 npm run package:sites

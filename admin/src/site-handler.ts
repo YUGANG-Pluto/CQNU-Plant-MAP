@@ -25,10 +25,6 @@ import {
   type ManagementWorkerEnvironment
 } from './management-runtime.js';
 import type { ManagementSessionData } from './management-ui-contracts.js';
-import {
-  handleOwnerRecoveryRequest,
-  type OwnerRecoveryHandlerOptions
-} from './owner-recovery.js';
 import { principalAllows } from './policy.js';
 import {
   ADMIN_CSRF_HEADER_NAME,
@@ -64,10 +60,10 @@ function jsonResponse(
 
 function errorStatus(code: string): number {
   if (code === 'LOGIN_FAILED' || code === 'SESSION_REQUIRED') return 401;
-  if (code === 'ADMIN_ACCESS_DENIED' || code === 'CAPABILITY_DENIED' || code === 'CSRF_DENIED' || code === 'OWNER_RECOVERY_DENIED') return 403;
-  if (code === 'ACCOUNT_NOT_FOUND' || code === 'ROUTE_DENIED' || code === 'OWNER_RECOVERY_UNAVAILABLE') return 404;
+  if (code === 'ADMIN_ACCESS_DENIED' || code === 'CAPABILITY_DENIED' || code === 'CSRF_DENIED') return 403;
+  if (code === 'ACCOUNT_NOT_FOUND' || code === 'ROUTE_DENIED') return 404;
   if (code === 'CLOUD_PROJECT_NOT_FOUND' || code === 'CLOUD_PROJECT_REVISION_NOT_FOUND') return 404;
-  if (code.includes('CONFLICT') || code === 'ACCOUNT_RESET_STATE_CHANGED' || code === 'ADMIN_LIMIT_REACHED' || code === 'LAST_ADMIN_REQUIRED' || code === 'CLOUD_PROJECT_LIMIT_REACHED') return 409;
+  if (code.includes('CONFLICT') || code === 'ADMIN_LIMIT_REACHED' || code === 'LAST_ADMIN_REQUIRED' || code === 'CLOUD_PROJECT_LIMIT_REACHED') return 409;
   if (code === 'REQUEST_BODY_TOO_LARGE' || code === 'CLOUD_PROJECT_TOO_LARGE') return 413;
   if (code === 'MANAGEMENT_SERVICE_UNAVAILABLE') return 503;
   if (code === 'CLOUD_PROJECT_STORAGE_UNAVAILABLE') return 503;
@@ -93,9 +89,6 @@ function publicError(code: string): { code: string; message: string } {
     ACCOUNT_UPDATE_CONFLICT: '账户信息已更新，请刷新后重试。',
     ACCOUNT_RESET_CONFIRMATION_INVALID: '全员重置确认信息不正确，操作未执行。',
     ACCOUNT_RESET_INVALID: '当前账户状态无法执行全员重置。',
-    ACCOUNT_RESET_STATE_CHANGED: '账户状态已变化，请重新执行恢复预检。',
-    OWNER_RECOVERY_DENIED: '所有者恢复请求验证失败。',
-    OWNER_RECOVERY_UNAVAILABLE: '所有者恢复通道未启用。',
     USERNAME_INVALID: '用户名需为 3 至 32 位字母、数字、点、下划线或短横线。',
     MANAGEMENT_SERVICE_UNAVAILABLE: '管理服务尚未完成安全配置。',
     REQUEST_BODY_TOO_LARGE: '提交的数据超过允许大小。',
@@ -206,8 +199,6 @@ function actionForRoute(route: AdminRouteContract): AdminAuditAction {
     'profile.password': 'account.password.change',
     'members.reset': 'account.password.reset.issue',
     'members.reset-all': 'account.identity.reset-all',
-    'owner-recovery.preflight': 'site.read',
-    'owner-recovery.reset-all': 'account.identity.reset-all',
     'cloud-projects.list': 'workspace.read',
     'cloud-projects.read': 'workspace.read',
     'cloud-projects.usage': 'workspace.read',
@@ -285,10 +276,7 @@ async function accountForSession(
   };
 }
 
-export function createManagementRequestHandler(
-  runtime: ManagementRequestRuntime,
-  options: OwnerRecoveryHandlerOptions = {}
-) {
+export function createManagementRequestHandler(runtime: ManagementRequestRuntime) {
   return async function handle(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname.length > 1 && url.pathname.endsWith('/')
@@ -301,25 +289,6 @@ export function createManagementRequestHandler(
     let auditPrincipalId = 'anonymous';
 
     try {
-      const recoveryResponse = await handleOwnerRecoveryRequest({
-        request,
-        routeId: route.id,
-        expectedOrigin: url.origin,
-        runtime,
-        ownerRecoveryToken: options.ownerRecoveryToken,
-        respond: jsonResponse,
-        onAuthorized: () => { auditPrincipalId = 'site-owner-recovery'; },
-        audit: summary => appendAudit(runtime, {
-          principalId: 'site-owner-recovery',
-          route,
-          outcome: 'allowed',
-          requestId,
-          statusCode: 200,
-          ...summary
-        })
-      });
-      if (recoveryResponse) return recoveryResponse;
-
       if (route.id === 'login') {
         const body = await readJson(request);
         const result = await runtime.accounts.login(
@@ -633,9 +602,7 @@ export async function handleManagementRequest(
   env: ManagementWorkerEnvironment
 ): Promise<Response> {
   try {
-    return await createManagementRequestHandler(await productionManagementRuntime(env), {
-      ownerRecoveryToken: env.CQNU_MANAGEMENT_OWNER_RECOVERY_TOKEN
-    })(request);
+    return await createManagementRequestHandler(await productionManagementRuntime(env))(request);
   } catch (error) {
     console.error(JSON.stringify({
       event: 'management.request.failed',
