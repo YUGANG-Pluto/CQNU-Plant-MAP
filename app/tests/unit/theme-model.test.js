@@ -5,25 +5,32 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const ts = require('typescript');
 
-function loadThemeModel() {
-  const filePath = path.join(process.cwd(), 'src/renderer-modern/features/theme/model.ts');
-  const source = fs.readFileSync(filePath, 'utf8');
-  const output = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2022,
-      strict: true
-    },
-    fileName: filePath
-  }).outputText;
-  const loaded = new Module(filePath, module);
-  loaded.filename = filePath;
-  loaded.paths = Module._nodeModulePaths(path.dirname(filePath));
-  loaded._compile(output, filePath);
-  return loaded.exports;
+function loadTypeScriptModule(relativePath) {
+  const filePath = path.join(process.cwd(), relativePath);
+  const previousLoader = Module._extensions['.ts'];
+  Module._extensions['.ts'] = (loaded, dependencyPath) => {
+    const source = fs.readFileSync(dependencyPath, 'utf8');
+    const output = ts.transpileModule(source, {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2022,
+        strict: true
+      },
+      fileName: dependencyPath
+    }).outputText;
+    loaded._compile(output, dependencyPath);
+  };
+  try {
+    return require(filePath);
+  } finally {
+    if (previousLoader) Module._extensions['.ts'] = previousLoader;
+    else delete Module._extensions['.ts'];
+  }
 }
 
-const theme = loadThemeModel();
+const theme = loadTypeScriptModule('src/renderer-modern/features/theme/model.ts');
+const themeColor = loadTypeScriptModule('src/renderer-modern/features/theme/color.ts');
+const themeDocument = loadTypeScriptModule('src/renderer-modern/features/theme/document.ts');
 
 test('theme defaults use the scientific white design', () => {
   const value = theme.createThemeDefaults();
@@ -116,4 +123,45 @@ test('legacy custom motion durations are raised to the new perceptible minimum',
   assert.equal(motion.fadeDuration, 440);
   assert.equal(motion.transitionDuration, 580);
   assert.equal(motion.modalDuration, 720);
+});
+
+test('theme color utilities remain deterministic after module extraction', () => {
+  assert.deepEqual(themeColor.hexToHsl('#FFFFFF'), { h: 0, s: 0, l: 100 });
+  assert.equal(themeColor.hslToHex(0, 100, 50), '#FF0000');
+  assert.equal(themeColor.hexToRgba('#123456', 25), 'rgba(18, 52, 86, 0.25)');
+  assert.equal(themeColor.readableTextColor('#FFFFFF'), '#1D2926');
+  assert.equal(themeColor.readableTextColor('#000000'), '#FFFFFF');
+});
+
+test('theme document snapshot exposes stable classes, datasets, and motion variables', () => {
+  const value = theme.createThemeDefaults('liquid-glass');
+  const snapshot = structuredClone(value);
+  const documentTheme = themeDocument.createThemeDocumentSnapshot(value);
+
+  assert.deepEqual(value, snapshot);
+  assert.equal(documentTheme.datasets.uiStyle, 'liquid-glass');
+  assert.equal(documentTheme.datasets.motionProfile, 'expressive');
+  assert.equal(documentTheme.datasets.motionAmbient, 'true');
+  assert.ok(documentTheme.classes.includes('theme-liquid-glass'));
+  assert.ok(documentTheme.classes.includes('glass-mode-regular'));
+  assert.ok(documentTheme.classes.includes('motion-mode-expressive'));
+  assert.equal(documentTheme.variables['--motion-duration-fast'], '620ms');
+  assert.equal(documentTheme.variables['--motion-duration'], '860ms');
+  assert.equal(documentTheme.variables['--motion-duration-modal'], '1040ms');
+  assert.equal(documentTheme.variables['--primary'], value.tokens.primary);
+  Object.values(documentTheme.variables).forEach(displayValue => {
+    assert.doesNotMatch(displayValue, /(?:NaN|undefined|null)/);
+  });
+});
+
+test('disabled motion produces zero-duration document variables', () => {
+  const value = theme.createThemeDefaults();
+  value.motion = theme.createMotionSettings('off');
+  const documentTheme = themeDocument.createThemeDocumentSnapshot(value);
+
+  assert.ok(documentTheme.classes.includes('motion-disabled'));
+  assert.equal(documentTheme.datasets.motionAmbient, 'false');
+  assert.equal(documentTheme.variables['--motion-duration-fast'], '0ms');
+  assert.equal(documentTheme.variables['--motion-duration'], '0ms');
+  assert.equal(documentTheme.variables['--motion-duration-modal'], '0ms');
 });

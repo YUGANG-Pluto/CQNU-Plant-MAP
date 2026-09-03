@@ -27,7 +27,7 @@ function testMaintenanceCenterContract() {
     'src/renderer/features/stats/export.js',
     'src/renderer/features/stats/index.js'
   ]);
-  const themeSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/features/theme/runtime.ts'), 'utf8');
+  const themeSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/features/theme/controller.ts'), 'utf8');
 
   [
     'btnOpenMaintenance',

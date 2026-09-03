@@ -91,6 +91,7 @@ Renderer code calls `window.plantApp`. `electron/preload/index.ts` maps those ca
 - `renderer-modern/features/query`: typed read-only query filters, completeness flags, and immutable result modeling behind the existing query UI.
 - `renderer-modern/features/review`: typed issue calculation and workbench session control behind the existing localized review UI.
 - `renderer-modern/features/project`: typed browser project workflow, owner-scoped cloud project library, conflict handling, and read-only version comparison.
+- `renderer-modern/features/theme`: typed contracts, presets, normalization, color utilities, document projection, and UI control behind a small legacy bridge.
 
 Large renderer domains are split by responsibility. Statistics separates controls, views, exports, workspace summaries, and pure research calculations. Maintenance separates health and repair, logs and settings, and storage conversion. Basemap handling separates configuration, layer rendering, overlays, and diagnostics. Locale dictionaries use the same domain split in Chinese and English.
 
@@ -119,4 +120,4 @@ Hosted browser tools are static repository code. Their manifest declares local f
 
 ## Migration Boundary
 
-The modern Preact shell owns markup and theme presentation. Existing renderer business functions remain behind a compatibility loader until each feature can be converted without changing project data behavior. New work should use TypeScript for Electron boundaries and Preact-owned UI, preserve the named IPC contract, and avoid direct Node access in renderer code.
+The modern Preact shell owns markup and theme presentation. Theme settings are normalized without DOM access, projected to document classes and CSS variables in a dedicated module, and exposed to compatibility callers through a small runtime bridge. Existing renderer business functions remain behind a compatibility loader until each feature can be converted without changing project data behavior. New work should use TypeScript for Electron boundaries and Preact-owned UI, preserve the named IPC contract, and avoid direct Node access in renderer code.

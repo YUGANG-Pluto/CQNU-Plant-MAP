@@ -102,7 +102,10 @@ function testLegacyThemeCssRemoved() {
 function testThemeSettingsProgressiveDisclosure() {
   const html = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf8');
   const elementsSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer/dom/elements.js'), 'utf8');
-  const themeSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/features/theme/model.ts'), 'utf8');
+  const themeSource = [
+    'src/renderer-modern/features/theme/model.ts',
+    'src/renderer-modern/features/theme/normalization.ts'
+  ].map(filePath => fs.readFileSync(path.join(process.cwd(), filePath), 'utf8')).join('\n');
   const themeUi = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/features/theme/ThemeSettingsModal.tsx'), 'utf8');
   const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(match => match[1]);
   const componentIds = [...themeUi.matchAll(/\sid="([^"]+)"/g)].map(match => match[1]);
@@ -179,7 +182,10 @@ function testThemeSettingsProgressiveDisclosure() {
 
 function testBrandLogoResource() {
   const html = readRendererMarkup();
-  const themeSource = fs.readFileSync(path.join(process.cwd(), 'src/renderer-modern/features/theme/model.ts'), 'utf8');
+  const themeSource = [
+    'src/renderer-modern/features/theme/model.ts',
+    'src/renderer-modern/features/theme/normalization.ts'
+  ].map(filePath => fs.readFileSync(path.join(process.cwd(), filePath), 'utf8')).join('\n');
   const brandDir = path.join(process.cwd(), 'src/renderer/assets/brand');
   const logoPath = path.join(brandDir, 'cqnu-logo.svg');
   assert.ok(fs.existsSync(logoPath), 'faithful CQNU SVG logo must exist');

@@ -33,6 +33,7 @@ The Electron application boundary, modern renderer shell, management service, an
 10. Moved query filtering, completeness evaluation, and immutable result modeling into a typed read-only query bridge while retaining the existing query modal and object-selection actions.
 11. Added a typed review-workbench controller for immutable queue views, issue/zone/severity/search filters, current-task selection, and cyclic navigation while retaining existing review rendering and edit commands.
 12. Split the management request dispatcher into typed route modules and added a typed, read-only cloud-version comparison path shared by conflict and history views.
+13. Split the theme runtime into typed contracts, presets, normalization, color, document projection, and UI control modules while retaining the existing global compatibility API.
 
 ## Current Typecheck Scope
 
@@ -68,7 +69,7 @@ Convert another compatibility feature only when all of these pass in one local v
 - `npm run db:test-runtime`
 - `npm run dist`
 
-The next conversion should remain bounded to one feature and preserve its current global compatibility API until all callers move to explicit imports. The statistics bridge validates legacy engine output at the renderer boundary, the object-selection store provides the same strategy for map and inspector selection, and the query bridge now owns read-only filtering without owning DOM or persistence. Formula modules and persisted project records remain intentionally unchanged.
+The next conversion should remain bounded to one feature and preserve its current global compatibility API until all callers move to explicit imports. The statistics bridge validates legacy engine output at the renderer boundary, the object-selection store provides the same strategy for map and inspector selection, the query bridge owns read-only filtering without owning DOM or persistence, and the theme bridge now delegates model and document work to independently testable modules. Formula modules and persisted project records remain intentionally unchanged.
 
 ## Initial Contract Targets
 
