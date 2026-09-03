@@ -39,6 +39,7 @@ export const ADMIN_ROUTES = Object.freeze<AdminRouteContract[]>([
   { id: 'cloud-projects.delete', method: 'DELETE', path: '/api/projects/:projectId', capability: 'workspace.save', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },
   { id: 'cloud-projects.save', method: 'PUT', path: '/api/projects/:projectId/snapshot', capability: 'workspace.save', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false },
   { id: 'cloud-projects.revisions', method: 'GET', path: '/api/projects/:projectId/revisions', capability: 'workspace.read', mutatesState: false, csrfProtected: false, sessionRequired: true, allowPendingActivation: false },
+  { id: 'cloud-projects.revision.read', method: 'GET', path: '/api/projects/:projectId/revisions/:revision', capability: 'workspace.read', mutatesState: false, csrfProtected: false, sessionRequired: true, allowPendingActivation: false },
   { id: 'cloud-projects.restore', method: 'POST', path: '/api/projects/:projectId/revisions/:revision/restore', capability: 'workspace.save', mutatesState: true, csrfProtected: true, sessionRequired: true, allowPendingActivation: false }
 ]);
 

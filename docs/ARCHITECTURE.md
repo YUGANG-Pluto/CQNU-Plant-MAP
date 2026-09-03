@@ -12,7 +12,7 @@ CQNU Campus Plant Mapping System is a local-first application with Electron and 
 | Preload                  | Exposes the `window.plantApp` business API through Electron context isolation.                                                                                   |
 | Renderer                 | Renders the map workspace, editors, query center, statistics, theme controls, maintenance center, and local UI state.                                            |
 | Browser platform adapter | Maps the shared workspace contract to File System Access, OPFS SQLite, Cache Storage, and browser-safe backup services.                                          |
-| Site Worker              | Serves the navigation, documentation, browser workspace, and private management API without accepting project data.                                              |
+| Site Worker              | Serves navigation, documentation, the browser workspace, private management APIs, and explicit owner-scoped cloud project snapshots.                             |
 | Browser app host         | Serves versioned, route-scoped browser-local research utilities with declared file and network capabilities.                                                     |
 | Management service       | Provides typed accounts, sessions, CSRF, capabilities, member administration, and redacted audit events.                                                         |
 | Project folder           | Holds user project files under `information/`.                                                                                                                   |
@@ -90,8 +90,11 @@ Renderer code calls `window.plantApp`. `electron/preload/index.ts` maps those ca
 - `renderer-modern/features/selection`: typed object-selection state with a compatibility mirror for existing map and inspector workflows.
 - `renderer-modern/features/query`: typed read-only query filters, completeness flags, and immutable result modeling behind the existing query UI.
 - `renderer-modern/features/review`: typed issue calculation and workbench session control behind the existing localized review UI.
+- `renderer-modern/features/project`: typed browser project workflow, owner-scoped cloud project library, conflict handling, and read-only version comparison.
 
 Large renderer domains are split by responsibility. Statistics separates controls, views, exports, workspace summaries, and pure research calculations. Maintenance separates health and repair, logs and settings, and storage conversion. Basemap handling separates configuration, layer rendering, overlays, and diagnostics. Locale dictionaries use the same domain split in Chinese and English.
+
+The management request dispatcher keeps authentication and authorization in one entry point while delegating public session, account, member, and cloud-project routes to typed modules. Cloud history reads remain owner-scoped and pass the same size and SHA-256 integrity verification as current-version reads.
 
 ## Build Flow
 

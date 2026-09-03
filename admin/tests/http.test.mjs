@@ -369,6 +369,17 @@ test('save-level account can manage an owner-scoped cloud project lifecycle', as
   );
   assert.deepEqual(history.payload.data.revisions.map(item => item.revision), [2, 1]);
 
+  const historical = await call(
+    handler,
+    `/api/projects/${created.payload.data.project.id}/revisions/1`,
+    { headers: { cookie: active.cookie } }
+  );
+  assert.equal(historical.response.status, 200);
+  assert.equal(historical.payload.data.metadata.revision, 1);
+  assert.equal(historical.payload.data.snapshot.settings.language, 'zh');
+  assert.equal(historical.payload.data.snapshot.points[0].id, 'point-1');
+  assert.equal(JSON.stringify(historical.payload).includes('ownerId'), false);
+
   const renamed = await call(handler, `/api/projects/${created.payload.data.project.id}`, {
     method: 'PATCH',
     headers: { cookie: active.cookie, origin: 'https://example.test', 'x-cqnu-csrf': active.csrf },

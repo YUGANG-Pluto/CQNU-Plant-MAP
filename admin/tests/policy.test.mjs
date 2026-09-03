@@ -70,6 +70,10 @@ test('management routes expose only bounded cloud project operations and protect
   assert.equal(findAdminRoute('GET', '/api/projects')?.capability, 'workspace.read');
   assert.equal(findAdminRoute('GET', '/api/projects/usage')?.capability, 'workspace.read');
   assert.equal(findAdminRoute('GET', '/api/projects/cloud-project-1/revisions')?.capability, 'workspace.read');
+  const historicalRead = findAdminRoute('GET', '/api/projects/cloud-project-1/revisions/2');
+  assert.equal(historicalRead?.capability, 'workspace.read');
+  assert.equal(historicalRead?.mutatesState, false);
+  assert.equal(historicalRead?.csrfProtected, false);
   assert.equal(findAdminRoute('GET', '/api/manage/cloud-projects/usage')?.capability, 'site.read');
   assert.equal(findAdminRoute('PUT', '/api/projects/cloud-project-1/snapshot')?.capability, 'workspace.save');
   assert.equal(findAdminRoute('PATCH', '/api/projects/cloud-project-1')?.capability, 'workspace.save');

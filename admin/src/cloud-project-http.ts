@@ -89,6 +89,14 @@ export async function handleCloudProjectHttp(input: CloudProjectHttpInput): Prom
     }, 200, headers);
   }
 
+  if (route.id === 'cloud-projects.revision.read') {
+    const revision = positiveInteger(routeParameter(route, path, 'revision'));
+    return respond({
+      ok: true,
+      data: await service.readRevision(ownerId, projectId, revision)
+    }, 200, headers);
+  }
+
   if (route.id === 'cloud-projects.restore') {
     const revision = positiveInteger(routeParameter(route, path, 'revision'));
     const body = await readJson(request);

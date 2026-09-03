@@ -32,6 +32,7 @@ The Electron application boundary, modern renderer shell, management service, an
 9. Added a typed object-selection store for selected zones, points, phenology records, hover state, and list-tab state while preserving the legacy state mirror.
 10. Moved query filtering, completeness evaluation, and immutable result modeling into a typed read-only query bridge while retaining the existing query modal and object-selection actions.
 11. Added a typed review-workbench controller for immutable queue views, issue/zone/severity/search filters, current-task selection, and cyclic navigation while retaining existing review rendering and edit commands.
+12. Split the management request dispatcher into typed route modules and added a typed, read-only cloud-version comparison path shared by conflict and history views.
 
 ## Current Typecheck Scope
 

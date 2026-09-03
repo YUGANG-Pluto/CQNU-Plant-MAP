@@ -248,7 +248,11 @@ export function CloudProjectLibrary() {
                     revisions={controller.revisions}
                     loading={controller.historyLoading}
                     canSave={canSave}
+                    canCompare={Boolean(controller.currentSnapshot)}
                     busy={Boolean(controller.busyId)}
+                    comparison={controller.historyComparison}
+                    text={text}
+                    onCompare={revision => void controller.compareRevision(project, revision)}
                     onRestore={revision => void controller.restoreRevision(project, revision)}
                   />
                 ) : null}

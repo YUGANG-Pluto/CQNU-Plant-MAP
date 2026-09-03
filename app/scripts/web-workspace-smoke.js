@@ -434,6 +434,8 @@ async function run() {
     if (
       cloudResult.initialUsageProjects !== 1 ||
       JSON.stringify(cloudResult.historyRevisions) !== JSON.stringify([2, 1]) ||
+      cloudResult.historicalRevision !== 1 ||
+      cloudResult.historicalPointId !== 'cloud-point' ||
       cloudResult.restoredRevision !== 3 ||
       cloudResult.renamedName !== 'Renamed cloud smoke' ||
       cloudResult.finalUsageProjects !== 1
@@ -454,6 +456,9 @@ async function run() {
     }
     if (!cloudResult.libraryOpen || cloudResult.libraryCards < 1) {
       failures.push(`cloud project library UI: ${cloudResult.libraryOpen} / ${cloudResult.libraryCards}`);
+    }
+    if (!cloudResult.historyComparisonVisible || cloudResult.historyComparisonChangedCount < 1) {
+      failures.push(`cloud project history comparison: ${JSON.stringify(cloudResult)}`);
     }
     if (
       cloudResult.conflictRevision !== 4 ||

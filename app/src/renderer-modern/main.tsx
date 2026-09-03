@@ -24,6 +24,7 @@ import './styles/command-palette.css';
 import './styles/project-history.css';
 import './styles/project-import-center.css';
 import './styles/cloud-project-library.css';
+import './styles/cloud-project-history.css';
 import './styles/review-workbench.css';
 
 installPlatformAdapter();

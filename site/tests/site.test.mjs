@@ -203,7 +203,10 @@ test('site cloud project client is same-origin, CSRF protected, and explicit', a
   const gate = await readFile(new URL('../src/workspace-gate.js', import.meta.url), 'utf8');
   const library = await readFile(new URL('../../app/src/renderer-modern/features/project/CloudProjectLibrary.tsx', import.meta.url), 'utf8');
   const libraryController = await readFile(new URL('../../app/src/renderer-modern/features/project/useCloudProjectLibraryController.ts', import.meta.url), 'utf8');
+  const historyController = await readFile(new URL('../../app/src/renderer-modern/features/project/useCloudProjectHistory.ts', import.meta.url), 'utf8');
+  const historyPanel = await readFile(new URL('../../app/src/renderer-modern/features/project/CloudProjectHistory.tsx', import.meta.url), 'utf8');
   const conflictPanel = await readFile(new URL('../../app/src/renderer-modern/features/project/CloudProjectConflict.tsx', import.meta.url), 'utf8');
+  const diffView = await readFile(new URL('../../app/src/renderer-modern/features/project/CloudProjectDiffView.tsx', import.meta.url), 'utf8');
   const diffModel = await readFile(new URL('../../app/src/renderer-modern/features/project/cloudProjectDiff.ts', import.meta.url), 'utf8');
   const libraryModel = await readFile(new URL('../../app/src/renderer-modern/features/project/cloudProjectLibraryModel.ts', import.meta.url), 'utf8');
   const importCenter = await readFile(new URL('../../app/src/renderer-modern/features/project/ProjectImportCenter.tsx', import.meta.url), 'utf8');
@@ -216,6 +219,7 @@ test('site cloud project client is same-origin, CSRF protected, and explicit', a
   assert.match(client, /method:\s*'PATCH'/);
   assert.match(client, /method:\s*'DELETE'/);
   assert.match(client, /\/revisions/);
+  assert.match(client, /async readRevision/);
   assert.match(client, /\/restore/);
   assert.doesNotMatch(client, /showDirectoryPicker|FileReader|webkitdirectory|better-sqlite3/);
   assert.match(gate, /installSiteCloudProjectClient/);
@@ -227,6 +231,7 @@ test('site cloud project client is same-origin, CSRF protected, and explicit', a
   assert.match(library, /cloudProjectUpload/);
   assert.match(library, /workspace\.save/);
   assert.match(library, /cloudProjectHistory/);
+  assert.match(library, /controller\.compareRevision/);
   assert.match(library, /CloudProjectConflict/);
   assert.match(libraryController, /projectRendererBridge\?\.snapshot/);
   assert.match(libraryController, /cloudProjectRestore/);
@@ -235,14 +240,22 @@ test('site cloud project client is same-origin, CSRF protected, and explicit', a
   assert.match(libraryController, /recoverFromConflict/);
   assert.match(libraryController, /inspectCloudProjectUpload/);
   assert.match(libraryController, /backupCurrentProject/);
-  assert.match(libraryController, /compareCloudProjectSnapshots/);
+  assert.match(historyController, /client\.readRevision/);
+  assert.match(historyController, /compareCloudProjectSnapshots/);
+  assert.match(historyPanel, /data-cloud-revision-compare/);
+  assert.match(historyPanel, /CloudProjectDiffView/);
   assert.match(conflictPanel, /data-cloud-conflict-backup-open/);
+  assert.match(conflictPanel, /CloudProjectDiffView/);
+  assert.match(diffView, /data-change-count/);
   assert.match(diffModel, /changedCount/);
   assert.doesNotMatch(diffModel, /document\.|window\.|HTMLElement/);
   assert.match(libraryModel, /CLOUD_PROJECT_CONFLICT/);
   assert.match(libraryModel, /SHA-256/);
   assert.match(libraryModel, /maxSnapshotBytes/);
-  assert.doesNotMatch(`${library}\n${libraryController}`, /window\.plantApp|ipcRenderer|child_process/);
+  assert.doesNotMatch(
+    `${library}\n${libraryController}\n${historyController}\n${historyPanel}\n${diffView}`,
+    /window\.plantApp|ipcRenderer|child_process/
+  );
 });
 
 test('cloud project schema is versioned, bounded, and owner scoped', async () => {
@@ -257,6 +270,7 @@ test('cloud project schema is versioned, bounded, and owner scoped', async () =>
   assert.match(service, /SHA-256/);
   assert.match(service, /ownerId/);
   assert.match(service, /async restore/);
+  assert.match(service, /async readRevision/);
   assert.match(service, /expectedRevision/);
 });
 

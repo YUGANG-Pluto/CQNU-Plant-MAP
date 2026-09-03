@@ -150,7 +150,15 @@ function createCloudProjectSmokeApi() {
         sendJson(response, 200, { ok: true, data: { usage: usage(projects) } });
         return true;
       }
-      if (request.method === 'GET' && projectId && segments[3] === 'revisions') {
+      if (request.method === 'GET' && projectId && segments[3] === 'revisions' && segments.length === 5) {
+        const project = projects.get(projectId);
+        const historical = project?.revisions.get(Number(segments[4]));
+        sendJson(response, historical ? 200 : 404, historical
+          ? { ok: true, data: historical }
+          : { ok: false, error: { code: 'CLOUD_PROJECT_REVISION_NOT_FOUND', message: 'Revision not found' } });
+        return true;
+      }
+      if (request.method === 'GET' && projectId && segments[3] === 'revisions' && segments.length === 4) {
         const project = projects.get(projectId);
         sendJson(response, project ? 200 : 404, project
           ? {
@@ -291,6 +299,7 @@ async function runCloudProjectRoundtrip(window) {
       const saved = await client.save(remote.metadata.id, remote.metadata.revision, snapshot);
       const duplicate = await client.save(remote.metadata.id, saved.revision, snapshot);
       const history = await client.revisions(remote.metadata.id);
+      const historical = await client.readRevision(remote.metadata.id, 1);
       const restored = await client.restore(remote.metadata.id, 1, saved.revision);
       const renamed = await client.rename(remote.metadata.id, restored.revision, 'Renamed cloud smoke');
       const temporary = await client.create('Temporary cloud smoke');
@@ -312,6 +321,11 @@ async function runCloudProjectRoundtrip(window) {
       const libraryOpen = libraryModal?.classList.contains('is-open') || false;
       const libraryCards = document.querySelectorAll('.cloud-project-card').length;
       const activeCopyVisible = Boolean(document.querySelector('.cloud-project-card.is-active-copy'));
+      document.querySelector('[data-cloud-project-history]')?.click();
+      await waitFor('.cloud-project-history li');
+      document.querySelector('[data-cloud-revision-compare]')?.click();
+      const historyDiff = await waitFor('.cloud-project-history .cloud-project-diff');
+      const historyComparisonChangedCount = Number(historyDiff?.getAttribute('data-change-count') || 0);
 
       const latestBeforeConflict = await client.read(remote.metadata.id);
       const remoteConflictSnapshot = structuredClone(latestBeforeConflict.snapshot);
@@ -348,6 +362,8 @@ async function runCloudProjectRoundtrip(window) {
         savedRevision: saved.revision,
         duplicateRevision: duplicate.revision,
         historyRevisions: history.map(item => item.revision),
+        historicalRevision: historical.metadata.revision,
+        historicalPointId: historical.snapshot.points[0].id,
         restoredRevision: restored.revision,
         renamedName: renamed.name,
         conflictRevision: conflictRevision.revision,
@@ -364,6 +380,8 @@ async function runCloudProjectRoundtrip(window) {
         libraryOpen,
         libraryCards,
         activeCopyVisible,
+        historyComparisonVisible: Boolean(historyDiff),
+        historyComparisonChangedCount,
         conflictShown,
         conflictVisible,
         conflictChangedCount,

@@ -263,8 +263,7 @@
 }
 
 .cloud-project-actions .btn-compact,
-.cloud-project-rename .btn-compact,
-.cloud-project-history .btn-compact {
+.cloud-project-rename .btn-compact {
   min-height: 34px;
   padding: 6px 10px;
 }
@@ -281,225 +280,6 @@
 .cloud-project-actions .is-danger:hover {
   border-color: color-mix(in srgb, var(--danger, #b42318) 46%, var(--border));
   background: color-mix(in srgb, var(--danger, #b42318) 7%, var(--panel-bg));
-}
-
-.cloud-project-history {
-  display: grid;
-  gap: 10px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  animation: cloudProjectHistoryIn 420ms var(--motion-ease, ease) both;
-}
-
-.cloud-project-conflict {
-  display: grid;
-  gap: 13px;
-  margin-top: 14px;
-  padding: 15px;
-  border: 1px solid color-mix(in srgb, var(--warning, #b54708) 42%, var(--border));
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--warning, #b54708) 5%, var(--panel-bg));
-  animation: cloudProjectHistoryIn 420ms var(--motion-ease, ease) both;
-}
-
-.cloud-project-conflict > header {
-  align-items: flex-start;
-}
-
-.cloud-project-conflict > header > div {
-  min-width: 0;
-}
-
-.cloud-project-conflict > header strong {
-  color: var(--text-primary);
-}
-
-.cloud-project-conflict > header p,
-.cloud-project-conflict-waiting {
-  margin: 4px 0 0;
-  color: var(--text-secondary);
-  line-height: 1.55;
-}
-
-.cloud-project-conflict-icon {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  flex: none;
-  place-items: center;
-  border-radius: 8px;
-  color: var(--warning, #b54708);
-  background: color-mix(in srgb, var(--warning, #b54708) 11%, var(--panel-bg));
-}
-
-.cloud-project-conflict-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.cloud-project-diff {
-  display: grid;
-  gap: 10px;
-}
-
-.cloud-project-diff-summary {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--text-secondary);
-  font-size: 12px;
-}
-
-.cloud-project-diff-summary strong {
-  color: var(--text-primary);
-}
-
-.cloud-project-diff-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 9px;
-}
-
-.cloud-project-diff-section {
-  min-width: 0;
-  padding: 11px;
-  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--surface-muted, var(--panel-bg)) 72%, transparent);
-}
-
-.cloud-project-diff-section > header {
-  display: grid;
-  gap: 2px;
-}
-
-.cloud-project-diff-section > header span {
-  color: var(--text-secondary);
-  font-size: 11px;
-}
-
-.cloud-project-diff-section dl {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
-  margin: 10px 0 0;
-}
-
-.cloud-project-diff-section dl div {
-  padding: 6px 7px;
-  background: color-mix(in srgb, var(--panel-bg) 76%, transparent);
-}
-
-.cloud-project-diff-section dd {
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.cloud-project-diff-section ul {
-  display: grid;
-  gap: 4px;
-  max-height: 112px;
-  margin: 9px 0 0;
-  padding: 0;
-  overflow: auto;
-  list-style: none;
-}
-
-.cloud-project-diff-section li {
-  display: flex;
-  justify-content: space-between;
-  min-width: 0;
-  gap: 8px;
-  color: var(--text-secondary);
-  font-size: 11px;
-}
-
-.cloud-project-diff-section li span {
-  overflow: hidden;
-  color: var(--text-primary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cloud-project-diff-section li small {
-  flex: none;
-}
-
-.cloud-project-history > header {
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-.cloud-project-history > header div {
-  display: grid;
-  gap: 2px;
-}
-
-.cloud-project-history > header span,
-.cloud-project-history > header small,
-.cloud-project-history li span,
-.cloud-project-history li small {
-  color: var(--text-secondary);
-  font-size: 11px;
-}
-
-.cloud-project-history ol {
-  display: grid;
-  gap: 6px;
-  max-height: 300px;
-  margin: 0;
-  padding: 0;
-  overflow: auto;
-  list-style: none;
-}
-
-.cloud-project-history li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  min-width: 0;
-  padding: 9px 10px;
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--surface-muted, var(--panel-bg)) 74%, transparent);
-  transition: background 300ms var(--motion-ease, ease), transform 300ms var(--motion-ease, ease);
-}
-
-.cloud-project-history li:hover {
-  transform: translateX(2px);
-  background: color-mix(in srgb, var(--primary) 6%, var(--panel-bg));
-}
-
-.cloud-project-history li > div {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: baseline;
-  gap: 10px;
-}
-
-.cloud-project-history li > div span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cloud-project-current {
-  padding: 4px 8px;
-  border-radius: 6px;
-  color: var(--primary) !important;
-  background: color-mix(in srgb, var(--primary) 9%, var(--panel-bg));
-  font-weight: 650;
-  white-space: nowrap;
-}
-
-.cloud-project-history-state {
-  margin: 0;
-  padding: 16px;
-  color: var(--text-secondary);
-  text-align: center;
 }
 
 .cloud-project-empty {
@@ -545,11 +325,6 @@
   to { background-position: -100% 0; }
 }
 
-@keyframes cloudProjectHistoryIn {
-  from { opacity: 0; transform: translateY(-7px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 @media (max-width: 760px) {
   .cloud-project-content { min-height: 0; }
   .cloud-project-toolbar,
@@ -560,13 +335,6 @@
   .cloud-project-create > div { grid-template-columns: 1fr; }
   .cloud-project-actions .btn { flex: 1 1 150px; }
   .cloud-project-rename { grid-template-columns: 1fr auto auto; }
-  .cloud-project-history > header,
-  .cloud-project-history li { align-items: stretch; flex-direction: column; }
-  .cloud-project-history li > div { grid-template-columns: auto minmax(0, 1fr); }
-  .cloud-project-history li > div small { display: none; }
-  .cloud-project-diff-grid { grid-template-columns: 1fr; }
-  .cloud-project-diff-summary { flex-direction: column; }
-  .cloud-project-conflict-actions .btn { flex: 1 1 190px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -576,6 +344,5 @@
   .cloud-project-card,
   .cloud-project-icon,
   .cloud-project-status,
-  .cloud-project-usage-meter i,
-  .cloud-project-history li { transition: none !important; }
+  .cloud-project-usage-meter i { transition: none !important; }
 }

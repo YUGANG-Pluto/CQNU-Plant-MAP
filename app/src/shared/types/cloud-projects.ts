@@ -37,6 +37,11 @@ export interface CloudProjectRevisionMetadata {
   createdAt: string;
 }
 
+export interface CloudProjectRevisionDocument {
+  metadata: CloudProjectRevisionMetadata;
+  snapshot: CloudProjectSnapshot;
+}
+
 export interface CloudProjectUsage {
   projectCount: number;
   maxProjects: number;
@@ -60,6 +65,7 @@ export interface SiteCloudProjectClient {
     snapshot: CloudProjectSnapshot
   ): Promise<CloudProjectMetadata>;
   revisions(projectId: string): Promise<CloudProjectRevisionMetadata[]>;
+  readRevision(projectId: string, revision: number): Promise<CloudProjectRevisionDocument>;
   restore(projectId: string, revision: number, expectedRevision: number): Promise<CloudProjectMetadata>;
 }
 

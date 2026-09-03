@@ -8,9 +8,9 @@ This directory contains the TypeScript account, authorization, session, CSRF, au
 - Accounts support user and administrator roles, read/edit/save workspace access, first-use activation, optional post-activation password change, password reset, and a maximum of three administrators.
 - Durable production accounts, sessions, credential grants, audit events, and account-scoped cloud project versions use the configured D1 binding.
 - Browser management controllers live under `src/ui/` and compile to `dist/ui/`; the site build publishes those compiled modules instead of parallel hand-written JavaScript.
-- The site-only cloud project API lists, creates, reads, renames, versions, restores, and deletes `settings`, `zones`, and `points` record snapshots for the authenticated owner.
+- The site-only cloud project API lists, creates, reads, renames, versions, restores, and deletes `settings`, `zones`, and `points` record snapshots for the authenticated owner. Historical snapshots have a separate read-only endpoint for local comparison before restore.
 - Cloud project requests reject service credentials, credential-bearing URL parameters, and device-absolute paths. Relative image references may remain in records, but browser file handles, image bytes, backup archives, logs, and desktop SQLite/JSON source files are never accepted.
-- Snapshots are bounded to 8 MiB, split below D1 row limits, protected by optimistic revisions, and verified with SHA-256 on read.
+- Snapshots are bounded to 8 MiB, split below D1 row limits, protected by optimistic revisions, and verified with SHA-256 on current and historical reads.
 - Restoring an older snapshot appends a new revision. Deleting a cloud project removes its current record, immutable revision metadata, and chunks in one D1 batch after an expected-revision check.
 - Administrators may inspect per-account project counts and byte totals. The management usage endpoint does not return project names or snapshot content.
 - Identity assertions are accepted only after a configured provider verifier has validated them. The adapter never trusts a role supplied by the browser.
@@ -29,6 +29,8 @@ This directory contains the TypeScript account, authorization, session, CSRF, au
 - Any endpoint that accepts images, paths, file handles, backup archives, logs, or database-file contents.
 
 The in-memory stores remain test fixtures. Production changes must retain deny-by-default authorization, `HttpOnly`/`Secure`/`SameSite=Strict` cookies, exact-origin CSRF protection, bounded credentials, session expiry and rotation, administrator-count guards, and redacted audit events.
+
+The request entry in `src/site-handler.ts` owns route lookup, authentication, authorization, and failure auditing. Public session routes, account routes, member routes, cloud-project routes, response mapping, and shared request helpers are kept in separate modules so each boundary can be reviewed independently.
 
 ## Production environment
 

@@ -76,6 +76,9 @@
       async revisions(projectId) {
         return (await request(`/api/projects/${encodeURIComponent(projectId)}/revisions`)).revisions || [];
       },
+      async readRevision(projectId, revision) {
+        return request(`/api/projects/${encodeURIComponent(projectId)}/revisions/${encodeURIComponent(revision)}`);
+      },
       async restore(projectId, revision, expectedRevision) {
         return (await request(`/api/projects/${encodeURIComponent(projectId)}/revisions/${encodeURIComponent(revision)}/restore`, {
           method: 'POST',

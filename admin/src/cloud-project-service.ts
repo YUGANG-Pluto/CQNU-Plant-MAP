@@ -20,6 +20,11 @@ export interface CloudProjectDocument {
   snapshot: CloudProjectSnapshot | null;
 }
 
+export interface CloudProjectRevisionDocument {
+  metadata: CloudProjectRevisionMetadata;
+  snapshot: CloudProjectSnapshot;
+}
+
 export interface SaveCloudProjectInput {
   ownerId: string;
   actorId: string;
@@ -184,6 +189,21 @@ export class CloudProjectService {
     return this.#store.listRevisionsOwned(ownerId, projectId);
   }
 
+  async readRevision(
+    ownerId: string,
+    projectId: string,
+    revision: number
+  ): Promise<CloudProjectRevisionDocument> {
+    if (!Number.isInteger(revision) || revision < 1) throw new Error('CLOUD_PROJECT_REVISION_INVALID');
+    if (!await this.#store.getOwned(ownerId, projectId)) throw new Error('CLOUD_PROJECT_NOT_FOUND');
+    const stored = await this.#store.readRevisionOwned(ownerId, projectId, revision);
+    if (!stored) throw new Error('CLOUD_PROJECT_REVISION_NOT_FOUND');
+    return {
+      metadata: stored.metadata,
+      snapshot: await verifiedSnapshot(stored.serializedSnapshot, stored.metadata)
+    };
+  }
+
   async rename(
     ownerId: string,
     projectId: string,
@@ -217,9 +237,7 @@ export class CloudProjectService {
     expectedRevision: number
   ): Promise<CloudProjectMetadata> {
     if (!Number.isInteger(revision) || revision < 1) throw new Error('CLOUD_PROJECT_REVISION_INVALID');
-    const stored = await this.#store.readRevisionOwned(ownerId, projectId, revision);
-    if (!stored) throw new Error('CLOUD_PROJECT_REVISION_NOT_FOUND');
-    const snapshot = await verifiedSnapshot(stored.serializedSnapshot, stored.metadata);
+    const { snapshot } = await this.readRevision(ownerId, projectId, revision);
     return this.save({ ownerId, actorId, projectId, expectedRevision, snapshot, forceRevision: true });
   }
 

@@ -8,7 +8,7 @@ import type {
   ProjectRendererBridge,
   SiteCloudProjectClient
 } from '../../../shared/types/cloud-projects';
-import { compareCloudProjectSnapshots, type CloudProjectSnapshotDiff } from './cloudProjectDiff';
+import { compareCloudProjectSnapshots } from './cloudProjectDiff';
 import {
   EMPTY_CLOUD_PROJECT_USAGE,
   formatCloudProjectBytes,
@@ -16,6 +16,14 @@ import {
   isCloudProjectConflict,
   readCloudProjectLibraryState
 } from './cloudProjectLibraryModel';
+import type {
+  CloudProjectConflictOperation,
+  CloudProjectConflictState,
+  CloudProjectLibraryController,
+  CloudProjectStatusTone,
+  CloudProjectText
+} from './cloudProjectLibraryTypes';
+import { useCloudProjectHistory } from './useCloudProjectHistory';
 import { useProjectSession } from './useProjectSession';
 
 declare global {
@@ -28,53 +36,6 @@ declare global {
       cancelLabel?: string;
     }): Promise<boolean>;
   }
-}
-
-export type CloudProjectStatusTone = 'neutral' | 'busy' | 'success' | 'error';
-export type CloudProjectConflictOperation = 'upload' | 'rename' | 'restore' | 'delete';
-export type CloudProjectText = (key: string, fallback: string) => string;
-
-export interface CloudProjectConflictState {
-  project: CloudProjectMetadata;
-  operation: CloudProjectConflictOperation;
-  localSnapshot: CloudProjectSnapshot | null;
-  remoteDocument: CloudProjectDocument | null;
-  diff: CloudProjectSnapshotDiff | null;
-  loading: boolean;
-}
-
-export interface CloudProjectLibraryController {
-  projects: CloudProjectMetadata[];
-  usage: CloudProjectUsage;
-  historyProjectId: string;
-  revisions: CloudProjectRevisionMetadata[];
-  historyLoading: boolean;
-  renameId: string;
-  renameValue: string;
-  name: string;
-  status: string;
-  tone: CloudProjectStatusTone;
-  busyId: string;
-  loading: boolean;
-  currentSnapshot: CloudProjectSnapshot | null;
-  activeCloudProjectId: string;
-  conflict: CloudProjectConflictState | null;
-  canBackupConflict: boolean;
-  setName(value: string): void;
-  setRenameValue(value: string): void;
-  refresh(): Promise<void>;
-  createProject(event: Event): Promise<void>;
-  uploadCurrent(project: CloudProjectMetadata): Promise<void>;
-  beginRename(project: CloudProjectMetadata): void;
-  cancelRename(): void;
-  renameProject(event: Event, project: CloudProjectMetadata): Promise<void>;
-  toggleHistory(project: CloudProjectMetadata): Promise<void>;
-  restoreRevision(project: CloudProjectMetadata, revision: CloudProjectRevisionMetadata): Promise<void>;
-  deleteProject(project: CloudProjectMetadata): Promise<void>;
-  openProject(project: CloudProjectMetadata): Promise<void>;
-  compareConflict(): Promise<void>;
-  keepLocalConflict(): void;
-  openLatestConflict(createBackup: boolean): Promise<void>;
 }
 
 function activeCloudId(projectDir: string, explicitId: string): string {
@@ -101,9 +62,6 @@ export function useCloudProjectLibraryController(
   const session = useProjectSession();
   const [projects, setProjects] = useState<CloudProjectMetadata[]>([]);
   const [usage, setUsage] = useState<CloudProjectUsage>(EMPTY_CLOUD_PROJECT_USAGE);
-  const [historyProjectId, setHistoryProjectId] = useState('');
-  const [revisions, setRevisions] = useState<CloudProjectRevisionMetadata[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
   const [renameId, setRenameId] = useState('');
   const [renameValue, setRenameValue] = useState('');
   const [name, setName] = useState('');
@@ -114,6 +72,25 @@ export function useCloudProjectLibraryController(
   const [conflict, setConflict] = useState<CloudProjectConflictState | null>(null);
   const currentSnapshot = window.projectRendererBridge?.snapshot() || null;
   const activeCloudProjectId = activeCloudId(session.projectDir, session.cloudProjectId);
+  const {
+    historyProjectId,
+    revisions,
+    historyLoading,
+    historyComparison,
+    setRevisions,
+    refreshOpenHistory,
+    toggleHistory,
+    compareRevision,
+    clearHistory,
+    clearHistoryComparison
+  } = useCloudProjectHistory({
+    client,
+    text,
+    getLocalSnapshot: () => window.projectRendererBridge?.snapshot() || null,
+    setBusyId,
+    setStatus,
+    setTone
+  });
 
   const refresh = useCallback(async () => {
     if (!client) return;
@@ -159,17 +136,6 @@ export function useCloudProjectLibraryController(
     } catch {
       // A supplemental quota read must not roll back a successful project operation.
     }
-  }
-
-  async function refreshRevisions(projectId: string): Promise<CloudProjectRevisionMetadata[]> {
-    if (!client) return [];
-    const nextRevisions = await client.revisions(projectId);
-    if (historyProjectId === projectId) setRevisions(nextRevisions);
-    return nextRevisions;
-  }
-
-  function refreshOpenHistory(projectId: string): Promise<CloudProjectRevisionMetadata[]> | Promise<void> {
-    return historyProjectId === projectId ? refreshRevisions(projectId) : Promise.resolve();
   }
 
   async function recoverFromConflict(
@@ -313,26 +279,6 @@ export function useCloudProjectLibraryController(
     }
   }
 
-  async function toggleHistory(project: CloudProjectMetadata): Promise<void> {
-    if (!client) return;
-    if (historyProjectId === project.id) {
-      setHistoryProjectId('');
-      setRevisions([]);
-      return;
-    }
-    setHistoryProjectId(project.id);
-    setRevisions([]);
-    setHistoryLoading(true);
-    try {
-      setRevisions(await client.revisions(project.id));
-    } catch (error) {
-      setTone('error');
-      setStatus(error instanceof Error ? error.message : text('cloudProjectHistoryFailed', '版本历史读取失败。'));
-    } finally {
-      setHistoryLoading(false);
-    }
-  }
-
   async function restoreRevision(
     project: CloudProjectMetadata,
     revision: CloudProjectRevisionMetadata
@@ -393,10 +339,7 @@ export function useCloudProjectLibraryController(
     try {
       await client.remove(project.id, project.revision);
       setProjects(current => current.filter(item => item.id !== project.id));
-      if (historyProjectId === project.id) {
-        setHistoryProjectId('');
-        setRevisions([]);
-      }
+      clearHistory(project.id);
       await refreshUsage();
       setTone('success');
       setStatus(text('cloudProjectDeleted', '云项目及其版本历史已删除；本地工作副本保持不变。'));
@@ -416,6 +359,7 @@ export function useCloudProjectLibraryController(
     await bridge.importCloudProject(document);
     replaceProject(document.metadata);
     setConflict(null);
+    clearHistoryComparison();
     setTone('success');
     setStatus(text('cloudProjectOpened', '云项目已载入浏览器本地工作副本。'));
     closeProjectLayers();
@@ -552,6 +496,7 @@ export function useCloudProjectLibraryController(
     historyProjectId,
     revisions,
     historyLoading,
+    historyComparison,
     renameId,
     renameValue,
     name,
@@ -572,6 +517,7 @@ export function useCloudProjectLibraryController(
     cancelRename,
     renameProject,
     toggleHistory,
+    compareRevision,
     restoreRevision,
     deleteProject,
     openProject,

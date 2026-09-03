@@ -41,6 +41,7 @@ Only one tab can hold the browser database writer lock. If another workspace tab
 - Cloud operations exist only on `site/main`; Electron and `desktop/main` expose no cloud project IPC or UI.
 - The client sanitizes the visible snapshot before upload, and the Worker independently rejects credentials or device-absolute paths that bypass the client.
 - Project listing, usage, reads, and version-history reads require `workspace.read`. Creating, uploading, renaming, restoring, or deleting a cloud project requires `workspace.save` plus exact-origin CSRF validation.
+- A saved version can be compared with the current browser-local working copy through a read-only historical snapshot request. Comparison reports settings, zone, and point differences without restoring or modifying either copy.
 - Projects are isolated by authenticated account. A project owned by another account is returned as not found rather than exposing its existence.
 - Each upload creates a monotonically increasing revision. A stale expected revision is rejected so a browser cannot silently overwrite a newer version.
 - A cloud working copy stores its source project ID, imported revision, digest, and synchronization time as browser-repository metadata beside the project document. This metadata is not added to `settings`, `zones`, or `points`, and older browser records remain readable without migration.

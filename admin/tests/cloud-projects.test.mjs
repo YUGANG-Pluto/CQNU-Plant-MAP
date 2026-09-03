@@ -154,6 +154,19 @@ test('cloud project lifecycle keeps immutable history and restores into a new re
   assert.notEqual(history[0].contentSha256, history[1].contentSha256);
   await assert.rejects(projects.revisions('account-b', created.id), /CLOUD_PROJECT_NOT_FOUND/);
 
+  const historical = await projects.readRevision('account-a', created.id, 1);
+  assert.equal(historical.metadata.revision, 1);
+  assert.equal(historical.snapshot.settings.projectName, 'First survey');
+  assert.equal(historical.snapshot.points.length, 1);
+  await assert.rejects(
+    projects.readRevision('account-a', created.id, 99),
+    /CLOUD_PROJECT_REVISION_NOT_FOUND/
+  );
+  await assert.rejects(
+    projects.readRevision('account-b', created.id, 1),
+    /CLOUD_PROJECT_NOT_FOUND/
+  );
+
   const restored = await projects.restore(
     'account-a', 'account-a', created.id, 1, second.revision
   );
@@ -197,4 +210,5 @@ test('cloud project rename and deletion enforce ownership and expected revision'
   assert.equal((await projects.usage('account-a')).versionBytes, 0);
   await assert.rejects(projects.read('account-a', created.id), /CLOUD_PROJECT_NOT_FOUND/);
   await assert.rejects(projects.revisions('account-a', created.id), /CLOUD_PROJECT_NOT_FOUND/);
+  await assert.rejects(projects.readRevision('account-a', created.id, 1), /CLOUD_PROJECT_NOT_FOUND/);
 });
